@@ -7,6 +7,7 @@ import Footer from "@/components/Footer";
 import Starfield from "@/components/Starfield";
 import InstallBanner from "@/components/InstallBanner";
 import PushPrompt from "@/components/PushPrompt";
+import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 import { AuthProvider } from "@/components/AuthProvider";
 import { APP_NAME, APP_SHORT, TAGLINE, SITE_URL } from "@/lib/site";
 
@@ -92,6 +93,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="flex min-h-full flex-col font-body">
         <AuthProvider>
+          <ServiceWorkerRegister />
           <Starfield />
           <Header />
           <main className="flex-1">{children}</main>
