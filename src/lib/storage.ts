@@ -9,6 +9,7 @@ const K = {
   installDismissed: "sortes-install-dismissed",
   pushDismissed: "sortes-push-dismissed",
   purchases: "sortes-purchases",
+  dailyStreak: "sortes-daily-streak",
 } as const;
 
 function read<T>(key: string, fallback: T): T {
@@ -101,7 +102,38 @@ export function getDailyCard(): DailyCardState | null {
 export function setDailyCard(cardId: string, reversed: boolean): DailyCardState {
   const s: DailyCardState = { date: todayKey(), cardId, reversed };
   write(K.dailyCard, s);
+  recordDailyDraw();
   return s;
+}
+
+// ---- Daily streak: consecutive days the seeker drew their card ----
+export function getDailyStreak(): number {
+  const days = read<string[]>(K.dailyStreak, []);
+  if (days.length === 0) return 0;
+  // Count back consecutive days from today (or yesterday, if today's
+  // card has not been drawn yet this session).
+  const today = todayKey();
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  const yesterday = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  let cursor = days.includes(today) ? today : yesterday;
+  let streak = 0;
+  const set = new Set(days);
+  while (set.has(cursor)) {
+    streak++;
+    const cd = new Date(cursor + "T12:00:00");
+    cd.setDate(cd.getDate() - 1);
+    cursor = `${cd.getFullYear()}-${String(cd.getMonth() + 1).padStart(2, "0")}-${String(cd.getDate()).padStart(2, "0")}`;
+  }
+  return streak;
+}
+
+function recordDailyDraw(): void {
+  const days = read<string[]>(K.dailyStreak, []);
+  const today = todayKey();
+  if (!days.includes(today)) {
+    write(K.dailyStreak, [...days.slice(-365), today]);
+  }
 }
 
 // ---- Reading history ----

@@ -44,6 +44,7 @@ export default function ReadingFlow({ slug, intake = null }: Props) {
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [usedFree, setUsedFree] = useState(false);
   const [readingId, setReadingId] = useState<string | null>(null);
+  const [burst, setBurst] = useState<number | null>(null);
   const savedRef = useRef(false);
   const { credits, spend, persistReading } = useAuth();
 
@@ -85,6 +86,9 @@ export default function ReadingFlow({ slug, intake = null }: Props) {
     const next = [...revealed];
     next[i] = true;
     setRevealed(next);
+    // Golden spark burst on the freshly revealed card.
+    setBurst(i);
+    setTimeout(() => setBurst((b) => (b === i ? null : b)), 950);
     if (typeof navigator !== "undefined" && "vibrate" in navigator) {
       try {
         navigator.vibrate(12);
@@ -196,6 +200,7 @@ export default function ReadingFlow({ slug, intake = null }: Props) {
                 spread={spread}
                 drawn={drawn}
                 revealed={revealed}
+                burst={burst}
                 onFlip={flip}
               />
             </div>
@@ -328,11 +333,13 @@ function SpreadLayout({
   spread,
   drawn,
   revealed,
+  burst,
   onFlip,
 }: {
   spread: Spread;
   drawn: DrawnCard[];
   revealed: boolean[];
+  burst: number | null;
   onFlip: (i: number) => void;
 }) {
   const cardAt = (key: string) => {
@@ -355,6 +362,7 @@ function SpreadLayout({
             onFlip={() => onFlip(0)}
             size="lg"
             label={drawn[0].position}
+            celebrate={burst === 0}
           />
         </motion.div>
       </div>
@@ -378,6 +386,7 @@ function SpreadLayout({
               onFlip={() => onFlip(i)}
               size="md"
               label={d.position}
+              celebrate={burst === i}
             />
           </motion.div>
         ))}
@@ -403,6 +412,7 @@ function SpreadLayout({
       onFlip={() => onFlip(index)}
       size="sm"
       label={label ?? draw.position}
+      celebrate={burst === index}
     />
   );
 
@@ -424,6 +434,7 @@ function SpreadLayout({
                   onFlip={() => onFlip(challenge.index)}
                   size="sm"
                   label={challenge.draw.position}
+                  celebrate={burst === challenge.index}
                 />
               </div>
             </div>
@@ -452,6 +463,7 @@ function SpreadLayout({
               onFlip={() => onFlip(i)}
               size="sm"
               label={d.position}
+              celebrate={burst === i}
             />
           </motion.div>
         ))}

@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   getDailyCard,
   setDailyCard,
+  getDailyStreak,
   type DailyCardState,
 } from "@/lib/storage";
 import { getCard, orientationKeywords, orientationMeaning } from "@/lib/cards";
@@ -21,6 +22,7 @@ type Phase = "idle" | "shuffling" | "revealed";
 export default function DailyPage() {
   const [phase, setPhase] = useState<Phase>("idle");
   const [daily, setDaily] = useState<DailyCardState | null>(null);
+  const [streak, setStreak] = useState(0);
 
   useEffect(() => {
     const existing = getDailyCard();
@@ -28,6 +30,7 @@ export default function DailyPage() {
       setDaily(existing);
       setPhase("revealed");
     }
+    setStreak(getDailyStreak());
   }, []);
 
   const draw = () => {
@@ -37,6 +40,7 @@ export default function DailyPage() {
       const d = drawSingle();
       const saved = setDailyCard(d.cardId, d.reversed);
       setDaily(saved);
+      setStreak(getDailyStreak());
       setPhase("revealed");
       trackDailyCardDrawn();
     }, 1400);
@@ -56,6 +60,15 @@ export default function DailyPage() {
         One card, free forever, no questions asked. A small mirror for the day
         ahead.
       </p>
+      {streak >= 2 && (
+        <motion.p
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="mt-4 inline-flex items-center gap-2 rounded-full border border-gold/40 bg-gold/10 px-4 py-1.5 text-sm font-semibold text-goldbright"
+        >
+          <span aria-hidden="true">🔥</span> {streak}-day streak
+        </motion.p>
+      )}
 
       <div className="mt-10 flex min-h-[24rem] w-full flex-col items-center justify-center">
         <AnimatePresence mode="wait">
@@ -137,7 +150,11 @@ export default function DailyPage() {
                 </p>
                 <p className="mt-6 text-xs italic text-mist">
                   A reflection for today, not a prediction. Come back tomorrow
-                  for a new card.
+                  for a new card
+                  {streak >= 1 && (
+                    <> and to keep your {streak}-day streak alive</>
+                  )}
+                  .
                 </p>
               </motion.div>
             </motion.div>

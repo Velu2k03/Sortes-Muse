@@ -7,6 +7,7 @@ import type { Reading } from "@/lib/types";
 import { getCard, orientationKeywords, orientationMeaning } from "@/lib/cards";
 import TarotCard from "@/components/TarotCard";
 import ShareReading from "@/components/ShareReading";
+import TypewriterText from "@/components/TypewriterText";
 
 /**
  * Reading detail: full cards + interpretation + share + "Ask a follow-up" upsell.
@@ -110,9 +111,13 @@ export default function ReadingDetail({ id }: { id: string }) {
             <p className="text-xs uppercase tracking-[0.25em] text-gold">
               Personalized interpretation
             </p>
-            <div className="mt-3 whitespace-pre-line leading-relaxed text-cream/90">
-              {reading.interpretation}
-            </div>
+            <TypewriterText
+              text={reading.interpretation}
+              className="mt-3 whitespace-pre-line leading-relaxed text-cream/90"
+            />
+            <p className="mt-4 text-xs italic text-mist">
+              Written for you in this moment. Tap the text to reveal it all at once.
+            </p>
           </section>
         )}
       </div>

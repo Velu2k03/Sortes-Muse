@@ -4,6 +4,7 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import { getCard, orientationKeywords } from "@/lib/cards";
 import { CARD_BACK } from "@/lib/tarot";
+import CardBurst from "@/components/CardBurst";
 
 interface Props {
   cardId: string | null; // null = not dealt yet
@@ -13,6 +14,8 @@ interface Props {
   size?: "sm" | "md" | "lg";
   label?: string;
   disabled?: boolean;
+  /** Show the golden reveal burst (parent clears it after the animation). */
+  celebrate?: boolean;
 }
 
 const SIZES = {
@@ -33,6 +36,7 @@ export default function TarotCard({
   size = "md",
   label,
   disabled = false,
+  celebrate = false,
 }: Props) {
   const card = cardId ? getCard(cardId) : null;
 
@@ -49,8 +53,9 @@ export default function TarotCard({
               : "Face-down card, tap to reveal"
             : "Card not dealt"
         }
-        className={`perspective-1000 ${SIZES[size]} min-h-[8rem] min-w-[5rem] cursor-pointer disabled:cursor-default`}
+        className={`perspective-1000 ${SIZES[size]} relative min-h-[8rem] min-w-[5rem] cursor-pointer disabled:cursor-default`}
       >
+        {celebrate && <CardBurst />}
         <motion.div
           className="preserve-3d relative h-full w-full"
           initial={false}
