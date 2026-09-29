@@ -48,6 +48,14 @@ cp .env.example .env.local
 | `LEMONSQUEEZY_WEBHOOK_SECRET` | For real payments | Lemon Squeezy → Settings → Webhooks → your webhook → Signing secret. The webhook URL to register is `https://tarot.resonantatlas.com/api/webhooks/lemonsqueezy`; subscribe to the `order_created` event. |
 | `NEXT_PUBLIC_PLAUSIBLE_DOMAIN` | No | Your domain in [plausible.io](https://plausible.io) (e.g. `tarot.resonantatlas.com`). Without it, analytics calls are no-ops (dev logs to console). |
 | `NEXT_PUBLIC_SITE_URL` | No | Defaults to `https://tarot.resonantatlas.com`. Used for checkout redirects and canonical URLs. |
+| `CRON_SECRET` | For win-back emails | Random 32+ char string. Vercel Cron sends it as a Bearer token to `/api/cron/winback` (scheduled in `vercel.json`, daily 02:00 UTC). Without it, the win-back job returns 500 and no emails go out. |
+
+## Retention engine
+
+- **Daily streaks** (`src/lib/storage.ts`): consecutive-day daily-card draws, badge on `/daily` at 2+ days. The push prompt (`PushPrompt.tsx`) switches to "Keep your N-day streak alive 🔥" copy when a streak exists.
+- **Win-back emails**: `vercel.json` schedules `GET /api/cron/winback` daily at 02:00 UTC. It emails users quiet for 7+ days (max 1 nudge per 60 days, tracked in `users.winback_sent_at`), via Resend. Requires `CRON_SECRET` and `RESEND_API_KEY`.
+- **Social proof**: `/api/stats` returns readings cast in the last 7 days (10-min cache). The home page `StatsStrip` shows it only once it reaches 25, so the number is always real and never sad.
+- **Sample reading**: `SampleReading.tsx` on the home page shows an anonymized personalized reading so visitors see what they are buying before any paywall.
 
 ## How the pieces fit
 

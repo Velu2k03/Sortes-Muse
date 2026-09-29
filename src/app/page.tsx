@@ -6,6 +6,8 @@ import { motion } from "framer-motion";
 import { SPREADS } from "@/lib/tarot";
 import { MAJORS } from "@/lib/cards";
 import { TAGLINE } from "@/lib/site";
+import StatsStrip from "@/components/StatsStrip";
+import SampleReading from "@/components/SampleReading";
 
 const fadeUp = {
   initial: { opacity: 0, y: 24 },
@@ -94,6 +96,8 @@ export default function Home() {
           </motion.p>
         </div>
       </section>
+
+      <StatsStrip />
 
       {/* WHAT IS TAROT */}
       <section className="mx-auto max-w-4xl px-4 py-16 sm:px-6">
@@ -198,6 +202,9 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* SAMPLE READING TEASER */}
+      <SampleReading />
 
       {/* DAILY CARD TEASER */}
       <section className="mx-auto max-w-4xl px-4 py-16 text-center sm:px-6">
