@@ -17,6 +17,18 @@ import {
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
+  try {
+    return await handleVerify(req);
+  } catch (err) {
+    console.error("verify-code failed:", err);
+    return NextResponse.json(
+      { error: "Sign-in is temporarily unavailable. Please try again in a moment." },
+      { status: 500 }
+    );
+  }
+}
+
+async function handleVerify(req: NextRequest) {
   let body: { email?: string; code?: string };
   try {
     body = await req.json();

@@ -42,6 +42,19 @@ export default function AccountPage() {
     }
   }, [user]);
 
+  // Parse JSON defensively: a crashed or proxied API route can return an
+  // empty / non-JSON body, which should surface a friendly error, not a
+  // "Failed to execute 'json'" exception.
+  const parseJson = async (res: Response): Promise<{ error?: string; [k: string]: unknown }> => {
+    const text = await res.text();
+    if (!text) throw new Error("The server returned an empty response. Please try again in a moment.");
+    try {
+      return JSON.parse(text);
+    } catch {
+      throw new Error("The server returned an unexpected response. Please try again in a moment.");
+    }
+  };
+
   const requestCode = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
@@ -53,10 +66,10 @@ export default function AccountPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
       });
-      const data = await res.json();
+      const data = await parseJson(res);
       if (!res.ok) throw new Error(data.error ?? "Something went wrong.");
       setStep("code");
-      if (data.devCode) setDevCode(data.devCode);
+      if (data.devCode) setDevCode(data.devCode as string);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
     } finally {
@@ -74,7 +87,7 @@ export default function AccountPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, code }),
       });
-      const data = await res.json();
+      const data = await parseJson(res);
       if (!res.ok) throw new Error(data.error ?? "Something went wrong.");
       await afterSignIn();
     } catch (err) {

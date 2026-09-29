@@ -11,6 +11,18 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const recent = new Map<string, number[]>();
 
 export async function POST(req: NextRequest) {
+  try {
+    return await handleRequest(req);
+  } catch (err) {
+    console.error("request-code failed:", err);
+    return NextResponse.json(
+      { error: "Sign-in is temporarily unavailable. Please try again in a moment." },
+      { status: 500 }
+    );
+  }
+}
+
+async function handleRequest(req: NextRequest) {
   let body: { email?: string };
   try {
     body = await req.json();
