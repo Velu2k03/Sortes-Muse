@@ -46,23 +46,39 @@ async function migrateGuestData(): Promise<number> {
   const localCredits = getCredits();
   const history = getHistory();
   if (localCredits > 0) {
-    const res = await fetch("/api/credits/migrate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ localCredits }),
-    });
-    const data = await res.json();
-    setLocalCredits(0);
-    window.dispatchEvent(new Event("sortes:credits-changed"));
-    if (history.length > 0) {
-      await fetch("/api/history", {
+    try {
+      const res = await fetch("/api/credits/migrate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ readings: history }),
-      }).catch(() => {});
+        body: JSON.stringify({ localCredits }),
+      });
+      const data = await res.json();
+      // Only zero the local wallet when the server confirms the merge.
+      // A failed merge keeps local credits so the next refresh can retry.
+      if (!res.ok || typeof data.credits !== "number") {
+        throw new Error("merge failed");
+      }
+      setLocalCredits(0);
+      window.dispatchEvent(new Event("sortes:credits-changed"));
+      if (history.length > 0) {
+        await fetch("/api/history", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ readings: history }),
+        }).catch(() => {});
+      }
+      localStorage.setItem(MIGRATED_KEY, "1");
+      return data.credits;
+    } catch {
+      // Merge failed: keep the guest wallet intact and report the
+      // server balance (or the local one) so nothing is lost.
+      const me = await fetch("/api/auth/me")
+        .then((r) => r.json())
+        .catch(() => ({}));
+      return typeof me.user?.credits === "number"
+        ? me.user.credits
+        : localCredits;
     }
-    localStorage.setItem(MIGRATED_KEY, "1");
-    return data.credits ?? 0;
   }
   if (history.length > 0) {
     await fetch("/api/history", {

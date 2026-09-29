@@ -6,6 +6,7 @@ import { getReading } from "@/lib/storage";
 import type { Reading } from "@/lib/types";
 import { getCard, orientationKeywords, orientationMeaning } from "@/lib/cards";
 import TarotCard from "@/components/TarotCard";
+import CardModal from "@/components/CardModal";
 import ShareReading from "@/components/ShareReading";
 import TypewriterText from "@/components/TypewriterText";
 
@@ -14,6 +15,7 @@ import TypewriterText from "@/components/TypewriterText";
  */
 export default function ReadingDetail({ id }: { id: string }) {
   const [reading, setReading] = useState<Reading | null | undefined>(undefined);
+  const [zoomCard, setZoomCard] = useState<string | null>(null);
 
   useEffect(() => {
     setReading(getReading(id) ?? null);
@@ -66,9 +68,17 @@ export default function ReadingDetail({ id }: { id: string }) {
             revealed
             size="sm"
             label={d.position}
+            onFlip={() => setZoomCard(d.cardId)}
           />
         ))}
       </div>
+      <p className="mt-3 text-center text-xs text-mist">
+        Tap any card to enlarge it.
+      </p>
+
+      {zoomCard && (
+        <CardModal cardId={zoomCard} onClose={() => setZoomCard(null)} />
+      )}
 
       <div className="mx-auto mt-10 max-w-3xl space-y-5">
         {reading.cards.map((d, i) => {

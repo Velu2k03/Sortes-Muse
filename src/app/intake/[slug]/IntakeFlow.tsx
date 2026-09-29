@@ -38,6 +38,7 @@ export default function IntakeFlow({ slug }: { slug: string }) {
   const [question, setQuestion] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [processingLine, setProcessingLine] = useState(0);
+  const [busy, setBusy] = useState(false);
 
   const category = categoryKey ? getCategory(categoryKey) : null;
 
@@ -59,13 +60,17 @@ export default function IntakeFlow({ slug }: { slug: string }) {
 
   const beginProcessing = async () => {
     if (!category) return;
+    // Guard against double-clicks: one tap, one credit.
+    if (busy) return;
     if ((credits ?? 0) < 1) {
       setError("You are out of credits. Please top up to continue.");
       return;
     }
+    setBusy(true);
     const ok = await spend(1);
     if (!ok) {
       setError("You are out of credits. Please top up to continue.");
+      setBusy(false);
       return;
     }
     trackReadingStarted(`${spread.slug}-personalized`);
@@ -139,6 +144,7 @@ export default function IntakeFlow({ slug }: { slug: string }) {
       );
       // Refund the credit since nothing was generated.
       await add(1);
+      setBusy(false);
     }
   };
 
@@ -371,9 +377,10 @@ export default function IntakeFlow({ slug }: { slug: string }) {
               <button
                 type="button"
                 onClick={beginProcessing}
-                className="btn-gold flex-1 rounded-xl px-6 py-3.5 text-lg font-bold"
+                disabled={busy}
+                className="btn-gold flex-1 rounded-xl px-6 py-3.5 text-lg font-bold disabled:cursor-wait disabled:opacity-60"
               >
-                ✦ Continue · begin reading
+                {busy ? "✦ Casting…" : "✦ Continue · begin reading"}
               </button>
             </div>
           </motion.div>

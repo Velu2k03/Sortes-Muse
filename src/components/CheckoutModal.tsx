@@ -69,17 +69,31 @@ export default function CheckoutModal({ open, onClose, reason }: Props) {
   };
 
   const buyReal = async (packId: string) => {
+    const trimmed = email.trim();
+    // Guests must give an email: the webhook delivers credits to that
+    // address, and it becomes their account on sign-in.
+    if (!user && !trimmed) {
+      setError("Please enter your email so your credits reach your account.");
+      return;
+    }
     setProcessing(packId);
     setError(null);
     try {
       const res = await fetch("/api/checkout/lemonsqueezy", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ packId, email: email.trim() || undefined }),
+        body: JSON.stringify({ packId, email: trimmed || undefined }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Checkout failed.");
       trackPurchaseCompleted(packId, 0);
+      // Remember the purchase email so /account can prefill the sign-in
+      // form after the payment redirect.
+      if (trimmed) {
+        try {
+          sessionStorage.setItem("sortes-purchase-email", trimmed);
+        } catch {}
+      }
       window.location.href = data.url;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Checkout failed.");

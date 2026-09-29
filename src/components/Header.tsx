@@ -15,8 +15,9 @@ const NAV = [
 ];
 
 export default function Header() {
-  const { credits, user } = useAuth();
+  const { credits, user, loading } = useAuth();
   const [open, setOpen] = useState(false);
+  const initial = user?.email ? user.email.charAt(0).toUpperCase() : "?";
 
   return (
     <header className="sticky top-0 z-40 border-b border-gold/15 bg-ink/85 backdrop-blur-md">
@@ -62,6 +63,24 @@ export default function Header() {
           >
             Top up
           </Link>
+          {!loading &&
+            (user ? (
+              <Link
+                href="/account"
+                title={user.email}
+                aria-label={`Account: ${user.email}`}
+                className="hidden h-8 w-8 items-center justify-center rounded-full border border-gold/50 bg-gold/15 font-display text-sm font-bold text-goldbright transition hover:border-goldbright sm:flex"
+              >
+                {initial}
+              </Link>
+            ) : (
+              <Link
+                href="/account"
+                className="hidden rounded-full px-4 py-1.5 text-sm font-semibold text-cream/80 transition hover:text-goldbright sm:inline-block"
+              >
+                Sign in
+              </Link>
+            ))}
           <button
             type="button"
             className="rounded-lg p-2 text-cream/80 md:hidden"
@@ -97,6 +116,13 @@ export default function Header() {
             className="btn-gold mt-2 block rounded-xl px-3 py-2.5 text-center text-base font-bold"
           >
             Top up credits
+          </Link>
+          <Link
+            href="/account"
+            onClick={() => setOpen(false)}
+            className="mt-2 block rounded-xl border border-gold/30 px-3 py-2.5 text-center text-base font-semibold text-cream/90 hover:bg-gold/10"
+          >
+            {user ? `Account · ${user.email}` : "Sign in"}
           </Link>
         </nav>
       )}

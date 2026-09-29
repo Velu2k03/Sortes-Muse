@@ -11,6 +11,7 @@ import {
 import { getCard, orientationKeywords, orientationMeaning } from "@/lib/cards";
 import { drawSingle } from "@/lib/tarot";
 import TarotCard from "@/components/TarotCard";
+import CardModal from "@/components/CardModal";
 import { trackDailyCardDrawn } from "@/components/Analytics";
 
 type Phase = "idle" | "shuffling" | "revealed";
@@ -23,6 +24,7 @@ export default function DailyPage() {
   const [phase, setPhase] = useState<Phase>("idle");
   const [daily, setDaily] = useState<DailyCardState | null>(null);
   const [streak, setStreak] = useState(0);
+  const [zoomOpen, setZoomOpen] = useState(false);
 
   useEffect(() => {
     const existing = getDailyCard();
@@ -125,7 +127,12 @@ export default function DailyPage() {
                 revealed
                 size="lg"
                 label={daily.reversed ? "Reversed" : "Upright"}
+                onFlip={() => setZoomOpen(true)}
               />
+              <p className="mt-3 text-xs text-mist">Tap the card to enlarge it.</p>
+              {zoomOpen && (
+                <CardModal cardId={daily.cardId} onClose={() => setZoomOpen(false)} />
+              )}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}

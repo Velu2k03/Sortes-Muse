@@ -18,6 +18,8 @@ import {
 } from "@/lib/storage";
 import { useAuth } from "@/components/AuthProvider";
 import TarotCard from "@/components/TarotCard";
+import CardModal from "@/components/CardModal";
+import Image from "next/image";
 import CheckoutModal from "@/components/CheckoutModal";
 import {
   trackReadingStarted,
@@ -46,7 +48,16 @@ export default function ReadingFlow({ slug, intake = null }: Props) {
   const [readingId, setReadingId] = useState<string | null>(null);
   const [burst, setBurst] = useState<number | null>(null);
   const savedRef = useRef(false);
+  const busyRef = useRef(false);
+  const revealTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { credits, spend, persistReading } = useAuth();
+
+  // Clear any pending reveal timer on unmount.
+  useEffect(() => {
+    return () => {
+      if (revealTimer.current) clearTimeout(revealTimer.current);
+    };
+  }, []);
 
   useEffect(() => {
     setUsedFree(freeReadingUsed());
@@ -56,29 +67,36 @@ export default function ReadingFlow({ slug, intake = null }: Props) {
   const needsCredit = !isFreeAvailable;
 
   const begin = useCallback(async () => {
-    if (needsCredit) {
-      if ((credits ?? 0) < 1) {
-        setCheckoutOpen(true);
-        return;
+    // Guard against double-clicks: one tap, one credit.
+    if (busyRef.current) return;
+    busyRef.current = true;
+    try {
+      if (needsCredit) {
+        if ((credits ?? 0) < 1) {
+          setCheckoutOpen(true);
+          return;
+        }
+        const ok = await spend(1);
+        if (!ok) {
+          setCheckoutOpen(true);
+          return;
+        }
+      } else {
+        markFreeReadingUsed();
+        setUsedFree(true);
       }
-      const ok = await spend(1);
-      if (!ok) {
-        setCheckoutOpen(true);
-        return;
-      }
-    } else {
-      markFreeReadingUsed();
-      setUsedFree(true);
+      trackReadingStarted(spread.slug);
+      setPhase("shuffling");
+      setTimeout(() => {
+        const cards = drawCards(spread);
+        setDrawn(cards);
+        setRevealed(cards.map(() => false));
+        savedRef.current = false;
+        setPhase("dealt");
+      }, 1800);
+    } finally {
+      busyRef.current = false;
     }
-    trackReadingStarted(spread.slug);
-    setPhase("shuffling");
-    setTimeout(() => {
-      const cards = drawCards(spread);
-      setDrawn(cards);
-      setRevealed(cards.map(() => false));
-      savedRef.current = false;
-      setPhase("dealt");
-    }, 1800);
   }, [needsCredit, spread, credits, spend]);
 
   const flip = (i: number) => {
@@ -124,7 +142,9 @@ export default function ReadingFlow({ slug, intake = null }: Props) {
       });
       void persistReading(reading);
       setReadingId(reading.id);
-      setPhase("revealed");
+      // Let the final flip + golden burst play out before swapping the layout,
+      // so the last card is actually seen instead of vanishing instantly.
+      revealTimer.current = setTimeout(() => setPhase("revealed"), 1500);
       trackReadingCompleted(spread.slug, !isFreeAvailable);
     }
   }, [phase, allRevealed, drawn, spread, intake, isFreeAvailable, persistReading]);
@@ -485,6 +505,7 @@ function RevealedScreen({
   readingId: string | null;
   wasFree: boolean;
 }) {
+  const [zoomCard, setZoomCard] = useState<string | null>(null);
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
       <div className="text-center">
@@ -512,8 +533,29 @@ function RevealedScreen({
               transition={{ duration: 0.5 }}
               className="rounded-3xl border border-gold/20 bg-panel/60 p-6 sm:p-7"
             >
-              <div className="flex items-start justify-between gap-4">
-                <div>
+              <div className="flex items-start gap-5">
+                <button
+                  type="button"
+                  onClick={() => setZoomCard(d.cardId)}
+                  aria-label={`Enlarge ${card.name}`}
+                  title="Tap to enlarge"
+                  className="relative h-40 w-24 shrink-0 cursor-zoom-in overflow-hidden rounded-xl border border-gold/40 transition hover:border-goldbright"
+                >
+                  <Image
+                    src={card.image}
+                    alt=""
+                    fill
+                    sizes="96px"
+                    className="object-cover"
+                    style={
+                      d.reversed ? { transform: "rotate(180deg)" } : undefined
+                    }
+                  />
+                  <span className="absolute bottom-1 right-1 rounded-full bg-ink/70 px-1.5 py-0.5 text-[10px] text-goldbright">
+                    ⤢
+                  </span>
+                </button>
+                <div className="min-w-0">
                   <p className="text-xs uppercase tracking-[0.25em] text-gold">
                     {i + 1} · {d.position}
                   </p>
@@ -594,6 +636,10 @@ function RevealedScreen({
         diagnosis; please consult a licensed professional for medical
         guidance.
       </p>
+
+      {zoomCard && (
+        <CardModal cardId={zoomCard} onClose={() => setZoomCard(null)} />
+      )}
     </motion.div>
   );
 }

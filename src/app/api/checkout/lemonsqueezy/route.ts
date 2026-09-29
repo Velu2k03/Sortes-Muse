@@ -23,12 +23,18 @@ export async function POST(req: NextRequest) {
 
   // Prefer the signed-in user's email; guests may type theirs (email-only checkout).
   let email = (body.email ?? "").trim();
+  const session = await getSession();
+  if (!email && session) {
+    const user = await getUserById(session.userId);
+    email = user?.email ?? "";
+  }
+  // Guests must supply an email: the webhook delivers credits to that
+  // address and it becomes their account on sign-in.
   if (!email) {
-    const session = await getSession();
-    if (session) {
-      const user = await getUserById(session.userId);
-      email = user?.email ?? "";
-    }
+    return NextResponse.json(
+      { error: "An email is required so your credits reach your account." },
+      { status: 400 }
+    );
   }
 
   try {
