@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { getSpread, drawCards } from "@/lib/tarot";
@@ -241,6 +242,7 @@ function GateScreen({
   onBegin: () => void;
   onTopUp: () => void;
 }) {
+  const router = useRouter();
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -291,13 +293,14 @@ function GateScreen({
           <>
             <button
               type="button"
-              onClick={onBegin}
+              onClick={() => router.push(`/intake/${spread.slug}`)}
               className="btn-gold w-full rounded-2xl px-8 py-4 text-lg font-bold sm:w-auto"
             >
-              ✦ Shuffle and begin · 1 credit
+              ✦ Personalize and begin · 1 credit
             </button>
             <p className="mt-3 text-sm text-mist">
-              You have {credits} {credits === 1 ? "credit" : "credits"}.
+              You have {credits} {credits === 1 ? "credit" : "credits"}. Tell
+              your story, and the reading is woven around it.
             </p>
           </>
         ) : (
