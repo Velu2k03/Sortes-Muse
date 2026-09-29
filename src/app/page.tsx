@@ -183,7 +183,7 @@ export default function Home() {
                   {s.description}
                 </p>
                 <p className="mt-4 font-display text-2xl text-goldbright">
-                  ${s.price.toFixed(2)}
+                  {s.slug === "quick-insight" ? "Free" : "1 credit"}
                 </p>
                 <Link
                   href={`/spreads/${s.slug}`}

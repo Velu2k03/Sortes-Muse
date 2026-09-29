@@ -305,7 +305,7 @@ function GateScreen({
               onClick={onTopUp}
               className="btn-gold w-full rounded-2xl px-8 py-4 text-lg font-bold sm:w-auto"
             >
-              ✦ Top up to unlock · ${spread.price.toFixed(2)} value
+              ✦ Get credits · 1 credit per reading
             </button>
             <p className="mt-3 text-sm text-mist">
               You are out of credits. Packs start at $3.99 for 5 readings.

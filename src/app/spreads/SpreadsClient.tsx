@@ -7,15 +7,25 @@ import { motion } from "framer-motion";
 import { SPREADS, CARD_BACK, getSpread } from "@/lib/tarot";
 import { getCard } from "@/lib/cards";
 import CheckoutModal from "@/components/CheckoutModal";
+import { useAuth } from "@/components/AuthProvider";
 import { freeReadingUsed } from "@/lib/storage";
 
 /**
- * Spread selection. Locked spreads show blurred card previews with an
- * honest "Unlock this reading" button (no fake urgency, no dark patterns).
+ * Spread selection.
+ * There is exactly ONE payment in the whole app: buying credit packs.
+ * 1 credit = 1 full reading of any spread. Spreads show a blurred "locked"
+ * preview only while the seeker cannot start a reading right now (no free
+ * reading left and 0 credits); the moment they have a credit, the spread
+ * opens with "Begin reading" and the gate offers the personalized intake.
  */
 export default function SpreadsPage() {
   const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const { credits } = useAuth();
   const usedFree = typeof window !== "undefined" && freeReadingUsed();
+  const balance = credits ?? 0;
+
+  const canBegin = (slug: string) =>
+    slug === "quick-insight" ? !usedFree || balance >= 1 : balance >= 1;
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
@@ -32,7 +42,9 @@ export default function SpreadsPage() {
       </div>
 
       <div className="mt-10 grid gap-6 md:grid-cols-3">
-        {SPREADS.map((s, i) => (
+        {SPREADS.map((s, i) => {
+          const locked = !canBegin(s.slug);
+          return (
           <motion.article
             key={s.slug}
             initial={{ opacity: 0, y: 24 }}
@@ -40,19 +52,19 @@ export default function SpreadsPage() {
             transition={{ delay: i * 0.1, duration: 0.55 }}
             className="relative flex flex-col overflow-hidden rounded-3xl border border-gold/25 bg-panel/70"
           >
-            {/* Card preview: blurred for locked spreads */}
+            {/* Card preview: blurred while the spread cannot be started yet */}
             <div className="relative flex h-52 items-center justify-center gap-2 overflow-hidden bg-navydeep/60 p-6">
               {s.positions.slice(0, 5).map((pos, j) => (
                 <div
                   key={pos.key}
                   className={`relative h-36 w-24 shrink-0 overflow-hidden rounded-lg border border-gold/30 ${
-                    s.locked ? "blur-[6px]" : ""
+                    locked ? "blur-[6px]" : ""
                   }`}
                   style={{ transform: `rotate(${(j - 2) * 7}deg)` }}
                   aria-hidden="true"
                 >
                   <Image
-                    src={s.locked ? CARD_BACK : getCard(["major-17", "major-19", "major-01", "major-00", "major-21"][j % 5]).image}
+                    src={locked ? CARD_BACK : getCard(["major-17", "major-19", "major-01", "major-00", "major-21"][j % 5]).image}
                     alt=""
                     fill
                     sizes="96px"
@@ -60,7 +72,7 @@ export default function SpreadsPage() {
                   />
                 </div>
               ))}
-              {s.locked && (
+              {locked && (
                 <div className="absolute inset-0 flex items-center justify-center bg-ink/45">
                   <span className="rounded-full border border-gold/50 bg-ink/80 px-4 py-2 text-sm font-semibold text-goldbright">
                     ✦ Locked preview
@@ -73,11 +85,11 @@ export default function SpreadsPage() {
               <div className="flex items-baseline justify-between">
                 <h2 className="font-display text-3xl text-cream">{s.name}</h2>
                 <p className="font-display text-xl text-goldbright">
-                  ${s.price.toFixed(2)}
+                  {s.slug === "quick-insight" && !usedFree ? "Free" : "1 credit"}
                 </p>
               </div>
               <p className="mt-1 text-xs uppercase tracking-[0.2em] text-mist">
-                {s.cards} {s.cards === 1 ? "card" : "cards"} · 1 credit
+                {s.cards} {s.cards === 1 ? "card" : "cards"} · personalized AI interpretation
               </p>
               <p className="mt-3 flex-1 text-sm leading-relaxed text-cream/75">
                 {s.description}
@@ -91,34 +103,36 @@ export default function SpreadsPage() {
                   </li>
                 ))}
               </ul>
-              {s.locked ? (
+              {locked ? (
                 <button
                   type="button"
                   onClick={() => setCheckoutOpen(true)}
                   className="btn-gold mt-5 rounded-xl px-4 py-3 text-center font-bold"
                 >
-                  Unlock this reading
+                  Get credits to begin
                 </button>
               ) : (
                 <Link
                   href={`/spreads/${s.slug}`}
                   className="btn-gold mt-5 rounded-xl px-4 py-3 text-center font-bold"
                 >
-                  {usedFree ? "Begin reading" : "Begin free reading"}
+                  {s.slug === "quick-insight" && !usedFree ? "Begin free reading" : "Begin reading"}
                 </Link>
               )}
             </div>
           </motion.article>
-        ))}
+          );
+        })}
       </div>
 
       <div className="mx-auto mt-12 max-w-2xl rounded-2xl border border-gold/20 bg-panel/50 p-6 text-center">
         <p className="font-display text-2xl text-goldbright">How credits work</p>
         <p className="mt-2 text-sm leading-relaxed text-cream/75">
-          One credit unlocks one full reading of any spread, with a
-          personalized AI interpretation. Your daily card is always free and
-          never uses a credit. Credits never expire, and every price is shown
-          upfront. No subscriptions, no meters, no surprises.
+          You only ever pay for credit packs, never per reading and never
+          twice. One credit unlocks one full reading of any spread, with a
+          personalized AI interpretation woven around your story. Your daily
+          card is always free and never uses a credit. Credits never expire.
+          No subscriptions, no meters, no surprises.
         </p>
         <button
           type="button"
