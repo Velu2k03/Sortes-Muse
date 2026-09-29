@@ -17,6 +17,7 @@ export interface DbUser {
   credits: number;
   created_at: string;
   winback_sent_at?: string | null;
+  password_hash?: string | null;
 }
 
 export interface DbTransaction {
@@ -92,6 +93,8 @@ export async function ensureSchema(): Promise<void> {
     )`;
   // Added later: win-back tracking. IF NOT EXISTS keeps old DBs working.
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS winback_sent_at TIMESTAMPTZ`;
+  // Added later: password login. IF NOT EXISTS keeps old DBs working.
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash TEXT`;
   schemaReady = true;
 }
 
@@ -120,7 +123,7 @@ export async function getUserById(id: string): Promise<DbUser | null> {
   return db.users.find((u) => u.id === id) ?? null;
 }
 
-export async function createUser(email: string): Promise<DbUser> {
+export async function createUser(email: string, passwordHash?: string): Promise<DbUser> {
   await ensureSchema();
   const user: DbUser = {
     id: uid(),
@@ -129,15 +132,42 @@ export async function createUser(email: string): Promise<DbUser> {
     created_at: new Date().toISOString(),
   };
   if (usePostgres) {
-    await sql`INSERT INTO users (id, email, credits, created_at) VALUES (${user.id}, ${user.email}, 0, NOW()) ON CONFLICT (email) DO NOTHING`;
-    return (await getUserByEmail(email)) as DbUser;
+    await sql`INSERT INTO users (id, email, credits, password_hash, created_at) VALUES (${user.id}, ${user.email}, 0, ${passwordHash ?? null}, NOW()) ON CONFLICT (email) DO NOTHING`;
+    const existing = (await getUserByEmail(email)) as DbUser;
+    // Account created earlier via magic code: attach the password now.
+    if (passwordHash && !existing.password_hash) {
+      await setUserPassword(existing.id, passwordHash);
+      return { ...existing, password_hash: passwordHash };
+    }
+    return existing;
   }
   const db = await readLocal();
   const existing = db.users.find((u) => u.email === email);
-  if (existing) return existing;
+  if (existing) {
+    if (passwordHash && !existing.password_hash) {
+      existing.password_hash = passwordHash;
+      await writeLocal(db);
+    }
+    return existing;
+  }
+  if (passwordHash) user.password_hash = passwordHash;
   db.users.push(user);
   await writeLocal(db);
   return user;
+}
+
+export async function setUserPassword(userId: string, passwordHash: string): Promise<void> {
+  await ensureSchema();
+  if (usePostgres) {
+    await sql`UPDATE users SET password_hash = ${passwordHash} WHERE id = ${userId}`;
+    return;
+  }
+  const db = await readLocal();
+  const u = db.users.find((x) => x.id === userId);
+  if (u) {
+    u.password_hash = passwordHash;
+    await writeLocal(db);
+  }
 }
 
 export async function addUserCredits(userId: string, n: number): Promise<number> {

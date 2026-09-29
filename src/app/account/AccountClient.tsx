@@ -22,6 +22,12 @@ export default function AccountPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [devCode, setDevCode] = useState<string | null>(null);
+  const [authTab, setAuthTab] = useState<"password" | "code">("password");
+  const [pwMode, setPwMode] = useState<"signin" | "signup">("signin");
+  const [password, setPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [pwNotice, setPwNotice] = useState<string | null>(null);
   const [transactions, setTransactions] = useState<ServerTx[] | null>(null);
 
   useEffect(() => {
@@ -52,6 +58,53 @@ export default function AccountPage() {
       return JSON.parse(text);
     } catch {
       throw new Error("The server returned an unexpected response. Please try again in a moment.");
+    }
+  };
+
+  const submitPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch(
+        pwMode === "signin" ? "/api/auth/login" : "/api/auth/signup",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+        }
+      );
+      const data = await parseJson(res);
+      if (!res.ok) throw new Error(data.error ?? "Something went wrong.");
+      setPassword("");
+      await afterSignIn();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const savePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    setPwNotice(null);
+    setError(null);
+    try {
+      const res = await fetch("/api/auth/set-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: newPassword, currentPassword }),
+      });
+      const data = await parseJson(res);
+      if (!res.ok) throw new Error(data.error ?? "Something went wrong.");
+      setNewPassword("");
+      setCurrentPassword("");
+      setPwNotice("Password saved. You can now sign in with email + password.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong.");
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -120,12 +173,103 @@ export default function AccountPage() {
             Sign in to sync everything
           </p>
           <p className="mt-2 text-sm leading-relaxed text-cream/75">
-            One email, one code, no password. Your guest credits and journal
-            move into your account automatically, then follow you across
-            devices.
+            Your guest credits and journal move into your account
+            automatically, then follow you across devices. You stay signed
+            in for 30 days.
           </p>
 
-          {step === "email" ? (
+          <div className="mt-6 grid grid-cols-2 gap-1 rounded-xl border border-gold/25 bg-panel/70 p-1">
+            {(["password", "code"] as const).map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => {
+                  setAuthTab(t);
+                  setError(null);
+                  if (t === "code") setStep("email");
+                }}
+                className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
+                  authTab === t
+                    ? "bg-gold/20 text-goldbright"
+                    : "text-mist hover:text-cream"
+                }`}
+              >
+                {t === "password" ? "Password" : "Email code"}
+              </button>
+            ))}
+          </div>
+
+          {authTab === "password" ? (
+            <form onSubmit={submitPassword} className="mt-6 space-y-4">
+              <div className="flex gap-4 text-sm">
+                {(["signin", "signup"] as const).map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => {
+                      setPwMode(m);
+                      setError(null);
+                    }}
+                    className={`border-b-2 pb-1 font-semibold transition ${
+                      pwMode === m
+                        ? "border-gold text-goldbright"
+                        : "border-transparent text-mist hover:text-cream"
+                    }`}
+                  >
+                    {m === "signin" ? "Sign in" : "Create account"}
+                  </button>
+                ))}
+              </div>
+              <div>
+                <label htmlFor="acct-email" className="mb-1.5 block text-sm font-medium text-cream">
+                  Email address
+                </label>
+                <input
+                  id="acct-email"
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  autoComplete="email"
+                  className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist/50 focus:border-gold/60 focus:outline-none"
+                />
+              </div>
+              <div>
+                <label htmlFor="acct-password" className="mb-1.5 block text-sm font-medium text-cream">
+                  Password
+                </label>
+                <input
+                  id="acct-password"
+                  type="password"
+                  required
+                  minLength={8}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder={pwMode === "signup" ? "At least 8 characters" : "Your password"}
+                  autoComplete={pwMode === "signup" ? "new-password" : "current-password"}
+                  className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist/50 focus:border-gold/60 focus:outline-none"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={busy}
+                className="btn-gold w-full rounded-xl px-6 py-3.5 font-bold disabled:opacity-50"
+              >
+                {busy
+                  ? "Please wait…"
+                  : pwMode === "signin"
+                    ? "Sign in"
+                    : "Create account"}
+              </button>
+              {pwMode === "signin" && (
+                <p className="text-center text-xs text-mist">
+                  Bought credits with a different email? They merge in when
+                  you sign in with that address.
+                </p>
+              )}
+            </form>
+          ) : step === "email" ? (
             <form onSubmit={requestCode} className="mt-6 space-y-4">
               <div>
                 <label htmlFor="acct-email" className="mb-1.5 block text-sm font-medium text-cream">
@@ -264,6 +408,57 @@ export default function AccountPage() {
                 ))}
               </ul>
             )}
+          </div>
+
+          <div className="mt-6 rounded-3xl border border-gold/20 bg-panel/60 p-6 sm:p-8">
+            <p className="font-display text-xl text-cream">Password</p>
+            <p className="mt-1 text-sm text-cream/70">
+              Set a password so you can sign in with email + password instead
+              of a code each time.
+            </p>
+            <form onSubmit={savePassword} className="mt-4 space-y-4">
+              <div>
+                <label htmlFor="acct-current-password" className="mb-1.5 block text-sm font-medium text-cream">
+                  Current password <span className="font-normal text-mist">(only if you already have one)</span>
+                </label>
+                <input
+                  id="acct-current-password"
+                  type="password"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  autoComplete="current-password"
+                  className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist/50 focus:border-gold/60 focus:outline-none"
+                />
+              </div>
+              <div>
+                <label htmlFor="acct-new-password" className="mb-1.5 block text-sm font-medium text-cream">
+                  New password
+                </label>
+                <input
+                  id="acct-new-password"
+                  type="password"
+                  required
+                  minLength={8}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="At least 8 characters"
+                  autoComplete="new-password"
+                  className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist/50 focus:border-gold/60 focus:outline-none"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={busy || newPassword.length < 8}
+                className="btn-gold rounded-xl px-6 py-3 font-bold disabled:opacity-50"
+              >
+                {busy ? "Saving…" : "Save password"}
+              </button>
+              {pwNotice && (
+                <p className="rounded-xl border border-gold/40 bg-gold/10 p-3 text-sm text-goldbright">
+                  {pwNotice}
+                </p>
+              )}
+            </form>
           </div>
         </>
       )}

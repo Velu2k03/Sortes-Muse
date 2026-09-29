@@ -1,5 +1,6 @@
 import { SignJWT, jwtVerify } from "jose";
-import { createHash, randomInt, timingSafeEqual } from "crypto";
+import { createHash, randomInt, timingSafeEqual, scrypt, randomBytes } from "crypto";
+import { promisify } from "util";
 import { cookies } from "next/headers";
 
 const COOKIE_NAME = "sortes_session";
@@ -55,3 +56,25 @@ export async function getSession(): Promise<{ userId: string; email: string } | 
 
 export const SESSION_COOKIE = COOKIE_NAME;
 export const SESSION_MAX_AGE = SESSION_DAYS * 24 * 60 * 60;
+
+const scryptAsync = promisify(scrypt);
+
+/** scrypt password hash, stored as `saltHex:derivedHex`. */
+export async function hashPassword(password: string): Promise<string> {
+  const salt = randomBytes(16).toString("hex");
+  const derived = (await scryptAsync(password, salt, 64)) as Buffer;
+  return `${salt}:${derived.toString("hex")}`;
+}
+
+export async function verifyPassword(
+  password: string,
+  stored: string
+): Promise<boolean> {
+  const [salt, hash] = stored.split(":");
+  if (!salt || !hash) return false;
+  const derived = (await scryptAsync(password, salt, 64)) as Buffer;
+  const expected = Buffer.from(hash, "hex");
+  return (
+    derived.length === expected.length && timingSafeEqual(derived, expected)
+  );
+}
