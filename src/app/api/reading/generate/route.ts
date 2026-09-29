@@ -150,8 +150,15 @@ export async function POST(req: NextRequest) {
 
   const firstName = (intake.firstName || "friend").slice(0, 40);
   const apiKey = process.env.OPENROUTER_API_KEY;
-  const model =
-    process.env.OPENROUTER_MODEL || "meta-llama/llama-3.3-70b-instruct:free";
+  // Comma-separated fallback chain: fastest free models first, reliable
+  // workhorse last. Override with OPENROUTER_MODEL in env.
+  const modelList = (
+    process.env.OPENROUTER_MODEL ||
+    "google/gemini-2.5-flash-preview:free,xiaomi/mimo-v2-flash:free,meta-llama/llama-3.3-70b-instruct:free"
+  )
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
 
   // No key configured (local dev): fall back instantly.
   if (!apiKey) {
@@ -165,53 +172,59 @@ export async function POST(req: NextRequest) {
   const taglish = detectTaglish(`${intake.story} ${intake.question}`);
   const isHealth = intake.category === "health";
 
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  // Try each model in order; rate-limited or retired free models fail fast
+  // and we move to the next one instead of giving up.
+  for (const model of modelList) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
-  try {
-    const res = await fetch(OPENROUTER_URL, {
-      method: "POST",
-      signal: controller.signal,
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-        "HTTP-Referer": "https://tarot.resonantatlas.com",
-        "X-Title": "Sortes by Resonant Atlas",
-      },
-      body: JSON.stringify({
-        model,
-        messages: [
-          {
-            role: "system",
-            content: buildSystemPrompt(firstName, taglish, isHealth),
-          },
-          { role: "user", content: buildUserPrompt(cards, intake) },
-        ],
-        temperature: 0.8,
-        max_tokens: 1200,
-      }),
-    });
+    try {
+      const res = await fetch(OPENROUTER_URL, {
+        method: "POST",
+        signal: controller.signal,
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+          "HTTP-Referer": "https://tarot.resonantatlas.com",
+          "X-Title": "Sortes by Resonant Atlas",
+        },
+        body: JSON.stringify({
+          model,
+          messages: [
+            {
+              role: "system",
+              content: buildSystemPrompt(firstName, taglish, isHealth),
+            },
+            { role: "user", content: buildUserPrompt(cards, intake) },
+          ],
+          temperature: 0.8,
+          max_tokens: 1200,
+        }),
+      });
 
-    if (!res.ok) throw new Error(`OpenRouter ${res.status}`);
+      if (!res.ok) throw new Error(`OpenRouter ${res.status}`);
 
-    const data = await res.json();
-    const text: string | undefined =
-      data?.choices?.[0]?.message?.content?.trim();
-    if (!text) throw new Error("Empty model response");
+      const data = await res.json();
+      const text: string | undefined =
+        data?.choices?.[0]?.message?.content?.trim();
+      if (!text) throw new Error("Empty model response");
 
-    return NextResponse.json({
-      interpretation: text,
-      model: data?.model ?? model,
-      fallback: false,
-    });
-  } catch {
-    // Slow, rate-limited, or erroring provider: fall back instantly.
-    return NextResponse.json({
-      interpretation: staticFallback(firstName, cards),
-      model: "static-fallback",
-      fallback: true,
-    });
-  } finally {
-    clearTimeout(timer);
+      clearTimeout(timer);
+      return NextResponse.json({
+        interpretation: text,
+        model: data?.model ?? model,
+        fallback: false,
+      });
+    } catch {
+      clearTimeout(timer);
+      // Fall through to the next model in the chain.
+    }
   }
+
+  // Every model failed (slow, rate-limited, or erroring): fall back.
+  return NextResponse.json({
+    interpretation: staticFallback(firstName, cards),
+    model: "static-fallback",
+    fallback: true,
+  });
 }
