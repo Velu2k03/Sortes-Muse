@@ -1,26 +1,110 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  --color-ink: #0a0e1a;
+  --color-navy: #141b2e;
+  --color-navydeep: #0f1424;
+  --color-panel: #1a1f2e;
+  --color-gold: #d4af37;
+  --color-goldbright: #f4d03f;
+  --color-cream: #ede6d6;
+  --color-mist: #9ca3af;
+  --color-violet: #8b5cf6;
+
+  --font-display: "Cormorant Garamond", "Times New Roman", Georgia, serif;
+  --font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--color-ink);
+  color: var(--color-cream);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Elegant thin scrollbar for the dark theme */
+::-webkit-scrollbar {
+  width: 10px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-ink);
+}
+::-webkit-scrollbar-thumb {
+  background: #2a3350;
+  border-radius: 8px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3a4566;
+}
+
+::selection {
+  background: rgba(212, 175, 55, 0.35);
+  color: #fff8e7;
+}
+
+/* Card flip helpers */
+.perspective-1000 {
+  perspective: 1000px;
+}
+.preserve-3d {
+  transform-style: preserve-3d;
+}
+
+/* Soft gold glow for primary CTAs */
+.btn-gold {
+  background: linear-gradient(135deg, #e8c55a 0%, #d4af37 50%, #b8962e 100%);
+  color: #14100a;
+  box-shadow:
+    0 0 24px rgba(212, 175, 55, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  transition: transform 0.15s ease, box-shadow 0.2s ease;
+}
+.btn-gold:hover {
+  box-shadow:
+    0 0 36px rgba(212, 175, 55, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  transform: translateY(-1px);
+}
+.btn-gold:active {
+  transform: translateY(0);
+}
+
+/* Ghost button */
+.btn-ghost {
+  border: 1px solid rgba(212, 175, 55, 0.4);
+  color: var(--color-goldbright);
+  transition: background 0.2s ease, transform 0.15s ease;
+}
+.btn-ghost:hover {
+  background: rgba(212, 175, 55, 0.12);
+  transform: translateY(-1px);
+}
+
+/* Ornamental divider */
+.rule-gold {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(212, 175, 55, 0.7),
+    transparent
+  );
+  height: 1px;
+}
+
+/* Respect users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  html {
+    scroll-behavior: auto;
+  }
 }
