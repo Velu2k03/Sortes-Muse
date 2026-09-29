@@ -12,13 +12,11 @@ import {
   orientationMeaning,
 } from "@/lib/cards";
 import {
-  getCredits,
-  spendCredit,
   freeReadingUsed,
   markFreeReadingUsed,
-  saveReading,
   makeReading,
 } from "@/lib/storage";
+import { useAuth } from "@/components/AuthProvider";
 import TarotCard from "@/components/TarotCard";
 import CheckoutModal from "@/components/CheckoutModal";
 import {
@@ -45,28 +43,28 @@ export default function ReadingFlow({ slug, intake = null }: Props) {
   const [revealed, setRevealed] = useState<boolean[]>([]);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [usedFree, setUsedFree] = useState(false);
-  const [credits, setCredits] = useState(0);
   const [readingId, setReadingId] = useState<string | null>(null);
   const savedRef = useRef(false);
+  const { credits, spend, persistReading } = useAuth();
 
   useEffect(() => {
     setUsedFree(freeReadingUsed());
-    setCredits(getCredits());
-    const sync = () => setCredits(getCredits());
-    window.addEventListener("sortes:credits-changed", sync);
-    return () => window.removeEventListener("sortes:credits-changed", sync);
   }, []);
 
   const isFreeAvailable = spread.slug === "quick-insight" && !usedFree;
   const needsCredit = !isFreeAvailable;
 
-  const begin = useCallback(() => {
+  const begin = useCallback(async () => {
     if (needsCredit) {
-      if (getCredits() < 1) {
+      if ((credits ?? 0) < 1) {
         setCheckoutOpen(true);
         return;
       }
-      spendCredit();
+      const ok = await spend(1);
+      if (!ok) {
+        setCheckoutOpen(true);
+        return;
+      }
     } else {
       markFreeReadingUsed();
       setUsedFree(true);
@@ -80,7 +78,7 @@ export default function ReadingFlow({ slug, intake = null }: Props) {
       savedRef.current = false;
       setPhase("dealt");
     }, 1800);
-  }, [needsCredit, spread]);
+  }, [needsCredit, spread, credits, spend]);
 
   const flip = (i: number) => {
     if (revealed[i]) return;
@@ -120,12 +118,12 @@ export default function ReadingFlow({ slug, intake = null }: Props) {
         firstName: intake?.firstName,
         free: isFreeAvailable,
       });
-      saveReading(reading);
+      void persistReading(reading);
       setReadingId(reading.id);
       setPhase("revealed");
       trackReadingCompleted(spread.slug, !isFreeAvailable);
     }
-  }, [phase, allRevealed, drawn, spread, intake, isFreeAvailable]);
+  }, [phase, allRevealed, drawn, spread, intake, isFreeAvailable, persistReading]);
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
@@ -135,7 +133,7 @@ export default function ReadingFlow({ slug, intake = null }: Props) {
             key="gate"
             spread={spread}
             isFreeAvailable={isFreeAvailable}
-            credits={credits}
+            credits={credits ?? 0}
             onBegin={begin}
             onTopUp={() => setCheckoutOpen(true)}
           />
@@ -217,10 +215,7 @@ export default function ReadingFlow({ slug, intake = null }: Props) {
 
       <CheckoutModal
         open={checkoutOpen}
-        onClose={() => {
-          setCheckoutOpen(false);
-          setCredits(getCredits());
-        }}
+        onClose={() => setCheckoutOpen(false)}
         reason="This reading uses 1 credit. Top up to continue."
       />
     </div>

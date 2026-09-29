@@ -12,12 +12,10 @@ import {
   type IntakePayload,
 } from "@/lib/intake";
 import {
-  getCredits,
-  spendCredit,
-  saveReading,
   makeReading,
   setCachedInterpretation,
 } from "@/lib/storage";
+import { useAuth } from "@/components/AuthProvider";
 import { trackReadingStarted, trackReadingCompleted } from "@/components/Analytics";
 
 type Step = "category" | "form" | "confirm" | "processing";
@@ -32,6 +30,7 @@ const PROCESSING_LINES = [
 export default function IntakeFlow({ slug }: { slug: string }) {
   const router = useRouter();
   const spread = useMemo(() => getSpread(slug), [slug]);
+  const { credits, spend, add, persistReading } = useAuth();
   const [step, setStep] = useState<Step>("category");
   const [categoryKey, setCategoryKey] = useState<string | null>(null);
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -60,11 +59,15 @@ export default function IntakeFlow({ slug }: { slug: string }) {
 
   const beginProcessing = async () => {
     if (!category) return;
-    if (getCredits() < 1) {
+    if ((credits ?? 0) < 1) {
       setError("You are out of credits. Please top up to continue.");
       return;
     }
-    spendCredit();
+    const ok = await spend(1);
+    if (!ok) {
+      setError("You are out of credits. Please top up to continue.");
+      return;
+    }
     trackReadingStarted(`${spread.slug}-personalized`);
     setStep("processing");
     setError(null);
@@ -123,7 +126,7 @@ export default function IntakeFlow({ slug }: { slug: string }) {
         firstName,
         free: false,
       });
-      saveReading(reading);
+      await persistReading(reading);
       setCachedInterpretation(reading.id, interpretation);
       trackReadingCompleted(`${spread.slug}-personalized`, true);
       clearInterval(lineTimer);
@@ -135,8 +138,7 @@ export default function IntakeFlow({ slug }: { slug: string }) {
         "The reading could not be generated just now. Your credit was not spent. Please try again in a moment."
       );
       // Refund the credit since nothing was generated.
-      const { addCredits } = await import("@/lib/storage");
-      addCredits(1);
+      await add(1);
     }
   };
 

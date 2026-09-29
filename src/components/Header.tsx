@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useEffect, useState } from "react";
-import { getCredits } from "@/lib/storage";
+import { useState } from "react";
+import { useAuth } from "@/components/AuthProvider";
 import { APP_SHORT } from "@/lib/site";
 
 const NAV = [
@@ -15,15 +15,8 @@ const NAV = [
 ];
 
 export default function Header() {
-  const [credits, setCredits] = useState<number | null>(null);
+  const { credits, user } = useAuth();
   const [open, setOpen] = useState(false);
-
-  useEffect(() => {
-    setCredits(getCredits());
-    const sync = () => setCredits(getCredits());
-    window.addEventListener("sortes:credits-changed", sync);
-    return () => window.removeEventListener("sortes:credits-changed", sync);
-  }, []);
 
   return (
     <header className="sticky top-0 z-40 border-b border-gold/15 bg-ink/85 backdrop-blur-md">

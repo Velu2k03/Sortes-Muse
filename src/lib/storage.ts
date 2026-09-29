@@ -8,6 +8,7 @@ const K = {
   aiCache: "sortes-ai-cache",
   installDismissed: "sortes-install-dismissed",
   pushDismissed: "sortes-push-dismissed",
+  purchases: "sortes-purchases",
 } as const;
 
 function read<T>(key: string, fallback: T): T {
@@ -44,11 +45,29 @@ export function addCredits(n: number): number {
   setCredits(next);
   return next;
 }
-export function spendCredit(): boolean {
+export function spendCredit(n = 1): boolean {
   const c = getCredits();
-  if (c < 1) return false;
-  setCredits(c - 1);
+  if (c < n) return false;
+  setCredits(c - n);
   return true;
+}
+
+// ---- Purchase history (guest wallet; server transactions for signed-in users) ----
+export interface Purchase {
+  packId: string;
+  readings: number;
+  price: number;
+  date: string;
+}
+
+export function getPurchaseHistory(): Purchase[] {
+  return read<Purchase[]>(K.purchases, []);
+}
+
+export function recordPurchase(p: Purchase): void {
+  const list = getPurchaseHistory();
+  list.unshift(p);
+  write(K.purchases, list.slice(0, 50));
 }
 
 // ---- First reading free ----

@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { getHistory } from "@/lib/storage";
+import { useAuth } from "@/components/AuthProvider";
 import type { Reading } from "@/lib/types";
 import { getCard } from "@/lib/cards";
 
@@ -13,11 +14,30 @@ import { getCard } from "@/lib/cards";
  * upsell into a new clarifying reading.
  */
 export default function HistoryPage() {
+  const { user } = useAuth();
   const [history, setHistory] = useState<Reading[] | null>(null);
 
   useEffect(() => {
-    setHistory(getHistory());
-  }, []);
+    const local = getHistory();
+    if (!user) {
+      setHistory(local);
+      return;
+    }
+    // Signed in: merge server readings with local ones (dedupe by id).
+    fetch("/api/history")
+      .then((r) => r.json())
+      .then((d) => {
+        const server: Reading[] = Array.isArray(d.readings) ? d.readings : [];
+        const seen = new Set(local.map((r) => r.id));
+        const merged = [...local];
+        for (const r of server) {
+          if (!seen.has(r.id)) merged.push(r);
+        }
+        merged.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+        setHistory(merged);
+      })
+      .catch(() => setHistory(local));
+  }, [user]);
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6">
@@ -27,8 +47,9 @@ export default function HistoryPage() {
           Your readings
         </h1>
         <p className="mx-auto mt-4 max-w-xl text-cream/75">
-          Every reading you complete is kept here on this device. Patterns
-          across weeks reveal what single days cannot.
+          {user
+            ? "Every reading you complete is kept here and synced to your account, so your journal follows you across devices."
+            : "Every reading you complete is kept here on this device. Sign in to sync your journal across devices."}
         </p>
       </div>
 

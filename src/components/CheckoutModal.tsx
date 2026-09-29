@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CREDIT_PACKS, perReadingPrice } from "@/lib/site";
-import { addCredits } from "@/lib/storage";
+import { useAuth } from "@/components/AuthProvider";
 import { trackPurchaseCompleted } from "@/components/Analytics";
 
 interface Props {
@@ -18,14 +18,36 @@ interface Props {
  * Lemon Squeezy checkout + webhook; the UI stays the same.
  */
 export default function CheckoutModal({ open, onClose, reason }: Props) {
+  const { add, refresh, user } = useAuth();
   const [processing, setProcessing] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
 
   const buy = (packId: string, readings: number, price: number) => {
     setProcessing(packId);
     // Demo checkout: instant grant. Real Lemon Squeezy flow arrives in Phase 8.
-    setTimeout(() => {
-      addCredits(readings);
+    setTimeout(async () => {
+      if (user) {
+        // Signed in: record the transaction server-side (labeled demo) and grant.
+        try {
+          await fetch("/api/credits/record", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ packId, readings, price }),
+          });
+          await refresh();
+        } catch {
+          /* non-fatal in demo mode */
+        }
+      } else {
+        const { recordPurchase } = await import("@/lib/storage");
+        recordPurchase({
+          packId,
+          readings,
+          price,
+          date: new Date().toISOString(),
+        });
+        await add(readings);
+      }
       setProcessing(null);
       setDone(packId);
       trackPurchaseCompleted(packId, price);

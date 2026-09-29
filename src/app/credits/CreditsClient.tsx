@@ -2,24 +2,37 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import Link from "next/link";
 import { CREDIT_PACKS, perReadingPrice } from "@/lib/site";
-import { getCredits } from "@/lib/storage";
+import { getPurchaseHistory, type Purchase } from "@/lib/storage";
+import { useAuth } from "@/components/AuthProvider";
 import CheckoutModal from "@/components/CheckoutModal";
 
-/**
- * Credits page: balance, pack pricing, purchase history.
- * Phase 7/8: balance syncs to DB and history lists real transactions.
- */
+interface ServerTx {
+  id: string;
+  pack_type: string;
+  amount: number;
+  readings: number;
+  created_at: string;
+}
+
 export default function CreditsPage() {
-  const [credits, setCredits] = useState(0);
+  const { credits, user } = useAuth();
   const [open, setOpen] = useState(false);
+  const [localHistory, setLocalHistory] = useState<Purchase[]>([]);
+  const [serverTx, setServerTx] = useState<ServerTx[] | null>(null);
 
   useEffect(() => {
-    setCredits(getCredits());
-    const sync = () => setCredits(getCredits());
-    window.addEventListener("sortes:credits-changed", sync);
-    return () => window.removeEventListener("sortes:credits-changed", sync);
-  }, []);
+    if (user) {
+      fetch("/api/credits/transactions")
+        .then((r) => r.json())
+        .then((d) => setServerTx(d.transactions ?? []))
+        .catch(() => setServerTx([]));
+    } else {
+      setLocalHistory(getPurchaseHistory());
+      setServerTx(null);
+    }
+  }, [user]);
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
@@ -29,14 +42,15 @@ export default function CreditsPage() {
           Your balance
         </h1>
         <p className="mt-6 font-display text-7xl text-cream">
-          {credits}
+          {credits ?? 0}
           <span className="ml-2 align-middle font-body text-lg text-mist">
-            {credits === 1 ? "reading" : "readings"}
+            {(credits ?? 0) === 1 ? "reading" : "readings"}
           </span>
         </p>
         <p className="mx-auto mt-4 max-w-md text-sm text-cream/75">
           1 credit = 1 full reading, any spread. Your daily card is always
           free and never uses a credit. Credits never expire.
+          {user && <span className="block mt-1 text-mist">Signed in as {user.email}</span>}
         </p>
       </div>
 
@@ -64,7 +78,7 @@ export default function CreditsPage() {
                   {p.readings} readings
                 </p>
                 <p className="mt-1 text-sm text-mist">
-                  ${perReadingPrice(p)} per reading · ${(p.price / p.readings).toFixed(2)} each
+                  ${perReadingPrice(p)} per reading
                 </p>
               </div>
               <p className="font-display text-4xl text-goldbright">
@@ -86,11 +100,57 @@ export default function CreditsPage() {
 
       <div className="mt-10 rounded-2xl border border-gold/20 bg-panel/50 p-6">
         <p className="font-display text-xl text-goldbright">Purchase history</p>
-        <p className="mt-2 text-sm text-mist">
-          No purchases yet on this device. After checkout, every transaction
-          (pack, amount, date) is listed here and, once you sign in, synced
-          to your account.
-        </p>
+        {user ? (
+          serverTx === null ? (
+            <p className="mt-2 text-sm text-mist">Loading…</p>
+          ) : serverTx.length === 0 ? (
+            <p className="mt-2 text-sm text-mist">
+              No purchases yet. Every transaction (pack, amount, date) will be
+              listed here.
+            </p>
+          ) : (
+            <ul className="mt-4 space-y-2">
+              {serverTx.map((t) => (
+                <li
+                  key={t.id}
+                  className="flex items-center justify-between gap-3 rounded-xl border border-gold/15 bg-panel/40 px-4 py-3 text-sm"
+                >
+                  <span className="text-cream">
+                    {t.readings} readings · {t.pack_type}
+                  </span>
+                  <span className="shrink-0 text-mist">
+                    ${Number(t.amount).toFixed(2)} ·{" "}
+                    {new Date(t.created_at).toLocaleDateString()}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )
+        ) : localHistory.length === 0 ? (
+          <p className="mt-2 text-sm text-mist">
+            No purchases yet on this device.{" "}
+            <Link href="/account" className="text-goldbright underline">
+              Sign in
+            </Link>{" "}
+            to keep your receipts synced to your account.
+          </p>
+        ) : (
+          <ul className="mt-4 space-y-2">
+            {localHistory.map((p, i) => (
+              <li
+                key={`${p.date}-${i}`}
+                className="flex items-center justify-between gap-3 rounded-xl border border-gold/15 bg-panel/40 px-4 py-3 text-sm"
+              >
+                <span className="text-cream">
+                  {p.readings} readings · {p.packId}
+                </span>
+                <span className="shrink-0 text-mist">
+                  ${p.price.toFixed(2)} · {new Date(p.date).toLocaleDateString()}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
       <p className="mx-auto mt-8 max-w-md text-center text-xs leading-relaxed text-mist/80">
