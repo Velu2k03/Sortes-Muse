@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CREDIT_PACKS, perReadingPrice } from "@/lib/site";
 import { useAuth } from "@/components/AuthProvider";
+import CardBurst from "@/components/CardBurst";
 import { trackPurchaseCompleted } from "@/components/Analytics";
 
 interface Props {
@@ -26,6 +27,7 @@ export default function CheckoutModal({ open, onClose, reason }: Props) {
   const [realCheckout, setRealCheckout] = useState<boolean | null>(null);
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   useEffect(() => {
     if (open) {
@@ -36,11 +38,19 @@ export default function CheckoutModal({ open, onClose, reason }: Props) {
         .then((d) => setRealCheckout(Boolean(d.enabled)))
         .catch(() => setRealCheckout(false));
     }
+    return () => {
+      timers.current.forEach(clearTimeout);
+      timers.current = [];
+    };
   }, [open, user]);
+
+  const later = (ms: number, fn: () => void) => {
+    timers.current.push(setTimeout(fn, ms));
+  };
 
   const buyDemo = (packId: string, readings: number, price: number) => {
     setProcessing(packId);
-    setTimeout(async () => {
+    later(900, async () => {
       if (user) {
         // Signed in: record the transaction server-side (labeled demo) and grant.
         try {
@@ -61,11 +71,11 @@ export default function CheckoutModal({ open, onClose, reason }: Props) {
       setProcessing(null);
       setDone(packId);
       trackPurchaseCompleted(packId, price);
-      setTimeout(() => {
+      later(1200, () => {
         setDone(null);
         onClose();
-      }, 1200);
-    }, 900);
+      });
+    });
   };
 
   const buyReal = async (packId: string) => {
@@ -228,6 +238,15 @@ export default function CheckoutModal({ open, onClose, reason }: Props) {
             </button>
           </motion.div>
         </motion.div>
+      )}
+      {/* Golden fountain when a purchase lands */}
+      {done && (
+        <div
+          aria-hidden="true"
+          className="pointer-events-none fixed inset-0 z-[60] flex items-center justify-center"
+        >
+          <CardBurst count={48} distance={260} />
+        </div>
       )}
     </AnimatePresence>
   );

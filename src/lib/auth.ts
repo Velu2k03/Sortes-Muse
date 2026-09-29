@@ -21,6 +21,11 @@ export function newCode(): string {
   return String(randomInt(0, 1000000)).padStart(6, "0");
 }
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+export function isValidEmail(email: string): boolean {
+  return EMAIL_RE.test(email);
+}
+
 export function hashCode(code: string): string {
   return createHash("sha256").update(code).digest("hex");
 }

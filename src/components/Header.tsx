@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
+import CountUp from "@/components/CountUp";
 import { APP_SHORT } from "@/lib/site";
 
 const NAV = [
@@ -55,7 +56,9 @@ export default function Header() {
             title="Your reading credits"
           >
             <span aria-hidden="true">✦</span>
-            <span>{credits ?? 0}</span>
+            <span>
+              <CountUp value={credits ?? 0} />
+            </span>
           </Link>
           <Link
             href="/credits"

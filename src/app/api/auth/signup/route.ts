@@ -3,13 +3,12 @@ import { getUserByEmail, createUser } from "@/lib/db";
 import {
   hashPassword,
   createSession,
+  isValidEmail,
   SESSION_COOKIE,
   SESSION_MAX_AGE,
 } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
-
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function signInResponse(user: { id: string; email: string; credits: number }) {
   return createSession(user.id, user.email).then((token) => {
@@ -38,7 +37,7 @@ export async function POST(req: NextRequest) {
     }
     const email = (body.email ?? "").trim().toLowerCase();
     const password = body.password ?? "";
-    if (!EMAIL_RE.test(email)) {
+    if (!isValidEmail(email)) {
       return NextResponse.json(
         { error: "Please enter a valid email address." },
         { status: 400 }

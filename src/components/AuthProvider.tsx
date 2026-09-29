@@ -42,6 +42,17 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 const MIGRATED_KEY = "sortes-migrated-v1";
 
+/** Parse a JSON response without throwing on empty / non-JSON bodies. */
+async function safeJson(res: Response): Promise<any> {
+  const text = await res.text();
+  if (!text) return {};
+  try {
+    return JSON.parse(text);
+  } catch {
+    return {};
+  }
+}
+
 async function migrateGuestData(): Promise<number> {
   const localCredits = getCredits();
   const history = getHistory();
@@ -52,7 +63,7 @@ async function migrateGuestData(): Promise<number> {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ localCredits }),
       });
-      const data = await res.json();
+      const data = await safeJson(res);
       // Only zero the local wallet when the server confirms the merge.
       // A failed merge keeps local credits so the next refresh can retry.
       if (!res.ok || typeof data.credits !== "number") {
@@ -73,7 +84,7 @@ async function migrateGuestData(): Promise<number> {
       // Merge failed: keep the guest wallet intact and report the
       // server balance (or the local one) so nothing is lost.
       const me = await fetch("/api/auth/me")
-        .then((r) => r.json())
+        .then(safeJson)
         .catch(() => ({}));
       return typeof me.user?.credits === "number"
         ? me.user.credits
@@ -88,7 +99,7 @@ async function migrateGuestData(): Promise<number> {
     }).catch(() => {});
   }
   localStorage.setItem(MIGRATED_KEY, "1");
-  const me = await fetch("/api/auth/me").then((r) => r.json());
+  const me = await safeJson(await fetch("/api/auth/me"));
   return me.user?.credits ?? 0;
 }
 
@@ -100,7 +111,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refresh = useCallback(async () => {
     try {
       const res = await fetch("/api/auth/me");
-      const data = await res.json();
+      const data = await safeJson(res);
       if (data.user) {
         setUser({ id: data.user.id, email: data.user.email });
         if (!localStorage.getItem(MIGRATED_KEY)) {
@@ -154,7 +165,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           body: JSON.stringify({ delta: -n }),
         });
         if (!res.ok) return false;
-        const data = await res.json();
+        const data = await safeJson(res);
+        if (typeof data.credits !== "number") return false;
         setCredits(data.credits);
         return true;
       }
@@ -177,7 +189,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ delta: n }),
         });
-        const data = await res.json();
+        if (!res.ok) return 0;
+        const data = await safeJson(res);
         setCredits(data.credits ?? 0);
         return data.credits ?? 0;
       }

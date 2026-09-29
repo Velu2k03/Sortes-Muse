@@ -50,12 +50,16 @@ export default function ReadingFlow({ slug, intake = null }: Props) {
   const savedRef = useRef(false);
   const busyRef = useRef(false);
   const revealTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const shuffleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const burstTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { credits, spend, persistReading } = useAuth();
 
-  // Clear any pending reveal timer on unmount.
+  // Clear any pending timers on unmount so we never set state on a dead tree.
   useEffect(() => {
     return () => {
       if (revealTimer.current) clearTimeout(revealTimer.current);
+      if (shuffleTimer.current) clearTimeout(shuffleTimer.current);
+      if (burstTimer.current) clearTimeout(burstTimer.current);
     };
   }, []);
 
@@ -87,7 +91,8 @@ export default function ReadingFlow({ slug, intake = null }: Props) {
       }
       trackReadingStarted(spread.slug);
       setPhase("shuffling");
-      setTimeout(() => {
+      if (shuffleTimer.current) clearTimeout(shuffleTimer.current);
+      shuffleTimer.current = setTimeout(() => {
         const cards = drawCards(spread);
         setDrawn(cards);
         setRevealed(cards.map(() => false));
@@ -106,7 +111,11 @@ export default function ReadingFlow({ slug, intake = null }: Props) {
     setRevealed(next);
     // Golden spark burst on the freshly revealed card.
     setBurst(i);
-    setTimeout(() => setBurst((b) => (b === i ? null : b)), 950);
+    if (burstTimer.current) clearTimeout(burstTimer.current);
+    burstTimer.current = setTimeout(
+      () => setBurst((b) => (b === i ? null : b)),
+      950
+    );
     if (typeof navigator !== "undefined" && "vibrate" in navigator) {
       try {
         navigator.vibrate(12);
@@ -144,6 +153,7 @@ export default function ReadingFlow({ slug, intake = null }: Props) {
       setReadingId(reading.id);
       // Let the final flip + golden burst play out before swapping the layout,
       // so the last card is actually seen instead of vanishing instantly.
+      if (revealTimer.current) clearTimeout(revealTimer.current);
       revealTimer.current = setTimeout(() => setPhase("revealed"), 1500);
       trackReadingCompleted(spread.slug, !isFreeAvailable);
     }
@@ -349,6 +359,41 @@ function GateScreen({
 
 /* ---------------- Spread layout ---------------- */
 
+/**
+ * Cards are dealt from an imaginary deck below: they fly up, straighten,
+ * and land in place one after another with a springy settle.
+ */
+function DealCard({
+  index,
+  children,
+  className,
+}: {
+  index: number;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <motion.div
+      initial={{
+        opacity: 0,
+        y: 150,
+        scale: 0.55,
+        rotate: index % 2 === 0 ? -14 : 14,
+      }}
+      animate={{ opacity: 1, y: 0, scale: 1, rotate: 0 }}
+      transition={{
+        type: "spring",
+        stiffness: 110,
+        damping: 15,
+        delay: 0.2 + index * 0.16,
+      }}
+      className={className}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
 function SpreadLayout({
   spread,
   drawn,
@@ -370,11 +415,7 @@ function SpreadLayout({
   if (spread.slug === "quick-insight") {
     return (
       <div className="flex justify-center">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
+        <DealCard index={0}>
           <TarotCard
             cardId={drawn[0].cardId}
             reversed={drawn[0].reversed}
@@ -384,7 +425,7 @@ function SpreadLayout({
             label={drawn[0].position}
             celebrate={burst === 0}
           />
-        </motion.div>
+        </DealCard>
       </div>
     );
   }
@@ -393,12 +434,7 @@ function SpreadLayout({
     return (
       <div className="flex flex-wrap items-start justify-center gap-4 sm:gap-8">
         {drawn.map((d, i) => (
-          <motion.div
-            key={d.positionKey}
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.15, duration: 0.5 }}
-          >
+          <DealCard key={d.positionKey} index={i}>
             <TarotCard
               cardId={d.cardId}
               reversed={d.reversed}
@@ -408,7 +444,7 @@ function SpreadLayout({
               label={d.position}
               celebrate={burst === i}
             />
-          </motion.div>
+          </DealCard>
         ))}
       </div>
     );
@@ -424,16 +460,17 @@ function SpreadLayout({
     { draw, index }: { draw: DrawnCard; index: number },
     label?: string
   ) => (
-    <TarotCard
-      key={draw.positionKey}
-      cardId={draw.cardId}
-      reversed={draw.reversed}
-      revealed={revealed[index]}
-      onFlip={() => onFlip(index)}
-      size="sm"
-      label={label ?? draw.position}
-      celebrate={burst === index}
-    />
+    <DealCard key={draw.positionKey} index={index} className="flex justify-center">
+      <TarotCard
+        cardId={draw.cardId}
+        reversed={draw.reversed}
+        revealed={revealed[index]}
+        onFlip={() => onFlip(index)}
+        size="sm"
+        label={label ?? draw.position}
+        celebrate={burst === index}
+      />
+    </DealCard>
   );
 
   return (
@@ -446,17 +483,19 @@ function SpreadLayout({
           <div className="relative flex justify-center">
             {mini(present)}
             <div className="absolute inset-0 flex items-center justify-center">
-              <div style={{ transform: "rotate(90deg) scale(0.92)" }}>
-                <TarotCard
-                  cardId={challenge.draw.cardId}
-                  reversed={challenge.draw.reversed}
-                  revealed={revealed[challenge.index]}
-                  onFlip={() => onFlip(challenge.index)}
-                  size="sm"
-                  label={challenge.draw.position}
-                  celebrate={burst === challenge.index}
-                />
-              </div>
+              <DealCard index={challenge.index}>
+                <div style={{ transform: "rotate(90deg) scale(0.92)" }}>
+                  <TarotCard
+                    cardId={challenge.draw.cardId}
+                    reversed={challenge.draw.reversed}
+                    revealed={revealed[challenge.index]}
+                    onFlip={() => onFlip(challenge.index)}
+                    size="sm"
+                    label={challenge.draw.position}
+                    celebrate={burst === challenge.index}
+                  />
+                </div>
+              </DealCard>
             </div>
           </div>
           <div>{mini(cross[2])}</div>
@@ -469,13 +508,7 @@ function SpreadLayout({
       {/* Small screens: flowing grid in positional order */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:hidden">
         {drawn.map((d, i) => (
-          <motion.div
-            key={d.positionKey}
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: Math.min(i * 0.08, 0.6), duration: 0.45 }}
-            className="flex justify-center"
-          >
+          <DealCard key={d.positionKey} index={i} className="flex justify-center">
             <TarotCard
               cardId={d.cardId}
               reversed={d.reversed}
@@ -485,7 +518,7 @@ function SpreadLayout({
               label={d.position}
               celebrate={burst === i}
             />
-          </motion.div>
+          </DealCard>
         ))}
       </div>
     </>

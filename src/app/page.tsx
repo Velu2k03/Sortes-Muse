@@ -31,6 +31,21 @@ export default function Home() {
             className="object-cover opacity-70"
           />
           <div className="absolute inset-0 bg-gradient-to-b from-ink/40 via-ink/55 to-ink" />
+          {/* Ambient drifting glows */}
+          <div
+            className="nebula absolute -left-32 top-1/4 h-[28rem] w-[28rem] rounded-full opacity-25 blur-3xl"
+            style={{
+              background:
+                "radial-gradient(circle, rgba(212,175,55,0.5) 0%, transparent 70%)",
+            }}
+          />
+          <div
+            className="nebula-alt absolute -right-32 top-1/3 h-[32rem] w-[32rem] rounded-full opacity-20 blur-3xl"
+            style={{
+              background:
+                "radial-gradient(circle, rgba(139,92,246,0.5) 0%, transparent 70%)",
+            }}
+          />
         </div>
         <div className="relative mx-auto flex max-w-4xl flex-col items-center px-4 pb-24 pt-24 text-center sm:px-6 sm:pt-32">
           <motion.p
@@ -227,15 +242,19 @@ export default function Home() {
                 whileInView={{ opacity: 1, y: 0, rotate: (i - 2) * 6 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.08, duration: 0.5 }}
-                className="relative h-28 w-[4.5rem] overflow-hidden rounded-lg border border-gold/30 sm:h-36 sm:w-24"
               >
-                <Image
-                  src={c.image}
-                  alt={c.name}
-                  fill
-                  sizes="96px"
-                  className="object-cover"
-                />
+                <div
+                  className="float-slow relative h-28 w-[4.5rem] overflow-hidden rounded-lg border border-gold/30 sm:h-36 sm:w-24"
+                  style={{ animationDelay: `${i * 0.7}s` }}
+                >
+                  <Image
+                    src={c.image}
+                    alt={c.name}
+                    fill
+                    sizes="96px"
+                    className="object-cover"
+                  />
+                </div>
               </motion.div>
             ))}
           </div>

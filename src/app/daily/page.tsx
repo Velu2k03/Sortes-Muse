@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   getDailyCard,
@@ -25,6 +25,7 @@ export default function DailyPage() {
   const [daily, setDaily] = useState<DailyCardState | null>(null);
   const [streak, setStreak] = useState(0);
   const [zoomOpen, setZoomOpen] = useState(false);
+  const drawTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const existing = getDailyCard();
@@ -33,12 +34,16 @@ export default function DailyPage() {
       setPhase("revealed");
     }
     setStreak(getDailyStreak());
+    return () => {
+      if (drawTimer.current) clearTimeout(drawTimer.current);
+    };
   }, []);
 
   const draw = () => {
     setPhase("shuffling");
     // A short ritual pause before the card appears.
-    setTimeout(() => {
+    if (drawTimer.current) clearTimeout(drawTimer.current);
+    drawTimer.current = setTimeout(() => {
       const d = drawSingle();
       const saved = setDailyCard(d.cardId, d.reversed);
       setDaily(saved);

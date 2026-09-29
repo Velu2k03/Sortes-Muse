@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { storeAuthCode, getAuthCode } from "@/lib/db";
-import { newCode, hashCode } from "@/lib/auth";
+import { newCode, hashCode, isValidEmail } from "@/lib/auth";
 import { sendSignInCode } from "@/lib/email";
 
 export const dynamic = "force-dynamic";
-
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // Light rate limit: 5 code requests per email per hour (best effort, in memory).
 const recent = new Map<string, number[]>();
@@ -30,7 +28,7 @@ async function handleRequest(req: NextRequest) {
     return NextResponse.json({ error: "Invalid request." }, { status: 400 });
   }
   const email = (body.email ?? "").trim().toLowerCase();
-  if (!EMAIL_RE.test(email)) {
+  if (!isValidEmail(email)) {
     return NextResponse.json({ error: "Please enter a valid email address." }, { status: 400 });
   }
 

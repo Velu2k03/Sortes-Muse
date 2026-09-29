@@ -4,16 +4,23 @@ import { useMemo } from "react";
 import { motion } from "framer-motion";
 
 /**
- * A brief shower of golden sparks, shown the instant a card is revealed.
+ * A brief shower of golden sparks, shown the instant a card is revealed
+ * (or a purchase completes, with a bigger count/spread).
  * Pure decoration: pointer-events-none, unmounts itself via AnimatePresence
  * from the parent.
  */
-export default function CardBurst() {
+export default function CardBurst({
+  count = 16,
+  distance = 88,
+}: {
+  count?: number;
+  distance?: number;
+}) {
   const sparks = useMemo(
     () =>
-      Array.from({ length: 16 }, (_, i) => {
-        const angle = (i / 16) * Math.PI * 2 + Math.random() * 0.4;
-        const dist = 46 + Math.random() * 42;
+      Array.from({ length: count }, (_, i) => {
+        const angle = (i / count) * Math.PI * 2 + Math.random() * 0.4;
+        const dist = distance * 0.5 + Math.random() * distance * 0.5;
         return {
           x: Math.cos(angle) * dist,
           y: Math.sin(angle) * dist,
@@ -22,7 +29,7 @@ export default function CardBurst() {
           gold: Math.random() > 0.35,
         };
       }),
-    []
+    [count, distance]
   );
 
   return (

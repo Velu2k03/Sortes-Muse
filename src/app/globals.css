@@ -54,6 +54,34 @@ body {
   transform-style: preserve-3d;
 }
 
+/* Slow light sweep across face-down tarot cards; makes the deck feel alive */
+@media (prefers-reduced-motion: no-preference) {
+  .card-back-sheen::after {
+    content: "";
+    position: absolute;
+    inset: -25%;
+    background: linear-gradient(
+      105deg,
+      transparent 42%,
+      rgba(255, 240, 200, 0.14) 50%,
+      transparent 58%
+    );
+    transform: translateX(-120%) skewX(-12deg);
+    animation: card-sheen 6s ease-in-out infinite;
+    pointer-events: none;
+  }
+  @keyframes card-sheen {
+    0%,
+    60% {
+      transform: translateX(-120%) skewX(-12deg);
+    }
+    95%,
+    100% {
+      transform: translateX(220%) skewX(-12deg);
+    }
+  }
+}
+
 /* Soft gold glow for primary CTAs */
 .btn-gold {
   position: relative;
@@ -122,6 +150,42 @@ body {
     transparent
   );
   height: 1px;
+}
+
+/* Ambient drifting nebula glows (gold + violet) for hero sections */
+@media (prefers-reduced-motion: no-preference) {
+  .nebula {
+    animation: nebula-drift 22s ease-in-out infinite;
+    will-change: transform;
+  }
+  .nebula-alt {
+    animation: nebula-drift 28s ease-in-out infinite reverse;
+    will-change: transform;
+  }
+  @keyframes nebula-drift {
+    0%,
+    100% {
+      transform: translate(0, 0) scale(1);
+    }
+    50% {
+      transform: translate(5%, -4%) scale(1.1);
+    }
+  }
+
+  /* Gentle floating loop for decorative card fans */
+  .float-slow {
+    animation: float-slow 5s ease-in-out infinite;
+    will-change: transform;
+  }
+  @keyframes float-slow {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+  }
 }
 
 /* Respect users who prefer reduced motion */
