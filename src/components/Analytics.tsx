@@ -11,6 +11,9 @@ export function trackEvent(name: string, props?: Record<string, string | number>
   }).plausible;
   if (typeof plausible === "function") {
     plausible(name, props ? { props } : undefined);
+  } else if (process.env.NODE_ENV !== "production") {
+    // Observable in dev so event wiring can be verified without Plausible.
+    console.debug(`[analytics] ${name}`, props ?? {});
   }
 }
 
