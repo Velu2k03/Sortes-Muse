@@ -7,6 +7,8 @@ import { CREDIT_PACKS, perReadingPrice } from "@/lib/site";
 import { getPurchaseHistory, type Purchase } from "@/lib/storage";
 import { useAuth } from "@/components/AuthProvider";
 import CheckoutModal from "@/components/CheckoutModal";
+import PurchaseConfirmer from "@/components/PurchaseConfirmer";
+import { useSearchParams } from "next/navigation";
 
 interface ServerTx {
   id: string;
@@ -18,6 +20,8 @@ interface ServerTx {
 
 export default function CreditsPage() {
   const { credits, user } = useAuth();
+  const searchParams = useSearchParams();
+  const justPurchased = searchParams.get("purchase") === "success";
   const [open, setOpen] = useState(false);
   const [localHistory, setLocalHistory] = useState<Purchase[]>([]);
   const [serverTx, setServerTx] = useState<ServerTx[] | null>(null);
@@ -36,6 +40,7 @@ export default function CreditsPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
+      {justPurchased && <PurchaseConfirmer />}
       <div className="text-center">
         <p className="text-xs uppercase tracking-[0.35em] text-gold">Credits</p>
         <h1 className="mt-3 font-display text-5xl text-goldbright sm:text-6xl">

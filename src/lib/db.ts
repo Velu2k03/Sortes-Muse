@@ -242,14 +242,26 @@ export async function createTransaction(t: {
   return row;
 }
 
-export async function listTransactions(userId: string): Promise<DbTransaction[]> {
-  await ensureSchema();
+export async function listTransactions(userId: string): Promise<DbTransaction[]> {  await ensureSchema();
   if (usePostgres) {
     const { rows } = await sql`SELECT * FROM transactions WHERE user_id = ${userId} ORDER BY created_at DESC LIMIT 50`;
     return rows as DbTransaction[];
   }
   const db = await readLocal();
   return db.transactions.filter((t) => t.user_id === userId).slice(0, 50);
+}
+
+/** Webhook idempotency: has this Lemon Squeezy order been fulfilled already? */
+export async function findTransactionByOrderId(orderId: string): Promise<DbTransaction | null> {
+  if (!orderId) return null;
+  await ensureSchema();
+  const marker = `lemonsqueezy:${orderId}`;
+  if (usePostgres) {
+    const { rows } = await sql`SELECT * FROM transactions WHERE pack_type LIKE ${"%" + marker + "%"} LIMIT 1`;
+    return (rows[0] as DbTransaction) ?? null;
+  }
+  const db = await readLocal();
+  return db.transactions.find((t) => t.pack_type.includes(marker)) ?? null;
 }
 
 // ---- Synced readings ----

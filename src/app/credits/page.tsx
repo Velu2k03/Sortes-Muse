@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import CreditsPage from "./CreditsClient";
 
 export const metadata = {
@@ -6,5 +7,9 @@ export const metadata = {
 };
 
 export default function Credits() {
-  return <CreditsPage />;
+  return (
+    <Suspense fallback={null}>
+      <CreditsPage />
+    </Suspense>
+  );
 }
