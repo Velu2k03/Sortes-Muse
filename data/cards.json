@@ -1,0 +1,1016 @@
+[
+  {
+    "id": "major-00",
+    "name": "The Fool",
+    "arcana": "major",
+    "suit": null,
+    "number": 0,
+    "keywords": { "upright": ["beginnings", "spontaneity", "curiosity", "trust"], "reversed": ["recklessness", "hesitation", "naivety"] },
+    "meaning": {
+      "upright": "A new chapter is opening and you get to meet it with curiosity rather than caution. Ask yourself what becomes possible when you treat not knowing as an invitation instead of a threat.",
+      "reversed": "Either you are leaping before looking or standing frozen at the edge. Slow down enough to notice which one it is, then choose a smaller first step you can actually stand behind."
+    },
+    "image": "/cards/major-00-fool.jpg"
+  },
+  {
+    "id": "major-01",
+    "name": "The Magician",
+    "arcana": "major",
+    "suit": null,
+    "number": 1,
+    "keywords": { "upright": ["resourcefulness", "focus", "skill", "initiative"], "reversed": ["scattered energy", "untapped talent", "manipulation"] },
+    "meaning": {
+      "upright": "You already hold the tools this situation needs; the question is whether you are using them with intention. Gather your focus and direct it at one clear outcome instead of many vague ones.",
+      "reversed": "Your energy is scattered across too many half-started things, or a skill you trust is going unused. Consider where your attention is leaking and what reclaiming it would change."
+    },
+    "image": "/cards/major-01-magician.jpg"
+  },
+  {
+    "id": "major-02",
+    "name": "The High Priestess",
+    "arcana": "major",
+    "suit": null,
+    "number": 2,
+    "keywords": { "upright": ["intuition", "stillness", "inner knowing", "mystery"], "reversed": ["ignored instincts", "noise", "surface thinking"] },
+    "meaning": {
+      "upright": "The answer you are chasing may already live inside you, beneath the noise of other people's opinions. Make quiet space and notice what your gut has been whispering.",
+      "reversed": "You might be drowning out your own instincts with constant input and second-guessing. Step back from the advice and ask what you believed before everyone else weighed in."
+    },
+    "image": "/cards/major-02-high-priestess.jpg"
+  },
+  {
+    "id": "major-03",
+    "name": "The Empress",
+    "arcana": "major",
+    "suit": null,
+    "number": 3,
+    "keywords": { "upright": ["nurturing", "abundance", "creativity", "care"], "reversed": ["neglect", "overgiving", "creative blocks"] },
+    "meaning": {
+      "upright": "This is a season for tending things: relationships, projects, and your own wellbeing. Consider what in your life needs steady care rather than quick fixes.",
+      "reversed": "You may be pouring everything into others while running on empty yourself, or a creative spark is stuck. Reflect on where you have been neglecting your own garden."
+    },
+    "image": "/cards/major-03-empress.jpg"
+  },
+  {
+    "id": "major-04",
+    "name": "The Emperor",
+    "arcana": "major",
+    "suit": null,
+    "number": 4,
+    "keywords": { "upright": ["structure", "stability", "boundaries", "leadership"], "reversed": ["rigidity", "control", "disorder"] },
+    "meaning": {
+      "upright": "Clarity and structure will serve you better than inspiration alone right now. Ask yourself what system, boundary, or decision would bring order to the current chaos.",
+      "reversed": "Control may be slipping into rigidity, or the lack of any plan is creating the mess. Consider whether you need to loosen your grip or finally set one down."
+    },
+    "image": "/cards/major-04-emperor.jpg"
+  },
+  {
+    "id": "major-05",
+    "name": "The Hierophant",
+    "arcana": "major",
+    "suit": null,
+    "number": 5,
+    "keywords": { "upright": ["tradition", "guidance", "learning", "belonging"], "reversed": ["questioning norms", "unconventional paths", "dogma"] },
+    "meaning": {
+      "upright": "Established wisdom and trusted teachers have something to offer you in this moment. Consider whose guidance you respect and what you could learn by following a proven path.",
+      "reversed": "You might be outgrowing the rules you were taught, or following tradition just because it is there. Reflect on which beliefs are truly yours and which you inherited without choosing."
+    },
+    "image": "/cards/major-05-hierophant.jpg"
+  },
+  {
+    "id": "major-06",
+    "name": "The Lovers",
+    "arcana": "major",
+    "suit": null,
+    "number": 6,
+    "keywords": { "upright": ["connection", "alignment", "choices", "values"], "reversed": ["misalignment", "difficult choices", "disharmony"] },
+    "meaning": {
+      "upright": "An important choice or relationship is asking you to act from your deepest values, not from fear or convenience. Get honest about what you actually want and let the decision follow.",
+      "reversed": "Something feels out of sync, either with another person or with yourself. Notice where you are compromising what matters and what an honest conversation would sound like."
+    },
+    "image": "/cards/major-06-lovers.jpg"
+  },
+  {
+    "id": "major-07",
+    "name": "The Chariot",
+    "arcana": "major",
+    "suit": null,
+    "number": 7,
+    "keywords": { "upright": ["determination", "direction", "willpower", "momentum"], "reversed": ["scattered drive", "obstacles", "loss of direction"] },
+    "meaning": {
+      "upright": "You have the drive to move forward; now give it a clear direction. Harness your competing impulses and point them at one destination instead of letting them pull you apart.",
+      "reversed": "You may be pushing hard in the wrong direction or stalling altogether. Pause to check whether the goal still fits before you spend more fuel on it."
+    },
+    "image": "/cards/major-07-chariot.jpg"
+  },
+  {
+    "id": "major-08",
+    "name": "Strength",
+    "arcana": "major",
+    "suit": null,
+    "number": 8,
+    "keywords": { "upright": ["patience", "gentle courage", "resilience", "self-trust"], "reversed": ["self-doubt", "impatience", "inner friction"] },
+    "meaning": {
+      "upright": "True strength here is quiet: the patience to stay kind to yourself while you do something hard. Trust that soft persistence will carry you further than force.",
+      "reversed": "Self-doubt or frustration may be making you your own harshest critic. Notice the tone of your inner voice and consider speaking to yourself the way you would to a friend."
+    },
+    "image": "/cards/major-08-strength.jpg"
+  },
+  {
+    "id": "major-09",
+    "name": "The Hermit",
+    "arcana": "major",
+    "suit": null,
+    "number": 9,
+    "keywords": { "upright": ["solitude", "reflection", "inner guidance", "withdrawal"], "reversed": ["isolation", "avoidance", "loneliness"] },
+    "meaning": {
+      "upright": "Step back from the crowd and give yourself real quiet to think. The perspective you need is more likely to arrive in stillness than in more input.",
+      "reversed": "Solitude may be sliding into isolation, or you might be avoiding people you actually need. Reflect on whether your withdrawal is restorative or just hiding."
+    },
+    "image": "/cards/major-09-hermit.jpg"
+  },
+  {
+    "id": "major-10",
+    "name": "Wheel of Fortune",
+    "arcana": "major",
+    "suit": null,
+    "number": 10,
+    "keywords": { "upright": ["cycles", "change", "turning points", "luck"], "reversed": ["resistance to change", "bad timing", "setbacks"] },
+    "meaning": {
+      "upright": "Life moves in cycles, and the wheel is turning in your situation too. Rather than clinging to the current phase, consider how you can ride this change with grace.",
+      "reversed": "You may be fighting a shift that is happening whether you approve or not. Ask yourself what you are resisting and what acceptance would free up."
+    },
+    "image": "/cards/major-10-wheel-of-fortune.jpg"
+  },
+  {
+    "id": "major-11",
+    "name": "Justice",
+    "arcana": "major",
+    "suit": null,
+    "number": 11,
+    "keywords": { "upright": ["fairness", "truth", "accountability", "clarity"], "reversed": ["imbalance", "avoidance", "unfairness"] },
+    "meaning": {
+      "upright": "Honest accounting is needed, starting with yourself. Look at the facts clearly and own your part; fair outcomes grow from clear-eyed truth.",
+      "reversed": "Something feels off balance or unresolved, possibly because a hard truth is being avoided. Consider what would change if every fact were laid on the table."
+    },
+    "image": "/cards/major-11-justice.jpg"
+  },
+  {
+    "id": "major-12",
+    "name": "The Hanged Man",
+    "arcana": "major",
+    "suit": null,
+    "number": 12,
+    "keywords": { "upright": ["new perspective", "pause", "surrender", "patience"], "reversed": ["stalling", "sacrifice without purpose", "resistance"] },
+    "meaning": {
+      "upright": "Sometimes progress comes from stopping and looking at things upside down. Give yourself permission to pause and let a new angle reveal itself.",
+      "reversed": "A pause may have turned into a stall, or you are sacrificing without knowing why. Ask whether this waiting is teaching you something or simply costing you."
+    },
+    "image": "/cards/major-12-hanged-man.jpg"
+  },
+  {
+    "id": "major-13",
+    "name": "Death",
+    "arcana": "major",
+    "suit": null,
+    "number": 13,
+    "keywords": { "upright": ["endings", "transformation", "release", "renewal"], "reversed": ["clinging", "fear of change", "stagnation"] },
+    "meaning": {
+      "upright": "Something is ending so that something new can begin, and grieving the old is part of the work. Consider what you are ready to release and what that release would make room for.",
+      "reversed": "You may be clinging to what is already over out of fear. Notice what is draining you by staying, and imagine the relief of finally letting it go."
+    },
+    "image": "/cards/major-13-death.jpg"
+  },
+  {
+    "id": "major-14",
+    "name": "Temperance",
+    "arcana": "major",
+    "suit": null,
+    "number": 14,
+    "keywords": { "upright": ["balance", "moderation", "patience", "harmony"], "reversed": ["excess", "imbalance", "impatience"] },
+    "meaning": {
+      "upright": "Steady, measured steps will get you further than extremes right now. Look for the middle path and let patience blend your efforts into something sustainable.",
+      "reversed": "You might be swinging between too much and too little, in habits, emotions, or effort. Reflect on where a gentler, steadier rhythm is needed."
+    },
+    "image": "/cards/major-14-temperance.jpg"
+  },
+  {
+    "id": "major-15",
+    "name": "The Devil",
+    "arcana": "major",
+    "suit": null,
+    "number": 15,
+    "keywords": { "upright": ["patterns", "attachment", "temptation", "awareness"], "reversed": ["breaking free", "release", "reclaiming power"] },
+    "meaning": {
+      "upright": "An unhealthy pattern or attachment may be running the show more than you admit. Shine honest light on it; naming the chain is the first step toward loosening it.",
+      "reversed": "You are starting to see the pattern for what it is and may be ready to break it. Acknowledge how far you have come and keep choosing freedom in small daily ways."
+    },
+    "image": "/cards/major-15-devil.jpg"
+  },
+  {
+    "id": "major-16",
+    "name": "The Tower",
+    "arcana": "major",
+    "suit": null,
+    "number": 16,
+    "keywords": { "upright": ["upheaval", "revelation", "sudden change", "truth"], "reversed": ["resisting upheaval", "delayed change", "fear of disruption"] },
+    "meaning": {
+      "upright": "A sudden shift may shake something you thought was solid, but what falls was never as stable as it looked. Let the dust settle before rebuilding, and build on truer ground.",
+      "reversed": "You might be bracing against a change that is overdue, or quietly rebuilding after a shake-up. Ask what the disruption revealed and whether you are acting on it."
+    },
+    "image": "/cards/major-16-tower.jpg"
+  },
+  {
+    "id": "major-17",
+    "name": "The Star",
+    "arcana": "major",
+    "suit": null,
+    "number": 17,
+    "keywords": { "upright": ["hope", "healing", "renewal", "authenticity"], "reversed": ["discouragement", "dimmed hope", "self-doubt"] },
+    "meaning": {
+      "upright": "After a hard stretch, this is a sign to refill your hope and trust your own light again. Let yourself dream a little and take one small step toward what inspires you.",
+      "reversed": "Discouragement may be clouding your sense of possibility. Be gentle with yourself and look for one small source of light you can tend today."
+    },
+    "image": "/cards/major-17-star.jpg"
+  },
+  {
+    "id": "major-18",
+    "name": "The Moon",
+    "arcana": "major",
+    "suit": null,
+    "number": 18,
+    "keywords": { "upright": ["uncertainty", "dreams", "intuition", "the unseen"], "reversed": ["confusion", "anxiety", "clarity emerging"] },
+    "meaning": {
+      "upright": "Things are not fully clear right now, and that is okay; not every question needs an answer today. Pay attention to dreams, feelings, and hunches while you wait for the fog to lift.",
+      "reversed": "Confusion or worry may be louder than the facts deserve. Slow down, check what is actually known, and watch the picture sharpen."
+    },
+    "image": "/cards/major-18-moon.jpg"
+  },
+  {
+    "id": "major-19",
+    "name": "The Sun",
+    "arcana": "major",
+    "suit": null,
+    "number": 19,
+    "keywords": { "upright": ["joy", "vitality", "success", "clarity"], "reversed": ["dimmed joy", "temporary clouds", "overlooked wins"] },
+    "meaning": {
+      "upright": "This is a moment to let warmth and confidence in. Celebrate what is working, share your energy, and trust that clarity is on your side.",
+      "reversed": "Joy may feel harder to reach right now, or small wins are going unnoticed. Look for one bright spot today and let it count."
+    },
+    "image": "/cards/major-19-sun.jpg"
+  },
+  {
+    "id": "major-20",
+    "name": "Judgement",
+    "arcana": "major",
+    "suit": null,
+    "number": 20,
+    "keywords": { "upright": ["reflection", "awakening", "calling", "forgiveness"], "reversed": ["self-criticism", "unheeded calling", "stuck in the past"] },
+    "meaning": {
+      "upright": "A deeper calling or honest self-review is asking for your attention. Look back with compassion, forgive what needs forgiving, and rise into the next version of yourself.",
+      "reversed": "Harsh self-judgment or an ignored inner nudge may be keeping you stuck. Consider what you would hear if you listened to yourself with kindness instead of criticism."
+    },
+    "image": "/cards/major-20-judgement.jpg"
+  },
+  {
+    "id": "major-21",
+    "name": "The World",
+    "arcana": "major",
+    "suit": null,
+    "number": 21,
+    "keywords": { "upright": ["completion", "wholeness", "celebration", "integration"], "reversed": ["loose ends", "incompletion", "transition"] },
+    "meaning": {
+      "upright": "You are reaching the end of a meaningful cycle; take time to celebrate how far you have come. Honor the whole journey before you begin the next one.",
+      "reversed": "Loose ends may be keeping a chapter from closing. Notice what still needs finishing and give it the attention that lets you move on cleanly."
+    },
+    "image": "/cards/major-21-world.jpg"
+  },
+  {
+    "id": "wands-ace",
+    "name": "Ace of Wands",
+    "arcana": "minor",
+    "suit": "wands",
+    "number": 1,
+    "keywords": { "upright": ["inspiration", "new energy", "potential", "spark"], "reversed": ["delays", "blocked creativity", "false starts"] },
+    "meaning": {
+      "upright": "A fresh spark of energy or inspiration is available to you. Consider what small action would fan it into something real.",
+      "reversed": "The spark feels delayed or blocked. Reflect on what is dampening your enthusiasm and what might rekindle it."
+    },
+    "image": "/cards/wands-ace.jpg"
+  },
+  {
+    "id": "wands-02",
+    "name": "Two of Wands",
+    "arcana": "minor",
+    "suit": "wands",
+    "number": 2,
+    "keywords": { "upright": ["planning", "decisions", "possibility", "vision"], "reversed": ["indecision", "poor planning", "hesitation"] },
+    "meaning": {
+      "upright": "You are standing at a crossroads of possibility with the world feeling wide open. Take time to plan before you commit your energy.",
+      "reversed": "Indecision or poor planning may be stalling you. Clarify what you truly want before choosing a direction."
+    },
+    "image": "/cards/wands-02.jpg"
+  },
+  {
+    "id": "wands-03",
+    "name": "Three of Wands",
+    "arcana": "minor",
+    "suit": "wands",
+    "number": 3,
+    "keywords": { "upright": ["expansion", "early progress", "foresight", "momentum"], "reversed": ["delays", "frustration", "setbacks"] },
+    "meaning": {
+      "upright": "Your early efforts are gaining traction and the horizon looks promising. Keep building with patience and watch momentum grow.",
+      "reversed": "Delays or frustration with slow progress may test you. Reassess the plan rather than abandoning the goal."
+    },
+    "image": "/cards/wands-03.jpg"
+  },
+  {
+    "id": "wands-04",
+    "name": "Four of Wands",
+    "arcana": "minor",
+    "suit": "wands",
+    "number": 4,
+    "keywords": { "upright": ["celebration", "stability", "milestones", "community"], "reversed": ["postponed joy", "instability", "transition"] },
+    "meaning": {
+      "upright": "A milestone deserves to be celebrated and a stable foundation acknowledged. Pause to enjoy how far you and your people have come.",
+      "reversed": "Celebration feels postponed or home life feels unsettled. Notice what stability is missing and what would restore it."
+    },
+    "image": "/cards/wands-04.jpg"
+  },
+  {
+    "id": "wands-05",
+    "name": "Five of Wands",
+    "arcana": "minor",
+    "suit": "wands",
+    "number": 5,
+    "keywords": { "upright": ["conflict", "competition", "friction", "rivalry"], "reversed": ["draining conflict", "resolution", "avoidance"] },
+    "meaning": {
+      "upright": "Healthy competition or clashing opinions are in the air. Treat the friction as sparring that sharpens everyone rather than a battle to win.",
+      "reversed": "Conflict may be draining you or quietly resolving. Consider whether to engage, mediate, or step away."
+    },
+    "image": "/cards/wands-05.jpg"
+  },
+  {
+    "id": "wands-06",
+    "name": "Six of Wands",
+    "arcana": "minor",
+    "suit": "wands",
+    "number": 6,
+    "keywords": { "upright": ["recognition", "victory", "confidence", "success"], "reversed": ["delayed recognition", "self-doubt", "fall from grace"] },
+    "meaning": {
+      "upright": "Your efforts are being noticed and a win is within reach. Accept the recognition with grace and let it fuel the next goal.",
+      "reversed": "Recognition feels delayed or your confidence is wobbling. Remember what you have earned regardless of applause."
+    },
+    "image": "/cards/wands-06.jpg"
+  },
+  {
+    "id": "wands-07",
+    "name": "Seven of Wands",
+    "arcana": "minor",
+    "suit": "wands",
+    "number": 7,
+    "keywords": { "upright": ["defense", "conviction", "perseverance", "courage"], "reversed": ["overwhelm", "yielding", "vulnerability"] },
+    "meaning": {
+      "upright": "You may need to defend your position or priorities against pressure. Stand firm in what you believe while staying open to fair critique.",
+      "reversed": "You might feel overwhelmed or be yielding too easily. Decide which battles are worth your energy and release the rest."
+    },
+    "image": "/cards/wands-07.jpg"
+  },
+  {
+    "id": "wands-08",
+    "name": "Eight of Wands",
+    "arcana": "minor",
+    "suit": "wands",
+    "number": 8,
+    "keywords": { "upright": ["swift action", "momentum", "communication", "alignment"], "reversed": ["haste", "miscommunication", "delays"] },
+    "meaning": {
+      "upright": "Things are moving fast and clear communication matters. Act decisively while the momentum is with you.",
+      "reversed": "Haste or miscommunication could cause stumbles. Slow down just enough to aim before you fire."
+    },
+    "image": "/cards/wands-08.jpg"
+  },
+  {
+    "id": "wands-09",
+    "name": "Nine of Wands",
+    "arcana": "minor",
+    "suit": "wands",
+    "number": 9,
+    "keywords": { "upright": ["resilience", "perseverance", "boundaries", "last push"], "reversed": ["exhaustion", "defensiveness", "burnout"] },
+    "meaning": {
+      "upright": "You are tired but closer than you think; this is the final stretch. Protect your energy and keep going one step at a time.",
+      "reversed": "Exhaustion or defensiveness may be running the show. Rest is strategy too; consider what you need to recover."
+    },
+    "image": "/cards/wands-09.jpg"
+  },
+  {
+    "id": "wands-10",
+    "name": "Ten of Wands",
+    "arcana": "minor",
+    "suit": "wands",
+    "number": 10,
+    "keywords": { "upright": ["burden", "responsibility", "overload", "duty"], "reversed": ["unsustainable load", "delegation", "release"] },
+    "meaning": {
+      "upright": "You are carrying a heavy load and it shows. Ask what can be delegated, dropped, or done differently before burnout sets in.",
+      "reversed": "The burden is becoming unsustainable or you are learning to set it down. Notice what relief would look like and move toward it."
+    },
+    "image": "/cards/wands-10.jpg"
+  },
+  {
+    "id": "wands-page",
+    "name": "Page of Wands",
+    "arcana": "minor",
+    "suit": "wands",
+    "number": 11,
+    "keywords": { "upright": ["exploration", "curiosity", "enthusiasm", "discovery"], "reversed": ["scattered energy", "hasty messages", "lack of direction"] },
+    "meaning": {
+      "upright": "Curiosity is calling you to explore something new. Follow the thread and let yourself be a beginner.",
+      "reversed": "Scattered enthusiasm or hasty messages may cause friction. Focus your curiosity before you act on it."
+    },
+    "image": "/cards/wands-page.jpg"
+  },
+  {
+    "id": "wands-knight",
+    "name": "Knight of Wands",
+    "arcana": "minor",
+    "suit": "wands",
+    "number": 12,
+    "keywords": { "upright": ["bold action", "adventure", "courage", "passion"], "reversed": ["impulsiveness", "haste", "restlessness"] },
+    "meaning": {
+      "upright": "Bold, fast-moving energy surrounds you; charge ahead with courage. Just keep one eye on the landing so speed does not become recklessness.",
+      "reversed": "Impulsiveness may be outrunning your judgment. Pause and aim before you sprint."
+    },
+    "image": "/cards/wands-knight.jpg"
+  },
+  {
+    "id": "wands-queen",
+    "name": "Queen of Wands",
+    "arcana": "minor",
+    "suit": "wands",
+    "number": 13,
+    "keywords": { "upright": ["confidence", "warmth", "independence", "charisma"], "reversed": ["self-doubt", "jealousy", "dimmed fire"] },
+    "meaning": {
+      "upright": "Your confidence and warmth are magnetic right now. Lead with self-belief and lift others as you go.",
+      "reversed": "Self-doubt or jealousy may be dimming your fire. Reconnect with what makes you capable and let it steady you."
+    },
+    "image": "/cards/wands-queen.jpg"
+  },
+  {
+    "id": "wands-king",
+    "name": "King of Wands",
+    "arcana": "minor",
+    "suit": "wands",
+    "number": 14,
+    "keywords": { "upright": ["vision", "leadership", "mastery", "boldness"], "reversed": ["control", "empty promises", "domineering"] },
+    "meaning": {
+      "upright": "You have the vision and experience to lead something meaningful. Set the direction boldly and back it with steady action.",
+      "reversed": "Leadership may be tipping into control or promises are outpacing delivery. Lead with integrity and follow through."
+    },
+    "image": "/cards/wands-king.jpg"
+  },
+  {
+    "id": "cups-ace",
+    "name": "Ace of Cups",
+    "arcana": "minor",
+    "suit": "cups",
+    "number": 1,
+    "keywords": { "upright": ["new love", "emotional openness", "compassion", "beginnings"], "reversed": ["blocked emotions", "guarded heart", "emptiness"] },
+    "meaning": {
+      "upright": "Your heart is opening to new emotional possibility. Let yourself receive love, friendship, or compassion without guarding.",
+      "reversed": "Emotions may feel blocked or a connection is not flowing. Gently explore what your heart needs to feel safe."
+    },
+    "image": "/cards/cups-ace.jpg"
+  },
+  {
+    "id": "cups-02",
+    "name": "Two of Cups",
+    "arcana": "minor",
+    "suit": "cups",
+    "number": 2,
+    "keywords": { "upright": ["partnership", "mutual respect", "connection", "harmony"], "reversed": ["imbalance", "broken trust", "miscommunication"] },
+    "meaning": {
+      "upright": "A meaningful connection is deepening through mutual respect. Nurture it with honest communication and shared care.",
+      "reversed": "A relationship may feel unbalanced or communication has faltered. Reflect on what each of you truly needs."
+    },
+    "image": "/cards/cups-02.jpg"
+  },
+  {
+    "id": "cups-03",
+    "name": "Three of Cups",
+    "arcana": "minor",
+    "suit": "cups",
+    "number": 3,
+    "keywords": { "upright": ["friendship", "community", "celebration", "joy"], "reversed": ["strained friendships", "gossip", "isolation"] },
+    "meaning": {
+      "upright": "Friendship and shared joy are medicine right now. Gather your people and celebrate together.",
+      "reversed": "Social plans may fall through or a friendship needs attention. Reach out and mend what matters."
+    },
+    "image": "/cards/cups-03.jpg"
+  },
+  {
+    "id": "cups-04",
+    "name": "Four of Cups",
+    "arcana": "minor",
+    "suit": "cups",
+    "number": 4,
+    "keywords": { "upright": ["apathy", "contemplation", "reassessment", "boredom"], "reversed": ["re-engagement", "new interest", "acceptance"] },
+    "meaning": {
+      "upright": "You may be feeling flat or overlooking something good right in front of you. Look up and notice what is being offered.",
+      "reversed": "You are starting to re-engage after a low period. Welcome the returning energy and act on the opening you see."
+    },
+    "image": "/cards/cups-04.jpg"
+  },
+  {
+    "id": "cups-05",
+    "name": "Five of Cups",
+    "arcana": "minor",
+    "suit": "cups",
+    "number": 5,
+    "keywords": { "upright": ["grief", "loss", "disappointment", "regret"], "reversed": ["healing", "acceptance", "moving forward"] },
+    "meaning": {
+      "upright": "Disappointment or loss deserves to be felt, not rushed past. Grieve what is gone, then notice what still remains standing.",
+      "reversed": "Healing is beginning and acceptance is growing. Let yourself move forward carrying the lesson, not the weight."
+    },
+    "image": "/cards/cups-05.jpg"
+  },
+  {
+    "id": "cups-06",
+    "name": "Six of Cups",
+    "arcana": "minor",
+    "suit": "cups",
+    "number": 6,
+    "keywords": { "upright": ["nostalgia", "childhood", "kindness", "memories"], "reversed": ["stuck in the past", "idealizing", "letting go"] },
+    "meaning": {
+      "upright": "Warm memories or old connections are resurfacing with something to teach you. Revisit the past with gratitude, not longing.",
+      "reversed": "You may be stuck in the past or idealizing it. Honor the memories while living firmly in the present."
+    },
+    "image": "/cards/cups-06.jpg"
+  },
+  {
+    "id": "cups-07",
+    "name": "Seven of Cups",
+    "arcana": "minor",
+    "suit": "cups",
+    "number": 7,
+    "keywords": { "upright": ["choices", "fantasy", "illusion", "daydreams"], "reversed": ["clarity", "focus", "commitment"] },
+    "meaning": {
+      "upright": "Many options shimmer before you, but not all are real. Separate wishful thinking from true desire before you choose.",
+      "reversed": "Clarity is cutting through the fog of too many options. Trust the clearer picture and commit to one path."
+    },
+    "image": "/cards/cups-07.jpg"
+  },
+  {
+    "id": "cups-08",
+    "name": "Eight of Cups",
+    "arcana": "minor",
+    "suit": "cups",
+    "number": 8,
+    "keywords": { "upright": ["walking away", "seeking meaning", "courage", "transition"], "reversed": ["clinging", "fear of change", "stagnation"] },
+    "meaning": {
+      "upright": "You may be ready to leave something comfortable behind in search of deeper fulfillment. Trust that the quiet pull is worth following.",
+      "reversed": "You might be clinging to what no longer satisfies or fearing the leap. Ask what staying is costing you."
+    },
+    "image": "/cards/cups-08.jpg"
+  },
+  {
+    "id": "cups-09",
+    "name": "Nine of Cups",
+    "arcana": "minor",
+    "suit": "cups",
+    "number": 9,
+    "keywords": { "upright": ["wishes", "contentment", "gratitude", "fulfillment"], "reversed": ["surface satisfaction", "unmet longing", "materialism"] },
+    "meaning": {
+      "upright": "Emotional wishes are coming true or contentment is within reach. Savor it and share your gratitude.",
+      "reversed": "Surface satisfaction may be masking a deeper longing. Look beneath the comfort and name what you truly want."
+    },
+    "image": "/cards/cups-09.jpg"
+  },
+  {
+    "id": "cups-10",
+    "name": "Ten of Cups",
+    "arcana": "minor",
+    "suit": "cups",
+    "number": 10,
+    "keywords": { "upright": ["harmony", "family", "lasting happiness", "belonging"], "reversed": ["strained harmony", "family tension", "disconnection"] },
+    "meaning": {
+      "upright": "Deep emotional harmony with the people you love is the theme. Invest in the relationships that feel like home.",
+      "reversed": "Family or relationship harmony may be strained. Small honest repairs can restore the warmth."
+    },
+    "image": "/cards/cups-10.jpg"
+  },
+  {
+    "id": "cups-page",
+    "name": "Page of Cups",
+    "arcana": "minor",
+    "suit": "cups",
+    "number": 11,
+    "keywords": { "upright": ["sensitivity", "new feelings", "creativity", "openness"], "reversed": ["emotional overwhelm", "creative blocks", "insecurity"] },
+    "meaning": {
+      "upright": "New feelings or a creative impulse are surfacing. Greet them with gentle curiosity rather than judgment.",
+      "reversed": "Emotional overwhelm or creative blocks may need tending. Give your feelings space without letting them run the day."
+    },
+    "image": "/cards/cups-page.jpg"
+  },
+  {
+    "id": "cups-knight",
+    "name": "Knight of Cups",
+    "arcana": "minor",
+    "suit": "cups",
+    "number": 12,
+    "keywords": { "upright": ["romance", "charm", "idealism", "heartfelt offers"], "reversed": ["unrealistic ideals", "moodiness", "empty gestures"] },
+    "meaning": {
+      "upright": "Romance, charm, or a heartfelt gesture is in the air. Follow your heart while keeping your feet on the ground.",
+      "reversed": "Idealism may be outpacing reality or moodiness is clouding connection. Check your expectations against what is real."
+    },
+    "image": "/cards/cups-knight.jpg"
+  },
+  {
+    "id": "cups-queen",
+    "name": "Queen of Cups",
+    "arcana": "minor",
+    "suit": "cups",
+    "number": 13,
+    "keywords": { "upright": ["compassion", "intuition", "emotional depth", "nurturing"], "reversed": ["emotional drain", "neglecting self", "codependency"] },
+    "meaning": {
+      "upright": "Your compassion and intuition are strong guides right now. Trust your emotional intelligence and care for others without losing yourself.",
+      "reversed": "You may be absorbing everyone else's emotions or neglecting your own. Refill your own cup first."
+    },
+    "image": "/cards/cups-queen.jpg"
+  },
+  {
+    "id": "cups-king",
+    "name": "King of Cups",
+    "arcana": "minor",
+    "suit": "cups",
+    "number": 14,
+    "keywords": { "upright": ["emotional mastery", "calm", "diplomacy", "steadiness"], "reversed": ["suppressed feelings", "volatility", "manipulation"] },
+    "meaning": {
+      "upright": "Calm emotional steadiness is your strength in this situation. Lead with empathy and measured responses.",
+      "reversed": "Feelings may be suppressed or volatility is leaking out. Find a healthy outlet before pressure builds."
+    },
+    "image": "/cards/cups-king.jpg"
+  },
+  {
+    "id": "swords-ace",
+    "name": "Ace of Swords",
+    "arcana": "minor",
+    "suit": "swords",
+    "number": 1,
+    "keywords": { "upright": ["clarity", "truth", "breakthrough", "insight"], "reversed": ["clouded thinking", "confusion", "misuse of truth"] },
+    "meaning": {
+      "upright": "A breakthrough in clarity is cutting through confusion. Use this sharp insight to make an honest decision.",
+      "reversed": "Thinking may be clouded or the truth is uncomfortable. Slow down and separate facts from fears."
+    },
+    "image": "/cards/swords-ace.jpg"
+  },
+  {
+    "id": "swords-02",
+    "name": "Two of Swords",
+    "arcana": "minor",
+    "suit": "swords",
+    "number": 2,
+    "keywords": { "upright": ["stalemate", "difficult decision", "balance", "truce"], "reversed": ["breaking stalemate", "information overload", "release"] },
+    "meaning": {
+      "upright": "You are caught between two options and avoiding the choice. Gather the facts, then decide; indecision is a decision too.",
+      "reversed": "The stalemate is breaking or you are overwhelmed by information. Trust the clearer signal and move."
+    },
+    "image": "/cards/swords-02.jpg"
+  },
+  {
+    "id": "swords-03",
+    "name": "Three of Swords",
+    "arcana": "minor",
+    "suit": "swords",
+    "number": 3,
+    "keywords": { "upright": ["heartbreak", "painful truth", "grief", "sorrow"], "reversed": ["healing", "forgiveness", "recovery"] },
+    "meaning": {
+      "upright": "A painful truth or loss needs acknowledgment. Let yourself feel it fully; healing starts with honesty.",
+      "reversed": "Healing from old hurt is underway. Keep releasing the pain and notice the lightness returning."
+    },
+    "image": "/cards/swords-03.jpg"
+  },
+  {
+    "id": "swords-04",
+    "name": "Four of Swords",
+    "arcana": "minor",
+    "suit": "swords",
+    "number": 4,
+    "keywords": { "upright": ["rest", "recovery", "mental reset", "retreat"], "reversed": ["restlessness", "burnout", "reawakening"] },
+    "meaning": {
+      "upright": "Your mind needs rest before the next push. Step back, recover, and return sharper.",
+      "reversed": "Rest may be overdue or you are stirring back to life. Ease in gently rather than rushing."
+    },
+    "image": "/cards/swords-04.jpg"
+  },
+  {
+    "id": "swords-05",
+    "name": "Five of Swords",
+    "arcana": "minor",
+    "suit": "swords",
+    "number": 5,
+    "keywords": { "upright": ["conflict", "hollow victory", "tension", "discord"], "reversed": ["reconciliation", "letting go", "peace"] },
+    "meaning": {
+      "upright": "A conflict may end with no real winner. Ask whether winning is worth the cost before you engage.",
+      "reversed": "Old conflicts are resolving or lingering tension needs release. Choose peace over being right."
+    },
+    "image": "/cards/swords-05.jpg"
+  },
+  {
+    "id": "swords-06",
+    "name": "Six of Swords",
+    "arcana": "minor",
+    "suit": "swords",
+    "number": 6,
+    "keywords": { "upright": ["transition", "moving on", "calmer waters", "recovery"], "reversed": ["stuck transition", "baggage", "resistance"] },
+    "meaning": {
+      "upright": "You are moving away from turbulence toward calmer ground. Keep going; the crossing is worth it.",
+      "reversed": "The transition feels stuck or old baggage is traveling with you. Lighten the load before you continue."
+    },
+    "image": "/cards/swords-06.jpg"
+  },
+  {
+    "id": "swords-07",
+    "name": "Seven of Swords",
+    "arcana": "minor",
+    "suit": "swords",
+    "number": 7,
+    "keywords": { "upright": ["strategy", "discretion", "planning", "resourcefulness"], "reversed": ["backfiring plans", "dishonesty", "conscience"] },
+    "meaning": {
+      "upright": "Strategy and discretion serve you better than brute force here. Plan carefully and move quietly.",
+      "reversed": "A shortcut or hidden motive may be backfiring. Come clean and choose the straightforward path."
+    },
+    "image": "/cards/swords-07.jpg"
+  },
+  {
+    "id": "swords-08",
+    "name": "Eight of Swords",
+    "arcana": "minor",
+    "suit": "swords",
+    "number": 8,
+    "keywords": { "upright": ["feeling trapped", "limiting beliefs", "victim mindset", "restriction"], "reversed": ["new perspective", "freedom", "self-empowerment"] },
+    "meaning": {
+      "upright": "You may feel trapped, but many of the bars are made of thought. Question the story that says you have no options.",
+      "reversed": "You are starting to see the way out of a mental trap. Keep challenging the old narrative."
+    },
+    "image": "/cards/swords-08.jpg"
+  },
+  {
+    "id": "swords-09",
+    "name": "Nine of Swords",
+    "arcana": "minor",
+    "suit": "swords",
+    "number": 9,
+    "keywords": { "upright": ["worry", "sleeplessness", "anxiety", "night fears"], "reversed": ["easing worry", "facing fears", "hope"] },
+    "meaning": {
+      "upright": "Worry is louder at night than the facts deserve. Name your fears on paper and notice how many shrink in daylight.",
+      "reversed": "Anxiety is easing or you are ready to face the fear. Take one small step toward the thing you dread."
+    },
+    "image": "/cards/swords-09.jpg"
+  },
+  {
+    "id": "swords-10",
+    "name": "Ten of Swords",
+    "arcana": "minor",
+    "suit": "swords",
+    "number": 10,
+    "keywords": { "upright": ["endings", "rock bottom", "release", "finality"], "reversed": ["recovery", "regeneration", "resistance to endings"] },
+    "meaning": {
+      "upright": "A difficult chapter is ending, and that ending is also a release. Let it close fully so something new can begin.",
+      "reversed": "Recovery is beginning after a hard fall. Be patient with yourself as you rebuild."
+    },
+    "image": "/cards/swords-10.jpg"
+  },
+  {
+    "id": "swords-page",
+    "name": "Page of Swords",
+    "arcana": "minor",
+    "suit": "swords",
+    "number": 11,
+    "keywords": { "upright": ["curiosity", "new ideas", "vigilance", "quick thinking"], "reversed": ["scattered thinking", "sharp words", "cynicism"] },
+    "meaning": {
+      "upright": "Your mind is sharp and hungry for new ideas. Ask questions, learn fast, and think before you speak.",
+      "reversed": "Scattered thinking or sharp words may cause harm. Slow down and choose your words with care."
+    },
+    "image": "/cards/swords-page.jpg"
+  },
+  {
+    "id": "swords-knight",
+    "name": "Knight of Swords",
+    "arcana": "minor",
+    "suit": "swords",
+    "number": 12,
+    "keywords": { "upright": ["swift thought", "ambition", "directness", "determination"], "reversed": ["haste", "harsh words", "recklessness"] },
+    "meaning": {
+      "upright": "Quick thinking and direct action are your allies. Move fast, but make sure your aim is true.",
+      "reversed": "Haste or harsh words could backfire. Pause before you charge or speak."
+    },
+    "image": "/cards/swords-knight.jpg"
+  },
+  {
+    "id": "swords-queen",
+    "name": "Queen of Swords",
+    "arcana": "minor",
+    "suit": "swords",
+    "number": 13,
+    "keywords": { "upright": ["clear judgment", "independence", "honesty", "perception"], "reversed": ["harsh judgment", "coldness", "bitterness"] },
+    "meaning": {
+      "upright": "Clear-eyed honesty is your superpower right now. See things as they are and speak the truth with kindness.",
+      "reversed": "You may be overly critical, of others or yourself. Soften the judgment without losing the clarity."
+    },
+    "image": "/cards/swords-queen.jpg"
+  },
+  {
+    "id": "swords-king",
+    "name": "King of Swords",
+    "arcana": "minor",
+    "suit": "swords",
+    "number": 14,
+    "keywords": { "upright": ["logic", "fair judgment", "authority", "intellect"], "reversed": ["cold logic", "manipulation", "misuse of power"] },
+    "meaning": {
+      "upright": "Logic and fairness should guide your decision. Weigh the evidence and lead with a cool, clear head.",
+      "reversed": "Cold logic or manipulation of facts is a risk. Keep your reasoning honest and humane."
+    },
+    "image": "/cards/swords-king.jpg"
+  },
+  {
+    "id": "pentacles-ace",
+    "name": "Ace of Pentacles",
+    "arcana": "minor",
+    "suit": "pentacles",
+    "number": 1,
+    "keywords": { "upright": ["new opportunity", "prosperity", "grounded start", "abundance"], "reversed": ["missed opportunity", "financial worry", "poor planning"] },
+    "meaning": {
+      "upright": "A tangible new opportunity is taking root. Plant it carefully with practical steps and watch it grow.",
+      "reversed": "An opportunity feels blocked or a financial plan needs rethinking. Review the practical details before proceeding."
+    },
+    "image": "/cards/pentacles-ace.jpg"
+  },
+  {
+    "id": "pentacles-02",
+    "name": "Two of Pentacles",
+    "arcana": "minor",
+    "suit": "pentacles",
+    "number": 2,
+    "keywords": { "upright": ["balance", "juggling", "flexibility", "priorities"], "reversed": ["overwhelm", "disorganization", "dropping things"] },
+    "meaning": {
+      "upright": "You are juggling multiple demands and managing so far. Stay flexible and prioritize what truly matters.",
+      "reversed": "The juggling act is wobbling. Drop or delegate something before everything falls."
+    },
+    "image": "/cards/pentacles-02.jpg"
+  },
+  {
+    "id": "pentacles-03",
+    "name": "Three of Pentacles",
+    "arcana": "minor",
+    "suit": "pentacles",
+    "number": 3,
+    "keywords": { "upright": ["teamwork", "craftsmanship", "collaboration", "skill"], "reversed": ["strained teamwork", "unrecognized effort", "mediocrity"] },
+    "meaning": {
+      "upright": "Collaboration and skilled work are paying off. Keep honing your craft and valuing your team.",
+      "reversed": "Teamwork may be strained or your effort unrecognized. Clarify roles and speak up for your contribution."
+    },
+    "image": "/cards/pentacles-03.jpg"
+  },
+  {
+    "id": "pentacles-04",
+    "name": "Four of Pentacles",
+    "arcana": "minor",
+    "suit": "pentacles",
+    "number": 4,
+    "keywords": { "upright": ["security", "stability", "saving", "control"], "reversed": ["clinging", "fear of loss", "stinginess"] },
+    "meaning": {
+      "upright": "Building security is wise, but gripping too tightly can cost you. Find the balance between saving and living.",
+      "reversed": "You may be clinging to money, habits, or control out of fear. Consider what loosening your grip would free."
+    },
+    "image": "/cards/pentacles-04.jpg"
+  },
+  {
+    "id": "pentacles-05",
+    "name": "Five of Pentacles",
+    "arcana": "minor",
+    "suit": "pentacles",
+    "number": 5,
+    "keywords": { "upright": ["hardship", "feeling left out", "insecurity", "struggle"], "reversed": ["recovery", "support", "improvement"] },
+    "meaning": {
+      "upright": "A hard patch may be testing you, but help is closer than it feels. Reach out instead of weathering it alone.",
+      "reversed": "Recovery from hardship is beginning. Accept support and rebuild step by step."
+    },
+    "image": "/cards/pentacles-05.jpg"
+  },
+  {
+    "id": "pentacles-06",
+    "name": "Six of Pentacles",
+    "arcana": "minor",
+    "suit": "pentacles",
+    "number": 6,
+    "keywords": { "upright": ["generosity", "giving", "receiving", "fairness"], "reversed": ["one-sided giving", "strings attached", "debt"] },
+    "meaning": {
+      "upright": "Generosity flows both ways right now. Give freely where you can and receive graciously where you need.",
+      "reversed": "Giving may be one-sided or strings are attached. Check that generosity is fair and freely given."
+    },
+    "image": "/cards/pentacles-06.jpg"
+  },
+  {
+    "id": "pentacles-07",
+    "name": "Seven of Pentacles",
+    "arcana": "minor",
+    "suit": "pentacles",
+    "number": 7,
+    "keywords": { "upright": ["patience", "long-term growth", "assessment", "investment"], "reversed": ["impatience", "wasted effort", "short-term thinking"] },
+    "meaning": {
+      "upright": "Your long-term efforts are growing even if results are slow. Pause to assess, then keep tending with patience.",
+      "reversed": "Impatience with slow returns may tempt you to quit. Review whether the investment still deserves your time."
+    },
+    "image": "/cards/pentacles-07.jpg"
+  },
+  {
+    "id": "pentacles-08",
+    "name": "Eight of Pentacles",
+    "arcana": "minor",
+    "suit": "pentacles",
+    "number": 8,
+    "keywords": { "upright": ["mastery", "diligence", "apprenticeship", "craft"], "reversed": ["cutting corners", "going through motions", "perfectionism"] },
+    "meaning": {
+      "upright": "Dedicated practice is building real skill. Keep showing up for the craft and the mastery will follow.",
+      "reversed": "You may be going through the motions or cutting corners. Recommit to quality in the small details."
+    },
+    "image": "/cards/pentacles-08.jpg"
+  },
+  {
+    "id": "pentacles-09",
+    "name": "Nine of Pentacles",
+    "arcana": "minor",
+    "suit": "pentacles",
+    "number": 9,
+    "keywords": { "upright": ["self-sufficiency", "refinement", "reward", "independence"], "reversed": ["overwork", "financial worry", "neglecting self"] },
+    "meaning": {
+      "upright": "Your hard work has built something you can be proud of. Enjoy the rewards of your independence.",
+      "reversed": "Financial worry or overwork may be undermining your success. Protect what you have built, including your health."
+    },
+    "image": "/cards/pentacles-09.jpg"
+  },
+  {
+    "id": "pentacles-10",
+    "name": "Ten of Pentacles",
+    "arcana": "minor",
+    "suit": "pentacles",
+    "number": 10,
+    "keywords": { "upright": ["legacy", "lasting security", "family wealth", "tradition"], "reversed": ["family disputes", "financial strain", "short-term thinking"] },
+    "meaning": {
+      "upright": "Long-term security and shared prosperity are the themes. Think in terms of legacy and what endures.",
+      "reversed": "Family or financial matters may need attention. Address the practical issues before they grow."
+    },
+    "image": "/cards/pentacles-10.jpg"
+  },
+  {
+    "id": "pentacles-page",
+    "name": "Page of Pentacles",
+    "arcana": "minor",
+    "suit": "pentacles",
+    "number": 11,
+    "keywords": { "upright": ["new skills", "opportunity", "studiousness", "ambition"], "reversed": ["distraction", "missed details", "unrealistic plans"] },
+    "meaning": {
+      "upright": "A chance to learn something practical is opening. Study it seriously and build real competence.",
+      "reversed": "Distraction or a missed detail could cost you. Focus and double-check the practical steps."
+    },
+    "image": "/cards/pentacles-page.jpg"
+  },
+  {
+    "id": "pentacles-knight",
+    "name": "Knight of Pentacles",
+    "arcana": "minor",
+    "suit": "pentacles",
+    "number": 12,
+    "keywords": { "upright": ["reliability", "steady progress", "routine", "diligence"], "reversed": ["stubbornness", "stagnation", "workaholism"] },
+    "meaning": {
+      "upright": "Steady, reliable effort is your winning strategy. Keep to the routine and let consistency compound.",
+      "reversed": "Stubbornness or stagnation may be setting in. Adjust the method while keeping the goal."
+    },
+    "image": "/cards/pentacles-knight.jpg"
+  },
+  {
+    "id": "pentacles-queen",
+    "name": "Queen of Pentacles",
+    "arcana": "minor",
+    "suit": "pentacles",
+    "number": 13,
+    "keywords": { "upright": ["nurturing abundance", "practicality", "comfort", "resourcefulness"], "reversed": ["overwork", "neglecting self-care", "financial anxiety"] },
+    "meaning": {
+      "upright": "You create comfort and security for yourself and others. Tend your resources and your wellbeing with equal care.",
+      "reversed": "You may be overworking or neglecting self-care. Balance giving to others with caring for yourself."
+    },
+    "image": "/cards/pentacles-queen.jpg"
+  },
+  {
+    "id": "pentacles-king",
+    "name": "King of Pentacles",
+    "arcana": "minor",
+    "suit": "pentacles",
+    "number": 14,
+    "keywords": { "upright": ["mastery", "prosperity", "dependable leadership", "abundance"], "reversed": ["workaholism", "material worry", "greed"] },
+    "meaning": {
+      "upright": "You have built real competence and stability. Lead generously and use your resources wisely.",
+      "reversed": "Workaholism or material worry may be taking over. Remember that wealth includes health and time."
+    },
+    "image": "/cards/pentacles-king.jpg"
+  }
+]
