@@ -79,6 +79,19 @@ export function markFreeReadingUsed(): void {
   write(K.freeReadingUsed, true);
 }
 
+// ---- First chart interpretation free, per system ----
+// Same pattern as tarot's freeReadingUsed: a device-local flag, checked
+// in the charts page before any credit is spent. The server never sees
+// this flag and never charges; the page spends 1 credit only when the
+// flag for that system is already used.
+export type ChartFreeSystem = "ziwei" | "western" | "vedic";
+export function chartFreeUsed(system: ChartFreeSystem): boolean {
+  return read<boolean>(`sortes-chart-free-used-${system}`, false);
+}
+export function markChartFreeUsed(system: ChartFreeSystem): void {
+  write(`sortes-chart-free-used-${system}`, true);
+}
+
 // ---- Daily card: one per calendar day ----
 export interface DailyCardState {
   date: string; // YYYY-MM-DD

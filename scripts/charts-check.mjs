@@ -4,7 +4,11 @@
 // Privacy: test birth data below is used only in-memory for this check;
 // nothing here is stored, sent to AI, or written to a database.
 import assert from "node:assert";
-import { calculateZiwei, calculateWestern, timeIndexForHour } from "../src/lib/charts.ts";
+import { calculateZiwei, calculateWestern, timeIndexForHour, applyLongitudeCorrection } from "../src/lib/charts.ts";
+import { calculateVedic } from "../src/lib/vedic.ts";
+import { SQUARE_CELLS, squareCellForPalaceIndex } from "../src/lib/ziwei-square.ts";
+import { dailyHoroscope } from "../src/lib/daily.ts";
+import { chartInterpretationCost } from "../src/lib/chart-pricing.ts";
 import {
   formatChineseDateEn,
   formatLunarDateEn,
@@ -86,5 +90,61 @@ const path = wedgePath(360, 360, 150, 340, 0, 30);
 assert.ok(path.startsWith("M 360.00 20.00"), "wedge must start at the outer top");
 assert.ok(path.includes("A 340 340 0 0 1"), "wedge outer arc must sweep clockwise");
 assert.ok(path.endsWith("Z"), "wedge must close");
+
+// Traditional square view: 12 perimeter cells, centre 2x2 free, same order.
+assert.equal(SQUARE_CELLS.length, 12, "square must have 12 cells");
+assert.equal(new Set(SQUARE_CELLS.map((c) => `${c.row},${c.col}`)).size, 12, "square cells must be unique");
+assert.ok(SQUARE_CELLS.every((c) => c.row >= 1 && c.row <= 4 && c.col >= 1 && c.col <= 4), "square cells must be inside 4x4");
+assert.ok(!SQUARE_CELLS.some((c) => c.row >= 2 && c.row <= 3 && c.col >= 2 && c.col <= 3), "square centre 2x2 must stay free");
+assert.deepEqual(squareCellForPalaceIndex(0), { row: 1, col: 1 }, "square first palace is top-left");
+assert.deepEqual(squareCellForPalaceIndex(11), { row: 2, col: 1 }, "square last palace is left column, second row");
+
+// Longitude correction: Manila 120.9842 -> meridian 120, +3.94 minutes,
+// which does not cross a double-hour, so old examples must stay unchanged.
+const manilaCorr = applyLongitudeCorrection("1990-01-01", 8, 0, 120.9842);
+assert.equal(manilaCorr.correctionMinutes, 3.9, "Manila correction is about +3.9 minutes (rounded to 1 decimal in code: 3.9)");
+assert.equal(manilaCorr.hour, 8);
+assert.equal(manilaCorr.minute, 4);
+const tokyoCorr = applyLongitudeCorrection("1990-01-01", 8, 0, 139.6503);
+assert.equal(tokyoCorr.meridian, 135);
+assert.ok(tokyoCorr.correctionMinutes > 18 && tokyoCorr.correctionMinutes < 19, "Tokyo correction is about +18.6 minutes");
+const crossCorr = applyLongitudeCorrection("1990-01-01", 23, 55, 139.6503);
+assert.equal(crossCorr.date, "1990-01-02", "correction crossing midnight moves the solar date");
+assert.equal(crossCorr.hour, 0);
+const ziweiSolar = calculateZiwei({ date: "1990-01-01", hour: 8, gender: "female", longitude: 120.9842 });
+assert.equal(ziweiSolar.solarCorrectionMinutes, 3.9);
+assert.deepEqual(ziweiSolar.palaces.find((p) => p.isLifePalace)?.majorStars, ["太阳", "天梁"], "Manila solar correction must not change old Ziwei A");
+const ziweiNoLon = calculateZiwei({ date: "1990-01-01", hour: 8, gender: "female" });
+assert.equal(ziweiNoLon.solarCorrectionMinutes, 0, "no longitude means no correction");
+
+// Vedic, Caelus MIT, Lahiri sidereal, whole-sign houses. Values verified
+// against a direct Caelus run on 2026-11-01: Sun sidereal is about 23.7
+// degrees behind the tropical Sun (Capricorn 280.30 -> Sagittarius 256.58).
+const vedicA = calculateVedic({ date: "1990-01-01", hour: 8, latitude: 14.5995, longitude: 120.9842 });
+assert.equal(vedicA.sunSign, "Sagittarius");
+assert.equal(vedicA.moonSign, "Aquarius");
+assert.equal(vedicA.moonNakshatra, "Dhanishta");
+assert.equal(vedicA.moonNakshatraPada, 3);
+assert.equal(vedicA.planets.length, 9, "vedic A needs 7 planets plus Rahu and Ketu");
+assert.equal(vedicA.cusps.length, 12);
+assert.ok(vedicA.currentDasha.length > 0, "vedic A needs a current dasha string");
+const vedicB = calculateVedic({ date: "2000-06-15", hour: 14, minute: 30, latitude: 14.5995, longitude: 120.9842 });
+assert.equal(vedicB.sunSign, "Gemini");
+assert.equal(vedicB.moonNakshatra, "Anuradha");
+assert.equal(vedicB.moonNakshatraPada, 3);
+console.log("vedic A:", vedicA.sunSign, vedicA.moonSign, vedicA.moonNakshatra, vedicA.moonNakshatraPada, "| B:", vedicB.sunSign, vedicB.moonNakshatra, vedicB.moonNakshatraPada);
+
+// Daily sun-sign: original Sortes text, deterministic per sign and date.
+const dailyA = dailyHoroscope("Aries", "2026-11-01");
+const dailyA2 = dailyHoroscope("Aries", "2026-11-01");
+assert.equal(dailyA.theme, dailyA2.theme, "daily must be deterministic for the same sign and date");
+assert.ok(dailyA.luckyNumber >= 1 && dailyA.luckyNumber <= 9, "daily lucky number must be 1-9");
+assert.ok(dailyA.luckyColour.length > 0, "daily needs a lucky colour");
+assert.notEqual(dailyHoroscope("Taurus", "2026-11-01").theme, dailyA.theme, "daily themes differ per sign");
+console.log("daily Aries 2026-11-01:", dailyA.theme.slice(0, 60) + "...");
+
+// Pricing: first chart per system free, then 1 credit.
+assert.equal(chartInterpretationCost(false), 0, "first chart per system is free");
+assert.equal(chartInterpretationCost(true), 1, "later charts cost 1 credit");
 
 console.log("charts-check: all assertions passed");

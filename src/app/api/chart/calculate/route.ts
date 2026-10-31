@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { calculateChart } from "@/lib/charts";
+import { calculateVedic } from "@/lib/vedic";
 
 // Calculation only: no AI, no credit charge, no storage, no database.
 // Birth data in the request is used in-memory for this calculation only
@@ -33,8 +34,8 @@ export async function POST(req: NextRequest) {
   const system = body.system;
   const date = body.date;
   const gender = body.gender ?? "female";
-  if (system !== "ziwei" && system !== "western") {
-    return NextResponse.json({ error: "system must be ziwei or western." }, { status: 400 });
+  if (system !== "ziwei" && system !== "western" && system !== "vedic") {
+    return NextResponse.json({ error: "system must be ziwei, western, or vedic." }, { status: 400 });
   }
   if (typeof date !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     return NextResponse.json({ error: "date must be YYYY-MM-DD." }, { status: 400 });
@@ -50,10 +51,20 @@ export async function POST(req: NextRequest) {
   const minute = typeof body.minute === "number" && body.minute >= 0 && body.minute <= 59 ? Math.floor(body.minute) : 0;
   const latitude = typeof body.latitude === "number" ? body.latitude : NaN;
   const longitude = typeof body.longitude === "number" ? body.longitude : NaN;
-  if (system === "western" && (!Number.isFinite(latitude) || !Number.isFinite(longitude))) {
-    return NextResponse.json({ error: "latitude and longitude are required for Western charts." }, { status: 400 });
+  if (system !== "ziwei" && (!Number.isFinite(latitude) || !Number.isFinite(longitude))) {
+    return NextResponse.json({ error: "latitude and longitude are required for Western and Vedic charts." }, { status: 400 });
   }
   try {
+    if (system === "vedic") {
+      const result = calculateVedic({
+        date,
+        hour,
+        minute,
+        latitude: Number(latitude),
+        longitude: Number(longitude),
+      });
+      return NextResponse.json({ result });
+    }
     const result = calculateChart({
       system,
       date,

@@ -56,6 +56,41 @@ const PALACE_EN: Record<string, string> = {
   "父母": "Parents",
 };
 
+// Longitude correction for Ziwei time (see applyLongitudeCorrection):
+// the birthplace longitude is used only to shift the clock time toward
+// local solar time. No timezone database, no DST, and no equation of time
+// are applied, so this is a longitude correction, not full true solar
+// time. Callers must say so on the page.
+export function applyLongitudeCorrection(
+  date: string,
+  hour: number,
+  minute: number,
+  longitude: number,
+): { date: string; hour: number; minute: number; correctionMinutes: number; meridian: number } {
+  const meridian = Math.round(longitude / 15) * 15;
+  const correctionMinutes = Math.round(4 * (longitude - meridian) * 10) / 10;
+  const total = hour * 60 + minute + correctionMinutes;
+  let days = 0;
+  let mins = total;
+  if (mins < 0) {
+    days = -1;
+    mins += 1440;
+  } else if (mins >= 1440) {
+    days = 1;
+    mins -= 1440;
+  }
+  const d = new Date(`${date}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  const outDate = d.toISOString().slice(0, 10);
+  return {
+    date: outDate,
+    hour: Math.floor(mins / 60),
+    minute: Math.round(mins % 60),
+    correctionMinutes,
+    meridian,
+  };
+}
+
 export function timeIndexForHour(hour: number | null, minute = 0): number {
   if (hour === null) return 6; // noon double-hour, flagged as unknown by callers
   const h = hour + minute / 60;
@@ -111,6 +146,8 @@ export interface ZiweiResult {
   sign: string;
   timeLabel: string;
   unknownTime: boolean;
+  solarCorrectionMinutes: number;
+  solarCorrectedTime: string | null;
   palaces: ZiweiPalace[];
 }
 
@@ -119,16 +156,33 @@ export function calculateZiwei(input: {
   hour: number | null;
   minute?: number;
   gender: ChartGender;
+  longitude?: number;
 }): ZiweiResult {
-  const { y, m, d } = parseDate(input.date);
-  const timeIndex = timeIndexForHour(input.hour, input.minute ?? 0);
+  // Longitude correction, when a birthplace longitude is supplied and the
+  // time is known: shift the clock time before iztro picks its double-hour.
+  // Unknown time stays at noon with no correction.
+  let effDate = input.date;
+  let effHour = input.hour;
+  let effMinute = input.minute ?? 0;
+  let correction = 0;
+  if (input.hour !== null && typeof input.longitude === "number" && Number.isFinite(input.longitude)) {
+    const c = applyLongitudeCorrection(input.date, input.hour, input.minute ?? 0, input.longitude);
+    effDate = c.date;
+    effHour = c.hour;
+    effMinute = c.minute;
+    correction = c.correctionMinutes;
+  }
+  const { y, m, d } = parseDate(effDate);
+  const timeIndex = timeIndexForHour(effHour, effMinute);
   const genderName = input.gender === "female" ? "女" : "男";
   const solar = `${y}-${m}-${d}`;
   const astrolabe = astro.bySolar(solar, timeIndex, genderName);
   const soulBranch = astrolabe.earthlyBranchOfSoulPalace;
   return {
     system: "ziwei",
-    solarDate: input.date,
+    solarDate: effDate,
+    solarCorrectionMinutes: correction,
+    solarCorrectedTime: input.hour === null ? null : `${String(effHour).padStart(2, "0")}:${String(effMinute).padStart(2, "0")}`,
     lunarDate: astrolabe.lunarDate,
     chineseDate: astrolabe.chineseDate,
     zodiac: astrolabe.zodiac,
@@ -236,7 +290,7 @@ export function calculateWestern(input: {
 
 export function calculateChart(input: ChartInput): ZiweiResult | WesternResult {
   if (input.system === "ziwei") {
-    return calculateZiwei({ date: input.date, hour: input.hour, minute: input.minute, gender: input.gender });
+    return calculateZiwei({ date: input.date, hour: input.hour, minute: input.minute, gender: input.gender, longitude: input.longitude });
   }
   return calculateWestern({ date: input.date, hour: input.hour, minute: input.minute, latitude: input.latitude, longitude: input.longitude });
 }

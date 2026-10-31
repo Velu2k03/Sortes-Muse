@@ -81,7 +81,10 @@ export default function CardModal({ cardId, onClose }: Props) {
                     </div>
                   </div>
                   <div>
-                    <p className="text-xs uppercase tracking-widest text-violet">
+                    {/* Was text-violet: 4.33:1 on navydeep, below WCAG AA 4.5:1.
+                        Cream is 14.74:1 on the same background. The reversed
+                        chips below keep their violet border and tint. */}
+                    <p className="text-xs uppercase tracking-widest text-cream">
                       Reversed
                     </p>
                     <div className="mt-1 flex flex-wrap gap-1.5">
