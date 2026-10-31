@@ -12,6 +12,7 @@ const NAV = [
   { href: "/deck", label: "Deck" },
   { href: "/daily", label: "Daily Card" },
   { href: "/spreads", label: "Readings" },
+  { href: "/charts", label: "Charts" },
   { href: "/history", label: "Journal" },
 ];
 

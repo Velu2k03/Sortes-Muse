@@ -109,6 +109,18 @@ export default function Home() {
           >
             Your first full reading is free. No card, no account, no friction.
           </motion.p>
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.8, delay: 0.9 }}
+            className="mt-3 text-sm text-cream/75"
+          >
+            New: birth charts, Ziwei and Western, calculation only and free in
+            Phase 1.{" "}
+            <Link href="/charts" className="font-semibold text-goldbright underline underline-offset-4">
+              Cast a birth chart
+            </Link>
+          </motion.p>
         </div>
       </section>
 

@@ -50,6 +50,13 @@ export default function PrivacyPage() {
               account.
             </li>
             <li>
+              <strong>Chart calculation:</strong> birth date, time, and place
+              you enter for a birth chart are used in-memory for that
+              calculation only. They are not stored in our database, are not
+              sent to any AI model, and chart results are not saved to your
+              journal in Phase 1.
+            </li>
+            <li>
               <strong>Analytics:</strong> we use privacy-friendly analytics
               (Plausible) that records page views, reading starts, and
               completed purchases without cookies or cross-site tracking.
