@@ -301,6 +301,52 @@ body {
   }
 }
 
+/* Batch 9: native pickers that remain (birth time) must follow the
+   site theme instead of opening white on a dark page. Dark theme
+   gets a dark native popup, light theme a light one. The birth date
+   itself no longer uses a native popup at all, it uses
+   ThemedDatePicker, but this stops the time popup being the next
+   white island. */
+html[data-theme="dark"] {
+  color-scheme: dark;
+}
+html[data-theme="light"] {
+  color-scheme: light;
+}
+
+/* Batch 9: calendar popup entrance, and the slow gold glow around a
+   freshly cast chart. Transform and opacity only, no layout shift,
+   no purple gradient, no sparkle emoji, no looping rainbow. The
+   reduced-motion block below kills both animations for users who
+   prefer reduced motion, exactly like btn-shimmer and nebula. */
+@media (prefers-reduced-motion: no-preference) {
+  .calendar-pop {
+    animation: calendar-pop 0.22s ease-out;
+  }
+  @keyframes calendar-pop {
+    from {
+      opacity: 0;
+      transform: translateY(-4px) scale(0.98);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+  .magic-glow {
+    animation: magic-glow 3.2s ease-in-out infinite;
+  }
+  @keyframes magic-glow {
+    0%,
+    100% {
+      box-shadow: 0 0 18px rgba(212, 175, 55, 0.22);
+    }
+    50% {
+      box-shadow: 0 0 38px rgba(212, 175, 55, 0.45);
+    }
+  }
+}
+
 /* Respect users who prefer reduced motion */
 @media (prefers-reduced-motion: reduce) {
   *,
