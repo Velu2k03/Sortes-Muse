@@ -18,6 +18,11 @@ interface Star {
  */
 export default function Starfield({ density = 90 }: { density?: number }) {
   const ref = useRef<HTMLCanvasElement>(null);
+  // Batch 9 magic: the old field was only tiny drifting dots, so on
+  // a busy page it read as dust, not magic. Twelve larger four-point
+  // sparkles are added in the same canvas, same gold, same cheap
+  // 2D loop, twinkling in and out. No new library, no emoji, no
+  // purple gradient, and still nothing when reduced motion is on.
 
   useEffect(() => {
     const canvas = ref.current;
@@ -29,6 +34,7 @@ export default function Starfield({ density = 90 }: { density?: number }) {
 
     let raf = 0;
     let stars: Star[] = [];
+    let sparkles: { x: number; y: number; r: number; twinkle: number }[] = [];
     let w = 0;
     let h = 0;
 
@@ -42,6 +48,12 @@ export default function Starfield({ density = 90 }: { density?: number }) {
         speed: Math.random() * 0.12 + 0.03,
         drift: Math.random() * 0.2 - 0.1,
         alpha: Math.random() * 0.55 + 0.15,
+        twinkle: Math.random() * Math.PI * 2,
+      }));
+      sparkles = Array.from({ length: 12 }, () => ({
+        x: Math.random() * w,
+        y: Math.random() * h,
+        r: Math.random() * 5 + 4,
         twinkle: Math.random() * Math.PI * 2,
       }));
     };
@@ -61,6 +73,18 @@ export default function Starfield({ density = 90 }: { density?: number }) {
         ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
         ctx.fillStyle = `rgba(232, 197, 90, ${a.toFixed(3)})`;
         ctx.fill();
+      }
+      for (const sp of sparkles) {
+        sp.twinkle += 0.015;
+        const a = 0.25 + 0.55 * (0.5 + 0.5 * Math.sin(sp.twinkle));
+        ctx.strokeStyle = `rgba(232, 197, 90, ${a.toFixed(3)})`;
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        ctx.moveTo(sp.x - sp.r, sp.y);
+        ctx.lineTo(sp.x + sp.r, sp.y);
+        ctx.moveTo(sp.x, sp.y - sp.r);
+        ctx.lineTo(sp.x, sp.y + sp.r);
+        ctx.stroke();
       }
       raf = requestAnimationFrame(tick);
     };

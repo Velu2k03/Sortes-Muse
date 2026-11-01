@@ -6,6 +6,8 @@ import type { WesternResult, ZiweiResult } from "@/lib/charts";
 import type { VedicResult } from "@/lib/vedic";
 import type { ZiweiLanguage } from "@/lib/ziwei-i18n";
 import { localizeStar, zodiacEn, ZIWEI_LEGEND_ZH } from "@/lib/ziwei-i18n";
+import ThemedDatePicker from "@/components/ThemedDatePicker";
+import CardBurst from "@/components/CardBurst";
 import ZiweiChartBoard, { type ZiweiView } from "@/components/ZiweiChartBoard";
 import WesternWheel from "@/components/WesternWheel";
 import VedicChart from "@/components/VedicChart";
@@ -67,6 +69,7 @@ export default function ChartsClient() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState<ChartResult | null>(null);
+  const [showBurst, setShowBurst] = useState(false);
   const resultRef = useRef<HTMLElement | null>(null);
   // Auto-scroll to the result after Calculate: it used to appear below
   // the form with no scroll, so users could think nothing happened.
@@ -74,6 +77,17 @@ export default function ChartsClient() {
     if (!result || !resultRef.current) return;
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     resultRef.current.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
+  }, [result]);
+  // Batch 9 magic, chart reveal only: a brief gold spark burst when
+  // a chart is cast, the same CardBurst tarot uses on reveal, plus
+  // the slow magic-glow on the result heading block. It fires once
+  // per new result and unmounts after 1 second, it does not loop,
+  // and CardBurst is pointer-events-none decoration.
+  useEffect(() => {
+    if (!result) return;
+    setShowBurst(true);
+    const t = setTimeout(() => setShowBurst(false), 1000);
+    return () => clearTimeout(t);
   }, [result]);
   // Ziwei language only; Western and Tarot are already English.
   // Default English for western clients; saved choice restores on return.
@@ -364,7 +378,7 @@ export default function ChartsClient() {
             <label htmlFor="chart-date" className={labelClass}>
               Birth date
             </label>
-            <input id="chart-date" type="date" required value={date} onChange={(e) => setDate(e.target.value)} className={inputClass} />
+            <ThemedDatePicker id="chart-date" value={date} onChange={setDate} />
           </div>
           <div>
             <label htmlFor="chart-time" className={labelClass}>
@@ -474,7 +488,8 @@ export default function ChartsClient() {
       </form>
 
       {result && (
-        <section ref={resultRef} className="mt-10 scroll-mt-24" aria-live="polite">
+        <section ref={resultRef} className="magic-glow relative mt-10 scroll-mt-24 rounded-3xl border border-gold/25 bg-panel/40 p-4 sm:p-6" aria-live="polite">
+          {showBurst && <CardBurst count={24} distance={110} />}
           {/* Share card, result level: Audit 3 found the legend
               promising "share it as an image" with no Share button
               before interpretation, because the old share button only

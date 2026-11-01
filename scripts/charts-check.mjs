@@ -330,3 +330,26 @@ console.log("charts-check: all assertions passed");
   assert.ok(useExampleIdx > 0 && useExampleIdx < birthDateIdx, "Use example must sit at the top of the form, before the first field, so it is visible without scrolling");
   console.log("audit6: wheel 12-degree separation, As in from rim, Mc tangent nudge, list intro reworded, code-step preview, collapsed charts intro, Use example on top: all source assertions passed");
 }
+
+// Batch 9 (PR #9): themed calendar + visible magic. The native date
+// input is gone, because its popup is browser-drawn and never
+// followed the Sortes theme or icons.
+{
+  const charts = fs.readFileSync("src/app/charts/ChartsClient.tsx", "utf8");
+  assert.ok(!charts.includes('type="date"'), "charts must not use a native date input, its popup is browser-drawn and unthemed");
+  assert.ok(charts.includes("ThemedDatePicker"), "charts must use the themed date picker");
+  assert.ok(charts.includes("CardBurst") && charts.includes("magic-glow"), "chart result must burst and glow on reveal");
+  const picker = fs.readFileSync("src/components/ThemedDatePicker.tsx", "utf8");
+  assert.ok(picker.includes('name="calendar"'), "date field must show the Tabler calendar icon, not the browser glyph");
+  assert.ok(picker.includes("Clear") && picker.includes("Today"), "calendar popup must offer Clear and Today like the screenshot layout");
+  assert.ok(picker.includes("Su") && picker.includes("Sa"), "calendar popup must show Su through Sa weekdays");
+  assert.ok(picker.includes("bg-panel"), "calendar popup must use the panel token so it flips with the theme");
+  const css = fs.readFileSync("src/app/globals.css", "utf8");
+  assert.ok(css.includes("color-scheme: dark") && css.includes("color-scheme: light"), "remaining native pickers must follow the theme via color-scheme");
+  assert.ok(css.includes("calendar-pop") && css.includes("magic-glow"), "calendar entrance and result glow must exist in globals.css");
+  const star = fs.readFileSync("src/components/Starfield.tsx", "utf8");
+  assert.ok(star.includes("sparkles"), "starfield must include larger twinkling sparkles, not only tiny dots");
+  const icon = fs.readFileSync("src/components/Icon.tsx", "utf8");
+  assert.ok(icon.includes("chevronLeft"), "calendar month navigation needs a Tabler chevronLeft icon");
+  console.log("batch9: themed calendar replaces native date, Tabler icon, Clear/Today, color-scheme, chart burst and glow, starfield sparkles: all source assertions passed");
+}
