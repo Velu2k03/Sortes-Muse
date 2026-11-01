@@ -304,3 +304,29 @@ console.log("charts-check: all assertions passed");
   assert.ok(auth.includes("authConfigured"), "auth must expose a fail-fast configured check");
   console.log("audit5+aislop: custom wheel stagger, Chinese legend heading, interpretation language note, credits tint removed, static theme script, number font, typewriter button, deterministic burst, share next/image, auth fail-fast: all source assertions passed");
 }
+
+// Audit 6 batch (PR #8): wheel label separation, list intro reword,
+// code-step preview, collapsed charts intro with Use example on top.
+{
+  const custom = fs.readFileSync("src/components/CustomWesternWheel.tsx", "utf8");
+  assert.ok(custom.includes("MIN_LABEL_SEP = 12"), "custom wheel must enforce a 12-degree minimum label separation");
+  assert.ok(custom.includes("placed"), "custom wheel must check each new label against all placed labels, not just the previous one");
+  assert.ok(custom.includes("polar(cx, cy, 282, 180)"), "As label must move in from the rim edge (radius 282, not 296)");
+  assert.ok(custom.includes("mcTangent"), "Mc label must be nudged tangentially away from the nearest sign glyph");
+  assert.ok(custom.includes("nearest"), "Mc nudge must be computed from the nearest sign glyph");
+  const wheel = fs.readFileSync("src/components/WesternWheel.tsx", "utf8");
+  assert.ok(wheel.includes("Read them here too, in longitude order"), "staggered list intro must say 'here too', not 'instead of from the wheel'");
+  assert.ok(!wheel.includes("instead of from the wheel"), "old contradictory list intro must be gone");
+  const account = fs.readFileSync("src/app/account/AccountClient.tsx", "utf8");
+  assert.ok(account.includes("6-digit code will be sent"), "account page must preview the code step before sending a code");
+  assert.ok(account.includes("Code field preview"), "account page must show the code field format preview");
+  const auth = fs.readFileSync("src/lib/auth.ts", "utf8");
+  assert.ok(auth.includes('padStart(6, "0")'), "code length preview must match auth.ts: 6 digits");
+  const charts = fs.readFileSync("src/app/charts/ChartsClient.tsx", "utf8");
+  assert.ok(charts.includes("How each system uses your inputs (tap for details)"), "long charts intro must be collapsed behind a details summary");
+  assert.ok(charts.includes("Before you calculate, please note"), "timezone disclosure must stay reachable, only its position/collapse state may change");
+  const useExampleIdx = charts.indexOf("Use example: 1990-01-01, 08:00, Manila");
+  const birthDateIdx = charts.indexOf('id="chart-date"');
+  assert.ok(useExampleIdx > 0 && useExampleIdx < birthDateIdx, "Use example must sit at the top of the form, before the first field, so it is visible without scrolling");
+  console.log("audit6: wheel 12-degree separation, As in from rim, Mc tangent nudge, list intro reworded, code-step preview, collapsed charts intro, Use example on top: all source assertions passed");
+}

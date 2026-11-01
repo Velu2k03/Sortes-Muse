@@ -289,6 +289,20 @@ export default function AccountPage() {
                   className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist/50 focus:border-gold/60 focus:outline-none"
                 />
               </div>
+              <div className="rounded-xl border border-gold/25 bg-panel/50 p-4">
+                <p className="text-sm text-cream/80">
+                  Next step: a 6-digit code will be sent to this email, and you will enter it in a 6-digit field on the
+                  next step. Nothing is sent until you tap Send sign-in code below.
+                </p>
+                <p className="mt-3 text-xs uppercase tracking-[0.2em] text-mist">Code field preview</p>
+                <div className="mt-2 flex gap-2" aria-hidden="true">
+                  {[0, 1, 2, 3, 4, 5].map((i) => (
+                    <span key={i} className="flex h-11 w-10 items-center justify-center rounded-lg border border-gold/25 bg-panel/70 text-lg text-mist">
+                      ·
+                    </span>
+                  ))}
+                </div>
+              </div>
               <button
                 type="submit"
                 disabled={busy}
