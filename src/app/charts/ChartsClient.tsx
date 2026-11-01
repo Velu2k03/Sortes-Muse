@@ -284,15 +284,14 @@ export default function ChartsClient() {
         <p className="text-xs uppercase tracking-[0.35em] text-gold">Birth Charts</p>
         <h1 className="mt-3 font-display text-5xl text-goldbright sm:text-6xl">Cast a birth chart</h1>
         <p className="mx-auto mt-4 max-w-xl text-cream/75">
-          Ziwei (Purple Star), Western, and Vedic charts. Calculation is free and unsaved. Interpretation, when you
-          choose it, is 1 credit per full chart reading, and your first chart per system is free.
+          Ziwei, Western, and Vedic charts. Calculation is free.
+          Interpretation is 1 credit, first per system free.
         </p>
         <p className="mx-auto mt-2 max-w-xl text-sm text-cream/80">
-          Privacy: your birth date, time, and place are used in-memory for this calculation only. They are not stored
-          in our database and are never sent to an AI model. The AI, when you ask for interpretation, receives only
-          chart positions, signs, houses, and stars, plus your focus and question.
+          Birth data is used in memory only for this calculation. It is not
+          stored, and AI gets only chart positions, never birth data.
           {system === "ziwei" &&
-            " Ziwei time is corrected by birthplace longitude only: correction = 4 minutes per degree from the nearest 15 degree timezone meridian. No timezone database, no DST, and no equation of time are applied, so a chart near a double-hour boundary may differ by one double-hour."}
+            " Ziwei time is corrected by longitude only: 4 minutes per degree from the nearest 15 degree meridian."}
         </p>
         {/* Audit 6: this long block used to sit above the form, so a
             first-time user had to scroll to the system tabs and the
@@ -302,24 +301,12 @@ export default function ChartsClient() {
             form is untouched. */}
         <details className="mx-auto mt-4 max-w-xl rounded-2xl border border-gold/20 bg-panel/50 p-4 text-left text-sm leading-relaxed text-cream/75">
           <summary className="cursor-pointer font-semibold text-goldbright">How each system uses your inputs (tap for details)</summary>
-          <p className="mt-2">
-            Gender is asked for Ziwei only, because Ziwei palace placement depends on gender in this system. Western
-            and Vedic charts do not use gender.
-          </p>
-          <p className="mt-2">
-            Birthplace and coordinates are used for all three systems now, through the place search or the preset list.
-            Western and Vedic need them for Rising and houses. Ziwei needs longitude for its longitude correction above.
-            That is why Manila matters: it sets the coordinates, not the language.
-          </p>
-          <p className="mt-2">
-            Birth time means clock time at the birthplace. There is no timezone database and no DST lookup, so a time
-            near a sign, house, or double-hour boundary may differ by one division. If you do not know the time, tick
-            unknown time: the chart is calculated at noon and Rising and houses are approximate.
-          </p>
-          <p className="mt-2">
-            Calculation only means the numbers above, free and unsaved. Interpretation is a separate step below, 1
-            credit per full chart reading, first chart per system free.
-          </p>
+          <ul className="mt-2 list-disc space-y-1 pl-5">
+            <li>Gender: Ziwei only, palace placement depends on it.</li>
+            <li>Birthplace: all three systems. Western and Vedic need it for Rising and houses; Ziwei needs longitude for its correction.</li>
+            <li>Birth time: clock time at the birthplace. No timezone database, no DST, so a time near a boundary may differ by one division. Unknown time is calculated at noon, Rising and houses approximate.</li>
+            <li>Calculation is free and unsaved. Interpretation is separate: 1 credit, first per system free.</li>
+          </ul>
         </details>
       </div>
 
@@ -477,7 +464,7 @@ export default function ChartsClient() {
         <details className="mt-5 rounded-xl border border-gold/25 bg-panel/50 px-4 py-3 text-sm leading-relaxed text-cream/80">
           <summary className="cursor-pointer font-semibold text-goldbright">Before you calculate, please note: clock time at the birthplace, longitude-only conversion (tap for details)</summary>
           <p className="mt-2">
-            Birth time means clock time at the birthplace. Conversion is longitude-only: no timezone database, no DST, and no equation of time are used, so a birth near a sign, house, or double-hour boundary may differ by one division. No timezone lookup is added, because no free no-key service was verified as reliable for this Vercel deployment; this disclosure, not a lookup, is the fix for now.
+            Birth time is clock time at the birthplace. Conversion is longitude-only, no timezone database, no DST, no equation of time, so a time near a boundary may differ by one division. No timezone lookup is added.
           </p>
         </details>
         <div className="mt-6 flex flex-wrap gap-3">
@@ -584,7 +571,7 @@ export default function ChartsClient() {
             <p className="mt-2 text-sm text-cream/75">
               {result.system === "ziwei" && ziweiLang === "zh"
                 ? ZIWEI_LEGEND_ZH.intro
-                : "Free text only, no charge for this legend. If a word below is new to you, start here, then read the interpretation below for your own chart."}
+                : "Free legend. Start here if a word is new, then read your interpretation below."}
             </p>
             <div className="mt-4 grid gap-4 text-sm leading-relaxed text-cream/85 sm:grid-cols-2">
               <div>
@@ -647,8 +634,7 @@ export default function ChartsClient() {
                 <><strong className="text-goldbright">下一步：</strong>{ZIWEI_LEGEND_ZH.nextStep}</>
               ) : (
                 <><strong className="text-goldbright">Next step: </strong>
-                read the interpretation below, save it to your journal, or share it as an image. Calculation stays free;
-                interpretation is 1 credit, first chart per system free.</>
+                read your interpretation, save it, or share it. Calculation is free; interpretation is 1 credit, first per system free.</>
               )}
             </p>
           </section>
@@ -659,7 +645,7 @@ export default function ChartsClient() {
               <p className="mt-2 text-sm text-cream/80">解读由 AI 用英文生成，基于上方星盘位置；图表标签已为中文。</p>
             )}
             <p className="mt-2 text-sm text-cream/75">
-              Calculation above was free and unsaved. A full interpretation is{" "}
+              Calculation was free and unsaved. Interpretation is{" "}
               <strong className="text-cream">
                 {chartFreeUsed(result.system as ChartFreeSystem) ? "1 credit" : "free for your first chart in this system, then 1 credit"}
               </strong>
@@ -708,7 +694,7 @@ export default function ChartsClient() {
                     {shareBusy ? "Creating image…" : (<span className="inline-flex items-center gap-2"><Icon name="share" size={16} />Share chart as image</span>)}
                   </button>
                 </div>
-                {saved && <p className="mt-3 text-sm text-cream/70">Saved as positions only, never birth date, time, or place. Revisit it from your journal.</p>}
+                {saved && <p className="mt-3 text-sm text-cream/70">Saved as positions only, never birth data. See your journal.</p>}
 
               </div>
             )}

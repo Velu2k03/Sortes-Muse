@@ -40,13 +40,9 @@ export default function Home() {
                 "radial-gradient(circle, rgba(212,175,55,0.5) 0%, transparent 70%)",
             }}
           />
-          <div
-            className="nebula-alt absolute -right-32 top-1/3 h-[32rem] w-[32rem] rounded-full opacity-20 blur-3xl"
-            style={{
-              background:
-                "radial-gradient(circle, rgba(139,92,246,0.5) 0%, transparent 70%)",
-            }}
-          />
+          {/* Batch 10 slop fix: the violet nebula was the classic AI
+              purple glow tic from the kill-ai-slop taxonomy. Gold only
+              now, the site already has a gold identity. */}
         </div>
         <div className="relative mx-auto flex max-w-4xl flex-col items-center px-4 pb-24 pt-24 text-center sm:px-6 sm:pt-32">
           {/* Hero text renders at full opacity on first paint: the old
@@ -79,9 +75,8 @@ export default function Home() {
             animate={{ opacity: 1 }}
             className="mt-6 max-w-xl text-base leading-relaxed text-cream/80"
           >
-            An ancient practice of casting lots, reimagined for the modern
-            seeker. Draw your free daily card, explore all 78 card meanings,
-            and receive readings personalized to your own story.
+            Draw a free daily card, explore 78 card meanings, and get a
+            reading for your question.
           </motion.p>
           {/* Audit 4: hero CTAs wrapped on the very first load, then
               were single-line on warm reloads, so whitespace-nowrap
@@ -141,22 +136,18 @@ export default function Home() {
           </h2>
           <div className="mt-8 space-y-5 text-base leading-relaxed text-cream/85">
             <p>
-              Tarot is a deck of 78 cards, 22 Major Arcana and 56 Minor Arcana,
-              used for centuries as a mirror for the mind. Each card holds
-              layered symbolism: archetypes, elements, numbers, and stories
-              that reflect the patterns of human life.
+              Tarot is 78 cards, 22 Major and 56 Minor Arcana, used for
+              centuries as a mirror for the mind.
             </p>
             <p>
-              A reading is not a verdict about your future. It is a structured
-              moment of reflection: you bring a question, the cards offer
-              images and language, and meaning emerges in the space between.
-              We treat the cards as a mirror, not an oracle.
+              A reading is not a verdict on your future. You bring a
+              question, the cards offer images, and meaning emerges between
+              them. A mirror, not an oracle.
             </p>
             <p>
-              <span className="text-goldbright">Sortes</span> takes its name
-              from <em>sortes</em>, the Latin word for lots, the ancient
-              practice of casting tokens to seek guidance. Here the lots are
-              cards, the casting is a shuffle, and the story is yours.
+              <span className="text-goldbright">Sortes</span> is Latin for
+              lots. Here the lots are cards, the casting is a shuffle, and
+              the story is yours.
             </p>
           </div>
         </motion.div>
@@ -165,15 +156,15 @@ export default function Home() {
           {[
             {
               title: "Draw",
-              text: "Shuffle the deck and lay the cards face down. Tap each one to reveal it in its own moment.",
+              text: "Shuffle, lay the cards face down, tap each one to reveal it.",
             },
             {
               title: "Reflect",
-              text: "Read the card meanings in your own words first, then let the personalized interpretation deepen them.",
+              text: "Read the meanings first, then the interpretation for your question.",
             },
             {
               title: "Return",
-              text: "Every reading is saved to your journal. Patterns across weeks reveal what single days cannot.",
+              text: "Every reading is saved to your journal. Patterns across weeks show more than single days.",
             },
           ].map((s) => (
             <div
@@ -195,8 +186,8 @@ export default function Home() {
               Choose your spread
             </h2>
             <p className="mx-auto mt-4 max-w-xl text-cream/75">
-              From a single mirror to the full ten-card landscape. Your first
-              Quick Insight reading is on us.
+              From one card to the full ten-card spread. Your first Quick
+              Insight is free.
             </p>
           </motion.div>
           <div className="mt-10 grid gap-5 md:grid-cols-3">
@@ -249,8 +240,7 @@ export default function Home() {
             One card, every morning
           </h2>
           <p className="mx-auto mt-4 max-w-lg text-cream/75">
-            Free forever, zero questions asked. Draw today&apos;s card in
-            seconds and carry its reflection with you.
+            Free, every day. Draw today&apos;s card in seconds.
           </p>
           <div className="mt-8 flex justify-center gap-3">
             {MAJORS.slice(0, 5).map((c, i) => (

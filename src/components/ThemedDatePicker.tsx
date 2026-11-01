@@ -4,20 +4,15 @@ import { useEffect, useRef, useState } from "react";
 import Icon from "@/components/Icon";
 
 /**
- * Batch 9, calendar fix: the /charts birth-date field used to be a
- * native <input type="date">. Its popup is drawn by the browser, not
- * by Sortes, so on a dark gold page it still opened white with a blue
- * selected day, and its little calendar glyph was the browser's, not
- * Tabler's. That is why the icon and calendar looked untouched by
- * every earlier theme and icon pass, which only ever styled Sortes'
- * own elements. This picker replaces it with a Sortes popup: panel
- * background, cream text, gold selected day, Tabler calendar icon,
- * and the same tokens in light mode (panel flips to white, gold
- * flips to dark gold, cream flips to ink text). Transform and opacity
- * only, so it stays calm, and it renders nothing animated when the
- * user prefers reduced motion (the global CSS kills the animation).
- * Value stays YYYY-MM-DD, the same string ChartsClient already sends
- * to /api/chart/calculate, so no chart math, pricing, or privacy
+ * Themed date picker for /charts. It draws the calendar popup in
+ * Sortes tokens: panel background, cream text, gold selected day,
+ * Tabler calendar icon, and the same tokens in light mode (panel
+ * flips to white, gold flips to dark gold, cream flips to ink text).
+ * Transform and opacity only, so it stays calm, and it renders
+ * nothing animated when the user prefers reduced motion (the global
+ * CSS kills the animation). Value stays YYYY-MM-DD, the same string
+ * ChartsClient already sends to /api/chart/calculate, so no chart
+ * math, pricing, or privacy
  * behaviour changes. Keyboard: the field is a real button, Escape
  * closes, day buttons are real buttons with full date labels.
  */

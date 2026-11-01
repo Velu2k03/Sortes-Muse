@@ -129,13 +129,11 @@ export default function SpreadsPage() {
       <div className="mx-auto mt-12 max-w-2xl rounded-2xl border border-gold/20 bg-panel/50 p-6 text-center">
         <p className="font-display text-2xl text-goldbright">How credits work</p>
         <p className="mt-2 text-sm leading-relaxed text-cream/75">
-          You only ever pay for credit packs, never per reading and never
-          twice. One credit unlocks one full reading of any spread, with a
-          personalized AI interpretation woven around your story. Your daily
-          card is always free and never uses a credit. Credits never expire.
-          No subscriptions, no meters, no surprises. The one free reading is
-          Quick Insight only: that is why a locked spread says Get credits to
-          begin, it is not a second free reading waiting behind a paywall.
+          You pay only for credit packs, never per reading, never twice.
+          One credit pays for one full reading of any spread, with an AI
+          interpretation for your question. Your daily card is always free
+          and never uses a credit. Credits never expire. No subscriptions.
+          The one free reading is Quick Insight only.
         </p>
         <button
           type="button"

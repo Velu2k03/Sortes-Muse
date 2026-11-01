@@ -45,7 +45,7 @@ export default function TermsPage() {
         <section>
           <h2 className="font-display text-2xl text-goldbright">3. Credits and payments</h2>
           <ul className="mt-2 list-disc space-y-2 pl-5">
-            <li>1 credit unlocks 1 full reading of any spread.</li>
+            <li>1 credit pays for 1 full reading of any spread.</li>
             <li>Credits never expire and are non-transferable.</li>
             <li>
               Payments are processed securely by Lemon Squeezy. We never see

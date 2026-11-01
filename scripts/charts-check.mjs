@@ -352,4 +352,15 @@ console.log("charts-check: all assertions passed");
   const icon = fs.readFileSync("src/components/Icon.tsx", "utf8");
   assert.ok(icon.includes("chevronLeft"), "calendar month navigation needs a Tabler chevronLeft icon");
   console.log("batch9: themed calendar replaces native date, Tabler icon, Clear/Today, color-scheme, chart burst and glow, starfield sparkles: all source assertions passed");
+  // Batch 10: AI-slop and text trim. Short copy, no slop tics, privacy kept.
+  const home = fs.readFileSync("src/app/page.tsx", "utf8");
+  assert.ok(!home.includes("reimagined for the modern seeker"), "home hero must drop the reimagined/modern-seeker slop line");
+  assert.ok(!home.includes("139,92,246"), "home hero must drop the violet AI purple glow, gold only");
+  assert.ok(home.includes("Draw a free daily card"), "home hero must keep the short one-line pitch");
+  const flow = fs.readFileSync("src/components/ReadingFlow.tsx", "utf8");
+  assert.ok(!flow.includes("Unlock"), "reading flow must not use Unlock wording");
+  const spreads = fs.readFileSync("src/app/spreads/SpreadsClient.tsx", "utf8");
+  assert.ok(!spreads.includes("unlocks"), "spreads credit note must not use unlocks wording");
+  assert.ok(charts.includes("Birth data is used in memory only"), "charts privacy must stay, in one short line");
+  console.log("batch10: slop trim, short copy, privacy kept: all source assertions passed");
 }
