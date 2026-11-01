@@ -1,8 +1,8 @@
-export const SITE_URL = "https://tarot.resonantatlas.com";
+export const SITE_URL = "https://sortes.resonantatlas.com";
 export const APP_NAME = "Sortes by Resonant Atlas";
 export const APP_SHORT = "Sortes";
 export const TAGLINE = "Cast the lots. Read your story.";
-export const CONTACT_EMAIL = "hello@resonantatlas.com";
+export const CONTACT_EMAIL = "support@resonantatlas.com";
 
 export interface CreditPack {
   id: string;

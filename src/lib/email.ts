@@ -17,7 +17,7 @@ export async function sendSignInCode(
     throw new Error("No email provider configured.");
   }
 
-  const from = process.env.EMAIL_FROM ?? "Sortes <noreply@tarot.resonantatlas.com>";
+  const from = process.env.EMAIL_FROM ?? "Sortes <noreply@sortes.resonantatlas.com>";
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
@@ -48,7 +48,7 @@ export async function sendSignInCode(
 export async function sendWinbackEmail(email: string): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY;
   const site =
-    process.env.NEXT_PUBLIC_SITE_URL ?? "https://tarot.resonantatlas.com";
+    process.env.NEXT_PUBLIC_SITE_URL ?? "https://sortes.resonantatlas.com";
   if (!apiKey) {
     if (process.env.NODE_ENV !== "production") {
       console.log(`[sortes-winback] would email ${email}`);
@@ -58,7 +58,7 @@ export async function sendWinbackEmail(email: string): Promise<void> {
   }
 
   const from =
-    process.env.EMAIL_FROM ?? "Sortes <noreply@tarot.resonantatlas.com>";
+    process.env.EMAIL_FROM ?? "Sortes <noreply@sortes.resonantatlas.com>";
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {

@@ -50,7 +50,7 @@ export async function createCheckout(args: {
   const readings =
     args.packId === "pack5" ? 5 : args.packId === "pack12" ? 12 : 30;
   if (!variantId) throw new Error("Unknown pack.");
-  const site = process.env.NEXT_PUBLIC_SITE_URL ?? "https://tarot.resonantatlas.com";
+  const site = process.env.NEXT_PUBLIC_SITE_URL ?? "https://sortes.resonantatlas.com";
 
   const res = await fetch(`${API_BASE}/checkouts`, {
     method: "POST",

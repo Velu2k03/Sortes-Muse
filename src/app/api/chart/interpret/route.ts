@@ -155,7 +155,7 @@ Write the personalized chart reflection now.`;
         headers: {
           Authorization: `Bearer ${apiKey}`,
           "Content-Type": "application/json",
-          "HTTP-Referer": "https://tarot.resonantatlas.com",
+          "HTTP-Referer": "https://sortes.resonantatlas.com",
           "X-Title": "Sortes by Resonant Atlas",
         },
         body: JSON.stringify({
