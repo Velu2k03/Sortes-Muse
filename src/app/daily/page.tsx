@@ -164,7 +164,7 @@ export default function DailyPage() {
                   A reflection for today, not a prediction. Come back tomorrow
                   for a new card
                   {streak >= 1 && (
-                    <> and to keep your {streak}-day streak alive</>
+                    <>{` and to keep your ${streak}-day streak alive`}</>
                   )}
                   .
                 </p>

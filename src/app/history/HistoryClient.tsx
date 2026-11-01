@@ -48,8 +48,8 @@ export default function HistoryPage() {
         </h1>
         <p className="mx-auto mt-4 max-w-xl text-cream/75">
           {user
-            ? "Every reading you complete is kept here and synced to your account, so your journal follows you across devices."
-            : "Every reading you complete is kept here on this device. Sign in to sync your journal across devices."}
+            ? "Every full reading and saved chart interpretation you complete is kept here and synced to your account, so your journal follows you across devices. Daily cards are not saved as full readings."
+            : "Every full reading and saved chart interpretation you complete is kept here on this device. Sign in to sync your journal across devices. Daily cards are not saved as full readings."}
         </p>
       </div>
 
@@ -61,7 +61,7 @@ export default function HistoryPage() {
         <div className="mx-auto mt-12 max-w-md rounded-3xl border border-gold/20 bg-panel/60 p-8 text-center">
           <p className="font-display text-2xl text-cream">No readings yet</p>
           <p className="mt-2 text-sm text-cream/75">
-            Your first full reading is free. Cast the lots and begin.
+            Your first Quick Insight reading is free. Cast the lots and begin.
           </p>
           <Link
             href="/spreads/quick-insight"

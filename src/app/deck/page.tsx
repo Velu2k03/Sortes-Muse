@@ -36,7 +36,9 @@ export default function DeckPage() {
       <div className="text-center">
         <p className="text-xs uppercase tracking-[0.35em] text-gold">The deck</p>
         <h1 className="mt-3 font-display text-5xl text-goldbright sm:text-6xl">
-          All 78 cards
+          {filter === "all" && !query.trim()
+            ? "All 78 cards"
+            : `${cards.length} ${cards.length === 1 ? "card" : "cards"}`}
         </h1>
         <p className="mx-auto mt-4 max-w-xl text-cream/75">
           The complete Rider-Waite deck with upright and reversed meanings.

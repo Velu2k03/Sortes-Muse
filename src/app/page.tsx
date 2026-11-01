@@ -30,7 +30,7 @@ export default function Home() {
             sizes="100vw"
             className="object-cover opacity-70"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-ink/40 via-ink/55 to-ink" />
+          <div className="absolute inset-0 bg-gradient-to-b from-ink/60 via-ink/75 to-ink" />
           {/* Ambient drifting glows */}
           <div
             className="nebula absolute -left-32 top-1/4 h-[28rem] w-[28rem] rounded-full opacity-25 blur-3xl"
@@ -48,34 +48,34 @@ export default function Home() {
           />
         </div>
         <div className="relative mx-auto flex max-w-4xl flex-col items-center px-4 pb-24 pt-24 text-center sm:px-6 sm:pt-32">
+          {/* Hero text renders at full opacity on first paint: the old
+              0.8s fade with up to 0.9s delay left the first frame almost
+              empty behind the moon image. Gentle motion stays below the
+              fold, in fadeUp, and in the card fan. */}
           <motion.p
-            initial={{ opacity: 0 }}
+            initial={false}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.8 }}
             className="text-xs uppercase tracking-[0.35em] text-gold"
           >
             A Resonant Atlas tarot experience
           </motion.p>
           <motion.h1
-            initial={{ opacity: 0, y: 30 }}
+            initial={false}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.15 }}
             className="mt-6 font-display text-6xl leading-tight text-cream sm:text-7xl md:text-8xl"
           >
             Sortes
           </motion.h1>
           <motion.p
-            initial={{ opacity: 0, y: 30 }}
+            initial={false}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.3 }}
             className="mt-4 font-display text-2xl italic text-goldbright sm:text-3xl"
           >
             {TAGLINE}
           </motion.p>
           <motion.p
-            initial={{ opacity: 0 }}
+            initial={false}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.8, delay: 0.45 }}
             className="mt-6 max-w-xl text-base leading-relaxed text-cream/80"
           >
             An ancient practice of casting lots, reimagined for the modern
@@ -83,9 +83,8 @@ export default function Home() {
             and receive readings personalized to your own story.
           </motion.p>
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={false}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.6 }}
             className="mt-10 flex w-full max-w-md flex-col gap-3 sm:flex-row sm:justify-center"
           >
             <Link
@@ -102,21 +101,18 @@ export default function Home() {
             </Link>
           </motion.div>
           <motion.p
-            initial={{ opacity: 0 }}
+            initial={false}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.8, delay: 0.8 }}
             className="mt-5 text-sm text-mist"
           >
-            Your first full reading is free. No card, no account, no friction.
+            Your first Quick Insight reading is free. No card, no account, no friction.
           </motion.p>
           <motion.p
-            initial={{ opacity: 0 }}
+            initial={false}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.8, delay: 0.9 }}
             className="mt-3 text-sm text-cream/75"
           >
-            New: birth charts, Ziwei and Western, calculation only and free in
-            Phase 1.{" "}
+            New: birth charts, Ziwei, Western, and Vedic, calculation only and free.{" "}
             <Link href="/charts" className="font-semibold text-goldbright underline underline-offset-4">
               Cast a birth chart
             </Link>
@@ -190,7 +186,7 @@ export default function Home() {
             </h2>
             <p className="mx-auto mt-4 max-w-xl text-cream/75">
               From a single mirror to the full ten-card landscape. Your first
-              reading is on us.
+              Quick Insight reading is on us.
             </p>
           </motion.div>
           <div className="mt-10 grid gap-5 md:grid-cols-3">
@@ -198,7 +194,7 @@ export default function Home() {
               <motion.div
                 key={s.slug}
                 {...fadeUp}
-                transition={{ ...fadeUp.transition, delay: i * 0.1 }}
+                transition={{ ...fadeUp.transition, delay: i * 0.05 }}
                 className="relative overflow-hidden rounded-3xl border border-gold/25 bg-panel/70 p-7"
               >
                 {s.slug === "quick-insight" && (

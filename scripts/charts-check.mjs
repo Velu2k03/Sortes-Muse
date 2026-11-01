@@ -66,6 +66,12 @@ assert.ok(westA.cusps.length === 12, "western A needs 12 cusps");
 assert.ok(westA.ascendantLongitude >= 0 && westA.ascendantLongitude < 360);
 console.log("western A:", "Sun", westA.sunSign, westA.planets.find((p) => p.name === "Sun")?.longitude.toFixed(2), "| Asc", westA.ascendantSign, westA.ascendantLongitude.toFixed(2), "| MC", westA.midheavenSign);
 
+// Audit fix: aspects must be listable, not just a count. The list comes
+// from the same library calculation, no new math.
+assert.equal(westA.aspects.length, westA.aspectCount, "western aspects list length must match aspectCount");
+assert.ok(westA.aspects.every((a) => a.planet1 && a.planet2 && a.label && typeof a.orb === "number"), "western aspects need both planets, a label, and an orb");
+console.log("western aspects:", westA.aspectCount, "listed, first:", westA.aspects[0].planet1, westA.aspects[0].label, westA.aspects[0].planet2);
+
 const westB = calculateWestern({ date: "2000-06-15", hour: 14, minute: 30, latitude: 14.5995, longitude: 120.9842 });
 assert.equal(westB.sunSign, "Gemini", "2000-06-15 Sun must be Gemini");
 assert.ok(westB.planets.length >= 10);

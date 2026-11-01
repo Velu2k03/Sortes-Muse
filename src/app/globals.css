@@ -46,6 +46,14 @@ body {
   color: #fff8e7;
 }
 
+/* Keyboard focus: the browser default outline was thin and easy to
+   miss on the dark theme. Gold, 2px, offset, focus-visible only so
+   mouse clicks do not get a permanent ring. */
+:focus-visible {
+  outline: 2px solid var(--color-goldbright);
+  outline-offset: 2px;
+}
+
 /* Card flip helpers */
 .perspective-1000 {
   perspective: 1000px;
