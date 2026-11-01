@@ -53,7 +53,7 @@ export default function DeckPage() {
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search cards, e.g. moon, strength…"
           aria-label="Search cards"
-          className="w-full max-w-md rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist/60 focus:border-gold/60 focus:outline-none"
+          className="w-full max-w-md rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none"
         />
         {/* Validator fix: these are filter toggles, not tabs, and
             there is no tabpanel on the page, so role=tab is wrong.

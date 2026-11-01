@@ -349,7 +349,7 @@ function GateScreen({
         )}
       </div>
 
-      <p className="mx-auto mt-8 max-w-md text-xs italic leading-relaxed text-mist/80">
+      <p className="mx-auto mt-8 max-w-md text-xs italic leading-relaxed text-mist">
         Readings are for self-reflection and perspective, not guaranteed
         predictions. Take what resonates, leave the rest.
       </p>
@@ -663,7 +663,7 @@ function RevealedScreen({
         </div>
       )}
 
-      <p className="mx-auto mt-8 max-w-md text-center text-xs italic leading-relaxed text-mist/80">
+      <p className="mx-auto mt-8 max-w-md text-center text-xs italic leading-relaxed text-mist">
         For reflection and perspective, not guaranteed predictions. If a
         reading touches on health, it is wellness reflection only and never a
         diagnosis; please consult a licensed professional for medical

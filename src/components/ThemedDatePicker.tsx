@@ -140,7 +140,7 @@ export default function ThemedDatePicker({
         aria-haspopup="dialog"
         className="num flex w-full items-center justify-between gap-3 rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-left text-base text-cream focus:border-gold/60 focus:outline-none"
       >
-        <span className={value ? "" : "text-mist/70"}>{formatDisplay(value)}</span>
+        <span className={value ? "" : "text-mist"}>{formatDisplay(value)}</span>
         <Icon name="calendar" size={20} className="shrink-0 text-goldbright" />
       </button>
       {open && (
@@ -197,7 +197,7 @@ export default function ThemedDatePicker({
                         ? "border border-gold/70 font-bold text-goldbright"
                         : c.inMonth
                           ? "text-cream hover:bg-gold/15"
-                          : "text-mist/60 hover:bg-gold/10"
+                          : "text-mist hover:bg-gold/10"
                   }`}
                 >
                   {c.d}

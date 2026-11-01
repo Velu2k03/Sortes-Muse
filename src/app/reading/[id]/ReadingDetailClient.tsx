@@ -152,7 +152,7 @@ export default function ReadingDetail({ id }: { id: string }) {
         </Link>
       </div>
 
-      <p className="mx-auto mt-8 max-w-md text-center text-xs italic leading-relaxed text-mist/80">
+      <p className="mx-auto mt-8 max-w-md text-center text-xs italic leading-relaxed text-mist">
         For reflection and perspective, not guaranteed predictions.
       </p>
     </div>

@@ -238,7 +238,7 @@ export default function IntakeFlow({ slug }: { slug: string }) {
                       onChange={(e) => set(f.key, e.target.value)}
                       placeholder={f.placeholder}
                       rows={3}
-                      className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist/50 focus:border-gold/60 focus:outline-none"
+                      className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none"
                     />
                   ) : f.type === "select" ? (
                     <select
@@ -261,7 +261,7 @@ export default function IntakeFlow({ slug }: { slug: string }) {
                       value={answers[f.key] ?? ""}
                       onChange={(e) => set(f.key, e.target.value)}
                       placeholder={f.placeholder}
-                      className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist/50 focus:border-gold/60 focus:outline-none"
+                      className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none"
                     />
                   )}
                   {f.hint && <p className="mt-1 text-xs text-mist">{f.hint}</p>}
@@ -278,7 +278,7 @@ export default function IntakeFlow({ slug }: { slug: string }) {
                   onChange={(e) => setStory(e.target.value)}
                   placeholder="Share what is happening in your own words, as much or as little as you like…"
                   rows={5}
-                  className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist/50 focus:border-gold/60 focus:outline-none"
+                  className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none"
                 />
               </div>
 
@@ -292,7 +292,7 @@ export default function IntakeFlow({ slug }: { slug: string }) {
                   value={question}
                   onChange={(e) => setQuestion(e.target.value)}
                   placeholder="e.g. Should I take the new role or stay where I am?"
-                  className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist/50 focus:border-gold/60 focus:outline-none"
+                  className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none"
                 />
               </div>
             </div>
