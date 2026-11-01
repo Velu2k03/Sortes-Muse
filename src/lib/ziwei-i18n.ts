@@ -119,6 +119,38 @@ export function mutagenEn(mutagen: string): string {
   return MUTAGEN_EN[mutagen] ?? mutagen;
 }
 
+// Audit 4, Chinese legend: the "How to read this chart" legend stayed
+// in English even in Chinese mode. These are direct translations of
+// the English Ziwei palace lines already shown in the legend, not new
+// astrology claims and not school terms. Western and Vedic legend
+// lines are intentionally NOT translated here: no safe translator
+// source for those lines exists in this batch, so they stay English
+// and are reported as remaining, rather than invented.
+export const ZIWEI_LEGEND_ZH: {
+  heading: string;
+  intro: string;
+  palaces: { zh: string; desc: string }[];
+  nextStep: string;
+} = {
+  heading: "紫微宫位，简明解释",
+  intro: "免费说明，不收费。如果你对下面的词不熟悉，先从这里开始，再读你自己的盘的解读。",
+  palaces: [
+    { zh: "命宫", desc: "你、身体与人生道路。" },
+    { zh: "兄弟", desc: "兄弟姐妹与亲近的同辈。" },
+    { zh: "夫妻", desc: "亲密伴侣与婚姻。" },
+    { zh: "子女", desc: "子女与创造性产出。" },
+    { zh: "财帛", desc: "金钱、赚钱与花钱。" },
+    { zh: "疾厄", desc: "身体、习惯与疾病。" },
+    { zh: "迁移", desc: "出行、旅程与更广阔的世界。" },
+    { zh: "仆役", desc: "朋友、帮手与社群。" },
+    { zh: "官禄", desc: "工作、角色与公众地位。" },
+    { zh: "田宅", desc: "家庭、家人与房产。" },
+    { zh: "福德", desc: "安逸、福气与内心的满足。" },
+    { zh: "父母", desc: "父母、长辈与根源。" },
+  ],
+  nextStep: "读下面的解读，把它保存到你的日记，或者分享为图片。计算免费；解读每个系统第一次免费，之后 1 积分。",
+};
+
 const DIGIT: Record<string, string> = {
   "〇": "0", "一": "1", "二": "2", "三": "3", "四": "4",
   "五": "5", "六": "6", "七": "7", "八": "8", "九": "9",

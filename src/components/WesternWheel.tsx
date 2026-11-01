@@ -17,21 +17,35 @@ import type { WesternResult } from "@/lib/charts";
 // Audit 3 wheel fixes, via theme options AstroChart actually exposes
 // (project/src/settings.ts): CIRCLE_STRONG 2 -> 1 thins the gold
 // ring, MARGIN 50 -> 72 leaves room for axis labels so Ic is not
-// clipped at the edge, SYMBOL_SCALE 1 -> 0.85 shrinks glyphs, and
-// POINTS/SIGNS stroke are thinned. No DOM hacking, no leader lines
-// (the library does not expose them); de-clustering for the dense
-// Capricorn group is the staggered cluster list below the table,
-// in ordinary markup, not inside the wheel SVG.
+// clipped at the edge, SYMBOL_SCALE 1 -> 0.85 shrinks glyphs.
+// Audit 4 root cause, found by reading the library, not by guessing
+// another setting: radix.ts drawUniverse fills each 30-degree sign
+// segment with COLORS_SIGNS[i]. Batch 5 set every COLORS_SIGNS entry
+// to goldbright #f4d03f, and sign glyphs are stroked with SIGNS_COLOR,
+// also #f4d03f, so the band was a solid gold fill with gold glyphs
+// drawn on gold, which is why it read as a thick heavy ring and the
+// glyphs were not discernible, even though CIRCLE_STRONG 1,
+// INNER_CIRCLE_RADIUS_RATIO 16, and MARGIN 72 were genuinely passed
+// to the constructor. Fix: the band fill is the wheel background
+// colour, so the band visually disappears and only the 1px circle
+// strokes remain, and glyphs contrast against that background.
+// Individual COLOR_* sign keys are NOT read for the band (only
+// COLORS_SIGNS is, in radix.ts); they stay goldbright only as the
+// library's fallback when COLORS_SIGNS is absent. No DOM hacking,
+// no leader lines (the library does not expose them); de-clustering
+// for the dense Capricorn group is the staggered cluster list below
+// the table, in ordinary markup, not inside the wheel SVG.
 const WHEEL_THEME = {
   CIRCLE_STRONG: 1,
   // Sign band is radius/INNER_CIRCLE_RADIUS_RATIO wide (radix.ts
-  // drawUniverse): 8 gave a ~31px solid gold band at radius 248,
-  // which read as a thick heavy ring. 16 halves it to ~15px.
+  // drawUniverse): 8 gave a ~31px band at radius 248, 16 halves it
+  // to ~15px, and with the fill below equal to the background the
+  // band itself is invisible, leaving only thin circle strokes.
   INNER_CIRCLE_RADIUS_RATIO: 16,
   MARGIN: 72,
   SYMBOL_SCALE: 0.85,
-  POINTS_STROKE: 1.4,
-  SIGNS_STROKE: 1.1,
+  POINTS_STROKE: 1.6,
+  SIGNS_STROKE: 1.6,
   SYMBOL_AXIS_STROKE: 1.2,
   COLOR_BACKGROUND: "#1a1f2e",
   POINTS_COLOR: "#ede6d6",
@@ -40,7 +54,10 @@ const WHEEL_THEME = {
   LINE_COLOR: "#d4af37",
   CUSPS_FONT_COLOR: "#ede6d6",
   SYMBOL_AXIS_FONT_COLOR: "#f4d03f",
-  COLORS_SIGNS: Array(12).fill("#f4d03f"),
+  // Band fill must equal the wheel background, not gold: see the
+  // Audit 4 root-cause comment above. Gold glyphs on a gold band
+  // were the thick-ring / indiscernible-glyph bug.
+  COLORS_SIGNS: Array(12).fill("#1a1f2e"),
   COLOR_ARIES: "#f4d03f",
   COLOR_TAURUS: "#f4d03f",
   COLOR_GEMINI: "#f4d03f",
@@ -69,7 +86,10 @@ const WHEEL_THEME_LIGHT = {
   LINE_COLOR: "#8a6d0a",
   CUSPS_FONT_COLOR: "#1c1a15",
   SYMBOL_AXIS_FONT_COLOR: "#7c5e00",
-  COLORS_SIGNS: Array(12).fill("#7c5e00"),
+  // Light band fill equals the light wheel background #fffdf5, for
+  // the same Audit 4 reason: a dark-gold fill would read as a thick
+  // solid ring and hide the dark-gold glyphs drawn on it.
+  COLORS_SIGNS: Array(12).fill("#fffdf5"),
   COLOR_ARIES: "#7c5e00",
   COLOR_TAURUS: "#7c5e00",
   COLOR_GEMINI: "#7c5e00",
