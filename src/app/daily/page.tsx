@@ -13,6 +13,7 @@ import { drawSingle } from "@/lib/tarot";
 import TarotCard from "@/components/TarotCard";
 import CardModal from "@/components/CardModal";
 import { trackDailyCardDrawn } from "@/components/Analytics";
+import Icon from "@/components/Icon";
 
 type Phase = "idle" | "shuffling" | "revealed";
 
@@ -93,7 +94,7 @@ export default function DailyPage() {
                 onClick={draw}
                 className="btn-gold mt-8 rounded-2xl px-10 py-4 text-lg font-bold"
               >
-                ✦ Draw today&apos;s card
+                <Icon name="sparkle" size={20} className="mr-2 inline-block align-[-3px]" />Draw today&apos;s card
               </button>
             </motion.div>
           )}

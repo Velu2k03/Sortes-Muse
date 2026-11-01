@@ -93,6 +93,14 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${display.variable} ${body.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col font-body">
+        {/* Theme before paint: default dark gold, localStorage
+            sortes-theme wins. Runs before React hydration so the
+            first paint is already the saved theme, not a dark flash. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{var t=localStorage.getItem('sortes-theme');document.documentElement.dataset.theme=(t==='light'||t==='dark')?t:'dark';}catch(e){document.documentElement.dataset.theme='dark';}`,
+          }}
+        />
         <MotionProvider>
         <AuthProvider>
           <ServiceWorkerRegister />

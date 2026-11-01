@@ -28,13 +28,13 @@ export default function VedicChart({ result }: { result: VedicResult }) {
           <span className="text-goldbright">Unknown birth time: calculated at noon, Rising and houses are approximate.</span>
         )}
       </div>
-      <p className="mt-2 text-sm text-cream/60">
+      <p className="mt-2 text-sm text-cream/80">
         Sidereal Lahiri, whole-sign houses. Birth time is converted to UT with a longitude offset only, no timezone database and no DST, so a chart near a sign or nakshatra cusp may differ by one division.
       </p>
       <div className="mt-4 overflow-x-auto">
         <table className="min-w-[520px] w-full text-left text-sm text-cream/85">
           <thead>
-            <tr className="border-b border-gold/25 text-cream/60">
+            <tr className="border-b border-gold/25 text-cream/80">
               <th className="py-2 pr-4">Planet</th>
               <th className="py-2 pr-4">Sign</th>
               <th className="py-2 pr-4">Longitude</th>
@@ -53,7 +53,7 @@ export default function VedicChart({ result }: { result: VedicResult }) {
           </tbody>
         </table>
       </div>
-      <p className="mt-4 text-sm text-cream/60">
+      <p className="mt-4 text-sm text-cream/80">
         Chart only, for reflection. Calculation is free and unsaved; interpretation, when you choose it below, is a separate step.
       </p>
     </div>

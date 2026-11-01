@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { dismissPushPrompt, pushPromptDismissed, getDailyStreak } from "@/lib/storage";
 
 /**
@@ -10,6 +11,7 @@ import { dismissPushPrompt, pushPromptDismissed, getDailyStreak } from "@/lib/st
  * converts far better than a generic reminder.
  */
 export default function PushPrompt() {
+  const pathname = usePathname();
   const [visible, setVisible] = useState(false);
   const [streak, setStreak] = useState(0);
   const [supported] = useState(
@@ -17,6 +19,10 @@ export default function PushPrompt() {
   );
 
   useEffect(() => {
+    // Daily-reminder dialog must not pop up over a chart: it interrupted
+    // the Ziwei square view in the re-audit. Suppress it on /charts only;
+    // it still shows on home and daily, where it belongs.
+    if (pathname?.startsWith("/charts")) return;
     if (!supported || pushPromptDismissed()) return;
     if (Notification.permission !== "default") return;
     const t = setTimeout(() => {
@@ -39,7 +45,7 @@ export default function PushPrompt() {
     }
   };
 
-  if (!visible) return null;
+  if (!visible || pathname?.startsWith("/charts")) return null;
 
   return (
     <div

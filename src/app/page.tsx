@@ -8,6 +8,7 @@ import { MAJORS } from "@/lib/cards";
 import { TAGLINE } from "@/lib/site";
 import StatsStrip from "@/components/StatsStrip";
 import SampleReading from "@/components/SampleReading";
+import Icon from "@/components/Icon";
 
 const fadeUp = {
   initial: { opacity: 0, y: 24 },
@@ -91,13 +92,13 @@ export default function Home() {
               href="/daily"
               className="btn-gold rounded-2xl px-8 py-4 text-center text-lg font-bold"
             >
-              ✦ Draw a Card
+              <Icon name="sparkle" size={20} className="mr-2 inline-block align-[-3px]" />Draw a Card
             </Link>
             <Link
               href="/spreads"
               className="btn-ghost rounded-2xl px-8 py-4 text-center text-lg font-semibold"
             >
-              Begin a Reading
+              Begin a Reading <Icon name="arrowRight" size={20} className="ml-2 inline-block align-[-3px]" />
             </Link>
           </motion.div>
           <motion.p

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { dailyHoroscope, SUN_SIGNS, type SunSign } from "@/lib/daily";
+import Icon from "@/components/Icon";
 
 // Daily sun-sign horoscope. Text is written in-house for Sortes, dated,
 // and clearly labelled as a general reflection, not a personal reading
@@ -19,7 +20,7 @@ export default function HoroscopePage() {
   return (
     <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6">
       <div className="text-center">
-        <p className="text-xs uppercase tracking-[0.35em] text-gold">Daily Horoscope</p>
+        <p className="flex items-center justify-center gap-2 text-xs uppercase tracking-[0.35em] text-gold"><Icon name="sun" size={18} />Daily Horoscope</p>
         <h1 className="mt-3 font-display text-5xl text-goldbright sm:text-6xl">Today&apos;s sun-sign reflection</h1>
         <p className="mx-auto mt-4 max-w-xl text-cream/75">
           A general reflection for your sun sign, written for Sortes. It is not a personal reading, not a prediction,

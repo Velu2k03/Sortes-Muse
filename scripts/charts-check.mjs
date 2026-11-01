@@ -15,7 +15,9 @@ import {
   formatTimeLabelEn,
   localizeStar,
   localizeMinorStar,
+  zodiacEn,
 } from "../src/lib/ziwei-i18n.ts";
+import fs from "node:fs";
 import { polar, sectorEnd, sectorStart, wedgePath } from "../src/lib/ziwei-ring.ts";
 
 const ziweiA = calculateZiwei({ date: "1990-01-01", hour: 8, gender: "female" });
@@ -148,6 +150,42 @@ assert.ok(dailyA.luckyNumber >= 1 && dailyA.luckyNumber <= 9, "daily lucky numbe
 assert.ok(dailyA.luckyColour.length > 0, "daily needs a lucky colour");
 assert.notEqual(dailyHoroscope("Taurus", "2026-11-01").theme, dailyA.theme, "daily themes differ per sign");
 console.log("daily Aries 2026-11-01:", dailyA.theme.slice(0, 60) + "...");
+
+// Re-audit fixes, batch 4:
+// English Ziwei summary must contain no raw Chinese: it is built from
+// the i18n map (English stars + English zodiac), not from raw values.
+const enSummary = `Ziwei chart. Life: ${ziweiAEnLife?.join(", ")}. Zodiac: ${zodiacEn(ziweiA.zodiac)}.`;
+assert.equal(zodiacEn(ziweiA.zodiac), "Snake");
+assert.ok(!/[\u4e00-\u9fff]/.test(enSummary), "English Ziwei summary must have no Chinese characters");
+console.log("ziwei EN summary:", enSummary);
+// Square is the default Ziwei view, and the reminder dialog is off charts:
+// these are React source facts, asserted from source, not from a browser.
+const chartsClient = fs.readFileSync(new URL("../src/app/charts/ChartsClient.tsx", import.meta.url), "utf8");
+assert.ok(chartsClient.includes('useState<ZiweiView>("square")'), "Ziwei default view must be square");
+assert.ok(chartsClient.includes('chartSummaryText(result, ziweiLang)'), "summary must follow the chart language");
+const pushPrompt = fs.readFileSync(new URL("../src/components/PushPrompt.tsx", import.meta.url), "utf8");
+assert.ok(pushPrompt.includes('pathname?.startsWith("/charts")'), "reminder dialog must be suppressed on /charts");
+// Vedic dasha planets must be capitalised, not lower-case saturn/mercury.
+assert.ok(vedicA.currentDasha.split(" / ").every((s) => /^[A-Z]/.test(s)), "Vedic dasha names must be capitalised");
+console.log("vedic dasha A:", vedicA.currentDasha);
+
+// Expansion 5: light theme + icons, source assertions only.
+// Light tokens must exist and must not use bright gold as normal text:
+// goldbright in light is dark #7c5e00, gold is dark #8a6d0a, cream text
+// in light is dark ink #1c1a15, panel in light is white.
+const globals = fs.readFileSync(new URL("../src/app/globals.css", import.meta.url), "utf8");
+assert.ok(globals.includes('html[data-theme="light"]'), "light theme block must exist");
+assert.ok(globals.includes("--color-goldbright: #7c5e00"), "light goldbright must be dark gold for AA");
+assert.ok(globals.includes("--color-cream: #1c1a15"), "light cream text must be dark ink");
+assert.ok(!/html\[data-theme="light"\][\s\S]{0,600}--color-goldbright: #f4d03f/.test(globals), "light theme must not keep bright gold as text");
+const layout = fs.readFileSync(new URL("../src/app/layout.tsx", import.meta.url), "utf8");
+assert.ok(layout.includes("sortes-theme"), "layout must set theme from localStorage before paint");
+const header = fs.readFileSync(new URL("../src/components/Header.tsx", import.meta.url), "utf8");
+assert.ok(header.includes("sortes-theme") && header.includes("Switch to light theme"), "header must have a persisted theme toggle");
+const icon = fs.readFileSync(new URL("../src/components/Icon.tsx", import.meta.url), "utf8");
+assert.ok(icon.includes('strokeWidth="2"') && icon.includes("Tabler"), "icon set must be consistent 2px stroke, Tabler MIT");
+const wheel = fs.readFileSync(new URL("../src/components/WesternWheel.tsx", import.meta.url), "utf8");
+assert.ok(wheel.includes("WHEEL_THEME_LIGHT") && wheel.includes("sortes-theme-change"), "Western wheel must re-render in light theme");
 
 // Pricing: first chart per system free, then 1 credit.
 assert.equal(chartInterpretationCost(false), 0, "first chart per system is free");

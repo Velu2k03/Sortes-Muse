@@ -260,7 +260,7 @@ export default function ZiweiChartBoard({ result, lang = "en", view = "ring" }: 
             }`}
           >
             <span className="font-semibold text-goldbright">{en ? p.name : p.chineseName}</span>
-            {p.isLifePalace && <span className="ml-2 text-xs">✦ {t.life}</span>}
+            {p.isLifePalace && <span className="ml-2 text-xs" aria-hidden="true">✦</span>}
             <span className="mt-0.5 block text-cream/80">
               {p.majorStars.length ? p.majorStars.map((s) => primaryStar(s, lang)).join(" · ") : t.empty}
             </span>
@@ -284,7 +284,7 @@ export default function ZiweiChartBoard({ result, lang = "en", view = "ring" }: 
             {/* Life palace needs only the star marker: its name already
                 is "Life" (命宫), so adding "Life palace" after it read
                 as "Life (命宫) ✦ Life palace". */}
-            {current.isLifePalace && <span className="ml-2 text-sm" aria-label={t.life}>✦</span>}
+            {current.isLifePalace && <span className="ml-2 text-sm" aria-hidden="true">✦</span>}
           </h3>
           <p className="mt-1 text-sm text-cream/70">
             {en

@@ -37,12 +37,50 @@ const WHEEL_THEME = {
   COLOR_PISCES: "#f4d03f",
 };
 
+// Light theme for the wheel only: AstroChart takes its colours as a
+// theme object, so the wheel is re-rendered with a light theme when
+// the header toggle fires sortes-theme-change. Light glyph colours
+// are dark ink and dark gold on the cream wheel background, so they
+// pass AA there, same as the dark theme passes on the dark panel.
+const WHEEL_THEME_LIGHT = {
+  ...WHEEL_THEME,
+  COLOR_BACKGROUND: "#fffdf5",
+  POINTS_COLOR: "#1c1a15",
+  SIGNS_COLOR: "#7c5e00",
+  CIRCLE_COLOR: "#8a6d0a",
+  LINE_COLOR: "#8a6d0a",
+  CUSPS_FONT_COLOR: "#1c1a15",
+  SYMBOL_AXIS_FONT_COLOR: "#7c5e00",
+  COLORS_SIGNS: Array(12).fill("#7c5e00"),
+  COLOR_ARIES: "#7c5e00",
+  COLOR_TAURUS: "#7c5e00",
+  COLOR_GEMINI: "#7c5e00",
+  COLOR_CANCER: "#7c5e00",
+  COLOR_LEO: "#7c5e00",
+  COLOR_VIRGO: "#7c5e00",
+  COLOR_LIBRA: "#7c5e00",
+  COLOR_SCORPIO: "#7c5e00",
+  COLOR_SAGITTARIUS: "#7c5e00",
+  COLOR_CAPRICORN: "#7c5e00",
+  COLOR_AQUARIUS: "#7c5e00",
+  COLOR_PISCES: "#7c5e00",
+};
+
 export default function WesternWheel({ result }: { result: WesternResult }) {
   const rawId = useId().replace(/[^a-zA-Z0-9]/g, "");
   const elementId = `western-wheel-${rawId}`;
   const [wheelError, setWheelError] = useState(false);
   const [selectedPlanet, setSelectedPlanet] = useState<string | null>(null);
+  const [wheelTheme, setWheelTheme] = useState<"dark" | "light">("dark");
   const reduce = useReducedMotion();
+  useEffect(() => {
+    const sync = () => {
+      setWheelTheme(document.documentElement.dataset.theme === "light" ? "light" : "dark");
+    };
+    sync();
+    window.addEventListener("sortes-theme-change", sync);
+    return () => window.removeEventListener("sortes-theme-change", sync);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -57,9 +95,9 @@ export default function WesternWheel({ result }: { result: WesternResult }) {
         for (const p of result.planets) planets[p.name] = [p.longitude];
         const chart = new (Chart as new (id: string, w: number, h: number, settings?: unknown) => { radix: (d: unknown) => void })(
           elementId,
-          600,
-          600,
-          WHEEL_THEME,
+          640,
+          640,
+          wheelTheme === "light" ? WHEEL_THEME_LIGHT : WHEEL_THEME,
         );
         chart.radix({ planets, cusps: result.cusps });
       })
@@ -71,7 +109,7 @@ export default function WesternWheel({ result }: { result: WesternResult }) {
       const el = document.getElementById(elementId);
       if (el) el.innerHTML = "";
     };
-  }, [elementId, result]);
+  }, [elementId, result, wheelTheme]);
 
   return (
     <div>
@@ -90,33 +128,12 @@ export default function WesternWheel({ result }: { result: WesternResult }) {
           <span className="text-goldbright">Unknown birth time: calculated at noon, Rising and houses are approximate.</span>
         )}
       </div>
-      <motion.div
-        initial={reduce ? { opacity: 1 } : { opacity: 0, scale: 0.97 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: reduce ? 0 : 0.5, ease: "easeOut" }}
-        className="mt-6 overflow-x-auto rounded-2xl border border-gold/25 bg-panel/70 p-2"
-      >
-        {/* Wheel stays at its full 600px width and scrolls on narrow
-            phones instead of shrinking, which squeezed clustered glyphs
-            in the Capricorn/Aquarius sector. Leader lines are not added:
-            AstroChart does not expose them, and hacking its DOM is out
-            of scope; the planet table below is the readable label list. */}
-        <div id={elementId} className="mx-auto w-full min-w-[600px] max-w-[600px]" />
-        {wheelError && <p className="p-4 text-center text-sm text-cream">The wheel could not load. The planet table below has the same data.</p>}
-      </motion.div>
-      {selectedPlanet && (
-        <p className="mt-4 text-sm text-goldbright">
-          {(() => {
-            const p = result.planets.find((x) => x.name === selectedPlanet);
-            return p ? `${p.name}: ${p.sign}, ${p.longitude.toFixed(2)}°, house ${p.house ?? "—"}` : "";
-          })()}
-        </p>
-      )}
-      <p className="mt-2 text-sm text-cream/60">Tap a planet row to highlight it.</p>
+      <h3 className="mt-6 font-display text-xl text-goldbright">Planet table: read this first</h3>
+      <p className="mt-1 text-sm text-cream/80">Exact positions, signs, and houses. The wheel below is a visual overview only; its glyphs can overlap when planets cluster.</p>
       <div className="mt-4 overflow-x-auto">
       <table className="min-w-[520px] w-full text-left text-sm text-cream/85">
         <thead>
-          <tr className="border-b border-gold/25 text-cream/60">
+          <tr className="border-b border-gold/25 text-cream/80">
             <th className="py-2 pr-4">Planet</th>
             <th className="py-2 pr-4">Sign</th>
             <th className="py-2 pr-4">Longitude</th>
@@ -140,12 +157,22 @@ export default function WesternWheel({ result }: { result: WesternResult }) {
         </tbody>
       </table>
       </div>
+      {selectedPlanet && (
+        <p className="mt-4 text-sm text-goldbright">
+          {(() => {
+            const p = result.planets.find((x) => x.name === selectedPlanet);
+            return p ? `${p.name}: ${p.sign}, ${p.longitude.toFixed(2)}°, house ${p.house ?? "—"}` : "";
+          })()}
+        </p>
+      )}
+      <p className="mt-2 text-sm text-cream/80">Tap a planet row to highlight it.</p>
       <details className="mt-4 rounded-2xl border border-gold/25 bg-panel/70 p-4">
         <summary className="cursor-pointer text-sm font-semibold text-goldbright">
           Aspects found: {result.aspectCount} (tap to list them)
         </summary>
-        <p className="mt-2 text-xs text-cream/60">
+        <p className="mt-2 text-xs text-cream/80">
           An aspect is an angle between two planets. Orb is how close that angle is, in degrees. Smaller orb means a tighter aspect.
+          The list also includes points that are not in the 10-planet table above: Chiron, the wounded-healer asteroid; Lilith, Black Moon Lilith, the mean lunar apogee; Sirius, the brightest fixed star; North Node, the direction of growth; South Node, past patterns.
         </p>
         <ul className="mt-2 space-y-1 text-sm text-cream/85">
           {result.aspects.map((a, i) => (
@@ -155,7 +182,24 @@ export default function WesternWheel({ result }: { result: WesternResult }) {
           ))}
         </ul>
       </details>
-      <p className="mt-4 text-sm text-cream/60">
+      <h3 className="mt-8 font-display text-xl text-goldbright">Wheel overview</h3>
+      <p className="mt-1 text-sm text-cream/80">Visual overview only. If glyphs overlap or an axis label is clipped at the edge, use the planet table above for the exact reading.</p>
+      <motion.div
+        initial={reduce ? { opacity: 1 } : { opacity: 0, scale: 0.97 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: reduce ? 0 : 0.5, ease: "easeOut" }}
+        className="mt-6 overflow-x-auto rounded-2xl border border-gold/25 bg-panel/70 p-4"
+      >
+        {/* Wheel stays at its full 640px width and scrolls on narrow
+            phones instead of shrinking, which squeezed clustered glyphs
+            in the Capricorn/Aquarius sector. Leader lines are not added:
+            AstroChart does not expose them, and hacking its DOM is out
+            of scope; the planet table above is the readable primary list,
+            this wheel is a visual overview only. */}
+        <div id={elementId} className="mx-auto w-full min-w-[640px] max-w-[640px]" />
+        {wheelError && <p className="p-4 text-center text-sm text-cream">The wheel could not load. The planet table above has the same data.</p>}
+      </motion.div>
+      <p className="mt-4 text-sm text-cream/80">
         Chart only, for reflection. Calculation is free and unsaved; interpretation, when you choose it below, is a separate step.
       </p>
     </div>

@@ -5,10 +5,12 @@ import { toPng } from "html-to-image";
 import type { WesternResult, ZiweiResult } from "@/lib/charts";
 import type { VedicResult } from "@/lib/vedic";
 import type { ZiweiLanguage } from "@/lib/ziwei-i18n";
+import { localizeStar, zodiacEn } from "@/lib/ziwei-i18n";
 import ZiweiChartBoard, { type ZiweiView } from "@/components/ZiweiChartBoard";
 import WesternWheel from "@/components/WesternWheel";
 import VedicChart from "@/components/VedicChart";
 import { useAuth } from "@/components/AuthProvider";
+import Icon from "@/components/Icon";
 import { chartFreeUsed, markChartFreeUsed, type ChartFreeSystem } from "@/lib/storage";
 import { makeReading } from "@/lib/storage";
 import { chartInterpretationCost } from "@/lib/chart-pricing";
@@ -39,7 +41,10 @@ const PRESETS: { label: string; latitude: number; longitude: number }[] = [
 export default function ChartsClient() {
   const { credits, spend, persistReading } = useAuth();
   const [system, setSystem] = useState<ChartSystem>("ziwei");
-  const [ziweiView, setZiweiView] = useState<ZiweiView>("ring");
+  // Traditional square is the default Ziwei view: it passed the re-audit
+  // cleanly, while the ring edge labels still crowd and overlap. Ring
+  // stays as an alternative toggle, it is not removed.
+  const [ziweiView, setZiweiView] = useState<ZiweiView>("square");
   const [placeSearch, setPlaceSearch] = useState("");
   const [placeStatus, setPlaceStatus] = useState("");
   const [placeBusy, setPlaceBusy] = useState(false);
@@ -76,7 +81,14 @@ export default function ChartsClient() {
   const [ziweiLang, setZiweiLang] = useState<ZiweiLanguage>("en");
   useEffect(() => {
     const saved = window.localStorage.getItem("sortes-ziwei-lang");
+    // Re-audit root cause, part 1: a tester who had tapped Chinese in an
+    // earlier session had "zh" saved, so a later session opened in
+    // Chinese even though the code default is English. That persistence
+    // is kept for a user who deliberately chose Chinese, but a new user
+    // with no saved value stays English, and the form toggle below now
+    // makes that choice visible before any chart is calculated.
     if (saved === "en" || saved === "zh") setZiweiLang(saved);
+    else window.localStorage.setItem("sortes-ziwei-lang", "en");
   }, []);
   function setZiweiLangSaved(lang: ZiweiLanguage) {
     setZiweiLang(lang);
@@ -114,10 +126,20 @@ export default function ChartsClient() {
     }
   }
 
-  function chartSummaryText(r: ChartResult): string {
+  // Ziwei summary must follow the chart language. The old summary used
+  // raw Chinese values (life name, major stars, zodiac) in every language,
+  // so an English user still read Chinese in the summary even after
+  // tapping English, and "Life palace: Life" repeated the palace name.
+  // English branch uses only the i18n map, no raw Chinese characters.
+  function chartSummaryText(r: ChartResult, lang: ZiweiLanguage = "en"): string {
     if (r.system === "ziwei") {
       const life = r.palaces.find((p) => p.isLifePalace);
-      return `Ziwei chart. Life palace: ${life?.name ?? "—"} (${(life?.majorStars ?? []).join(", ") || "empty"}). Zodiac: ${r.zodiac}.`;
+      const stars = life?.majorStars ?? [];
+      if (lang === "zh") {
+        return `紫微斗数。命宫：${stars.join("、") || "空宫"}。生肖：${r.zodiac}。`;
+      }
+      const enStars = stars.map((s) => localizeStar(s).en).join(", ") || "empty";
+      return `Ziwei chart. Life: ${enStars}. Zodiac: ${zodiacEn(r.zodiac)}.`;
     }
     if (r.system === "vedic") {
       return `Vedic chart. Sun: ${r.sunSign}. Moon: ${r.moonSign}, ${r.moonNakshatra} pada ${r.moonNakshatraPada}. Rising: ${r.ascendantSign}.`;
@@ -167,7 +189,7 @@ export default function ChartsClient() {
       category: focus,
       question: question.trim() || undefined,
       free: interpFree,
-      chartSummary: chartSummaryText(result),
+      chartSummary: chartSummaryText(result, ziweiLang),
     });
     await persistReading(reading);
     setSaved(true);
@@ -244,7 +266,7 @@ export default function ChartsClient() {
           Ziwei (Purple Star), Western, and Vedic charts. Calculation is free and unsaved. Interpretation, when you
           choose it, is 1 credit per full chart reading, and your first chart per system is free.
         </p>
-        <p className="mx-auto mt-2 max-w-xl text-sm text-cream/60">
+        <p className="mx-auto mt-2 max-w-xl text-sm text-cream/80">
           Privacy: your birth date, time, and place are used in-memory for this calculation only. They are not stored
           in our database and are never sent to an AI model. The AI, when you ask for interpretation, receives only
           chart positions, signs, houses, and stars, plus your focus and question.
@@ -297,6 +319,25 @@ export default function ChartsClient() {
       </div>
 
       <form onSubmit={onSubmit} className="mx-auto mt-8 max-w-xl rounded-3xl border border-gold/25 bg-panel/70 p-6">
+        {system === "ziwei" && (
+          <div className="mb-5">
+            <span className={labelClass}>Chart language (English is the default)</span>
+            <div className="mt-1 flex flex-wrap gap-3" role="group" aria-label="Chart language">
+              {(["en", "zh"] as const).map((l) => (
+                <button
+                  key={l}
+                  type="button"
+                  onClick={() => setZiweiLangSaved(l)}
+                  className={`rounded-full px-4 py-2 text-sm font-bold ${ziweiLang === l ? "btn-gold" : "border border-gold/40 text-goldbright"}`}
+                  aria-pressed={ziweiLang === l}
+                >
+                  {l === "en" ? "English" : "中文"}
+                </button>
+              ))}
+            </div>
+            <p className="mt-1 text-xs text-cream/80">This changes the chart labels, summary, and detail together. The form stays in English.</p>
+          </div>
+        )}
         <div className="grid gap-5 sm:grid-cols-2">
           <div>
             <label htmlFor="chart-date" className={labelClass}>
@@ -387,7 +428,7 @@ export default function ChartsClient() {
               </button>
             </div>
             {placeStatus && <p className="mt-2 text-sm text-cream/70">{placeStatus}</p>}
-            <p className="mt-1 text-xs text-cream/50">
+            <p className="mt-1 text-xs text-cream/80">
               The place name is used only for this lookup. Only its coordinates are kept for the calculation, and the
               place name is never stored and never sent to AI.
             </p>
@@ -398,9 +439,13 @@ export default function ChartsClient() {
             {error}
           </p>
         )}
+        <p className="mt-5 rounded-xl border border-gold/25 bg-panel/50 px-4 py-3 text-sm leading-relaxed text-cream/80">
+          <strong className="text-goldbright">Before you calculate, please note: </strong>
+          birth time means clock time at the birthplace. Conversion is longitude-only: no timezone database, no DST, and no equation of time are used, so a birth near a sign, house, or double-hour boundary may differ by one division. No timezone lookup is added, because no free no-key service was verified as reliable for this Vercel deployment; this disclosure, not a lookup, is the fix for now.
+        </p>
         <div className="mt-6 flex flex-wrap gap-3">
           <button type="submit" disabled={loading} className="btn-gold rounded-full px-6 py-3 text-sm font-bold disabled:opacity-50">
-            {loading ? "Calculating…" : "Calculate chart"}
+            {loading ? "Calculating…" : (<span className="inline-flex items-center gap-2"><Icon name="chart" size={18} />Calculate chart</span>)}
           </button>
           <button type="button" onClick={useExample} className="rounded-full border border-gold/40 px-6 py-3 text-sm font-bold text-goldbright">
             Use example: 1990-01-01, 08:00, Manila
@@ -415,11 +460,11 @@ export default function ChartsClient() {
           </h2>
           <p className="mt-3 rounded-2xl border border-gold/25 bg-panel/70 px-4 py-3 text-sm leading-relaxed text-cream/90">
             <strong className="text-goldbright">Your chart in one line: </strong>
-            {chartSummaryText(result)}
+            {chartSummaryText(result, ziweiLang)}
           </p>
           {result.system === "ziwei" && (
             <>
-              <p className="mt-3 text-sm text-cream/60">Chart language only: this toggle changes the chart labels, the form above stays in English.</p>
+              <p className="mt-3 text-sm text-cream/80">Chart language only: this toggle changes the chart labels, the form above stays in English.</p>
               <div className="mt-4 flex flex-wrap gap-3" role="group" aria-label="Chart language">
                 {(["en", "zh"] as const).map((l) => (
                   <button
@@ -570,7 +615,7 @@ export default function ChartsClient() {
                     {saved ? "Saved to journal" : "Save to journal"}
                   </button>
                   <button type="button" onClick={onShareChart} disabled={shareBusy} className="rounded-full border border-gold/40 px-5 py-2.5 text-sm font-bold text-goldbright disabled:opacity-50">
-                    {shareBusy ? "Creating image…" : "Share chart as image"}
+                    {shareBusy ? "Creating image…" : (<span className="inline-flex items-center gap-2"><Icon name="share" size={16} />Share chart as image</span>)}
                   </button>
                 </div>
                 {saved && <p className="mt-3 text-sm text-cream/70">Saved as positions only, never birth date, time, or place. Revisit it from your journal.</p>}
@@ -578,7 +623,7 @@ export default function ChartsClient() {
                   <div ref={shareRef} style={{ width: 1200, height: 630, background: "#0a0e1a", color: "#ede6d6", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 60, fontFamily: "Georgia, serif", border: "2px solid #d4af37" }}>
                     <div style={{ fontSize: 28, letterSpacing: 8, color: "#d4af37" }}>SORTES</div>
                     <div style={{ fontSize: 48, marginTop: 12 }}>{result.system === "ziwei" ? "Ziwei chart" : result.system === "vedic" ? "Vedic chart" : "Western chart"}</div>
-                    <div style={{ fontSize: 24, marginTop: 24, maxWidth: 900, textAlign: "center" }}>{chartSummaryText(result)}</div>
+                    <div style={{ fontSize: 24, marginTop: 24, maxWidth: 900, textAlign: "center" }}>{chartSummaryText(result, ziweiLang)}</div>
                     <div style={{ fontSize: 18, marginTop: 24, color: "#9ca3af" }}>A reflection, not a prediction. tarot.resonantatlas.com</div>
                   </div>
                 </div>
