@@ -95,7 +95,7 @@ export default function CreditsPage() {
               type="button"
               onClick={() => setOpen(true)}
               className={`mt-5 w-full rounded-xl px-4 py-3 font-bold ${
-                p.popular ? "btn-gold" : "btn-ghost"
+                p.popular ? "btn-gold" : "btn-secondary"
               }`}
             >
               Buy {p.readings} readings

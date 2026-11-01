@@ -192,3 +192,49 @@ assert.equal(chartInterpretationCost(false), 0, "first chart per system is free"
 assert.equal(chartInterpretationCost(true), 1, "later charts cost 1 credit");
 
 console.log("charts-check: all assertions passed");
+
+// Audit 3 batch (PR #5): light Ziwei circle tokens, glosses toggle
+// default, collapsed timezone disclosure, Share before interpretation,
+// dark Buy button tokens, hero CTA no-wrap. Source assertions only:
+// they prove the code that the live re-audit must then see visually.
+{
+  const board = fs.readFileSync("src/components/ZiweiChartBoard.tsx", "utf8");
+  assert.ok(board.includes('RING_LIGHT = { bg: "#fffdf5"'), "light Ziwei circle must use cream background, not navy");
+  assert.ok(board.includes('text: "#1c1a15"'), "light Ziwei circle must use ink text");
+  assert.ok(!board.includes("textLength={"), "ring must not force textLength: it stretched short palace names (Career, Health) with wide letter-spacing in the rendered screenshot");
+  assert.ok(!board.includes("stemPos"), "ring must no longer carry the stem-branch line that collided");
+  assert.ok(board.includes("showGlosses"), "Ziwei board must accept a glosses toggle");
+  assert.ok(board.includes("glosses ?") || board.includes("glosses &&"), "glosses must gate the Chinese parentheticals");
+  const charts = fs.readFileSync("src/app/charts/ChartsClient.tsx", "utf8");
+  assert.ok(charts.includes('setShowGlosses(lang === "zh")'), "glosses must default off in English and on in Chinese");
+  assert.ok(charts.includes("Show Chinese glosses"), "glosses toggle label must exist");
+  assert.ok(charts.includes("<details") && charts.includes("Before you calculate, please note"), "timezone disclosure must be collapsible, not a long block above Calculate");
+  assert.ok(charts.includes("No timezone lookup is added"), "collapsed disclosure must keep the no-timezone-DB, no-DST wording");
+  assert.ok(charts.includes("Share chart as image"), "Share button must exist on results, not only after interpretation");
+  // Share button must appear before the chart board (result level), not only in the interpretation section.
+  const shareIdx = charts.indexOf("Share chart as image");
+  const boardIdx = charts.indexOf("<ZiweiChartBoard");
+  const interpIdx = charts.indexOf('aria-label="Chart interpretation"');
+  assert.ok(shareIdx > 0 && shareIdx < interpIdx, "first Share button must come before the interpretation section");
+  assert.ok(charts.includes("scroll-mt-24"), "result and legend sections must carry scroll margin under the sticky header");
+  const wheel = fs.readFileSync("src/components/WesternWheel.tsx", "utf8");
+  assert.ok(wheel.includes("CIRCLE_STRONG: 1"), "Western wheel ring must be thinned via CIRCLE_STRONG 1");
+  assert.ok(wheel.includes("INNER_CIRCLE_RADIUS_RATIO: 16"), "Western sign band must be halved via INNER_CIRCLE_RADIUS_RATIO 16");
+  assert.ok(board.includes("rotate(${rot}"), "Ziwei ring labels must be tangentially rotated so side wedges do not cross into neighbours");
+  assert.ok(wheel.includes("MARGIN: 72"), "Western wheel margin must be 72 so axis labels are not clipped");
+  assert.ok(wheel.includes("SYMBOL_SCALE: 0.85"), "Western wheel glyphs must be shrunk via SYMBOL_SCALE 0.85");
+  assert.ok(wheel.includes("Clustered planets, staggered list"), "Western wheel must carry a staggered cluster list outside the wheel");
+  assert.ok(wheel.includes("scroll-mt-24"), "Western aspects/wheel headings must carry scroll margin");
+  const credits = fs.readFileSync("src/app/credits/CreditsClient.tsx", "utf8");
+  assert.ok(credits.includes("btn-secondary"), "dark Buy buttons must use the filled secondary style, not the faint ghost style");
+  const css = fs.readFileSync("src/app/globals.css", "utf8");
+  assert.ok(css.includes(".btn-secondary"), "btn-secondary must be defined in globals.css");
+  assert.ok(css.includes("details,") && css.includes("scroll-margin-top: 6rem"), "details elements must get the sticky-header scroll margin");
+  const home = fs.readFileSync("src/app/page.tsx", "utf8");
+  assert.ok(home.includes("whitespace-nowrap") && home.includes("Draw a Card"), "home hero CTAs must not wrap");
+  const motion = fs.readFileSync("src/components/MotionProvider.tsx", "utf8");
+  assert.ok(motion.includes('reducedMotion="user"'), "MotionProvider must still respect reduced motion");
+  assert.ok(css.includes("prefers-reduced-motion: reduce"), "CSS reduced-motion rule must still exist");
+  assert.ok(!board.includes("animation") || !board.includes("rotate"), "no new auto-rotating wheel motion may be added");
+  console.log("audit3: light ring, glosses default, collapsed timezone, share-before-interpretation, thin wheel + cluster list, btn-secondary, hero no-wrap, reduced motion: all source assertions passed");
+}

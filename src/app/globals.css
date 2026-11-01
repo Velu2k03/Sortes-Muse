@@ -29,12 +29,11 @@
    #f4d03f and #d4af37 are NOT used as normal text in light mode, they
    fail AA on white, so they survive only as the btn-gold gradient
    behind dark #14100a text, and as borders and glows.
-   Charts: the Ziwei ring and square keep their dark chart card in
-   light mode, because cream on dark panel already passes and a light
-   ring would need a full re-theme of the SVG; the Western wheel is
-   theme-aware in WesternWheel.tsx and goes light. Both stay readable
-   on the light page, and the planet table and square list, which use
-   Tailwind classes, flip to light text on white. */
+   Charts: the Ziwei ring is theme-aware in ZiweiChartBoard.tsx
+   (light: cream background, ink text, dark gold) and the Western
+   wheel is theme-aware in WesternWheel.tsx, so neither is a dark
+   island on the light page. The planet table and square list, which
+   use Tailwind classes, flip to light text on white. */
 html[data-theme="light"] {
   --color-ink: #fdf9ee;
   --color-navy: #f3ead3;
@@ -84,7 +83,9 @@ html {
    on /spreads: give sections and articles a scroll margin so anchor
    and programmatic scrolling land below the header, not under it. */
 section,
-article {
+article,
+details,
+summary {
   scroll-margin-top: 6rem;
 }
 
@@ -205,6 +206,22 @@ body {
 }
 .btn-gold:active {
   transform: translateY(0);
+}
+
+/* Secondary filled button: Audit 3 found outline Buy buttons on
+   /credits much dimmer than the solid popular pack in dark mode.
+   This uses the panel background with cream text (about 14:1 in
+   dark, about 17:1 in light, since panel and cream both flip), so
+   it reads as strongly as a solid button in both themes. */
+.btn-secondary {
+  border: 1px solid rgba(212, 175, 55, 0.7);
+  background: var(--color-panel);
+  color: var(--color-cream);
+  transition: background 0.2s ease, transform 0.15s ease;
+}
+.btn-secondary:hover {
+  background: var(--color-panel);
+  transform: translateY(-1px);
 }
 
 /* Ghost button */
