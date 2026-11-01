@@ -55,13 +55,15 @@ export default function DeckPage() {
           aria-label="Search cards"
           className="w-full max-w-md rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist/60 focus:border-gold/60 focus:outline-none"
         />
-        <div className="flex flex-wrap justify-center gap-2" role="tablist" aria-label="Filter cards">
+        {/* Validator fix: these are filter toggles, not tabs, and
+            there is no tabpanel on the page, so role=tab is wrong.
+            aria-pressed says the same thing, correctly. */}
+        <div className="flex flex-wrap justify-center gap-2" aria-label="Filter cards">
           {FILTERS.map((f) => (
             <button
               key={f.key}
               type="button"
-              role="tab"
-              aria-selected={filter === f.key}
+              aria-pressed={filter === f.key}
               onClick={() => setFilter(f.key)}
               className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
                 filter === f.key
