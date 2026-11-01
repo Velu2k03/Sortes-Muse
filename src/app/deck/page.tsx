@@ -97,9 +97,12 @@ export default function DeckPage() {
                 content, so the tile image wrapper and name are spans
                 with block display, not div and p. Same layout. */}
             <span className="relative block aspect-[3/5] w-full">
+              {/* Axe fix: the button already carries aria-label
+                  "View meaning of {name}" and the name is visible
+                  below, so a named alt would repeat it 78 times. */}
               <Image
                 src={c.image}
-                alt={c.name}
+                alt=""
                 fill
                 sizes="(max-width: 640px) 33vw, (max-width: 1024px) 25vw, 16vw"
                 className="object-cover"
@@ -121,7 +124,7 @@ export default function DeckPage() {
 
       <CardModal cardId={selected} onClose={() => setSelected(null)} />
 
-      <p className="mt-10 text-center text-xs text-mist/70">
+      <p className="mt-10 text-center text-xs text-mist">
         Card imagery: the public-domain Rider-Waite deck (1909). Meanings are
         original to {SUITS.length ? "Sortes" : ""} and written for reflection.
       </p>

@@ -38,7 +38,7 @@ export default function Footer() {
           </ul>
         </div>
       </div>
-      <div className="border-t border-gold/10 py-5 text-center text-xs text-mist/70">
+      <div className="border-t border-gold/10 py-5 text-center text-xs text-mist">
         © {COPYRIGHT_YEAR} Resonant Atlas · {APP_SHORT}. Cast the lots, read your story.
       </div>
     </footer>
