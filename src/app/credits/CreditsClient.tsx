@@ -9,7 +9,6 @@ import { useAuth } from "@/components/AuthProvider";
 import CheckoutModal from "@/components/CheckoutModal";
 import PurchaseConfirmer from "@/components/PurchaseConfirmer";
 import { useSearchParams } from "next/navigation";
-import Icon from "@/components/Icon";
 
 interface ServerTx {
   id: string;
@@ -42,13 +41,11 @@ export default function CreditsPage() {
   }, [user]);
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
+    <div>
       {justPurchased && <PurchaseConfirmer />}
+      {/* Header now lives in the server page, see page.tsx, so the
+          H1 is in the initial HTML. Balance stays centered here. */}
       <div className="text-center">
-        <p className="flex items-center justify-center gap-2 text-xs uppercase tracking-[0.35em] text-gold"><Icon name="coin" size={18} />Credits</p>
-        <h1 className="mt-3 font-display text-5xl text-goldbright sm:text-6xl">
-          Your balance
-        </h1>
         <p className="num mt-6 text-7xl font-bold text-cream">
           {credits ?? 0}
           <span className="ml-2 align-middle font-body text-lg text-mist">

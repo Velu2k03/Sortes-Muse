@@ -289,7 +289,7 @@ console.log("charts-check: all assertions passed");
   const credits = fs.readFileSync("src/app/credits/CreditsClient.tsx", "utf8");
   assert.ok(!credits.includes('bg-gold/10'), "popular credits card must carry no extra gold tint; badge is the only distinction");
   const layout = fs.readFileSync("src/app/layout.tsx", "utf8");
-  assert.ok(!layout.includes("dangerouslySetInnerHTML"), "layout must not use dangerouslySetInnerHTML for the theme script");
+  assert.ok(layout.split("dangerouslySetInnerHTML").length - 1 === 1 && layout.includes('type="application/ld+json"'), "layout may use dangerouslySetInnerHTML only once, for JSON-LD, never for the theme script");
   assert.ok(layout.includes('/theme.js'), "theme script must load from the static public/theme.js file");
   assert.ok(fs.existsSync("public/theme.js"), "public/theme.js must exist");
   const css = fs.readFileSync("src/app/globals.css", "utf8");
@@ -377,4 +377,12 @@ console.log("charts-check: all assertions passed");
   const fan11 = fs.readFileSync("src/components/TarotFan.tsx", "utf8");
   assert.ok(fan11.includes("TarotFan") || fan11.includes("fan"), "fan component must exist as original Sortes code");
   console.log("batch11: validator fixes and tarot fan: all source assertions passed");
+  // Batch 14: Lightsite fixes. JSON-LD in layout, credits H1 on server.
+  const layout14 = fs.readFileSync("src/app/layout.tsx", "utf8");
+  assert.ok(layout14.includes('"@type": "Organization"') && layout14.includes('"@type": "WebSite"'), "layout must carry Organization and WebSite JSON-LD");
+  const creditsPage = fs.readFileSync("src/app/credits/page.tsx", "utf8");
+  assert.ok(creditsPage.includes("<h1") && creditsPage.includes("Your balance"), "credits H1 must render in the server page, not only in the suspending client");
+  const creditsClient = fs.readFileSync("src/app/credits/CreditsClient.tsx", "utf8");
+  assert.ok(!creditsClient.includes("<h1"), "credits client must not duplicate the server H1");
+  console.log("batch14: lightsite JSON-LD and credits server H1: all source assertions passed");
 }
