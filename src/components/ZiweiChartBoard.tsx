@@ -18,6 +18,9 @@ import {
   zodiacEn,
 } from "@/lib/ziwei-i18n";
 import { RING_CENTRE, RING_INNER, RING_OUTER, polar, sectorEnd, sectorStart, wedgePath } from "@/lib/ziwei-ring";
+import { SQUARE_CELLS, squareCellForPalaceIndex } from "@/lib/ziwei-square";
+
+export type ZiweiView = "ring" | "square";
 
 // Circle chart, not the traditional 4x4 square layout: the same 12 palaces
 // in iztro array order, clockwise from the top, around a centre disc.
@@ -51,7 +54,7 @@ const LABELS: Record<
     empty: "Empty",
     tap: "Tap a palace to see its full stars.",
     unknown: "Unknown birth time: calculated at noon, houses are approximate.",
-    note: "Chart only, for reflection. No interpretation is included in Phase 1, and no reading is charged or saved.",
+    note: "Chart only, for reflection. Calculation is free and unsaved; interpretation, when you choose it below, is a separate step.",
   },
   zh: {
     lunar: "农历",
@@ -64,7 +67,7 @@ const LABELS: Record<
     empty: "空宫",
     tap: "点击宫位查看完整星曜。",
     unknown: "出生时间未知：按正午计算，宫位仅供参考。",
-    note: "仅为星盘展示，不含解读。第一阶段不收费、不保存。",
+    note: "仅为星盘展示，供参考。计算免费且不保存；下方解读为单独步骤。",
   },
 };
 
@@ -73,7 +76,7 @@ function primaryStar(star: string, lang: ZiweiLanguage): string {
   return lang === "en" ? l.en : l.zh;
 }
 
-export default function ZiweiChartBoard({ result, lang = "en" }: { result: ZiweiResult; lang?: ZiweiLanguage }) {
+export default function ZiweiChartBoard({ result, lang = "en", view = "ring" }: { result: ZiweiResult; lang?: ZiweiLanguage; view?: ZiweiView }) {
   const t = LABELS[lang];
   const en = lang === "en";
   const reduce = useReducedMotion();
@@ -123,6 +126,44 @@ export default function ZiweiChartBoard({ result, lang = "en" }: { result: Ziwei
       </div>
 
       <p className="mt-4 text-sm text-cream/60">{t.tap}</p>
+      {view === "square" && (
+        <div className="mx-auto mt-4 grid w-full max-w-[640px] grid-cols-4 gap-1.5" role="grid" aria-label={en ? "Ziwei square chart" : "紫微斗数方盘"}>
+          {result.palaces.map((p) => {
+            const cell = squareCellForPalaceIndex(result.palaces.indexOf(p));
+            const stars = p.majorStars.map((s) => primaryStar(s, lang));
+            const isSel = p.index === selected;
+            return (
+              <button
+                key={p.index}
+                type="button"
+                onClick={() => setSelected(p.index)}
+                aria-pressed={isSel}
+                style={{ gridRow: cell.row, gridColumn: cell.col }}
+                className={`min-h-[104px] rounded-xl border px-2 py-2 text-left ${
+                  isSel ? "border-gold/60 bg-gold/10" : "border-gold/25 bg-panel/70"
+                }`}
+              >
+                <span className={`block text-sm font-bold ${p.isLifePalace ? "text-goldbright" : "text-cream"}`}>
+                  {en ? p.name : p.chineseName}
+                  {p.isLifePalace && " ✦"}
+                </span>
+                <span className="mt-0.5 block text-[11px] text-mist">
+                  {en ? `${STEM_PINYIN[p.heavenlyStem] ?? p.heavenlyStem} ${BRANCH_INFO[p.earthlyBranch]?.pinyin ?? p.earthlyBranch}` : `${p.heavenlyStem} ${p.earthlyBranch}`}
+                </span>
+                <span className="mt-0.5 block text-xs text-cream/85">{stars.length ? stars.join(" · ") : t.empty}</span>
+              </button>
+            );
+          })}
+          <div style={{ gridRow: "2 / span 2", gridColumn: "2 / span 2" }} className="flex flex-col items-center justify-center rounded-xl border border-gold/40 bg-navydeep p-3 text-center">
+            <span className="font-display text-2xl font-bold text-goldbright">{en ? zodiacEn(result.zodiac) : result.zodiac}</span>
+            <span className="mt-1 text-sm text-cream">{en ? signEn(result.sign) : result.sign}</span>
+            <span className="mt-1 text-xs text-mist">
+              {t.life}: {life.majorStars.map((s) => primaryStar(s, lang)).join(" · ") || t.empty}
+            </span>
+          </div>
+        </div>
+      )}
+      {view === "ring" && (
       <motion.div
         {...fade}
         transition={{ duration: reduce ? 0 : 0.5, ease: "easeOut" }}
@@ -194,10 +235,12 @@ export default function ZiweiChartBoard({ result, lang = "en" }: { result: Ziwei
           </text>
         </svg>
       </motion.div>
+      )}
 
       {/* Mobile palace list: wedge text shrinks with the 720 viewBox on
           phones, so small screens get the same palaces as tappable rows.
           Desktop keeps the ring only; selection state is shared. */}
+      {view === "ring" && (
       <div className="mt-4 grid gap-2 sm:hidden" role="list">
         {result.palaces.map((p) => (
           <button
@@ -218,6 +261,7 @@ export default function ZiweiChartBoard({ result, lang = "en" }: { result: Ziwei
           </button>
         ))}
       </div>
+      )}
 
       <AnimatePresence mode="wait">
         <motion.article

@@ -8,11 +8,12 @@ import type { WesternResult } from "@/lib/charts";
 // browser only, after mount. The planet table below keeps the same data
 // readable without the SVG (accessibility) and if the wheel fails to load.
 // Theme: AstroChart's 4th constructor argument overrides its white/black
-// defaults (COLOR_BACKGROUND, POINTS_COLOR, SIGNS_COLOR, CIRCLE_COLOR,
-// LINE_COLOR, CUSPS_FONT_COLOR, SYMBOL_AXIS_FONT_COLOR). Sign glyph
-// colours stay the library defaults; text, circles and lines go gold/cream
-// to match Sortes. Wheel glyph hover is library-controlled, so planet
-// highlight lives in the table below, not by hacking the library DOM.
+// defaults. The old per-sign glyph colours were the problem on the dark
+// panel: brown Taurus/Capricorn/Virgo glyphs were 2.31:1, below WCAG AA.
+// COLORS_SIGNS (and the individual COLOR_* sign keys, which the library
+// also reads) are now all goldbright, 10.90:1 on the panel, and planet
+// glyphs are cream, 13.20:1. Wheel glyph hover is library-controlled, so
+// planet highlight lives in the table below, not by hacking the library DOM.
 const WHEEL_THEME = {
   COLOR_BACKGROUND: "#1a1f2e",
   POINTS_COLOR: "#ede6d6",
@@ -21,6 +22,19 @@ const WHEEL_THEME = {
   LINE_COLOR: "#d4af37",
   CUSPS_FONT_COLOR: "#ede6d6",
   SYMBOL_AXIS_FONT_COLOR: "#f4d03f",
+  COLORS_SIGNS: Array(12).fill("#f4d03f"),
+  COLOR_ARIES: "#f4d03f",
+  COLOR_TAURUS: "#f4d03f",
+  COLOR_GEMINI: "#f4d03f",
+  COLOR_CANCER: "#f4d03f",
+  COLOR_LEO: "#f4d03f",
+  COLOR_VIRGO: "#f4d03f",
+  COLOR_LIBRA: "#f4d03f",
+  COLOR_SCORPIO: "#f4d03f",
+  COLOR_SAGITTARIUS: "#f4d03f",
+  COLOR_CAPRICORN: "#f4d03f",
+  COLOR_AQUARIUS: "#f4d03f",
+  COLOR_PISCES: "#f4d03f",
 };
 
 export default function WesternWheel({ result }: { result: WesternResult }) {
@@ -122,7 +136,7 @@ export default function WesternWheel({ result }: { result: WesternResult }) {
       </table>
       </div>
       <p className="mt-4 text-sm text-cream/60">
-        Chart only, for reflection. No interpretation is included in Phase 1, and no reading is charged or saved.
+        Chart only, for reflection. Calculation is free and unsaved; interpretation, when you choose it below, is a separate step.
       </p>
     </div>
   );

@@ -54,4 +54,6 @@ export interface Reading {
   question?: string;
   firstName?: string;
   free: boolean;
+  // Chart readings only: a positions-only summary, never birth data.
+  chartSummary?: string;
 }

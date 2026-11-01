@@ -125,6 +125,9 @@ export default function HistoryPage() {
                         “{r.question}”
                       </p>
                     )}
+                    {r.chartSummary && (
+                      <p className="mt-1 text-sm text-cream/70">{r.chartSummary}</p>
+                    )}
                   </div>
                   <div className="flex shrink-0 gap-2">
                     <Link

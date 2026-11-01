@@ -52,9 +52,13 @@ export default function PrivacyPage() {
             <li>
               <strong>Chart calculation:</strong> birth date, time, and place
               you enter for a birth chart are used in-memory for that
-              calculation only. They are not stored in our database, are not
-              sent to any AI model, and chart results are not saved to your
-              journal in Phase 1.
+              calculation only. They are not stored in our database and are
+              never sent to any AI model. A place name you search is used
+              only to look up coordinates, and only the coordinates are kept
+              for the calculation. When you choose a chart interpretation,
+              the AI receives only chart positions, signs, houses, and stars,
+              plus your focus and question. A chart you save to your journal
+              is saved as positions only, never birth date, time, or place.
             </li>
             <li>
               <strong>Analytics:</strong> we use privacy-friendly analytics
