@@ -10,7 +10,7 @@ import PushPrompt from "@/components/PushPrompt";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 import { AuthProvider } from "@/components/AuthProvider";
 import MotionProvider from "@/components/MotionProvider";
-import { APP_NAME, APP_SHORT, TAGLINE, SITE_URL } from "@/lib/site";
+import { APP_NAME, APP_SHORT, TAGLINE, SITE_URL, CONTACT_EMAIL } from "@/lib/site";
 
 const display = Cormorant_Garamond({
   variable: "--font-display",
@@ -97,6 +97,26 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             sortes-theme wins. Runs before React hydration so the
             first paint is already the saved theme, not a dark flash. */}
         <Script src="/theme.js" strategy="beforeInteractive" />
+        {/* Lightsite fix V12: Organization and WebSite JSON-LD, so
+            search and AI tools know who runs Sortes. Static constants
+            only, no user input, no social links invented. */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@graph": [
+                {
+                  "@type": "Organization",
+                  name: APP_NAME,
+                  url: SITE_URL,
+                  email: CONTACT_EMAIL,
+                },
+                { "@type": "WebSite", name: APP_NAME, url: SITE_URL },
+              ],
+            }),
+          }}
+        />
         <MotionProvider>
         <AuthProvider>
           <ServiceWorkerRegister />
