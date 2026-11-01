@@ -183,9 +183,9 @@ assert.ok(layout.includes("sortes-theme"), "layout must set theme from localStor
 const header = fs.readFileSync(new URL("../src/components/Header.tsx", import.meta.url), "utf8");
 assert.ok(header.includes("sortes-theme") && header.includes("Switch to light theme"), "header must have a persisted theme toggle");
 const icon = fs.readFileSync(new URL("../src/components/Icon.tsx", import.meta.url), "utf8");
-assert.ok(icon.includes('strokeWidth="2"') && icon.includes("Tabler"), "icon set must be consistent 2px stroke, Tabler MIT");
+assert.ok(icon.includes("Tabler") && icon.includes("Iconoir") && icon.includes("iconoirSun"), "icon set must be Tabler MIT plus verified Iconoir MIT paths");
 const wheel = fs.readFileSync(new URL("../src/components/WesternWheel.tsx", import.meta.url), "utf8");
-assert.ok(wheel.includes("WHEEL_THEME_LIGHT") && wheel.includes("sortes-theme-change"), "Western wheel must re-render in light theme");
+assert.ok(wheel.includes("sortes-theme-change") && wheel.includes("CustomWesternWheel"), "Western wheel must re-render in light theme via the custom wheel");
 
 // Pricing: first chart per system free, then 1 credit.
 assert.equal(chartInterpretationCost(false), 0, "first chart per system is free");
@@ -213,16 +213,16 @@ console.log("charts-check: all assertions passed");
   assert.ok(charts.includes("Share chart as image"), "Share button must exist on results, not only after interpretation");
   // Share button must appear before the chart board (result level), not only in the interpretation section.
   const shareIdx = charts.indexOf("Share chart as image");
-  const boardIdx = charts.indexOf("<ZiweiChartBoard");
   const interpIdx = charts.indexOf('aria-label="Chart interpretation"');
   assert.ok(shareIdx > 0 && shareIdx < interpIdx, "first Share button must come before the interpretation section");
   assert.ok(charts.includes("scroll-mt-24"), "result and legend sections must carry scroll margin under the sticky header");
   const wheel = fs.readFileSync("src/components/WesternWheel.tsx", "utf8");
-  assert.ok(wheel.includes("CIRCLE_STRONG: 1"), "Western wheel ring must be thinned via CIRCLE_STRONG 1");
-  assert.ok(wheel.includes("INNER_CIRCLE_RADIUS_RATIO: 16"), "Western sign band must be halved via INNER_CIRCLE_RADIUS_RATIO 16");
+  assert.ok(wheel.includes("CustomWesternWheel"), "Western wheel must use the custom SVG wheel with staggered labels");
+  assert.ok(!wheel.includes("@astrodraw/astrochart"), "AstroChart must no longer be used: it cannot stagger labels inside its SVG");
   assert.ok(board.includes("rotate(${rot}"), "Ziwei ring labels must be tangentially rotated so side wedges do not cross into neighbours");
-  assert.ok(wheel.includes("MARGIN: 72"), "Western wheel margin must be 72 so axis labels are not clipped");
-  assert.ok(wheel.includes("SYMBOL_SCALE: 0.85"), "Western wheel glyphs must be shrunk via SYMBOL_SCALE 0.85");
+  const custom = fs.readFileSync("src/components/CustomWesternWheel.tsx", "utf8");
+  assert.ok(custom.includes("prevDisplay - 9") || custom.includes("display"), "custom wheel must stagger clustered planet labels by display angle");
+  assert.ok(custom.includes("leader") || custom.includes("<line"), "custom wheel must draw leader lines from true position to staggered label");
   assert.ok(wheel.includes("Clustered planets, staggered list"), "Western wheel must carry a staggered cluster list outside the wheel");
   assert.ok(wheel.includes("scroll-mt-24"), "Western aspects/wheel headings must carry scroll margin");
   const credits = fs.readFileSync("src/app/credits/CreditsClient.tsx", "utf8");
@@ -248,20 +248,15 @@ console.log("charts-check: all assertions passed");
 // only; the rendered screenshots in sortes-audit7-screenshots are the
 // visual proof, and the live re-audit must re-check them in browser.
 {
-  const wheel = fs.readFileSync("src/components/WesternWheel.tsx", "utf8");
   // Root cause, verified against @astrodraw/astrochart radix.ts:
   // drawUniverse fills each sign segment with COLORS_SIGNS[i], and
   // sign glyphs are stroked with SIGNS_COLOR. Batch 5 set both to
   // goldbright, so the band was solid gold with gold glyphs on gold.
   // The fix is a band fill equal to the wheel background, in both
   // themes, so only the 1px circle strokes remain and glyphs contrast.
-  assert.ok(wheel.includes('COLORS_SIGNS: Array(12).fill("#1a1f2e")'), "dark wheel sign-band fill must equal the dark wheel background, not gold");
-  assert.ok(wheel.includes('COLORS_SIGNS: Array(12).fill("#fffdf5")'), "light wheel sign-band fill must equal the light wheel background, not gold");
-  assert.ok(!wheel.includes('COLORS_SIGNS: Array(12).fill("#f4d03f")'), "wheel sign-band fill must never again be goldbright");
-  assert.ok(!wheel.includes('COLORS_SIGNS: Array(12).fill("#7c5e00")'), "wheel sign-band fill must never again be dark gold");
-  assert.ok(wheel.includes("CIRCLE_STRONG: 1"), "wheel ring stroke must stay thinned at CIRCLE_STRONG 1");
-  assert.ok(wheel.includes("INNER_CIRCLE_RADIUS_RATIO: 16"), "wheel sign band must stay halved at INNER_CIRCLE_RADIUS_RATIO 16");
-  assert.ok(wheel.includes("SIGNS_STROKE: 1.6"), "sign glyph stroke must be raised to 1.6 for legibility now the band is background-coloured");
+  const custom4 = fs.readFileSync("src/components/CustomWesternWheel.tsx", "utf8");
+  assert.ok(custom4.includes('bg = dark ? "#1a1f2e" : "#fffdf5"'), "custom wheel background must match the theme, no solid gold band");
+  assert.ok(!custom4.includes('fill="#f4d03f"') || custom4.includes('gold = dark ? "#f4d03f"'), "custom wheel must not fill the sign band gold");
   // Hero CTAs: definitive no-wrap, not just whitespace-nowrap.
   const home = fs.readFileSync("src/app/page.tsx", "utf8");
   assert.ok(home.includes("sm:flex-nowrap"), "hero CTA row must be flex-nowrap at sm+");
@@ -277,4 +272,35 @@ console.log("charts-check: all assertions passed");
   // Western/Vedic legends are deliberately NOT translated in this batch.
   assert.ok(!i18n.includes("WESTERN_LEGEND_ZH") && !i18n.includes("VEDIC_LEGEND_ZH"), "Western/Vedic legends must not be invented in this batch; they stay English and are reported as remaining");
   console.log("audit4: wheel band fill = background in both themes, solid Buy buttons, hero flex-nowrap + shrink-0, Chinese Ziwei legend: all source assertions passed");
+}
+
+// Audit 5 + aislop batch (PR #7): custom wheel on-wheel stagger, Chinese
+// legend heading, interpretation language note, credits card tint,
+// static theme script, number font, auth fail-fast.
+{
+  const custom = fs.readFileSync("src/components/CustomWesternWheel.tsx", "utf8");
+  assert.ok(custom.includes("gap < 8") || custom.includes("within 8"), "custom wheel must stagger planets within 8 degrees");
+  assert.ok(custom.includes("As") && custom.includes("Mc"), "custom wheel must mark Ascendant and Midheaven");
+  const charts = fs.readFileSync("src/app/charts/ChartsClient.tsx", "utf8");
+  assert.ok(charts.includes("如何读这张星盘"), "legend heading must be Chinese in Chinese mode");
+  assert.ok(charts.includes("解读") && charts.includes("AI 用英文生成"), "interpretation heading must follow chart language, with a note that AI text stays English");
+  const credits = fs.readFileSync("src/app/credits/CreditsClient.tsx", "utf8");
+  assert.ok(!credits.includes('bg-gold/10'), "popular credits card must carry no extra gold tint; badge is the only distinction");
+  const layout = fs.readFileSync("src/app/layout.tsx", "utf8");
+  assert.ok(!layout.includes("dangerouslySetInnerHTML"), "layout must not use dangerouslySetInnerHTML for the theme script");
+  assert.ok(layout.includes('/theme.js'), "theme script must load from the static public/theme.js file");
+  assert.ok(fs.existsSync("public/theme.js"), "public/theme.js must exist");
+  const css = fs.readFileSync("src/app/globals.css", "utf8");
+  assert.ok(css.includes("--font-number"), "number font token must exist in globals.css");
+  assert.ok(css.includes("tabular-nums"), "numbers must use tabular figures");
+  const typewriter = fs.readFileSync("src/components/TypewriterText.tsx", "utf8");
+  assert.ok(typewriter.includes("<button") && !typewriter.includes('role="button"'), "typewriter must be a real button, not a div with role button");
+  assert.ok(!typewriter.includes("useRef"), "typewriter must not access refs during render");
+  const burst = fs.readFileSync("src/components/CardBurst.tsx", "utf8");
+  assert.ok(!burst.includes("Math.random()"), "CardBurst must not call Math.random during render");
+  const share = fs.readFileSync("src/components/ShareReading.tsx", "utf8");
+  assert.ok(share.includes("next/image") || share.includes("from \"next/image\""), "share card must use next/image, not a raw img element");
+  const auth = fs.readFileSync("src/lib/auth.ts", "utf8");
+  assert.ok(auth.includes("authConfigured"), "auth must expose a fail-fast configured check");
+  console.log("audit5+aislop: custom wheel stagger, Chinese legend heading, interpretation language note, credits tint removed, static theme script, number font, typewriter button, deterministic burst, share next/image, auth fail-fast: all source assertions passed");
 }

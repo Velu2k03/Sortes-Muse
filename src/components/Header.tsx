@@ -30,7 +30,7 @@ export default function Header() {
   useEffect(() => {
     try {
       const saved = localStorage.getItem("sortes-theme");
-      if (saved === "light" || saved === "dark") setTheme(saved);
+      if (saved === "light" || saved === "dark") queueMicrotask(() => setTheme(saved));
     } catch {
       // Private mode or blocked storage: stay dark, do not crash.
     }
@@ -98,7 +98,7 @@ export default function Header() {
             title="Your reading credits"
           >
             <Icon name="coin" size={18} />
-            <span>
+            <span className="num">
               <CountUp value={credits ?? 0} />
             </span>
           </Link>

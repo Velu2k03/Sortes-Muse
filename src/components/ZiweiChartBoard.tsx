@@ -18,7 +18,7 @@ import {
   zodiacEn,
 } from "@/lib/ziwei-i18n";
 import { RING_CENTRE, RING_INNER, RING_OUTER, polar, sectorEnd, sectorStart, wedgePath } from "@/lib/ziwei-ring";
-import { SQUARE_CELLS, squareCellForPalaceIndex } from "@/lib/ziwei-square";
+import { squareCellForPalaceIndex } from "@/lib/ziwei-square";
 
 export type ZiweiView = "ring" | "square";
 
@@ -192,7 +192,7 @@ export default function ZiweiChartBoard({ result, lang = "en", view = "ring", sh
         transition={{ duration: reduce ? 0 : 0.5, ease: "easeOut" }}
         className="mx-auto mt-4 w-full max-w-[640px] overflow-x-auto"
       >
-        <svg viewBox="0 0 720 720" role="img" aria-label={en ? "Ziwei circle chart" : "紫微斗数圆盘"} className="w-full min-w-[480px]">
+        <svg viewBox="0 0 720 720" aria-label={en ? "Ziwei circle chart" : "紫微斗数圆盘"} className="w-full min-w-[480px]">
           <circle cx={RING_CENTRE} cy={RING_CENTRE} r={RING_OUTER + 6} fill={ring.bg} stroke={ring.stroke} strokeOpacity="0.35" />
           {result.palaces.map((p, i) => {
             const start = sectorStart(i);
@@ -220,10 +220,8 @@ export default function ZiweiChartBoard({ result, lang = "en", view = "ring", sh
             return (
               <g
                 key={p.index}
-                role="button"
                 tabIndex={0}
                 aria-label={`${en ? p.name : p.chineseName}: ${allStars.length ? allStars.join(", ") : t.empty}`}
-                aria-pressed={isSel}
                 onClick={() => setSelected(p.index)}
                 onMouseEnter={() => setHovered(p.index)}
                 onMouseLeave={() => setHovered(null)}
@@ -274,12 +272,11 @@ export default function ZiweiChartBoard({ result, lang = "en", view = "ring", sh
           phones, so small screens get the same palaces as tappable rows.
           Desktop keeps the ring only; selection state is shared. */}
       {view === "ring" && (
-      <div className="mt-4 grid gap-2 sm:hidden" role="list">
+      <ul className="mt-4 grid gap-2 sm:hidden">
         {result.palaces.map((p) => (
+          <li key={p.index}>
           <button
-            key={p.index}
             type="button"
-            role="listitem"
             onClick={() => setSelected(p.index)}
             aria-pressed={p.index === selected}
             className={`rounded-xl border px-4 py-3 text-left text-sm ${
@@ -292,8 +289,9 @@ export default function ZiweiChartBoard({ result, lang = "en", view = "ring", sh
               {p.majorStars.length ? p.majorStars.map((s) => primaryStar(s, lang)).join(" · ") : t.empty}
             </span>
           </button>
+          </li>
         ))}
-      </div>
+      </ul>
       )}
 
       <AnimatePresence mode="wait">

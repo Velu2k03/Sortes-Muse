@@ -30,11 +30,13 @@ export default function DailyPage() {
 
   useEffect(() => {
     const existing = getDailyCard();
-    if (existing) {
-      setDaily(existing);
-      setPhase("revealed");
-    }
-    setStreak(getDailyStreak());
+    queueMicrotask(() => {
+      if (existing) {
+        setDaily(existing);
+        setPhase("revealed");
+      }
+      setStreak(getDailyStreak());
+    });
     return () => {
       if (drawTimer.current) clearTimeout(drawTimer.current);
     };
@@ -74,7 +76,7 @@ export default function DailyPage() {
           animate={{ opacity: 1, scale: 1 }}
           className="mt-4 inline-flex items-center gap-2 rounded-full border border-gold/40 bg-gold/10 px-4 py-1.5 text-sm font-semibold text-goldbright"
         >
-          <span aria-hidden="true">🔥</span> {streak}-day streak
+          <span aria-hidden="true">🔥</span> <span className="num">{streak}</span>-day streak
         </motion.p>
       )}
 

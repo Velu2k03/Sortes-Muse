@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { SPREADS, CARD_BACK, getSpread } from "@/lib/tarot";
+import { SPREADS, CARD_BACK } from "@/lib/tarot";
 import { getCard } from "@/lib/cards";
 import CheckoutModal from "@/components/CheckoutModal";
 import { useAuth } from "@/components/AuthProvider";

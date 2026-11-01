@@ -1,4 +1,4 @@
-import type { DrawnCard, Reading } from "./types";
+import type { Reading } from "./types";
 
 const K = {
   credits: "sortes-credits",
@@ -18,6 +18,7 @@ function read<T>(key: string, fallback: T): T {
     const raw = localStorage.getItem(key);
     return raw === null ? fallback : (JSON.parse(raw) as T);
   } catch {
+    console.warn(`[sortes] could not read local key ${key}; using fallback`);
     return fallback;
   }
 }
@@ -34,7 +35,7 @@ function write(key: string, value: unknown): void {
   }
 }
 
-// ---- Credits (guest wallet; synced to DB for logged-in users in Phase 7) ----
+// Credits (guest wallet; synced to DB for logged-in users in Phase 7)
 export function getCredits(): number {
   return read<number>(K.credits, 0);
 }
@@ -53,7 +54,7 @@ export function spendCredit(n = 1): boolean {
   return true;
 }
 
-// ---- Purchase history (guest wallet; server transactions for signed-in users) ----
+// Purchase history (guest wallet; server transactions for signed-in users)
 export interface Purchase {
   packId: string;
   readings: number;
@@ -71,7 +72,7 @@ export function recordPurchase(p: Purchase): void {
   write(K.purchases, list.slice(0, 50));
 }
 
-// ---- First reading free ----
+// First reading free
 export function freeReadingUsed(): boolean {
   return read<boolean>(K.freeReadingUsed, false);
 }
@@ -79,7 +80,7 @@ export function markFreeReadingUsed(): void {
   write(K.freeReadingUsed, true);
 }
 
-// ---- First chart interpretation free, per system ----
+// First chart interpretation free, per system
 // Same pattern as tarot's freeReadingUsed: a device-local flag, checked
 // in the charts page before any credit is spent. The server never sees
 // this flag and never charges; the page spends 1 credit only when the
@@ -92,7 +93,7 @@ export function markChartFreeUsed(system: ChartFreeSystem): void {
   write(`sortes-chart-free-used-${system}`, true);
 }
 
-// ---- Daily card: one per calendar day ----
+// Daily card: one per calendar day
 export interface DailyCardState {
   date: string; // YYYY-MM-DD
   cardId: string;
@@ -119,7 +120,7 @@ export function setDailyCard(cardId: string, reversed: boolean): DailyCardState 
   return s;
 }
 
-// ---- Daily streak: consecutive days the seeker drew their card ----
+// Daily streak: consecutive days the seeker drew their card
 export function getDailyStreak(): number {
   const days = read<string[]>(K.dailyStreak, []);
   if (days.length === 0) return 0;
@@ -149,7 +150,7 @@ function recordDailyDraw(): void {
   }
 }
 
-// ---- Reading history ----
+// Reading history
 const MAX_HISTORY = 100;
 
 export function getHistory(): Reading[] {
@@ -177,7 +178,7 @@ export function makeReading(partial: Omit<Reading, "id" | "createdAt">): Reading
   };
 }
 
-// ---- AI cache: re-opening history never triggers a second API call ----
+// AI cache: re-opening history never triggers a second API call
 export function getCachedInterpretation(key: string): string | null {
   const cache = read<Record<string, string>>(K.aiCache, {});
   return cache[key] ?? null;
@@ -189,7 +190,7 @@ export function setCachedInterpretation(key: string, text: string): void {
   write(K.aiCache, cache);
 }
 
-// ---- PWA prompts ----
+// PWA prompts
 export function installBannerDismissed(): boolean {
   return read<boolean>(K.installDismissed, false);
 }

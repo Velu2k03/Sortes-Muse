@@ -10,9 +10,11 @@ import Icon from "@/components/Icon";
 // checked live on 2026-11-01 and did not respond from this environment,
 // and its text is generic sun-sign copy. This page is free, unsaved,
 // and uncharged, and it does not ask for any birth data.
+const MODULE_TODAY = new Date();
+const MODULE_TODAY_KEY = `${MODULE_TODAY.getFullYear()}-${String(MODULE_TODAY.getMonth() + 1).padStart(2, "0")}-${String(MODULE_TODAY.getDate()).padStart(2, "0")}`;
+
 export default function HoroscopePage() {
-  const today = new Date();
-  const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+  const todayKey = MODULE_TODAY_KEY;
   const [sign, setSign] = useState<SunSign>("Aries");
   const [date, setDate] = useState(todayKey);
   const h = dailyHoroscope(sign, date || todayKey);
@@ -20,7 +22,7 @@ export default function HoroscopePage() {
   return (
     <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6">
       <div className="text-center">
-        <p className="flex items-center justify-center gap-2 text-xs uppercase tracking-[0.35em] text-gold"><Icon name="sun" size={18} />Daily Horoscope</p>
+        <p className="flex items-center justify-center gap-2 text-xs uppercase tracking-[0.35em] text-gold"><Icon name="iconoirSun" size={18} />Daily Horoscope</p>
         <h1 className="mt-3 font-display text-5xl text-goldbright sm:text-6xl">Today&apos;s sun-sign reflection</h1>
         <p className="mx-auto mt-4 max-w-xl text-cream/75">
           A general reflection for your sun sign, written for Sortes. It is not a personal reading, not a prediction,
@@ -69,7 +71,7 @@ export default function HoroscopePage() {
             Lucky colour: <strong className="text-cream">{h.luckyColour}</strong>
           </span>
           <span>
-            Lucky number: <strong className="text-cream">{h.luckyNumber}</strong>
+            Lucky number: <strong className="num text-cream">{h.luckyNumber}</strong>
           </span>
         </div>
         <p className="mt-4 text-sm text-cream/60">

@@ -261,7 +261,7 @@ export function calculateWestern(input: {
     latitude: input.latitude,
     longitude: input.longitude,
   });
-  const horoscope = new Horoscope({ origin, houseSystem: "placidus", zodiac: "tropical" }) as unknown as {
+  const horoscope = new Horoscope({ origin, houseSystem: "placidus", zodiac: "tropical" }) as {
     CelestialBodies: Record<string, {
       label: string;
       Sign: { label: string };

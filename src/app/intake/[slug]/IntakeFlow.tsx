@@ -136,7 +136,7 @@ export default function IntakeFlow({ slug }: { slug: string }) {
       trackReadingCompleted(`${spread.slug}-personalized`, true);
       clearInterval(lineTimer);
       router.push(`/reading/${reading.id}`);
-    } catch (e) {
+    } catch {
       clearInterval(lineTimer);
       setStep("confirm");
       setError(

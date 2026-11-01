@@ -13,6 +13,7 @@
 
   --font-display: "Cormorant Garamond", "Times New Roman", Georgia, serif;
   --font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-number: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
 /* Light theme, Expansion 1: Tailwind v4 utilities read var(--color-*),
@@ -45,7 +46,16 @@ html[data-theme="light"] {
   --color-mist: #5c5a52;
   --color-violet: #6d28d9;
 }
-html[data-theme="light"] body {
+html[data-theme="light"] /* Numbers: genjutsu paint method, distinct readable numerals. Inter
+   with tabular figures, so prices, credits, degrees and counts line
+   up and never inherit the display serif. Applied via .num and the
+   font-number utility in both dark and light themes. */
+.num, .font-number {
+  font-family: var(--font-number);
+  font-variant-numeric: tabular-nums;
+}
+
+body {
   background-color: var(--color-ink);
   color: var(--color-cream);
 }
@@ -87,6 +97,15 @@ article,
 details,
 summary {
   scroll-margin-top: 6rem;
+}
+
+/* Numbers: genjutsu paint method, distinct readable numerals. Inter
+   with tabular figures, so prices, credits, degrees and counts line
+   up and never inherit the display serif. Applied via .num and the
+   font-number utility in both dark and light themes. */
+.num, .font-number {
+  font-family: var(--font-number);
+  font-variant-numeric: tabular-nums;
 }
 
 body {

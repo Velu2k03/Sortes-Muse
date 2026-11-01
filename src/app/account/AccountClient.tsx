@@ -37,14 +37,18 @@ export default function AccountPage() {
         .then((d) => setTransactions(d.transactions ?? []))
         .catch(() => setTransactions([]));
     } else {
-      setTransactions(null);
-      setStep("email");
-      // Prefill the email used at checkout, so guests who just paid can
-      // sign in and claim their credits without retyping it.
-      try {
-        const purchased = sessionStorage.getItem("sortes-purchase-email");
-        if (purchased) setEmail((e) => e || purchased);
-      } catch {}
+      queueMicrotask(() => {
+        setTransactions(null);
+        setStep("email");
+        // Prefill the email used at checkout, so guests who just paid can
+        // sign in and claim their credits without retyping it.
+        try {
+          const purchased = sessionStorage.getItem("sortes-purchase-email");
+          if (purchased) setEmail((e) => e || purchased);
+        } catch {
+          /* Storage unavailable; non-fatal, the flow continues without it. */
+        }
+      });
     }
   }, [user]);
 

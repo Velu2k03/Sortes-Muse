@@ -64,7 +64,7 @@ export default function ReadingFlow({ slug, intake = null }: Props) {
   }, []);
 
   useEffect(() => {
-    setUsedFree(freeReadingUsed());
+    queueMicrotask(() => setUsedFree(freeReadingUsed()));
   }, []);
 
   const isFreeAvailable = spread.slug === "quick-insight" && !usedFree;

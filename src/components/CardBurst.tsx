@@ -16,17 +16,24 @@ export default function CardBurst({
   count?: number;
   distance?: number;
 }) {
+  // Deterministic spark layout: a sin-hash of the index gives varied
+  // angles, distances, sizes and delays without Math.random, so the
+  // render is pure and server/client output matches.
   const sparks = useMemo(
     () =>
       Array.from({ length: count }, (_, i) => {
-        const angle = (i / count) * Math.PI * 2 + Math.random() * 0.4;
-        const dist = distance * 0.5 + Math.random() * distance * 0.5;
+        const h = (n: number) => {
+          const x = Math.sin(n * 127.1 + 311.7) * 43758.5453;
+          return x - Math.floor(x);
+        };
+        const angle = (i / count) * Math.PI * 2 + h(i) * 0.4;
+        const dist = distance * 0.5 + h(i + 100) * distance * 0.5;
         return {
           x: Math.cos(angle) * dist,
           y: Math.sin(angle) * dist,
-          size: 3 + Math.random() * 4,
-          delay: Math.random() * 0.08,
-          gold: Math.random() > 0.35,
+          size: 3 + h(i + 200) * 4,
+          delay: h(i + 300) * 0.08,
+          gold: h(i + 400) > 0.35,
         };
       }),
     [count, distance]

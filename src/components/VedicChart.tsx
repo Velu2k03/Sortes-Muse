@@ -2,9 +2,7 @@
 
 import type { VedicResult } from "@/lib/vedic";
 
-// Vedic D1 chart display: sidereal Lahiri positions, whole-sign houses,
-// Moon nakshatra, and the current Vimshottari dasha. Calculation only in
-// this component; interpretation lives in the charts page, below.
+// Vedic D1 chart display (sidereal Lahiri, whole-sign houses).
 export default function VedicChart({ result }: { result: VedicResult }) {
   return (
     <div>
@@ -46,7 +44,7 @@ export default function VedicChart({ result }: { result: VedicResult }) {
               <tr key={p.name} className="border-b border-gold/10">
                 <td className="py-2 pr-4 font-semibold capitalize text-cream">{p.name}</td>
                 <td className="py-2 pr-4">{p.sign}</td>
-                <td className="py-2 pr-4">{p.longitude.toFixed(2)}°</td>
+                <td className="num py-2 pr-4">{p.longitude.toFixed(2)}°</td>
                 <td className="py-2">{p.house ?? "—"}</td>
               </tr>
             ))}

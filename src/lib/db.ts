@@ -102,7 +102,7 @@ function uid(): string {
   return `u_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
 }
 
-// ---- Users ----
+// Users
 export async function getUserByEmail(email: string): Promise<DbUser | null> {
   await ensureSchema();
   if (usePostgres) {
@@ -198,7 +198,7 @@ export async function spendUserCredits(userId: string, n: number): Promise<boole
   return true;
 }
 
-// ---- Auth codes ----
+// Auth codes
 export async function storeAuthCode(email: string, codeHash: string, expiresAt: Date) {
   await ensureSchema();
   if (usePostgres) {
@@ -246,7 +246,7 @@ export async function deleteAuthCode(email: string) {
   await writeLocal(db);
 }
 
-// ---- Transactions ----
+// Transactions
 export async function createTransaction(t: {
   userId: string | null;
   email: string;
@@ -297,7 +297,7 @@ export async function findTransactionByOrderId(orderId: string): Promise<DbTrans
   return db.transactions.find((t) => t.pack_type.includes(marker)) ?? null;
 }
 
-// ---- Synced readings ----
+// Synced readings
 export async function saveReadingForUser(userId: string, reading: { id: string; [k: string]: unknown }) {
   await ensureSchema();
   if (usePostgres) {
@@ -328,7 +328,7 @@ export async function listReadingsForUser(userId: string): Promise<unknown[]> {
   return db.readings.filter((r) => r.user_id === userId).map((r) => r.data).slice(0, 100);
 }
 
-// ---- Social proof: readings cast in the last N days ----
+// Social proof: readings cast in the last N days
 export async function countRecentReadings(days: number): Promise<number> {
   await ensureSchema();
   if (usePostgres) {
@@ -341,7 +341,7 @@ export async function countRecentReadings(days: number): Promise<number> {
   return db.readings.filter((r) => new Date(r.created_at).getTime() > cutoff).length;
 }
 
-// ---- Win-back: users quiet for 7+ days who have not been nudged recently ----
+// Win-back: users quiet for 7+ days who have not been nudged recently
 export async function getWinbackCandidates(limit = 50): Promise<DbUser[]> {
   await ensureSchema();
   if (usePostgres) {

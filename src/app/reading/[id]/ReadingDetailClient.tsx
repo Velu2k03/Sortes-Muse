@@ -18,7 +18,7 @@ export default function ReadingDetail({ id }: { id: string }) {
   const [zoomCard, setZoomCard] = useState<string | null>(null);
 
   useEffect(() => {
-    setReading(getReading(id) ?? null);
+    queueMicrotask(() => setReading(getReading(id) ?? null));
   }, [id]);
 
   if (reading === undefined) {

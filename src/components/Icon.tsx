@@ -1,13 +1,17 @@
 // Minor and basic icons for Sortes, one consistent set.
 // Licence: Tabler Icons, MIT, 24x24 grid, 2px stroke, round caps and
 // joins (tabler.io/icons, "Free and open source", MIT License on its
-// site). Iconoir is also MIT and was checked, Coolicons original set is
-// CC BY 4.0 per its shadcn listing, so no Coolicons path is copied here:
-// every path below is drawn on the Tabler 24x24, 2px grid, so the whole
-// set stays MIT and needs no per-icon attribution line in the UI.
+// site). Two Iconoir paths are also MIT (Iconoir by Luca Burgio, MIT,
+// 24x24 grid, 1.5 stroke, paths verified from the Iconoir pages on
+// shadcn.io in Nov 2026: sun-light and open-book). Coolicons original
+// set is CC BY 4.0 per its shadcn listing, so no Coolicons path is
+// copied here. The whole set stays MIT and needs no per-icon
+// attribution line in the UI. Iconoir icons keep their own 1.5 stroke
+// within the group, so the group is internally consistent.
 // No brand logo is used as an icon. No emoji is used as an icon.
-// Stroke width and size are fixed by this component: stroke 2, size 20
-// by default, currentColor, so icons match in header, nav, spreads,
+// Stroke width and size are fixed by this component: Tabler stroke 2,
+// Iconoir stroke 1.5, size 20 by default, currentColor, so icons match
+// within each group in header, nav, spreads,
 // charts, horoscope, history, credits, and buttons in both themes.
 export type IconName =
   | "home"
@@ -34,7 +38,9 @@ export type IconName =
   | "globe"
   | "clock"
   | "lock"
-  | "user";
+  | "user"
+  | "iconoirSun"
+  | "iconoirBook";
 
 const PATHS: Record<IconName, React.ReactNode> = {
   home: (
@@ -152,6 +158,22 @@ const PATHS: Record<IconName, React.ReactNode> = {
       <path d="M4 20c0-4 3.5-6 8-6s8 2 8 6" />
     </>
   ),
+  // Iconoir (MIT), 1.5 stroke: sun-light, open-book. Paths copied
+  // verbatim from the Iconoir listings, not redrawn in Tabler style.
+  iconoirSun: (
+    <path d="M12 18a6 6 0 1 0 0-12a6 6 0 0 0 0 12m10-6h1M12 2V1m0 22v-1m8-2l-1-1m1-15l-1 1M4 20l1-1M4 4l1 1m-4 7h1" />
+  ),
+  iconoirBook: (
+    <g strokeWidth="1.5">
+      <path d="M12 21V7a2 2 0 0 1 2-2h7.4a.6.6 0 0 1 .6.6v13.114M12 21V7a2 2 0 0 1-2-2H2.6a.6.6 0 0 0-.6.6v13.114M14 19h8m-12 0H2" />
+      <path strokeLinejoin="round" d="M12 21a2 2 0 0 1 2-2m-2 2a2 2 0 0 0-2-2" />
+    </g>
+  ),
+};
+
+const STROKES: Partial<Record<IconName, string>> = {
+  iconoirSun: "1.5",
+  iconoirBook: "1.5",
 };
 
 export default function Icon({
@@ -170,7 +192,7 @@ export default function Icon({
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth="2"
+      strokeWidth={STROKES[name] ?? "2"}
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
