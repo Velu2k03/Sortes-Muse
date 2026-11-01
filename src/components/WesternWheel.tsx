@@ -14,7 +14,25 @@ import type { WesternResult } from "@/lib/charts";
 // also reads) are now all goldbright, 10.90:1 on the panel, and planet
 // glyphs are cream, 13.20:1. Wheel glyph hover is library-controlled, so
 // planet highlight lives in the table below, not by hacking the library DOM.
+// Audit 3 wheel fixes, via theme options AstroChart actually exposes
+// (project/src/settings.ts): CIRCLE_STRONG 2 -> 1 thins the gold
+// ring, MARGIN 50 -> 72 leaves room for axis labels so Ic is not
+// clipped at the edge, SYMBOL_SCALE 1 -> 0.85 shrinks glyphs, and
+// POINTS/SIGNS stroke are thinned. No DOM hacking, no leader lines
+// (the library does not expose them); de-clustering for the dense
+// Capricorn group is the staggered cluster list below the table,
+// in ordinary markup, not inside the wheel SVG.
 const WHEEL_THEME = {
+  CIRCLE_STRONG: 1,
+  // Sign band is radius/INNER_CIRCLE_RADIUS_RATIO wide (radix.ts
+  // drawUniverse): 8 gave a ~31px solid gold band at radius 248,
+  // which read as a thick heavy ring. 16 halves it to ~15px.
+  INNER_CIRCLE_RADIUS_RATIO: 16,
+  MARGIN: 72,
+  SYMBOL_SCALE: 0.85,
+  POINTS_STROKE: 1.4,
+  SIGNS_STROKE: 1.1,
+  SYMBOL_AXIS_STROKE: 1.2,
   COLOR_BACKGROUND: "#1a1f2e",
   POINTS_COLOR: "#ede6d6",
   SIGNS_COLOR: "#f4d03f",
@@ -166,7 +184,43 @@ export default function WesternWheel({ result }: { result: WesternResult }) {
         </p>
       )}
       <p className="mt-2 text-sm text-cream/80">Tap a planet row to highlight it.</p>
-      <details className="mt-4 rounded-2xl border border-gold/25 bg-panel/70 p-4">
+      {(() => {
+        // Clustered planets: consecutive planets (longitude-sorted,
+        // wrap-aware) within 12 degrees of the previous one, groups
+        // of 3+. The wheel stacks these glyphs, so this staggered
+        // list is the readable primary for a cluster, in longitude
+        // order, with increasing left indent per row.
+        const sorted = [...result.planets].sort((a, b) => a.longitude - b.longitude);
+        const groups: typeof sorted[] = [];
+        let cur: typeof sorted = [];
+        for (const pl of sorted) {
+          if (cur.length && (pl.longitude - cur[cur.length - 1].longitude > 12)) { groups.push(cur); cur = []; }
+          cur.push(pl);
+        }
+        if (cur.length) groups.push(cur);
+        if (groups.length > 1 && groups[0].length && groups[groups.length - 1].length) {
+          const first = groups[0], last = groups[groups.length - 1];
+          if (first[0].longitude + 360 - last[last.length - 1].longitude <= 12) { groups[0] = [...last, ...first]; groups.pop(); }
+        }
+        const clusters = groups.filter((g) => g.length >= 3);
+        if (!clusters.length) return null;
+        return (
+          <div className="mt-4 rounded-2xl border border-gold/25 bg-panel/70 p-4">
+            <p className="text-sm font-semibold text-goldbright">Clustered planets, staggered list</p>
+            <p className="mt-1 text-sm text-cream/80">These planets sit close together, so their wheel glyphs overlap. Read them here, in longitude order, instead of from the wheel.</p>
+            {clusters.map((g, gi) => (
+              <ul key={gi} className="mt-2 space-y-1 text-sm text-cream/85">
+                {g.map((pl, i) => (
+                  <li key={pl.name} style={{ marginLeft: i * 14 }}>
+                    {pl.name}: {pl.sign}, {pl.longitude.toFixed(2)}°, house {pl.house ?? "—"}
+                  </li>
+                ))}
+              </ul>
+            ))}
+          </div>
+        );
+      })()}
+      <details className="mt-4 scroll-mt-24 rounded-2xl border border-gold/25 bg-panel/70 p-4">
         <summary className="cursor-pointer text-sm font-semibold text-goldbright">
           Aspects found: {result.aspectCount} (tap to list them)
         </summary>
@@ -182,7 +236,7 @@ export default function WesternWheel({ result }: { result: WesternResult }) {
           ))}
         </ul>
       </details>
-      <h3 className="mt-8 font-display text-xl text-goldbright">Wheel overview</h3>
+      <h3 className="mt-8 scroll-mt-24 font-display text-xl text-goldbright">Wheel overview</h3>
       <p className="mt-1 text-sm text-cream/80">Visual overview only. If glyphs overlap or an axis label is clipped at the edge, use the planet table above for the exact reading.</p>
       <motion.div
         initial={reduce ? { opacity: 1 } : { opacity: 0, scale: 0.97 }}

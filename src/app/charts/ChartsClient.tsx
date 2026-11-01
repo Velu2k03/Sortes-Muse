@@ -90,8 +90,14 @@ export default function ChartsClient() {
     if (saved === "en" || saved === "zh") setZiweiLang(saved);
     else window.localStorage.setItem("sortes-ziwei-lang", "en");
   }, []);
+  // Glosses toggle: default off in English, on in Chinese. Reset on
+  // language change, so English mode is actually English in detail
+  // (summary was already English, detail still showed Chinese
+  // characters). ChartsClient owns it; ZiweiChartBoard renders it.
+  const [showGlosses, setShowGlosses] = useState(false);
   function setZiweiLangSaved(lang: ZiweiLanguage) {
     setZiweiLang(lang);
+    setShowGlosses(lang === "zh");
     window.localStorage.setItem("sortes-ziwei-lang", lang);
   }
 
@@ -439,10 +445,12 @@ export default function ChartsClient() {
             {error}
           </p>
         )}
-        <p className="mt-5 rounded-xl border border-gold/25 bg-panel/50 px-4 py-3 text-sm leading-relaxed text-cream/80">
-          <strong className="text-goldbright">Before you calculate, please note: </strong>
-          birth time means clock time at the birthplace. Conversion is longitude-only: no timezone database, no DST, and no equation of time are used, so a birth near a sign, house, or double-hour boundary may differ by one division. No timezone lookup is added, because no free no-key service was verified as reliable for this Vercel deployment; this disclosure, not a lookup, is the fix for now.
-        </p>
+        <details className="mt-5 rounded-xl border border-gold/25 bg-panel/50 px-4 py-3 text-sm leading-relaxed text-cream/80">
+          <summary className="cursor-pointer font-semibold text-goldbright">Before you calculate, please note: clock time at the birthplace, longitude-only conversion (tap for details)</summary>
+          <p className="mt-2">
+            Birth time means clock time at the birthplace. Conversion is longitude-only: no timezone database, no DST, and no equation of time are used, so a birth near a sign, house, or double-hour boundary may differ by one division. No timezone lookup is added, because no free no-key service was verified as reliable for this Vercel deployment; this disclosure, not a lookup, is the fix for now.
+          </p>
+        </details>
         <div className="mt-6 flex flex-wrap gap-3">
           <button type="submit" disabled={loading} className="btn-gold rounded-full px-6 py-3 text-sm font-bold disabled:opacity-50">
             {loading ? "Calculating…" : (<span className="inline-flex items-center gap-2"><Icon name="chart" size={18} />Calculate chart</span>)}
@@ -455,6 +463,20 @@ export default function ChartsClient() {
 
       {result && (
         <section ref={resultRef} className="mt-10 scroll-mt-24" aria-live="polite">
+          {/* Share card, result level: Audit 3 found the legend
+              promising "share it as an image" with no Share button
+              before interpretation, because the old share button only
+              rendered after an interpretation existed. This offscreen
+              card and the button below exist for every result, before
+              interpretation, reusing chartSummaryText. */}
+          <div aria-hidden="true" style={{ position: "fixed", left: "-10000px", top: 0, width: 1200, height: 630 }}>
+            <div ref={shareRef} style={{ width: 1200, height: 630, background: "#0a0e1a", color: "#ede6d6", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 60, fontFamily: "Georgia, serif", border: "2px solid #d4af37" }}>
+              <div style={{ fontSize: 28, letterSpacing: 8, color: "#d4af37" }}>SORTES</div>
+              <div style={{ fontSize: 48, marginTop: 12 }}>{result.system === "ziwei" ? "Ziwei chart" : result.system === "vedic" ? "Vedic chart" : "Western chart"}</div>
+              <div style={{ fontSize: 24, marginTop: 24, maxWidth: 900, textAlign: "center" }}>{chartSummaryText(result, ziweiLang)}</div>
+              <div style={{ fontSize: 18, marginTop: 24, color: "#9ca3af" }}>A reflection, not a prediction. tarot.resonantatlas.com</div>
+            </div>
+          </div>
           <h2 className="font-display text-3xl text-goldbright">
             {result.system === "ziwei" ? "Ziwei chart" : result.system === "vedic" ? "Vedic chart" : "Western chart"}
           </h2>
@@ -480,6 +502,15 @@ export default function ChartsClient() {
                   </button>
                 ))}
               </div>
+              <label className="mt-3 flex items-center gap-2 text-sm text-cream/80">
+                <input type="checkbox" checked={showGlosses} onChange={(e) => setShowGlosses(e.target.checked)} />
+                Show Chinese glosses (default off in English, on in Chinese)
+              </label>
+              <div className="mt-3 flex flex-wrap gap-3">
+                <button type="button" onClick={onShareChart} disabled={shareBusy} className="rounded-full border border-gold/40 px-5 py-2.5 text-sm font-bold text-goldbright disabled:opacity-50">
+                  {shareBusy ? "Creating image…" : (<span className="inline-flex items-center gap-2"><Icon name="share" size={16} />Share chart as image</span>)}
+                </button>
+              </div>
               <div className="mt-3 flex flex-wrap gap-3" role="group" aria-label="Ziwei chart view">
                 {(["ring", "square"] as const).map((v) => (
                   <button
@@ -503,9 +534,16 @@ export default function ChartsClient() {
               )}
             </>
           )}
+          {result.system !== "ziwei" && (
+            <div className="mt-3 flex flex-wrap gap-3">
+              <button type="button" onClick={onShareChart} disabled={shareBusy} className="rounded-full border border-gold/40 px-5 py-2.5 text-sm font-bold text-goldbright disabled:opacity-50">
+                {shareBusy ? "Creating image…" : (<span className="inline-flex items-center gap-2"><Icon name="share" size={16} />Share chart as image</span>)}
+              </button>
+            </div>
+          )}
           <div className="mt-4">
             {result.system === "ziwei" ? (
-              <ZiweiChartBoard key={`${result.solarDate}-${result.timeLabel}`} result={result} lang={ziweiLang} view={ziweiView} />
+              <ZiweiChartBoard key={`${result.solarDate}-${result.timeLabel}`} result={result} lang={ziweiLang} view={ziweiView} showGlosses={showGlosses} />
             ) : result.system === "vedic" ? (
               <VedicChart result={result} />
             ) : (
@@ -514,7 +552,7 @@ export default function ChartsClient() {
             )}
           </div>
 
-          <section className="mt-10 rounded-3xl border border-gold/20 bg-panel/50 p-6" aria-label="Chart legend">
+          <section className="mt-10 scroll-mt-24 rounded-3xl border border-gold/20 bg-panel/50 p-6" aria-label="Chart legend">
             <h3 className="font-display text-2xl text-goldbright">How to read this chart</h3>
             <p className="mt-2 text-sm text-cream/75">
               Free text only, no charge for this legend. If a word below is new to you, start here, then read the
@@ -566,7 +604,7 @@ export default function ChartsClient() {
             </p>
           </section>
 
-          <section className="mt-10 rounded-3xl border border-gold/25 bg-panel/70 p-6" aria-label="Chart interpretation">
+          <section className="mt-10 scroll-mt-24 rounded-3xl border border-gold/25 bg-panel/70 p-6" aria-label="Chart interpretation">
             <h3 className="font-display text-2xl text-goldbright">Interpretation</h3>
             <p className="mt-2 text-sm text-cream/75">
               Calculation above was free and unsaved. A full interpretation is{" "}
@@ -619,14 +657,7 @@ export default function ChartsClient() {
                   </button>
                 </div>
                 {saved && <p className="mt-3 text-sm text-cream/70">Saved as positions only, never birth date, time, or place. Revisit it from your journal.</p>}
-                <div aria-hidden="true" style={{ position: "fixed", left: "-10000px", top: 0, width: 1200, height: 630 }}>
-                  <div ref={shareRef} style={{ width: 1200, height: 630, background: "#0a0e1a", color: "#ede6d6", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 60, fontFamily: "Georgia, serif", border: "2px solid #d4af37" }}>
-                    <div style={{ fontSize: 28, letterSpacing: 8, color: "#d4af37" }}>SORTES</div>
-                    <div style={{ fontSize: 48, marginTop: 12 }}>{result.system === "ziwei" ? "Ziwei chart" : result.system === "vedic" ? "Vedic chart" : "Western chart"}</div>
-                    <div style={{ fontSize: 24, marginTop: 24, maxWidth: 900, textAlign: "center" }}>{chartSummaryText(result, ziweiLang)}</div>
-                    <div style={{ fontSize: 18, marginTop: 24, color: "#9ca3af" }}>A reflection, not a prediction. tarot.resonantatlas.com</div>
-                  </div>
-                </div>
+
               </div>
             )}
           </section>

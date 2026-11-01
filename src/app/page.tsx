@@ -86,17 +86,17 @@ export default function Home() {
           <motion.div
             initial={false}
             animate={{ opacity: 1, y: 0 }}
-            className="mt-10 flex w-full max-w-md flex-col gap-3 sm:flex-row sm:justify-center"
+            className="mt-10 flex w-full max-w-xl flex-col gap-3 sm:flex-row sm:justify-center"
           >
             <Link
               href="/daily"
-              className="btn-gold rounded-2xl px-8 py-4 text-center text-lg font-bold"
+              className="btn-gold whitespace-nowrap rounded-2xl px-8 py-4 text-center text-lg font-bold"
             >
               <Icon name="sparkle" size={20} className="mr-2 inline-block align-[-3px]" />Draw a Card
             </Link>
             <Link
               href="/spreads"
-              className="btn-ghost rounded-2xl px-8 py-4 text-center text-lg font-semibold"
+              className="btn-ghost whitespace-nowrap rounded-2xl px-8 py-4 text-center text-lg font-semibold"
             >
               Begin a Reading <Icon name="arrowRight" size={20} className="ml-2 inline-block align-[-3px]" />
             </Link>

@@ -76,9 +76,32 @@ function primaryStar(star: string, lang: ZiweiLanguage): string {
   return lang === "en" ? l.en : l.zh;
 }
 
-export default function ZiweiChartBoard({ result, lang = "en", view = "ring" }: { result: ZiweiResult; lang?: ZiweiLanguage; view?: ZiweiView }) {
+// Audit 3: the ring was a hardcoded dark SVG, so it stayed a navy
+// island on the light page, and its three text lines per wedge
+// (name + stem-branch + star) overlapped neighbouring wedges.
+// Theme now follows the header toggle (same sortes-theme-change
+// event as the Western wheel), and the ring carries only two lines
+// per wedge (name + first star), each kept short so a
+// long name cannot spill into the next wedge. Stem-branch and the
+// full star list stay in the detail panel and the square view.
+// Glosses: in English mode Chinese characters are hidden by default
+// (showGlosses=false); in Chinese mode they are shown by default.
+// ChartsClient owns the toggle and resets it on language change.
+const RING_DARK = { bg: "#1a1f2e", centre: "#0f1424", sel: "#2e2410", hover: "#221d12", text: "#ede6d6", mist: "#9ca3af", gold: "#f4d03f", stroke: "#d4af37" };
+const RING_LIGHT = { bg: "#fffdf5", centre: "#fdf9ee", sel: "#f3ead3", hover: "#f7f0dc", text: "#1c1a15", mist: "#5c5a52", gold: "#7c5e00", stroke: "#8a6d0a" };
+
+export default function ZiweiChartBoard({ result, lang = "en", view = "ring", showGlosses }: { result: ZiweiResult; lang?: ZiweiLanguage; view?: ZiweiView; showGlosses?: boolean }) {
   const t = LABELS[lang];
   const en = lang === "en";
+  const glosses = showGlosses ?? lang === "zh";
+  const [ringTheme, setRingTheme] = useState<"dark" | "light">("dark");
+  useEffect(() => {
+    const sync = () => setRingTheme(document.documentElement.dataset.theme === "light" ? "light" : "dark");
+    sync();
+    window.addEventListener("sortes-theme-change", sync);
+    return () => window.removeEventListener("sortes-theme-change", sync);
+  }, []);
+  const ring = ringTheme === "light" ? RING_LIGHT : RING_DARK;
   const reduce = useReducedMotion();
   const lunarEn = formatLunarDateEn(result.lunarDate);
   const life = result.palaces.find((p) => p.isLifePalace) ?? result.palaces[0];
@@ -100,27 +123,27 @@ export default function ZiweiChartBoard({ result, lang = "en", view = "ring" }: 
         <span>
           {t.lunar}:{" "}
           <strong className="text-cream">{en ? (lunarEn ?? result.lunarDate) : result.lunarDate}</strong>{" "}
-          <span className="text-cream/60">{en ? `(${result.lunarDate})` : lunarEn ? `(${lunarEn})` : ""}</span>
+          {glosses && <span className="text-cream/60">{en ? `(${result.lunarDate})` : lunarEn ? `(${lunarEn})` : ""}</span>}
         </span>
         <span>
           {t.chineseDate}:{" "}
           <strong className="text-cream">{en ? formatChineseDateEn(result.chineseDate) : result.chineseDate}</strong>{" "}
-          <span className="text-cream/60">{en ? `(${result.chineseDate})` : `(${formatChineseDateEn(result.chineseDate)})`}</span>
+          {glosses && <span className="text-cream/60">{en ? `(${result.chineseDate})` : `(${formatChineseDateEn(result.chineseDate)})`}</span>}
         </span>
         <span>
           {t.zodiac}:{" "}
           <strong className="text-cream">{en ? zodiacEn(result.zodiac) : result.zodiac}</strong>{" "}
-          <span className="text-cream/60">{en ? `(${result.zodiac})` : `(${zodiacEn(result.zodiac)})`}</span>
+          {glosses && <span className="text-cream/60">{en ? `(${result.zodiac})` : `(${zodiacEn(result.zodiac)})`}</span>}
         </span>
         <span>
           {t.sign}:{" "}
           <strong className="text-cream">{en ? signEn(result.sign) : result.sign}</strong>{" "}
-          <span className="text-cream/60">{en ? `(${result.sign})` : `(${signEn(result.sign)})`}</span>
+          {glosses && <span className="text-cream/60">{en ? `(${result.sign})` : `(${signEn(result.sign)})`}</span>}
         </span>
         <span>
           {t.time}:{" "}
           <strong className="text-cream">{en ? formatTimeLabelEn(result.timeLabel) : result.timeLabel}</strong>{" "}
-          <span className="text-cream/60">{en ? `(${result.timeLabel})` : `(${formatTimeLabelEn(result.timeLabel)})`}</span>
+          {glosses && <span className="text-cream/60">{en ? `(${result.timeLabel})` : `(${formatTimeLabelEn(result.timeLabel)})`}</span>}
         </span>
         {result.unknownTime && <span className="text-goldbright">{t.unknown}</span>}
       </div>
@@ -170,19 +193,26 @@ export default function ZiweiChartBoard({ result, lang = "en", view = "ring" }: 
         className="mx-auto mt-4 w-full max-w-[640px] overflow-x-auto"
       >
         <svg viewBox="0 0 720 720" role="img" aria-label={en ? "Ziwei circle chart" : "紫微斗数圆盘"} className="w-full min-w-[480px]">
-          <circle cx={RING_CENTRE} cy={RING_CENTRE} r={RING_OUTER + 6} fill="#1a1f2e" stroke="#d4af37" strokeOpacity="0.35" />
+          <circle cx={RING_CENTRE} cy={RING_CENTRE} r={RING_OUTER + 6} fill={ring.bg} stroke={ring.stroke} strokeOpacity="0.35" />
           {result.palaces.map((p, i) => {
             const start = sectorStart(i);
             const end = sectorEnd(i);
             const mid = start + 15;
-            // Moved inward from the 340 outer edge and shortened: a full
-            // "Officer · Treasurer" string at radius 252 overlapped the
-            // neighbouring wedge and clipped at the circle edge. The
-            // ring now shows only the first major star, plus a count;
-            // the detail panel below still lists every star.
-            const namePos = polar(RING_CENTRE, RING_CENTRE, 296, mid);
-            const stemPos = polar(RING_CENTRE, RING_CENTRE, 276, mid);
-            const starPos = polar(RING_CENTRE, RING_CENTRE, 246, mid);
+            // Two lines only (name + first star + count) at smaller
+            // sizes, so labels no longer spill into the neighbouring
+            // wedge. Stem-branch was the third line that
+            // collided (e.g. Health / Wu Chen / Officer); it stays in
+            // the detail panel and the square cells, not on the ring.
+            const namePos = polar(RING_CENTRE, RING_CENTRE, 292, mid);
+            const starPos = polar(RING_CENTRE, RING_CENTRE, 252, mid);
+            // Tangential rotation, kept upright: horizontal text at the
+            // east/west wedges ran across the wedge boundary into the
+            // neighbour (Fortune/Health/Parents/Wealth in the rendered
+            // screenshot). Rotating each label to follow its wedge
+            // keeps it inside the wedge; the ((mid+90)%180)-90 form
+            // never turns text upside down (bottom wedges stay
+            // horizontal, side wedges go vertical).
+            const rot = ((mid + 90) % 180) - 90;
             const allStars = p.majorStars.map((s) => primaryStar(s, lang));
             const stars = allStars.length > 1 ? [allStars[0], `+${allStars.length - 1}`] : allStars;
             const isSel = p.index === selected;
@@ -207,36 +237,33 @@ export default function ZiweiChartBoard({ result, lang = "en", view = "ring" }: 
               >
                 <path
                   d={wedgePath(RING_CENTRE, RING_CENTRE, RING_INNER, RING_OUTER, start, end)}
-                  fill={isSel ? "#2e2410" : isHover ? "#221d12" : "#1a1f2e"}
-                  stroke="#d4af37"
+                  fill={isSel ? ring.sel : isHover ? ring.hover : ring.bg}
+                  stroke={ring.stroke}
                   strokeOpacity={isSel ? 1 : 0.4}
                   strokeWidth={isSel ? 2 : 1}
                 />
-                <text x={namePos.x} y={namePos.y} textAnchor="middle" fontSize="15" fontWeight="700" fill={p.isLifePalace ? "#f4d03f" : "#ede6d6"}>
+                <text x={namePos.x} y={namePos.y} textAnchor="middle" fontSize="13" fontWeight="700" fill={p.isLifePalace ? ring.gold : ring.text} transform={`rotate(${rot} ${namePos.x} ${namePos.y})`}>
                   {en ? p.name : p.chineseName}
                 </text>
-                <text x={stemPos.x} y={stemPos.y} textAnchor="middle" fontSize="12" fill="#9ca3af">
-                  {en ? `${STEM_PINYIN[p.heavenlyStem] ?? p.heavenlyStem} ${BRANCH_INFO[p.earthlyBranch]?.pinyin ?? p.earthlyBranch}` : `${p.heavenlyStem} ${p.earthlyBranch}`}
-                </text>
-                <text x={starPos.x} y={starPos.y} textAnchor="middle" fontSize="12" fill="#ede6d6">
+                <text x={starPos.x} y={starPos.y} textAnchor="middle" fontSize="11" fill={ring.text} transform={`rotate(${rot} ${starPos.x} ${starPos.y})`}>
                   {stars.length ? stars.join(" · ") : t.empty}
                 </text>
                 {p.isLifePalace && (
-                  <text x={polar(RING_CENTRE, RING_CENTRE, 218, mid).x} y={polar(RING_CENTRE, RING_CENTRE, 218, mid).y} textAnchor="middle" fontSize="11" fill="#f4d03f">
+                  <text x={polar(RING_CENTRE, RING_CENTRE, 210, mid).x} y={polar(RING_CENTRE, RING_CENTRE, 210, mid).y} textAnchor="middle" fontSize="10" fill={ring.gold}>
                     ✦
                   </text>
                 )}
               </g>
             );
           })}
-          <circle cx={RING_CENTRE} cy={RING_CENTRE} r={RING_INNER - 4} fill="#0f1424" stroke="#d4af37" strokeOpacity="0.6" />
-          <text x={RING_CENTRE} y={RING_CENTRE - 28} textAnchor="middle" fontSize="30" fontWeight="700" fill="#f4d03f">
+          <circle cx={RING_CENTRE} cy={RING_CENTRE} r={RING_INNER - 4} fill={ring.centre} stroke={ring.stroke} strokeOpacity="0.6" />
+          <text x={RING_CENTRE} y={RING_CENTRE - 28} textAnchor="middle" fontSize="30" fontWeight="700" fill={ring.gold}>
             {en ? zodiacEn(result.zodiac) : result.zodiac}
           </text>
-          <text x={RING_CENTRE} y={RING_CENTRE + 2} textAnchor="middle" fontSize="16" fill="#ede6d6">
+          <text x={RING_CENTRE} y={RING_CENTRE + 2} textAnchor="middle" fontSize="16" fill={ring.text}>
             {en ? signEn(result.sign) : result.sign}
           </text>
-          <text x={RING_CENTRE} y={RING_CENTRE + 30} textAnchor="middle" fontSize="13" fill="#9ca3af">
+          <text x={RING_CENTRE} y={RING_CENTRE + 30} textAnchor="middle" fontSize="13" fill={ring.mist}>
             {en ? `${t.life}: ${life.majorStars.map((s) => primaryStar(s, lang)).join(" · ") || t.empty}` : `${t.life}：${life.majorStars.join(" · ") || t.empty}`}
           </text>
         </svg>
@@ -280,7 +307,7 @@ export default function ZiweiChartBoard({ result, lang = "en", view = "ring" }: 
         >
           <h3 className="font-display text-xl text-goldbright">
             {en ? current.name : current.chineseName}{" "}
-            <span className="text-base text-cream/60">({en ? current.chineseName : current.name})</span>
+            {glosses && <span className="text-base text-cream/60">({en ? current.chineseName : current.name})</span>}
             {/* Life palace needs only the star marker: its name already
                 is "Life" (命宫), so adding "Life palace" after it read
                 as "Life (命宫) ✦ Life palace". */}
@@ -290,15 +317,18 @@ export default function ZiweiChartBoard({ result, lang = "en", view = "ring" }: 
             {en
               ? `${STEM_PINYIN[current.heavenlyStem] ?? current.heavenlyStem} ${BRANCH_INFO[current.earthlyBranch]?.pinyin ?? current.earthlyBranch}`
               : `${current.heavenlyStem} ${current.earthlyBranch}`}{" "}
-            <span className="text-cream/60">
-              ({en ? `${current.heavenlyStem} ${current.earthlyBranch}` : `${STEM_PINYIN[current.heavenlyStem] ?? current.heavenlyStem} ${BRANCH_INFO[current.earthlyBranch]?.pinyin ?? current.earthlyBranch}`})
-            </span>
+            {glosses && (
+              <span className="text-cream/60">
+                ({en ? `${current.heavenlyStem} ${current.earthlyBranch}` : `${STEM_PINYIN[current.heavenlyStem] ?? current.heavenlyStem} ${BRANCH_INFO[current.earthlyBranch]?.pinyin ?? current.earthlyBranch}`})
+              </span>
+            )}
           </p>
           <p className="mt-2 text-sm leading-relaxed text-cream">
             {current.majorStars.length > 0
               ? current.majorStars
                   .map((s) => {
                     const l = localizeStar(s);
+                    if (!glosses) return en ? l.en : l.zh;
                     return en ? `${l.en} (${l.pinyin} ${l.zh})` : `${l.zh} (${l.en})`;
                   })
                   .join(" · ")
@@ -311,6 +341,7 @@ export default function ZiweiChartBoard({ result, lang = "en", view = "ring" }: 
                   const l = localizeStar(s.name);
                   const bEn = brightnessEn(s.brightness);
                   const mEn = mutagenEn(s.mutagen);
+                  if (!glosses) return en ? `${l.en} ${bEn}${mEn ? `, ${mEn}` : ""}` : `${s.name} ${s.brightness}${s.mutagen}`;
                   return en
                     ? `${l.en} ${bEn}${mEn ? `, ${mEn}` : ""} (${s.name} ${s.brightness}${s.mutagen})`
                     : `${s.name} ${s.brightness}${s.mutagen} (${l.en} ${bEn}${mEn ? `, ${mEn}` : ""})`;
@@ -323,6 +354,7 @@ export default function ZiweiChartBoard({ result, lang = "en", view = "ring" }: 
               {current.minorStars
                 .map((s) => {
                   const l = localizeMinorStar(s);
+                  if (!glosses) return en ? l.pinyin : l.zh;
                   return en ? `${l.pinyin} (${l.zh})` : `${l.zh} (${l.pinyin})`;
                 })
                 .join(" · ")}
