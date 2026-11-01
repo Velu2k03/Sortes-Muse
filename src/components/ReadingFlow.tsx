@@ -652,13 +652,13 @@ function RevealedScreen({
           </p>
           <p className="mx-auto mt-2 max-w-md text-sm text-cream/75">
             The Celtic Cross lays ten cards across your whole landscape:
-            forces, hopes, and outcome. Unlock it with 1 credit.
+            forces, hopes, and outcome. Get it with 1 credit.
           </p>
           <Link
             href="/spreads/celtic-cross"
             className="btn-gold mt-5 inline-block rounded-xl px-8 py-3 font-bold"
           >
-            Unlock the Celtic Cross
+            Get the Celtic Cross
           </Link>
         </div>
       )}
