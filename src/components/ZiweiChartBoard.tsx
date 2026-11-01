@@ -167,18 +167,24 @@ export default function ZiweiChartBoard({ result, lang = "en", view = "ring" }: 
       <motion.div
         {...fade}
         transition={{ duration: reduce ? 0 : 0.5, ease: "easeOut" }}
-        className="mx-auto mt-4 w-full max-w-[640px]"
+        className="mx-auto mt-4 w-full max-w-[640px] overflow-x-auto"
       >
-        <svg viewBox="0 0 720 720" role="img" aria-label={en ? "Ziwei circle chart" : "紫微斗数圆盘"} className="w-full">
+        <svg viewBox="0 0 720 720" role="img" aria-label={en ? "Ziwei circle chart" : "紫微斗数圆盘"} className="w-full min-w-[480px]">
           <circle cx={RING_CENTRE} cy={RING_CENTRE} r={RING_OUTER + 6} fill="#1a1f2e" stroke="#d4af37" strokeOpacity="0.35" />
           {result.palaces.map((p, i) => {
             const start = sectorStart(i);
             const end = sectorEnd(i);
             const mid = start + 15;
-            const namePos = polar(RING_CENTRE, RING_CENTRE, 302, mid);
-            const stemPos = polar(RING_CENTRE, RING_CENTRE, 282, mid);
-            const starPos = polar(RING_CENTRE, RING_CENTRE, 252, mid);
-            const stars = p.majorStars.map((s) => primaryStar(s, lang));
+            // Moved inward from the 340 outer edge and shortened: a full
+            // "Officer · Treasurer" string at radius 252 overlapped the
+            // neighbouring wedge and clipped at the circle edge. The
+            // ring now shows only the first major star, plus a count;
+            // the detail panel below still lists every star.
+            const namePos = polar(RING_CENTRE, RING_CENTRE, 296, mid);
+            const stemPos = polar(RING_CENTRE, RING_CENTRE, 276, mid);
+            const starPos = polar(RING_CENTRE, RING_CENTRE, 246, mid);
+            const allStars = p.majorStars.map((s) => primaryStar(s, lang));
+            const stars = allStars.length > 1 ? [allStars[0], `+${allStars.length - 1}`] : allStars;
             const isSel = p.index === selected;
             const isHover = hovered === p.index;
             return (
@@ -186,7 +192,7 @@ export default function ZiweiChartBoard({ result, lang = "en", view = "ring" }: 
                 key={p.index}
                 role="button"
                 tabIndex={0}
-                aria-label={`${en ? p.name : p.chineseName}: ${stars.length ? stars.join(", ") : t.empty}`}
+                aria-label={`${en ? p.name : p.chineseName}: ${allStars.length ? allStars.join(", ") : t.empty}`}
                 aria-pressed={isSel}
                 onClick={() => setSelected(p.index)}
                 onMouseEnter={() => setHovered(p.index)}
@@ -209,10 +215,10 @@ export default function ZiweiChartBoard({ result, lang = "en", view = "ring" }: 
                 <text x={namePos.x} y={namePos.y} textAnchor="middle" fontSize="15" fontWeight="700" fill={p.isLifePalace ? "#f4d03f" : "#ede6d6"}>
                   {en ? p.name : p.chineseName}
                 </text>
-                <text x={stemPos.x} y={stemPos.y} textAnchor="middle" fontSize="11" fill="#9ca3af">
+                <text x={stemPos.x} y={stemPos.y} textAnchor="middle" fontSize="12" fill="#9ca3af">
                   {en ? `${STEM_PINYIN[p.heavenlyStem] ?? p.heavenlyStem} ${BRANCH_INFO[p.earthlyBranch]?.pinyin ?? p.earthlyBranch}` : `${p.heavenlyStem} ${p.earthlyBranch}`}
                 </text>
-                <text x={starPos.x} y={starPos.y} textAnchor="middle" fontSize="11.5" fill="#ede6d6">
+                <text x={starPos.x} y={starPos.y} textAnchor="middle" fontSize="12" fill="#ede6d6">
                   {stars.length ? stars.join(" · ") : t.empty}
                 </text>
                 {p.isLifePalace && (
@@ -275,7 +281,10 @@ export default function ZiweiChartBoard({ result, lang = "en", view = "ring" }: 
           <h3 className="font-display text-xl text-goldbright">
             {en ? current.name : current.chineseName}{" "}
             <span className="text-base text-cream/60">({en ? current.chineseName : current.name})</span>
-            {current.isLifePalace && <span className="ml-2 text-sm">✦ {t.life}</span>}
+            {/* Life palace needs only the star marker: its name already
+                is "Life" (命宫), so adding "Life palace" after it read
+                as "Life (命宫) ✦ Life palace". */}
+            {current.isLifePalace && <span className="ml-2 text-sm" aria-label={t.life}>✦</span>}
           </h3>
           <p className="mt-1 text-sm text-cream/70">
             {en

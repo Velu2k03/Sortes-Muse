@@ -220,6 +220,12 @@ export interface WesternPlanet {
   sign: string;
   house: number | null;
 }
+export interface WesternAspect {
+  planet1: string;
+  planet2: string;
+  label: string;
+  orb: number;
+}
 export interface WesternResult {
   system: "western";
   sunSign: string;
@@ -231,6 +237,7 @@ export interface WesternResult {
   planets: WesternPlanet[];
   cusps: number[];
   aspectCount: number;
+  aspects: WesternAspect[];
 }
 
 export function calculateWestern(input: {
@@ -265,7 +272,7 @@ export function calculateWestern(input: {
     SunSign: { label: string };
     Ascendant: { Sign: { label: string }; ChartPosition: { Ecliptic: { DecimalDegrees: number } } };
     Midheaven: { Sign: { label: string }; ChartPosition: { Ecliptic: { DecimalDegrees: number } } };
-    Aspects: { all: unknown[] };
+    Aspects: { all: { point1Label: string; point2Label: string; label: string; orb: number }[] };
   };
   const bodies = horoscope.CelestialBodies;
   const planets: WesternPlanet[] = WESTERN_PLANETS.filter((k) => bodies[k]).map((k) => ({
@@ -285,6 +292,14 @@ export function calculateWestern(input: {
     planets,
     cusps: horoscope.Houses.map((h) => h.ChartPosition.StartPosition.Ecliptic.DecimalDegrees),
     aspectCount: horoscope.Aspects.all.length,
+    // Exposing the library's own aspect list, not new math: the count
+    // alone told the user nothing, so the list is shown collapsibly.
+    aspects: horoscope.Aspects.all.map((a) => ({
+      planet1: a.point1Label,
+      planet2: a.point2Label,
+      label: a.label,
+      orb: a.orb,
+    })),
   };
 }
 

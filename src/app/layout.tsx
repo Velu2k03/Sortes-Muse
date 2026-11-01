@@ -9,6 +9,7 @@ import InstallBanner from "@/components/InstallBanner";
 import PushPrompt from "@/components/PushPrompt";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 import { AuthProvider } from "@/components/AuthProvider";
+import MotionProvider from "@/components/MotionProvider";
 import { APP_NAME, APP_SHORT, TAGLINE, SITE_URL } from "@/lib/site";
 
 const display = Cormorant_Garamond({
@@ -92,6 +93,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${display.variable} ${body.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col font-body">
+        <MotionProvider>
         <AuthProvider>
           <ServiceWorkerRegister />
           <Starfield />
@@ -101,6 +103,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <InstallBanner />
           <PushPrompt />
         </AuthProvider>
+        </MotionProvider>
         {plausibleDomain && (
           <Script
             defer

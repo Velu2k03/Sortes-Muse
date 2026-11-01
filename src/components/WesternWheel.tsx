@@ -96,7 +96,12 @@ export default function WesternWheel({ result }: { result: WesternResult }) {
         transition={{ duration: reduce ? 0 : 0.5, ease: "easeOut" }}
         className="mt-6 overflow-x-auto rounded-2xl border border-gold/25 bg-panel/70 p-2"
       >
-        <div id={elementId} className="mx-auto w-full max-w-[600px]" />
+        {/* Wheel stays at its full 600px width and scrolls on narrow
+            phones instead of shrinking, which squeezed clustered glyphs
+            in the Capricorn/Aquarius sector. Leader lines are not added:
+            AstroChart does not expose them, and hacking its DOM is out
+            of scope; the planet table below is the readable label list. */}
+        <div id={elementId} className="mx-auto w-full min-w-[600px] max-w-[600px]" />
         {wheelError && <p className="p-4 text-center text-sm text-cream">The wheel could not load. The planet table below has the same data.</p>}
       </motion.div>
       {selectedPlanet && (
@@ -135,6 +140,21 @@ export default function WesternWheel({ result }: { result: WesternResult }) {
         </tbody>
       </table>
       </div>
+      <details className="mt-4 rounded-2xl border border-gold/25 bg-panel/70 p-4">
+        <summary className="cursor-pointer text-sm font-semibold text-goldbright">
+          Aspects found: {result.aspectCount} (tap to list them)
+        </summary>
+        <p className="mt-2 text-xs text-cream/60">
+          An aspect is an angle between two planets. Orb is how close that angle is, in degrees. Smaller orb means a tighter aspect.
+        </p>
+        <ul className="mt-2 space-y-1 text-sm text-cream/85">
+          {result.aspects.map((a, i) => (
+            <li key={`${a.planet1}-${a.planet2}-${a.label}-${i}`}>
+              {a.planet1} {a.label} {a.planet2} · orb {a.orb.toFixed(2)}°
+            </li>
+          ))}
+        </ul>
+      </details>
       <p className="mt-4 text-sm text-cream/60">
         Chart only, for reflection. Calculation is free and unsaved; interpretation, when you choose it below, is a separate step.
       </p>

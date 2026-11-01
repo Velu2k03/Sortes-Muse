@@ -65,7 +65,7 @@ export default function CreditsPage() {
             key={p.id}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.08, duration: 0.5 }}
+            transition={{ delay: i * 0.04, duration: 0.4 }}
             className={`relative rounded-3xl border p-6 ${
               p.popular
                 ? "border-gold/70 bg-gold/10"

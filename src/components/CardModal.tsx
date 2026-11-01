@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect } from "react";
-import { getCard, suitLabel } from "@/lib/cards";
+import { getCard } from "@/lib/cards";
 
 interface Props {
   cardId: string | null;
@@ -58,7 +58,10 @@ export default function CardModal({ cardId, onClose }: Props) {
                 <p className="text-xs uppercase tracking-[0.25em] text-mist">
                   {card.arcana === "major"
                     ? `Major Arcana · ${card.number}`
-                    : `${suitLabel(card.suit ?? "")} · ${card.name.replace(/^.*of /, "")}`}
+                    : /* Minor card names already end with their suit
+                       ("Seven of Cups"), so adding suitLabel again
+                       rendered "Cups · Cups". */
+                      card.name}
                 </p>
                 <h2 className="mt-1 font-display text-4xl text-goldbright">
                   {card.name}

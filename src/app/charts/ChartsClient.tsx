@@ -63,6 +63,14 @@ export default function ChartsClient() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState<ChartResult | null>(null);
+  const resultRef = useRef<HTMLElement | null>(null);
+  // Auto-scroll to the result after Calculate: it used to appear below
+  // the form with no scroll, so users could think nothing happened.
+  useEffect(() => {
+    if (!result || !resultRef.current) return;
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    resultRef.current.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
+  }, [result]);
   // Ziwei language only; Western and Tarot are already English.
   // Default English for western clients; saved choice restores on return.
   const [ziweiLang, setZiweiLang] = useState<ZiweiLanguage>("en");
@@ -243,6 +251,27 @@ export default function ChartsClient() {
           {system === "ziwei" &&
             " Ziwei time is corrected by birthplace longitude only: correction = 4 minutes per degree from the nearest 15 degree timezone meridian. No timezone database, no DST, and no equation of time are applied, so a chart near a double-hour boundary may differ by one double-hour."}
         </p>
+        <div className="mx-auto mt-4 max-w-xl rounded-2xl border border-gold/20 bg-panel/50 p-4 text-left text-sm leading-relaxed text-cream/75">
+          <p className="font-semibold text-goldbright">How each system uses your inputs</p>
+          <p className="mt-2">
+            Gender is asked for Ziwei only, because Ziwei palace placement depends on gender in this system. Western
+            and Vedic charts do not use gender.
+          </p>
+          <p className="mt-2">
+            Birthplace and coordinates are used for all three systems now, through the place search or the preset list.
+            Western and Vedic need them for Rising and houses. Ziwei needs longitude for its longitude correction above.
+            That is why Manila matters: it sets the coordinates, not the language.
+          </p>
+          <p className="mt-2">
+            Birth time means clock time at the birthplace. There is no timezone database and no DST lookup, so a time
+            near a sign, house, or double-hour boundary may differ by one division. If you do not know the time, tick
+            unknown time: the chart is calculated at noon and Rising and houses are approximate.
+          </p>
+          <p className="mt-2">
+            Calculation only means the numbers above, free and unsaved. Interpretation is a separate step below, 1
+            credit per full chart reading, first chart per system free.
+          </p>
+        </div>
       </div>
 
       <div className="mx-auto mt-8 flex max-w-lg flex-wrap gap-3">
@@ -380,10 +409,17 @@ export default function ChartsClient() {
       </form>
 
       {result && (
-        <section className="mt-10" aria-live="polite">
-          <h2 className="font-display text-3xl text-goldbright">{result.system === "ziwei" ? "Ziwei chart" : "Western chart"}</h2>
+        <section ref={resultRef} className="mt-10 scroll-mt-24" aria-live="polite">
+          <h2 className="font-display text-3xl text-goldbright">
+            {result.system === "ziwei" ? "Ziwei chart" : result.system === "vedic" ? "Vedic chart" : "Western chart"}
+          </h2>
+          <p className="mt-3 rounded-2xl border border-gold/25 bg-panel/70 px-4 py-3 text-sm leading-relaxed text-cream/90">
+            <strong className="text-goldbright">Your chart in one line: </strong>
+            {chartSummaryText(result)}
+          </p>
           {result.system === "ziwei" && (
             <>
+              <p className="mt-3 text-sm text-cream/60">Chart language only: this toggle changes the chart labels, the form above stays in English.</p>
               <div className="mt-4 flex flex-wrap gap-3" role="group" aria-label="Chart language">
                 {(["en", "zh"] as const).map((l) => (
                   <button
@@ -432,6 +468,58 @@ export default function ChartsClient() {
               <WesternWheel key={JSON.stringify(result)} result={result} />
             )}
           </div>
+
+          <section className="mt-10 rounded-3xl border border-gold/20 bg-panel/50 p-6" aria-label="Chart legend">
+            <h3 className="font-display text-2xl text-goldbright">How to read this chart</h3>
+            <p className="mt-2 text-sm text-cream/75">
+              Free text only, no charge for this legend. If a word below is new to you, start here, then read the
+              interpretation below for your own chart.
+            </p>
+            <div className="mt-4 grid gap-4 text-sm leading-relaxed text-cream/85 sm:grid-cols-2">
+              <div>
+                <p className="font-semibold text-cream">Western, in plain words</p>
+                <ul className="mt-2 space-y-1.5">
+                  <li><strong className="text-goldbright">Sun:</strong> your core drive, the sign the Sun was in at birth.</li>
+                  <li><strong className="text-goldbright">Moon:</strong> your inner life and emotional response.</li>
+                  <li><strong className="text-goldbright">Rising:</strong> the sign rising on the eastern horizon at birth, how you meet the world.</li>
+                  <li><strong className="text-goldbright">Midheaven:</strong> your public direction, work and reputation.</li>
+                  <li><strong className="text-goldbright">Houses:</strong> 12 life areas, numbered 1 to 12, that a planet falls into.</li>
+                  <li><strong className="text-goldbright">Aspects:</strong> angles between planets, listed in the collapsible list above.</li>
+                </ul>
+              </div>
+              <div>
+                <p className="font-semibold text-cream">Ziwei palaces, in plain words</p>
+                <ul className="mt-2 space-y-1.5">
+                  <li><strong className="text-goldbright">Life:</strong> you, your body and your path.</li>
+                  <li><strong className="text-goldbright">Siblings:</strong> brothers, sisters and close peers.</li>
+                  <li><strong className="text-goldbright">Partner:</strong> close partnership and marriage.</li>
+                  <li><strong className="text-goldbright">Children:</strong> children and creative output.</li>
+                  <li><strong className="text-goldbright">Wealth:</strong> money, earning and spending.</li>
+                  <li><strong className="text-goldbright">Health:</strong> body, habits and illness.</li>
+                  <li><strong className="text-goldbright">Travel:</strong> movement, journeys and the wider world.</li>
+                  <li><strong className="text-goldbright">Friends:</strong> friends, helpers and community.</li>
+                  <li><strong className="text-goldbright">Career:</strong> work, role and public standing.</li>
+                  <li><strong className="text-goldbright">Home:</strong> home, family and property.</li>
+                  <li><strong className="text-goldbright">Fortune:</strong> ease, luck and inner contentment.</li>
+                  <li><strong className="text-goldbright">Parents:</strong> parents, elders and roots.</li>
+                </ul>
+              </div>
+              <div className="sm:col-span-2">
+                <p className="font-semibold text-cream">Vedic, in plain words</p>
+                <p className="mt-2">
+                  Vedic uses sidereal signs, about 24 degrees behind Western tropical signs, whole-sign houses, the Moon
+                  nakshatra, a lunar mansion with a pada, a quarter, and a lord, and the current Vimshottari dasha, a
+                  planetary period. A star in a palace, or a planet in a sign, is a theme to reflect on, not a fixed
+                  prediction.
+                </p>
+              </div>
+            </div>
+            <p className="mt-4 text-sm text-cream/75">
+              <strong className="text-goldbright">Next step: </strong>
+              read the interpretation below, save it to your journal, or share it as an image. Calculation stays free;
+              interpretation is 1 credit, first chart per system free.
+            </p>
+          </section>
 
           <section className="mt-10 rounded-3xl border border-gold/25 bg-panel/70 p-6" aria-label="Chart interpretation">
             <h3 className="font-display text-2xl text-goldbright">Interpretation</h3>

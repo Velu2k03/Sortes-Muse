@@ -37,7 +37,7 @@ export default function SpreadsPage() {
         <p className="mx-auto mt-4 max-w-xl text-cream/75">
           {usedFree
             ? "Each reading uses 1 credit, any spread. Credits never expire."
-            : "Your first full reading is free, no card required. After that, 1 credit per reading."}
+            : "Your first Quick Insight reading is free, no card required. Other spreads need 1 credit, which is why they show Get credits to begin until you have one. After your free Quick Insight, every reading, any spread, is 1 credit."}
         </p>
       </div>
 
@@ -49,7 +49,7 @@ export default function SpreadsPage() {
             key={s.slug}
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.1, duration: 0.55 }}
+            transition={{ delay: i * 0.05, duration: 0.4 }}
             className="relative flex flex-col overflow-hidden rounded-3xl border border-gold/25 bg-panel/70"
           >
             {/* Card preview: blurred while the spread cannot be started yet */}
@@ -82,9 +82,9 @@ export default function SpreadsPage() {
             </div>
 
             <div className="flex flex-1 flex-col p-6">
-              <div className="flex items-baseline justify-between">
+              <div className="flex items-baseline justify-between gap-3">
                 <h2 className="font-display text-3xl text-cream">{s.name}</h2>
-                <p className="font-display text-xl text-goldbright">
+                <p className="shrink-0 whitespace-nowrap font-display text-xl text-goldbright">
                   {s.slug === "quick-insight" && !usedFree ? "Free" : "1 credit"}
                 </p>
               </div>
@@ -96,7 +96,7 @@ export default function SpreadsPage() {
               </p>
               <ul className="mt-3 space-y-1">
                 {s.positions.map((p) => (
-                  <li key={p.key} className="text-xs text-mist">
+                  <li key={p.key} className="text-xs text-cream/80">
                     <span className="text-goldbright">{p.label}</span>
                     {" — "}
                     {p.hint}
@@ -132,7 +132,9 @@ export default function SpreadsPage() {
           twice. One credit unlocks one full reading of any spread, with a
           personalized AI interpretation woven around your story. Your daily
           card is always free and never uses a credit. Credits never expire.
-          No subscriptions, no meters, no surprises.
+          No subscriptions, no meters, no surprises. The one free reading is
+          Quick Insight only: that is why a locked spread says Get credits to
+          begin, it is not a second free reading waiting behind a paywall.
         </p>
         <button
           type="button"
