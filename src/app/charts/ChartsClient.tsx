@@ -488,7 +488,7 @@ export default function ChartsClient() {
               <div style={{ fontSize: 28, letterSpacing: 8, color: "#d4af37" }}>SORTES</div>
               <div style={{ fontSize: 48, marginTop: 12 }}>{result.system === "ziwei" ? "Ziwei chart" : result.system === "vedic" ? "Vedic chart" : "Western chart"}</div>
               <div style={{ fontSize: 24, marginTop: 24, maxWidth: 900, textAlign: "center" }}>{chartSummaryText(result, ziweiLang)}</div>
-              <div style={{ fontSize: 18, marginTop: 24, color: "#9ca3af" }}>A reflection, not a prediction. tarot.resonantatlas.com</div>
+              <div style={{ fontSize: 18, marginTop: 24, color: "#9ca3af" }}>A reflection, not a prediction. sortes.resonantatlas.com</div>
             </div>
           </div>
           <h2 className="font-display text-3xl text-goldbright">

@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
   }
   try {
     const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q)}`, {
-      headers: { "User-Agent": "SortesCharts/1.0 (tarot.resonantatlas.com)" },
+      headers: { "User-Agent": "SortesCharts/1.0 (sortes.resonantatlas.com)" },
       signal: AbortSignal.timeout(10000),
     });
     if (!res.ok) throw new Error(`Nominatim ${res.status}`);
