@@ -159,7 +159,7 @@ export default function CreditsPage() {
         )}
       </div>
 
-      <p className="mx-auto mt-8 max-w-md text-center text-xs leading-relaxed text-mist/80">
+      <p className="mx-auto mt-8 max-w-md text-center text-xs leading-relaxed text-mist">
         Pay-per-reading, no subscriptions. Prices include everything; there
         are no hidden fees. Secure checkout is powered by Lemon Squeezy.
       </p>

@@ -10,7 +10,7 @@ export default function Footer() {
         <div>
           <p className="font-display text-2xl text-goldbright">{APP_SHORT}</p>
           <p className="mt-2 text-sm italic text-mist">{TAGLINE}</p>
-          <p className="mt-4 max-w-xs text-xs leading-relaxed text-mist/80">
+          <p className="mt-4 max-w-xs text-xs leading-relaxed text-mist">
             Readings are for reflection and perspective, never guaranteed
             predictions. Nothing here replaces professional advice.
           </p>

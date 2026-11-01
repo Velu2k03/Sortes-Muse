@@ -22,7 +22,7 @@ type ChartSystem = "ziwei" | "western" | "vedic";
 const FOCUS_AREAS = ["general", "love", "career", "finances", "academics", "health"] as const;
 
 const inputClass =
-  "w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist/50 focus:border-gold/60 focus:outline-none";
+  "w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none";
 const labelClass = "mb-1.5 block text-sm font-medium text-cream";
 
 const PRESETS: { label: string; latitude: number; longitude: number }[] = [
