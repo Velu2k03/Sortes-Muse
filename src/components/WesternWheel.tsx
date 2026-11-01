@@ -83,9 +83,9 @@ export default function WesternWheel({ result }: { result: WesternResult }) {
       {(() => {
         // Clustered planets: consecutive planets (longitude-sorted,
         // wrap-aware) within 12 degrees of the previous one, groups
-        // of 3+. The wheel stacks these glyphs, so this staggered
-        // list is the readable primary for a cluster, in longitude
-        // order, with increasing left indent per row.
+        // of 3+. The wheel staggers these labels too, and this list
+        // repeats them in longitude order, with increasing left
+        // indent per row, so the cluster reads in two places.
         const sorted = [...result.planets].sort((a, b) => a.longitude - b.longitude);
         const groups: typeof sorted[] = [];
         let cur: typeof sorted = [];
@@ -103,7 +103,7 @@ export default function WesternWheel({ result }: { result: WesternResult }) {
         return (
           <div className="mt-4 rounded-2xl border border-gold/25 bg-panel/70 p-4">
             <p className="text-sm font-semibold text-goldbright">Clustered planets, staggered list</p>
-            <p className="mt-1 text-sm text-cream/80">These planets sit close together, so their wheel glyphs overlap. Read them here, in longitude order, instead of from the wheel.</p>
+            <p className="mt-1 text-sm text-cream/80">These planets sit close together. Read them here too, in longitude order, alongside the staggered labels on the wheel.</p>
             {clusters.map((g, gi) => (
               <ul key={gi} className="mt-2 space-y-1 text-sm text-cream/85">
                 {g.map((pl, i) => (

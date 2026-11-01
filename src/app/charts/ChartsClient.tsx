@@ -280,8 +280,14 @@ export default function ChartsClient() {
           {system === "ziwei" &&
             " Ziwei time is corrected by birthplace longitude only: correction = 4 minutes per degree from the nearest 15 degree timezone meridian. No timezone database, no DST, and no equation of time are applied, so a chart near a double-hour boundary may differ by one double-hour."}
         </p>
-        <div className="mx-auto mt-4 max-w-xl rounded-2xl border border-gold/20 bg-panel/50 p-4 text-left text-sm leading-relaxed text-cream/75">
-          <p className="font-semibold text-goldbright">How each system uses your inputs</p>
+        {/* Audit 6: this long block used to sit above the form, so a
+            first-time user had to scroll to the system tabs and the
+            Use example button. It is now collapsed by default; the
+            full text, including the timezone and privacy notes, is
+            still one tap away, and the timezone disclosure below the
+            form is untouched. */}
+        <details className="mx-auto mt-4 max-w-xl rounded-2xl border border-gold/20 bg-panel/50 p-4 text-left text-sm leading-relaxed text-cream/75">
+          <summary className="cursor-pointer font-semibold text-goldbright">How each system uses your inputs (tap for details)</summary>
           <p className="mt-2">
             Gender is asked for Ziwei only, because Ziwei palace placement depends on gender in this system. Western
             and Vedic charts do not use gender.
@@ -300,7 +306,7 @@ export default function ChartsClient() {
             Calculation only means the numbers above, free and unsaved. Interpretation is a separate step below, 1
             credit per full chart reading, first chart per system free.
           </p>
-        </div>
+        </details>
       </div>
 
       <div className="mx-auto mt-8 flex max-w-lg flex-wrap gap-3">
@@ -326,6 +332,14 @@ export default function ChartsClient() {
       </div>
 
       <form onSubmit={onSubmit} className="mx-auto mt-8 max-w-xl rounded-3xl border border-gold/25 bg-panel/70 p-6">
+        {/* Audit 6: Use example lives at the top of the form, not only
+            at its bottom, so it is visible without scrolling once the
+            system tabs are on screen, on desktop and at 390px. */}
+        <div className="mb-5">
+          <button type="button" onClick={useExample} className="rounded-full border border-gold/40 px-6 py-3 text-sm font-bold text-goldbright">
+            Use example: 1990-01-01, 08:00, Manila
+          </button>
+        </div>
         {system === "ziwei" && (
           <div className="mb-5">
             <span className={labelClass}>Chart language (English is the default)</span>
@@ -455,9 +469,6 @@ export default function ChartsClient() {
         <div className="mt-6 flex flex-wrap gap-3">
           <button type="submit" disabled={loading} className="btn-gold rounded-full px-6 py-3 text-sm font-bold disabled:opacity-50">
             {loading ? "Calculating…" : (<span className="inline-flex items-center gap-2"><Icon name="chart" size={18} />Calculate chart</span>)}
-          </button>
-          <button type="button" onClick={useExample} className="rounded-full border border-gold/40 px-6 py-3 text-sm font-bold text-goldbright">
-            Use example: 1990-01-01, 08:00, Manila
           </button>
         </div>
       </form>

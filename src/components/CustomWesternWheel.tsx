@@ -48,18 +48,33 @@ export default function CustomWesternWheel({ result, theme }: { result: WesternR
 
   const sorted = [...result.planets].sort((a, b) => a.longitude - b.longitude);
   // Stagger display angles in zodiac order so labels never stack.
+  // Audit 6 root cause: the old rule pushed only planets within 8
+  // degrees of the previous planet by 9 degrees each, and checked only
+  // that previous planet. Mercury's true angle then landed 2 degrees
+  // from Neptune's staggered label, so Merc and Nep still overlapped.
+  // New rule: every label must sit at least MIN_LABEL_SEP degrees
+  // (shortest circular distance) from EVERY earlier label, pushing
+  // in the decreasing-angle direction until it does. This is checked
+  // against all placed labels, not just the previous one, so a
+  // staggered label cannot land on an earlier label either.
+  const MIN_LABEL_SEP = 12;
+  const wrap180 = (d: number) => ((d + 180) % 360 + 360) % 360 - 180;
+  const circDist = (a: number, b: number) => Math.abs(wrap180(a - b));
   const display: Record<string, number> = {};
-  let prevTrue: number | null = null;
-  let prevDisplay: number | null = null;
+  const placed: number[] = [];
   for (const p of sorted) {
     let d = angleFor(p.longitude);
-    if (prevTrue !== null && prevDisplay !== null) {
-      const gap = (p.longitude - prevTrue + 360) % 360;
-      if (gap < 8) d = prevDisplay - 9;
+    for (let iter = 0; iter < 60; iter++) {
+      let worstDist = MIN_LABEL_SEP;
+      for (const prev of placed) {
+        const dist = circDist(d, prev);
+        if (dist < worstDist) worstDist = dist;
+      }
+      if (worstDist >= MIN_LABEL_SEP) break;
+      d = wrap180(d - (MIN_LABEL_SEP - worstDist));
     }
     display[p.name] = d;
-    prevTrue = p.longitude;
-    prevDisplay = d;
+    placed.push(d);
   }
 
   return (
@@ -112,12 +127,39 @@ export default function CustomWesternWheel({ result, theme }: { result: WesternR
           </g>
         );
       })}
-      <text x={polar(cx, cy, 296, 180).x} y={polar(cx, cy, 296, 180).y} textAnchor="middle" dominantBaseline="middle" fontSize={14} fontWeight={700} fill={gold}>
+      <text x={polar(cx, cy, 282, 180).x} y={polar(cx, cy, 282, 180).y} textAnchor="middle" dominantBaseline="middle" fontSize={14} fontWeight={700} fill={gold}>
         As
       </text>
-      <text x={polar(cx, cy, 296, angleFor(result.midheavenLongitude)).x} y={polar(cx, cy, 296, angleFor(result.midheavenLongitude)).y} textAnchor="middle" dominantBaseline="middle" fontSize={14} fontWeight={700} fill={gold}>
-        Mc
-      </text>
+      {(() => {
+        // Audit 6: Mc sat 11.8px from the Scorpio sign glyph at the
+        // bottom of the wheel, because both sit near angle -100 at
+        // radius ~290. Moving Mc radially in only made it worse
+        // (8.3px), so Mc is nudged tangentially away from the
+        // nearest sign glyph instead: 24px along the tangent
+        // (-sin a, -cos a), in the direction away from that glyph.
+        const mcAngle = angleFor(result.midheavenLongitude);
+        const signMids = SIGNS.map((_, i) => angleFor(i * 30) - 15);
+        let nearest = signMids[0];
+        let nearestDist = Math.abs(wrap180(mcAngle - nearest));
+        for (const mid of signMids) {
+          const dist = Math.abs(wrap180(mcAngle - mid));
+          if (dist < nearestDist) {
+            nearestDist = dist;
+            nearest = mid;
+          }
+        }
+        const diff = wrap180(mcAngle - nearest);
+        const mcTangent = diff >= 0 ? 1 : -1;
+        const a = (mcAngle * Math.PI) / 180;
+        const base = polar(cx, cy, 296, mcAngle);
+        const mcX = base.x + mcTangent * 24 * -Math.sin(a);
+        const mcY = base.y + mcTangent * 24 * -Math.cos(a);
+        return (
+          <text x={mcX} y={mcY} textAnchor="middle" dominantBaseline="middle" fontSize={14} fontWeight={700} fill={gold}>
+            Mc
+          </text>
+        );
+      })()}
     </svg>
   );
 }
