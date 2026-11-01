@@ -58,7 +58,7 @@ export default function DeckPage() {
         {/* Validator fix: these are filter toggles, not tabs, and
             there is no tabpanel on the page, so role=tab is wrong.
             aria-pressed says the same thing, correctly. */}
-        <div className="flex flex-wrap justify-center gap-2" aria-label="Filter cards">
+        <div role="group" className="flex flex-wrap justify-center gap-2" aria-label="Filter cards">
           {FILTERS.map((f) => (
             <button
               key={f.key}
