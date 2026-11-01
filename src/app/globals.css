@@ -15,8 +15,77 @@
   --font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
+/* Light theme, Expansion 1: Tailwind v4 utilities read var(--color-*),
+   so overriding those variables under [data-theme="light"] flips every
+   page that already uses bg-ink, bg-panel, text-cream, text-mist,
+   border-gold, and so on, without rewriting every class and without
+   touching chart math, pricing, or privacy. Default stays dark gold:
+   layout sets data-theme="dark" unless localStorage says "light".
+   Light tokens, checked for AA on their own backgrounds (normal text
+   needs 4.5:1): paper #fdf9ee with ink text #1c1a15 is about 15:1;
+   dark gold #8a6d0a on paper is about 5.6:1; darker goldbright #7c5e00
+   on paper is about 6.6:1; muted #5c5a52 on paper and on white panel
+   is about 6.5:1; violet #6d28d9 on white is about 6.5:1. Bright gold
+   #f4d03f and #d4af37 are NOT used as normal text in light mode, they
+   fail AA on white, so they survive only as the btn-gold gradient
+   behind dark #14100a text, and as borders and glows.
+   Charts: the Ziwei ring and square keep their dark chart card in
+   light mode, because cream on dark panel already passes and a light
+   ring would need a full re-theme of the SVG; the Western wheel is
+   theme-aware in WesternWheel.tsx and goes light. Both stay readable
+   on the light page, and the planet table and square list, which use
+   Tailwind classes, flip to light text on white. */
+html[data-theme="light"] {
+  --color-ink: #fdf9ee;
+  --color-navy: #f3ead3;
+  --color-navydeep: #f7f0dc;
+  --color-panel: #ffffff;
+  --color-gold: #8a6d0a;
+  --color-goldbright: #7c5e00;
+  --color-cream: #1c1a15;
+  --color-mist: #5c5a52;
+  --color-violet: #6d28d9;
+}
+html[data-theme="light"] body {
+  background-color: var(--color-ink);
+  color: var(--color-cream);
+}
+html[data-theme="light"] ::-webkit-scrollbar-track {
+  background: var(--color-ink);
+}
+html[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: #d8c98f;
+}
+html[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+  background: #bfae6e;
+}
+html[data-theme="light"] ::selection {
+  background: rgba(212, 175, 55, 0.45);
+  color: #1c1a15;
+}
+html[data-theme="light"] :focus-visible {
+  outline-color: var(--color-goldbright);
+}
+/* Starfield is gold dust on dark; dim it on light so it stays
+   decoration, not noise, over the cream page. */
+html[data-theme="light"] canvas {
+  opacity: 0.35;
+}
+html[data-theme="light"] select option {
+  background: #ffffff;
+  color: #1c1a15;
+}
+
 html {
   scroll-behavior: smooth;
+}
+
+/* Sticky header (64px) used to cover the tops of cards while scrolling
+   on /spreads: give sections and articles a scroll margin so anchor
+   and programmatic scrolling land below the header, not under it. */
+section,
+article {
+  scroll-margin-top: 6rem;
 }
 
 body {

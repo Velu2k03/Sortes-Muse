@@ -9,6 +9,7 @@ import { useAuth } from "@/components/AuthProvider";
 import CheckoutModal from "@/components/CheckoutModal";
 import PurchaseConfirmer from "@/components/PurchaseConfirmer";
 import { useSearchParams } from "next/navigation";
+import Icon from "@/components/Icon";
 
 interface ServerTx {
   id: string;
@@ -42,7 +43,7 @@ export default function CreditsPage() {
     <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
       {justPurchased && <PurchaseConfirmer />}
       <div className="text-center">
-        <p className="text-xs uppercase tracking-[0.35em] text-gold">Credits</p>
+        <p className="flex items-center justify-center gap-2 text-xs uppercase tracking-[0.35em] text-gold"><Icon name="coin" size={18} />Credits</p>
         <h1 className="mt-3 font-display text-5xl text-goldbright sm:text-6xl">
           Your balance
         </h1>

@@ -1,4 +1,5 @@
 "use client";
+import Icon from "@/components/Icon";
 
 import Link from "next/link";
 import Image from "next/image";
@@ -59,7 +60,7 @@ export default function HistoryPage() {
 
       {history !== null && history.length === 0 && (
         <div className="mx-auto mt-12 max-w-md rounded-3xl border border-gold/20 bg-panel/60 p-8 text-center">
-          <p className="font-display text-2xl text-cream">No readings yet</p>
+          <p className="flex items-center justify-center gap-2 font-display text-2xl text-cream"><Icon name="journal" size={24} />No readings yet</p>
           <p className="mt-2 text-sm text-cream/75">
             Your first Quick Insight reading is free. Cast the lots and begin.
           </p>

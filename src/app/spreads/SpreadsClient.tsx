@@ -1,4 +1,5 @@
 "use client";
+import Icon from "@/components/Icon";
 
 import Link from "next/link";
 import Image from "next/image";
@@ -75,7 +76,7 @@ export default function SpreadsPage() {
               {locked && (
                 <div className="absolute inset-0 flex items-center justify-center bg-ink/45">
                   <span className="rounded-full border border-gold/50 bg-ink/80 px-4 py-2 text-sm font-semibold text-goldbright">
-                    ✦ Locked preview
+                    <span className="inline-flex items-center gap-2"><Icon name="lock" size={16} />Locked preview</span>
                   </span>
                 </div>
               )}

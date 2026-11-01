@@ -92,6 +92,9 @@ export function calculateVedic(input: {
     { houseSystem: "whole_sign", zodiac: "sidereal:lahiri" },
   );
   const bodies = chart.bodies as Record<string, { lon: number; sign: string; house: number }>;
+  // Caelus returns dasha and lord names lower-case (saturn, mercury).
+  // Display capitalises them; the calculation itself is unchanged.
+  const cap = (s: string | null | undefined) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : "");
   const names = ["sun", "moon", "mercury", "venus", "mars", "jupiter", "saturn"] as const;
   const planets: VedicPlanet[] = names
     .filter((k) => bodies[k])
@@ -115,7 +118,7 @@ export function calculateVedic(input: {
     julianDay(now.getUTCFullYear(), now.getUTCMonth() + 1, now.getUTCDate(), 0, 0, 0),
     "sidereal:lahiri",
   );
-  const currentDasha = [dasha.maha, dasha.antar, dasha.pratyantar].filter(Boolean).join(" / ");
+  const currentDasha = [dasha.maha, dasha.antar, dasha.pratyantar].filter(Boolean).map(cap).join(" / ");
   return {
     system: "vedic",
     sunSign: bodies.sun.sign,
@@ -123,7 +126,7 @@ export function calculateVedic(input: {
     ascendantSign: signFromLongitude(chart.angles.asc),
     moonNakshatra: nak.name,
     moonNakshatraPada: nak.pada,
-    moonNakshatraLord: nak.lord,
+    moonNakshatraLord: cap(nak.lord),
     currentDasha,
     dashaAsOf: now.toISOString().slice(0, 10),
     unknownTime: input.hour === null,
