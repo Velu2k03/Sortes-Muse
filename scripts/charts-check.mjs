@@ -226,7 +226,11 @@ console.log("charts-check: all assertions passed");
   assert.ok(wheel.includes("Clustered planets, staggered list"), "Western wheel must carry a staggered cluster list outside the wheel");
   assert.ok(wheel.includes("scroll-mt-24"), "Western aspects/wheel headings must carry scroll margin");
   const credits = fs.readFileSync("src/app/credits/CreditsClient.tsx", "utf8");
-  assert.ok(credits.includes("btn-secondary"), "dark Buy buttons must use the filled secondary style, not the faint ghost style");
+  // Audit 4 supersedes the Audit 3 btn-secondary note: all Buy buttons
+  // are now the same solid btn-gold, popular distinguished by badge only.
+  assert.ok(!credits.includes("btn-secondary"), "Audit 4: credits Buy buttons must no longer use btn-secondary");
+  assert.ok(credits.includes('className="btn-gold mt-5 w-full rounded-xl px-4 py-3 font-bold"'), "all credits Buy buttons must be solid btn-gold, equal size and weight");
+  assert.ok(credits.includes("Most popular") || credits.includes("MOST POPULAR") || credits.includes("Most Popular"), "popular pack must still carry its badge distinction");
   const css = fs.readFileSync("src/app/globals.css", "utf8");
   assert.ok(css.includes(".btn-secondary"), "btn-secondary must be defined in globals.css");
   assert.ok(css.includes("details,") && css.includes("scroll-margin-top: 6rem"), "details elements must get the sticky-header scroll margin");
@@ -236,5 +240,41 @@ console.log("charts-check: all assertions passed");
   assert.ok(motion.includes('reducedMotion="user"'), "MotionProvider must still respect reduced motion");
   assert.ok(css.includes("prefers-reduced-motion: reduce"), "CSS reduced-motion rule must still exist");
   assert.ok(!board.includes("animation") || !board.includes("rotate"), "no new auto-rotating wheel motion may be added");
-  console.log("audit3: light ring, glosses default, collapsed timezone, share-before-interpretation, thin wheel + cluster list, btn-secondary, hero no-wrap, reduced motion: all source assertions passed");
+  console.log("audit3: light ring, glosses default, collapsed timezone, share-before-interpretation, thin wheel + cluster list, solid Buy buttons (Audit 4 supersedes btn-secondary), hero no-wrap, reduced motion: all source assertions passed");
+}
+
+// Audit 4 batch (PR #6): the reservations that kept the verdict at
+// "Yes, with reservations" instead of a full yes. Source assertions
+// only; the rendered screenshots in sortes-audit7-screenshots are the
+// visual proof, and the live re-audit must re-check them in browser.
+{
+  const wheel = fs.readFileSync("src/components/WesternWheel.tsx", "utf8");
+  // Root cause, verified against @astrodraw/astrochart radix.ts:
+  // drawUniverse fills each sign segment with COLORS_SIGNS[i], and
+  // sign glyphs are stroked with SIGNS_COLOR. Batch 5 set both to
+  // goldbright, so the band was solid gold with gold glyphs on gold.
+  // The fix is a band fill equal to the wheel background, in both
+  // themes, so only the 1px circle strokes remain and glyphs contrast.
+  assert.ok(wheel.includes('COLORS_SIGNS: Array(12).fill("#1a1f2e")'), "dark wheel sign-band fill must equal the dark wheel background, not gold");
+  assert.ok(wheel.includes('COLORS_SIGNS: Array(12).fill("#fffdf5")'), "light wheel sign-band fill must equal the light wheel background, not gold");
+  assert.ok(!wheel.includes('COLORS_SIGNS: Array(12).fill("#f4d03f")'), "wheel sign-band fill must never again be goldbright");
+  assert.ok(!wheel.includes('COLORS_SIGNS: Array(12).fill("#7c5e00")'), "wheel sign-band fill must never again be dark gold");
+  assert.ok(wheel.includes("CIRCLE_STRONG: 1"), "wheel ring stroke must stay thinned at CIRCLE_STRONG 1");
+  assert.ok(wheel.includes("INNER_CIRCLE_RADIUS_RATIO: 16"), "wheel sign band must stay halved at INNER_CIRCLE_RADIUS_RATIO 16");
+  assert.ok(wheel.includes("SIGNS_STROKE: 1.6"), "sign glyph stroke must be raised to 1.6 for legibility now the band is background-coloured");
+  // Hero CTAs: definitive no-wrap, not just whitespace-nowrap.
+  const home = fs.readFileSync("src/app/page.tsx", "utf8");
+  assert.ok(home.includes("sm:flex-nowrap"), "hero CTA row must be flex-nowrap at sm+");
+  assert.ok(home.includes("w-[3.25rem]"), "daily teaser cards must be narrow enough for a 360px phone (5 x 52 + gaps = 308px, inside 328px content width)");
+  assert.ok(home.includes("shrink-0 whitespace-nowrap") && home.includes("Draw a Card"), "hero CTA links must be shrink-0 and whitespace-nowrap");
+  // Chinese Ziwei legend, from ziwei-i18n.ts, not invented in the page.
+  const i18n = fs.readFileSync("src/lib/ziwei-i18n.ts", "utf8");
+  assert.ok(i18n.includes("ZIWEI_LEGEND_ZH"), "Chinese Ziwei legend data must live in ziwei-i18n.ts");
+  assert.ok(i18n.includes('zh: "命宫"') && i18n.includes('zh: "父母"'), "Chinese legend must cover all 12 palaces, Life through Parents");
+  const charts = fs.readFileSync("src/app/charts/ChartsClient.tsx", "utf8");
+  assert.ok(charts.includes("ZIWEI_LEGEND_ZH"), "charts page must use the Chinese legend in Chinese mode");
+  assert.ok(charts.includes('ziweiLang === "zh"'), "Chinese legend must be gated on chart language zh, English mode unchanged");
+  // Western/Vedic legends are deliberately NOT translated in this batch.
+  assert.ok(!i18n.includes("WESTERN_LEGEND_ZH") && !i18n.includes("VEDIC_LEGEND_ZH"), "Western/Vedic legends must not be invented in this batch; they stay English and are reported as remaining");
+  console.log("audit4: wheel band fill = background in both themes, solid Buy buttons, hero flex-nowrap + shrink-0, Chinese Ziwei legend: all source assertions passed");
 }

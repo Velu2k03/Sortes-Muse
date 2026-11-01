@@ -83,20 +83,29 @@ export default function Home() {
             seeker. Draw your free daily card, explore all 78 card meanings,
             and receive readings personalized to your own story.
           </motion.p>
+          {/* Audit 4: hero CTAs wrapped on the very first load, then
+              were single-line on warm reloads, so whitespace-nowrap
+              alone did not prove stability. Definitive enforcement:
+              flex-nowrap at sm+, shrink-0 on both links so neither
+              link can shrink and then wrap, and the container stays
+              max-w-xl (576px), which fits both buttons even at a
+              wider fallback-font width (about 460px at loaded font,
+              under 576px with a 20% fallback widening). On mobile
+              the column stack is intentional and unchanged. */}
           <motion.div
             initial={false}
             animate={{ opacity: 1, y: 0 }}
-            className="mt-10 flex w-full max-w-xl flex-col gap-3 sm:flex-row sm:justify-center"
+            className="mt-10 flex w-full max-w-xl flex-col gap-3 sm:flex-row sm:flex-nowrap sm:justify-center"
           >
             <Link
               href="/daily"
-              className="btn-gold whitespace-nowrap rounded-2xl px-8 py-4 text-center text-lg font-bold"
+              className="btn-gold shrink-0 whitespace-nowrap rounded-2xl px-8 py-4 text-center text-lg font-bold"
             >
               <Icon name="sparkle" size={20} className="mr-2 inline-block align-[-3px]" />Draw a Card
             </Link>
             <Link
               href="/spreads"
-              className="btn-ghost whitespace-nowrap rounded-2xl px-8 py-4 text-center text-lg font-semibold"
+              className="btn-ghost shrink-0 whitespace-nowrap rounded-2xl px-8 py-4 text-center text-lg font-semibold"
             >
               Begin a Reading <Icon name="arrowRight" size={20} className="ml-2 inline-block align-[-3px]" />
             </Link>
@@ -252,8 +261,13 @@ export default function Home() {
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.08, duration: 0.5 }}
               >
+                {/* Audit 4 phone check: 5 cards at 72px + 4 x 12px gaps
+                    = 408px, wider than a 360px phone's 328px content
+                    width, so the home page scrolled horizontally.
+                    52px cards give 5 x 52 + 4 x 12 = 308px, inside
+                    328px, with the sm size unchanged. */}
                 <div
-                  className="float-slow relative h-28 w-[4.5rem] overflow-hidden rounded-lg border border-gold/30 sm:h-36 sm:w-24"
+                  className="float-slow relative h-24 w-[3.25rem] overflow-hidden rounded-lg border border-gold/30 sm:h-36 sm:w-24"
                   style={{ animationDelay: `${i * 0.7}s` }}
                 >
                   <Image

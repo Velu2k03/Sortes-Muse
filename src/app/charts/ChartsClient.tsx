@@ -5,7 +5,7 @@ import { toPng } from "html-to-image";
 import type { WesternResult, ZiweiResult } from "@/lib/charts";
 import type { VedicResult } from "@/lib/vedic";
 import type { ZiweiLanguage } from "@/lib/ziwei-i18n";
-import { localizeStar, zodiacEn } from "@/lib/ziwei-i18n";
+import { localizeStar, zodiacEn, ZIWEI_LEGEND_ZH } from "@/lib/ziwei-i18n";
 import ZiweiChartBoard, { type ZiweiView } from "@/components/ZiweiChartBoard";
 import WesternWheel from "@/components/WesternWheel";
 import VedicChart from "@/components/VedicChart";
@@ -555,8 +555,9 @@ export default function ChartsClient() {
           <section className="mt-10 scroll-mt-24 rounded-3xl border border-gold/20 bg-panel/50 p-6" aria-label="Chart legend">
             <h3 className="font-display text-2xl text-goldbright">How to read this chart</h3>
             <p className="mt-2 text-sm text-cream/75">
-              Free text only, no charge for this legend. If a word below is new to you, start here, then read the
-              interpretation below for your own chart.
+              {result.system === "ziwei" && ziweiLang === "zh"
+                ? ZIWEI_LEGEND_ZH.intro
+                : "Free text only, no charge for this legend. If a word below is new to you, start here, then read the interpretation below for your own chart."}
             </p>
             <div className="mt-4 grid gap-4 text-sm leading-relaxed text-cream/85 sm:grid-cols-2">
               <div>
@@ -571,21 +572,38 @@ export default function ChartsClient() {
                 </ul>
               </div>
               <div>
-                <p className="font-semibold text-cream">Ziwei palaces, in plain words</p>
-                <ul className="mt-2 space-y-1.5">
-                  <li><strong className="text-goldbright">Life:</strong> you, your body and your path.</li>
-                  <li><strong className="text-goldbright">Siblings:</strong> brothers, sisters and close peers.</li>
-                  <li><strong className="text-goldbright">Partner:</strong> close partnership and marriage.</li>
-                  <li><strong className="text-goldbright">Children:</strong> children and creative output.</li>
-                  <li><strong className="text-goldbright">Wealth:</strong> money, earning and spending.</li>
-                  <li><strong className="text-goldbright">Health:</strong> body, habits and illness.</li>
-                  <li><strong className="text-goldbright">Travel:</strong> movement, journeys and the wider world.</li>
-                  <li><strong className="text-goldbright">Friends:</strong> friends, helpers and community.</li>
-                  <li><strong className="text-goldbright">Career:</strong> work, role and public standing.</li>
-                  <li><strong className="text-goldbright">Home:</strong> home, family and property.</li>
-                  <li><strong className="text-goldbright">Fortune:</strong> ease, luck and inner contentment.</li>
-                  <li><strong className="text-goldbright">Parents:</strong> parents, elders and roots.</li>
-                </ul>
+                {/* Audit 4: in Chinese mode the Ziwei legend is Chinese,
+                    from ZIWEI_LEGEND_ZH, direct translations of the
+                    English lines below. Western and Vedic legend lines
+                    stay English in this batch, reported as remaining. */}
+                {result.system === "ziwei" && ziweiLang === "zh" ? (
+                  <>
+                    <p className="font-semibold text-cream">{ZIWEI_LEGEND_ZH.heading}</p>
+                    <ul className="mt-2 space-y-1.5">
+                      {ZIWEI_LEGEND_ZH.palaces.map((p) => (
+                        <li key={p.zh}><strong className="text-goldbright">{p.zh}：</strong>{p.desc}</li>
+                      ))}
+                    </ul>
+                  </>
+                ) : (
+                  <>
+                    <p className="font-semibold text-cream">Ziwei palaces, in plain words</p>
+                    <ul className="mt-2 space-y-1.5">
+                      <li><strong className="text-goldbright">Life:</strong> you, your body and your path.</li>
+                      <li><strong className="text-goldbright">Siblings:</strong> brothers, sisters and close peers.</li>
+                      <li><strong className="text-goldbright">Partner:</strong> close partnership and marriage.</li>
+                      <li><strong className="text-goldbright">Children:</strong> children and creative output.</li>
+                      <li><strong className="text-goldbright">Wealth:</strong> money, earning and spending.</li>
+                      <li><strong className="text-goldbright">Health:</strong> body, habits and illness.</li>
+                      <li><strong className="text-goldbright">Travel:</strong> movement, journeys and the wider world.</li>
+                      <li><strong className="text-goldbright">Friends:</strong> friends, helpers and community.</li>
+                      <li><strong className="text-goldbright">Career:</strong> work, role and public standing.</li>
+                      <li><strong className="text-goldbright">Home:</strong> home, family and property.</li>
+                      <li><strong className="text-goldbright">Fortune:</strong> ease, luck and inner contentment.</li>
+                      <li><strong className="text-goldbright">Parents:</strong> parents, elders and roots.</li>
+                    </ul>
+                  </>
+                )}
               </div>
               <div className="sm:col-span-2">
                 <p className="font-semibold text-cream">Vedic, in plain words</p>
@@ -598,9 +616,13 @@ export default function ChartsClient() {
               </div>
             </div>
             <p className="mt-4 text-sm text-cream/75">
-              <strong className="text-goldbright">Next step: </strong>
-              read the interpretation below, save it to your journal, or share it as an image. Calculation stays free;
-              interpretation is 1 credit, first chart per system free.
+              {result.system === "ziwei" && ziweiLang === "zh" ? (
+                <><strong className="text-goldbright">下一步：</strong>{ZIWEI_LEGEND_ZH.nextStep}</>
+              ) : (
+                <><strong className="text-goldbright">Next step: </strong>
+                read the interpretation below, save it to your journal, or share it as an image. Calculation stays free;
+                interpretation is 1 credit, first chart per system free.</>
+              )}
             </p>
           </section>
 

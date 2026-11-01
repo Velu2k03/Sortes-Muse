@@ -91,12 +91,16 @@ export default function CreditsPage() {
                 ${p.price.toFixed(2)}
               </p>
             </div>
+            {/* Audit 4: every pack uses the same solid btn-gold, same
+                padding, weight, and size. The popular pack is
+                distinguished only by its MOST POPULAR badge above,
+                not by being the only solid button; the old
+                old secondary fill read dimmer than btn-gold in dark
+                mode even though its text contrast passed. */}
             <button
               type="button"
               onClick={() => setOpen(true)}
-              className={`mt-5 w-full rounded-xl px-4 py-3 font-bold ${
-                p.popular ? "btn-gold" : "btn-secondary"
-              }`}
+              className="btn-gold mt-5 w-full rounded-xl px-4 py-3 font-bold"
             >
               Buy {p.readings} readings
             </button>
