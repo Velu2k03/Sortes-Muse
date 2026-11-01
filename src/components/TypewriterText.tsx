@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 interface Props {
   text: string;
@@ -14,15 +14,18 @@ interface Props {
  * in the moment. Click to skip to the full text. Respects reduced motion.
  */
 export default function TypewriterText({ text, speed = 3, className }: Props) {
-  const words = useRef<string[]>(text.split(/\s+/));
+  const words = useMemo(() => text.split(/\s+/), [text]);
   const [count, setCount] = useState(0);
   const [skipped, setSkipped] = useState(false);
-  const done = skipped || count >= words.current.length;
+  const done = skipped || count >= words.length;
 
   useEffect(() => {
-    words.current = text.split(/\s+/);
-    setCount(0);
-    setSkipped(false);
+    // Deferred reset: a new text restarts the reveal on the next tick,
+    // not synchronously inside the effect.
+    queueMicrotask(() => {
+      setCount(0);
+      setSkipped(false);
+    });
   }, [text]);
 
   useEffect(() => {
@@ -31,30 +34,32 @@ export default function TypewriterText({ text, speed = 3, className }: Props) {
       typeof window !== "undefined" &&
       window.matchMedia("(prefers-reduced-motion: reduce)").matches
     ) {
-      setSkipped(true);
+      queueMicrotask(() => setSkipped(true));
       return;
     }
     const t = setTimeout(() => {
-      setCount((c) => Math.min(c + speed, words.current.length));
+      setCount((c) => Math.min(c + speed, words.length));
     }, 90);
     return () => clearTimeout(t);
-  }, [count, done, speed]);
+  }, [count, done, speed, words.length]);
+
+  if (done) {
+    return <div className={className}>{words.join(" ")}</div>;
+  }
 
   return (
-    <div
-      className={className}
+    <button
+      type="button"
+      className={`block w-full text-left ${className ?? ""}`}
       onClick={() => setSkipped(true)}
-      role={done ? undefined : "button"}
-      aria-label={done ? undefined : "Tap to reveal the full reading"}
-      title={done ? undefined : "Tap to reveal all"}
+      aria-label="Tap to reveal the full reading"
+      title="Tap to reveal all"
     >
-      {words.current.slice(0, done ? undefined : count).join(" ")}
-      {!done && (
-        <span
-          aria-hidden="true"
-          className="ml-0.5 inline-block h-[1.1em] w-[2px] translate-y-[3px] animate-pulse bg-gold"
-        />
-      )}
-    </div>
+      {words.slice(0, count).join(" ")}
+      <span
+        aria-hidden="true"
+        className="ml-0.5 inline-block h-[1.1em] w-[2px] translate-y-[3px] animate-pulse bg-gold"
+      />
+    </button>
   );
 }

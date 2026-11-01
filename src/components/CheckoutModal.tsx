@@ -31,8 +31,10 @@ export default function CheckoutModal({ open, onClose, reason }: Props) {
 
   useEffect(() => {
     if (open) {
-      setError(null);
-      setEmail(user?.email ?? "");
+      queueMicrotask(() => {
+        setError(null);
+        setEmail(user?.email ?? "");
+      });
       fetch("/api/checkout/lemonsqueezy")
         .then((r) => r.json())
         .then((d) => setRealCheckout(Boolean(d.enabled)))
@@ -102,7 +104,9 @@ export default function CheckoutModal({ open, onClose, reason }: Props) {
       if (trimmed) {
         try {
           sessionStorage.setItem("sortes-purchase-email", trimmed);
-        } catch {}
+        } catch {
+          /* Storage unavailable; non-fatal, the flow continues without it. */
+        }
       }
       window.location.href = data.url;
     } catch (err) {

@@ -34,8 +34,10 @@ export default function CreditsPage() {
         .then((d) => setServerTx(d.transactions ?? []))
         .catch(() => setServerTx([]));
     } else {
-      setLocalHistory(getPurchaseHistory());
-      setServerTx(null);
+      queueMicrotask(() => {
+        setLocalHistory(getPurchaseHistory());
+        setServerTx(null);
+      });
     }
   }, [user]);
 
@@ -47,7 +49,7 @@ export default function CreditsPage() {
         <h1 className="mt-3 font-display text-5xl text-goldbright sm:text-6xl">
           Your balance
         </h1>
-        <p className="mt-6 font-display text-7xl text-cream">
+        <p className="num mt-6 text-7xl font-bold text-cream">
           {credits ?? 0}
           <span className="ml-2 align-middle font-body text-lg text-mist">
             {(credits ?? 0) === 1 ? "reading" : "readings"}
@@ -67,12 +69,9 @@ export default function CreditsPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.04, duration: 0.4 }}
-            className={`relative rounded-3xl border p-6 ${
-              p.popular
-                ? "border-gold/70 bg-gold/10"
-                : "border-gold/20 bg-panel/60"
-            }`}
+            className="relative rounded-3xl border border-gold/20 bg-panel/60 p-6"
           >
+            {/* Audit 5: the popular card carries no extra gold tint, so the badge is truly the only distinction between packs. */}
             {p.popular && (
               <span className="absolute -top-3 left-6 rounded-full bg-gold px-4 py-1 text-xs font-bold uppercase tracking-wider text-ink">
                 Most popular
@@ -87,7 +86,7 @@ export default function CreditsPage() {
                   ${perReadingPrice(p)} per reading
                 </p>
               </div>
-              <p className="font-display text-4xl text-goldbright">
+              <p className="num text-4xl font-bold text-goldbright">
                 ${p.price.toFixed(2)}
               </p>
             </div>

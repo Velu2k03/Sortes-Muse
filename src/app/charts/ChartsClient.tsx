@@ -11,8 +11,7 @@ import WesternWheel from "@/components/WesternWheel";
 import VedicChart from "@/components/VedicChart";
 import { useAuth } from "@/components/AuthProvider";
 import Icon from "@/components/Icon";
-import { chartFreeUsed, markChartFreeUsed, type ChartFreeSystem } from "@/lib/storage";
-import { makeReading } from "@/lib/storage";
+import { chartFreeUsed, markChartFreeUsed, makeReading, type ChartFreeSystem } from "@/lib/storage";
 import { chartInterpretationCost } from "@/lib/chart-pricing";
 
 type ChartResult = ZiweiResult | WesternResult | VedicResult;
@@ -87,8 +86,10 @@ export default function ChartsClient() {
     // is kept for a user who deliberately chose Chinese, but a new user
     // with no saved value stays English, and the form toggle below now
     // makes that choice visible before any chart is calculated.
-    if (saved === "en" || saved === "zh") setZiweiLang(saved);
-    else window.localStorage.setItem("sortes-ziwei-lang", "en");
+    queueMicrotask(() => {
+      if (saved === "en" || saved === "zh") setZiweiLang(saved);
+      else window.localStorage.setItem("sortes-ziwei-lang", "en");
+    });
   }, []);
   // Glosses toggle: default off in English, on in Chinese. Reset on
   // language change, so English mode is actually English in detail
@@ -328,7 +329,7 @@ export default function ChartsClient() {
         {system === "ziwei" && (
           <div className="mb-5">
             <span className={labelClass}>Chart language (English is the default)</span>
-            <div className="mt-1 flex flex-wrap gap-3" role="group" aria-label="Chart language">
+            <div className="mt-1 flex flex-wrap gap-3" aria-label="Chart language">
               {(["en", "zh"] as const).map((l) => (
                 <button
                   key={l}
@@ -487,7 +488,7 @@ export default function ChartsClient() {
           {result.system === "ziwei" && (
             <>
               <p className="mt-3 text-sm text-cream/80">Chart language only: this toggle changes the chart labels, the form above stays in English.</p>
-              <div className="mt-4 flex flex-wrap gap-3" role="group" aria-label="Chart language">
+              <div className="mt-4 flex flex-wrap gap-3" aria-label="Chart language">
                 {(["en", "zh"] as const).map((l) => (
                   <button
                     key={l}
@@ -511,7 +512,7 @@ export default function ChartsClient() {
                   {shareBusy ? "Creating image…" : (<span className="inline-flex items-center gap-2"><Icon name="share" size={16} />Share chart as image</span>)}
                 </button>
               </div>
-              <div className="mt-3 flex flex-wrap gap-3" role="group" aria-label="Ziwei chart view">
+              <div className="mt-3 flex flex-wrap gap-3" aria-label="Ziwei chart view">
                 {(["ring", "square"] as const).map((v) => (
                   <button
                     key={v}
@@ -553,7 +554,7 @@ export default function ChartsClient() {
           </div>
 
           <section className="mt-10 scroll-mt-24 rounded-3xl border border-gold/20 bg-panel/50 p-6" aria-label="Chart legend">
-            <h3 className="font-display text-2xl text-goldbright">How to read this chart</h3>
+            <h3 className="font-display text-2xl text-goldbright">{result.system === "ziwei" && ziweiLang === "zh" ? "如何读这张星盘" : "How to read this chart"}</h3>
             <p className="mt-2 text-sm text-cream/75">
               {result.system === "ziwei" && ziweiLang === "zh"
                 ? ZIWEI_LEGEND_ZH.intro
@@ -627,7 +628,10 @@ export default function ChartsClient() {
           </section>
 
           <section className="mt-10 scroll-mt-24 rounded-3xl border border-gold/25 bg-panel/70 p-6" aria-label="Chart interpretation">
-            <h3 className="font-display text-2xl text-goldbright">Interpretation</h3>
+            <h3 className="font-display text-2xl text-goldbright">{result.system === "ziwei" && ziweiLang === "zh" ? "解读" : "Interpretation"}</h3>
+            {result.system === "ziwei" && ziweiLang === "zh" && (
+              <p className="mt-2 text-sm text-cream/80">解读由 AI 用英文生成，基于上方星盘位置；图表标签已为中文。</p>
+            )}
             <p className="mt-2 text-sm text-cream/75">
               Calculation above was free and unsaved. A full interpretation is{" "}
               <strong className="text-cream">

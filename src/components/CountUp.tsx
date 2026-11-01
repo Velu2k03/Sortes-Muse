@@ -27,7 +27,7 @@ export default function CountUp({
       typeof window !== "undefined" &&
       window.matchMedia("(prefers-reduced-motion: reduce)").matches
     ) {
-      setDisplay(value);
+      queueMicrotask(() => setDisplay(value));
       prev.current = value;
       return;
     }

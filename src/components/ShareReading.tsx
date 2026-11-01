@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import Image from "next/image";
 import { toPng } from "html-to-image";
 import { getCard } from "@/lib/cards";
 import type { DrawnCard } from "@/lib/types";
@@ -116,11 +117,12 @@ export default function ShareReading({
               const c = getCard(d.cardId);
               return (
                 <div key={d.positionKey} style={{ textAlign: "center" }}>
-                  <img
+                  <Image
                     src={c.image}
                     alt=""
                     width={120}
                     height={201}
+                    unoptimized
                     style={{
                       borderRadius: 12,
                       border: "1px solid #d4af37",

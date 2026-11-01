@@ -1,5 +1,7 @@
 # Sortes by Resonant Atlas
 
+[![aislop](https://badges.scanaislop.com/score/Velu2k03/Sortes-Muse.svg)](https://scanaislop.com/Velu2k03/Sortes-Muse)
+
 A modern tarot reading web app (PWA). Draw a free daily card, browse all 78
 card meanings, and receive personalized AI readings woven around your own
 story. Live at **https://tarot.resonantatlas.com**.

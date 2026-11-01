@@ -59,6 +59,15 @@ export async function getSession(): Promise<{ userId: string; email: string } | 
   }
 }
 
+/** True when a session can actually be signed. In production this
+ * requires AUTH_SECRET; without it, createSession throws, so auth
+ * routes must fail fast BEFORE creating a user or deleting a code,
+ * instead of creating an account and then returning a 500 with no
+ * session (which made retry look like a 409 duplicate). */
+export function authConfigured(): boolean {
+  return Boolean(process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || process.env.NODE_ENV !== "production");
+}
+
 export const SESSION_COOKIE = COOKIE_NAME;
 export const SESSION_MAX_AGE = SESSION_DAYS * 24 * 60 * 60;
 

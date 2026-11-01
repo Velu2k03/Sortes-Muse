@@ -6,7 +6,7 @@ import {
   isValidEmail,
   SESSION_COOKIE,
   SESSION_MAX_AGE,
-} from "@/lib/auth";
+  authConfigured,} from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -34,6 +34,12 @@ export async function POST(req: NextRequest) {
       body = await req.json();
     } catch {
       return NextResponse.json({ error: "Invalid request." }, { status: 400 });
+    }
+    if (!authConfigured()) {
+      return NextResponse.json(
+        { error: "Sign-in is not configured on this server yet. Please try again later." },
+        { status: 503 }
+      );
     }
     const email = (body.email ?? "").trim().toLowerCase();
     const password = body.password ?? "";

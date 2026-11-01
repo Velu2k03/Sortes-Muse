@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { storeAuthCode, getAuthCode } from "@/lib/db";
-import { newCode, hashCode, isValidEmail } from "@/lib/auth";
+import { newCode, hashCode, isValidEmail, authConfigured } from "@/lib/auth";
 import { sendSignInCode } from "@/lib/email";
 
 export const dynamic = "force-dynamic";
@@ -27,9 +27,24 @@ async function handleRequest(req: NextRequest) {
   } catch {
     return NextResponse.json({ error: "Invalid request." }, { status: 400 });
   }
+  if (!authConfigured()) {
+    return NextResponse.json(
+      { error: "Sign-in is not configured on this server yet. Please try again later." },
+      { status: 503 }
+      );
+    }
   const email = (body.email ?? "").trim().toLowerCase();
   if (!isValidEmail(email)) {
     return NextResponse.json({ error: "Please enter a valid email address." }, { status: 400 });
+  }
+
+  // Production without an email provider cannot send a code at all:
+  // fail fast before storing a code the user will never receive.
+  if (process.env.NODE_ENV === "production" && !process.env.RESEND_API_KEY) {
+    return NextResponse.json(
+      { error: "Email sign-in is not configured on this server yet. Please use email + password instead." },
+      { status: 503 }
+    );
   }
 
   const now = Date.now();

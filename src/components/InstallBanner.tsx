@@ -26,10 +26,10 @@ export default function InstallBanner() {
     const t = setTimeout(() => {
       const isIOS =
         /iphone|ipad|ipod/i.test(navigator.userAgent) &&
-        !(window as unknown as { MSStream?: unknown }).MSStream;
+        !(window as Window & { MSStream?: unknown }).MSStream;
       const isStandalone =
         window.matchMedia("(display-mode: standalone)").matches ||
-        (navigator as unknown as { standalone?: boolean }).standalone === true;
+        (navigator as Navigator & { standalone?: boolean }).standalone === true;
       if (!isStandalone && isIOS) setShowIOS(true);
     }, 12000);
 

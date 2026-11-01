@@ -30,7 +30,7 @@ export default function PushPrompt() {
       setVisible(true);
     }, 45000);
     return () => clearTimeout(t);
-  }, [supported]);
+  }, [supported, pathname]);
 
   const hide = () => {
     dismissPushPrompt();

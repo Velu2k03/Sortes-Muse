@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { APP_SHORT, TAGLINE, CONTACT_EMAIL } from "@/lib/site";
 
+const COPYRIGHT_YEAR = new Date().getFullYear();
+
 export default function Footer() {
   return (
     <footer className="mt-20 border-t border-gold/15 bg-navydeep/60">
@@ -37,7 +39,7 @@ export default function Footer() {
         </div>
       </div>
       <div className="border-t border-gold/10 py-5 text-center text-xs text-mist/70">
-        © {new Date().getFullYear()} Resonant Atlas · {APP_SHORT}. Cast the lots, read your story.
+        © {COPYRIGHT_YEAR} Resonant Atlas · {APP_SHORT}. Cast the lots, read your story.
       </div>
     </footer>
   );

@@ -6,15 +6,13 @@
  */
 export function trackEvent(name: string, props?: Record<string, string | number>) {
   if (typeof window === "undefined") return;
-  const plausible = (window as unknown as {
+  const plausible = (window as Window & {
     plausible?: (name: string, opts?: { props?: Record<string, string | number> }) => void;
   }).plausible;
   if (typeof plausible === "function") {
     plausible(name, props ? { props } : undefined);
-  } else if (process.env.NODE_ENV !== "production") {
-    // Observable in dev so event wiring can be verified without Plausible.
-    console.debug(`[analytics] ${name}`, props ?? {});
   }
+  // No dev console output: analytics is a no-op without Plausible.
 }
 
 export function trackReadingStarted(spread: string) {
