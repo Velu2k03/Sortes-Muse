@@ -243,6 +243,16 @@ body {
   transform: translateY(-1px);
 }
 
+/* Validator fix V4: error text must pass contrast in both themes.
+   text-red-200 on white is 1.45:1 in light mode, a real AA fail.
+   Dark keeps the pale red, light uses red-800, about 7.6:1 on white. */
+.alert-error-text {
+  color: #fecaca;
+}
+html[data-theme="light"] .alert-error-text {
+  color: #991b1b;
+}
+
 /* Ghost button */
 .btn-ghost {
   border: 1px solid rgba(212, 175, 55, 0.4);

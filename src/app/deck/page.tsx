@@ -91,7 +91,10 @@ export default function DeckPage() {
             className="group overflow-hidden rounded-xl border border-gold/20 bg-panel/50 transition hover:-translate-y-1 hover:border-gold/60 hover:shadow-[0_12px_30px_rgba(212,175,55,0.15)]"
             aria-label={`View meaning of ${c.name}`}
           >
-            <div className="relative aspect-[3/5] w-full">
+            {/* Validator fix: a button may only contain phrasing
+                content, so the tile image wrapper and name are spans
+                with block display, not div and p. Same layout. */}
+            <span className="relative block aspect-[3/5] w-full">
               <Image
                 src={c.image}
                 alt={c.name}
@@ -100,10 +103,10 @@ export default function DeckPage() {
                 className="object-cover"
                 loading={i < 12 ? "eager" : "lazy"}
               />
-            </div>
-            <p className="truncate px-2 py-2 text-xs font-medium text-cream/90 group-hover:text-goldbright">
+            </span>
+            <span className="block truncate px-2 py-2 text-xs font-medium text-cream/90 group-hover:text-goldbright">
               {c.name}
-            </p>
+            </span>
           </motion.button>
         ))}
       </div>

@@ -361,7 +361,7 @@ export default function IntakeFlow({ slug }: { slug: string }) {
             </div>
 
             {error && (
-              <p className="mt-4 rounded-xl border border-red-400/40 bg-red-500/10 p-3 text-sm text-red-200">
+              <p className="mt-4 rounded-xl border border-red-400/40 bg-red-500/10 p-3 text-sm alert-error-text">
                 {error}
               </p>
             )}
