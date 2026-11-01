@@ -344,7 +344,7 @@ export default function ChartsClient() {
         {system === "ziwei" && (
           <div className="mb-5">
             <span className={labelClass}>Chart language (English is the default)</span>
-            <div className="mt-1 flex flex-wrap gap-3" aria-label="Chart language">
+            <div role="group" className="mt-1 flex flex-wrap gap-3" aria-label="Chart language">
               {(["en", "zh"] as const).map((l) => (
                 <button
                   key={l}
@@ -457,7 +457,7 @@ export default function ChartsClient() {
           </div>
         </div>
         {error && (
-          <p role="alert" className="mt-5 rounded-xl border border-red-400/40 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+          <p role="alert" className="mt-5 rounded-xl border border-red-400/40 bg-red-500/10 px-4 py-3 text-sm alert-error-text">
             {error}
           </p>
         )}
@@ -501,7 +501,7 @@ export default function ChartsClient() {
           {result.system === "ziwei" && (
             <>
               <p className="mt-3 text-sm text-cream/80">Chart language only: this toggle changes the chart labels, the form above stays in English.</p>
-              <div className="mt-4 flex flex-wrap gap-3" aria-label="Chart language">
+              <div role="group" className="mt-4 flex flex-wrap gap-3" aria-label="Chart language">
                 {(["en", "zh"] as const).map((l) => (
                   <button
                     key={l}
@@ -525,7 +525,7 @@ export default function ChartsClient() {
                   {shareBusy ? "Creating image…" : (<span className="inline-flex items-center gap-2"><Icon name="share" size={16} />Share chart as image</span>)}
                 </button>
               </div>
-              <div className="mt-3 flex flex-wrap gap-3" aria-label="Ziwei chart view">
+              <div role="group" className="mt-3 flex flex-wrap gap-3" aria-label="Ziwei chart view">
                 {(["ring", "square"] as const).map((v) => (
                   <button
                     key={v}
@@ -672,7 +672,7 @@ export default function ChartsClient() {
               </div>
             </div>
             {interpError && (
-              <p role="alert" className="mt-4 rounded-xl border border-red-400/40 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+              <p role="alert" className="mt-4 rounded-xl border border-red-400/40 bg-red-500/10 px-4 py-3 text-sm alert-error-text">
                 {interpError}
               </p>
             )}

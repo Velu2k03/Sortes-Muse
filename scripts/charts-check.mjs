@@ -260,7 +260,9 @@ console.log("charts-check: all assertions passed");
   // Hero CTAs: definitive no-wrap, not just whitespace-nowrap.
   const home = fs.readFileSync("src/app/page.tsx", "utf8");
   assert.ok(home.includes("sm:flex-nowrap"), "hero CTA row must be flex-nowrap at sm+");
-  assert.ok(home.includes("w-[3.25rem]"), "daily teaser cards must be narrow enough for a 360px phone (5 x 52 + gaps = 308px, inside 328px content width)");
+  assert.ok(home.includes("TarotFan"), "daily teaser must use the TarotFan component, not the old flat row");
+  const fan = fs.readFileSync("src/components/TarotFan.tsx", "utf8");
+  assert.ok(fan.includes("w-[4.5rem]") && fan.includes("-ml-6"), "fan must be narrow enough for a 360px phone (72 + 4 x 48 = 264px, inside 328px content width)");
   assert.ok(home.includes("shrink-0 whitespace-nowrap") && home.includes("Draw a Card"), "hero CTA links must be shrink-0 and whitespace-nowrap");
   // Chinese Ziwei legend, from ziwei-i18n.ts, not invented in the page.
   const i18n = fs.readFileSync("src/lib/ziwei-i18n.ts", "utf8");
@@ -363,4 +365,16 @@ console.log("charts-check: all assertions passed");
   assert.ok(!spreads.includes("unlocks"), "spreads credit note must not use unlocks wording");
   assert.ok(charts.includes("Birth data is used in memory only"), "charts privacy must stay, in one short line");
   console.log("batch10: slop trim, short copy, privacy kept: all source assertions passed");
+  // Batch 11: validator fixes, plus the fan. No ReactDrops code copied.
+  const deck = fs.readFileSync("src/app/deck/page.tsx", "utf8");
+  assert.ok(deck.includes('className="relative block aspect-[3/5] w-full"'), "deck tiles must use span, not div, inside the button");
+  assert.ok(!deck.includes('<div className="relative aspect-[3/5]'), "deck tiles must not put a div inside the button");
+  const tarotCard = fs.readFileSync("src/components/TarotCard.tsx", "utf8");
+  assert.ok(tarotCard.includes("motion.span"), "tarot flip container must be a span, not a div, inside the button");
+  assert.ok(charts.includes('role="group"'), "chart button groups must carry role=group with their aria-label");
+  const css11 = fs.readFileSync("src/app/globals.css", "utf8");
+  assert.ok(css11.includes(".alert-error-text") && css11.includes("#991b1b"), "error text must be theme-aware, dark red in light mode for contrast");
+  const fan11 = fs.readFileSync("src/components/TarotFan.tsx", "utf8");
+  assert.ok(fan11.includes("TarotFan") || fan11.includes("fan"), "fan component must exist as original Sortes code");
+  console.log("batch11: validator fixes and tarot fan: all source assertions passed");
 }

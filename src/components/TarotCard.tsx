@@ -109,15 +109,18 @@ export default function TarotCard({
           className={`perspective-1000 ${SIZES[size]} relative min-h-[8rem] min-w-[5rem] cursor-pointer disabled:cursor-default`}
         >
           {celebrate && <CardBurst />}
-          <motion.div
-            className="preserve-3d relative h-full w-full"
+          {/* Validator fix: a button may only contain phrasing
+              content, so the flip container and both faces are spans
+              with block display, not divs. Same flip, same layout. */}
+          <motion.span
+            className="preserve-3d relative block h-full w-full"
             initial={false}
             animate={{ rotateY: revealed ? 180 : 0 }}
             transition={{ duration: 0.55, ease: [0.2, 0.7, 0.3, 1] }}
           >
             {/* Back (face down) */}
-            <div
-              className="card-back-sheen absolute inset-0 overflow-hidden rounded-xl border border-gold/40 shadow-[0_8px_30px_rgba(0,0,0,0.6)]"
+            <span
+              className="card-back-sheen absolute inset-0 block overflow-hidden rounded-xl border border-gold/40 shadow-[0_8px_30px_rgba(0,0,0,0.6)]"
               style={{ backfaceVisibility: "hidden" }}
             >
               <Image
@@ -128,10 +131,10 @@ export default function TarotCard({
                 className="object-cover"
                 draggable={false}
               />
-            </div>
+            </span>
             {/* Face */}
-            <div
-              className="absolute inset-0 overflow-hidden rounded-xl border border-gold/50 bg-navydeep shadow-[0_8px_30px_rgba(0,0,0,0.6),0_0_24px_rgba(212,175,55,0.15)]"
+            <span
+              className="absolute inset-0 block overflow-hidden rounded-xl border border-gold/50 bg-navydeep shadow-[0_8px_30px_rgba(0,0,0,0.6),0_0_24px_rgba(212,175,55,0.15)]"
               style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}
             >
               {card && (
@@ -145,8 +148,8 @@ export default function TarotCard({
                   draggable={false}
                 />
               )}
-            </div>
-          </motion.div>
+            </span>
+          </motion.span>
         </button>
       </motion.div>
       {label && (

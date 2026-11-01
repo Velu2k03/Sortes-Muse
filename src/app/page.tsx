@@ -8,6 +8,7 @@ import { MAJORS } from "@/lib/cards";
 import { TAGLINE } from "@/lib/site";
 import StatsStrip from "@/components/StatsStrip";
 import SampleReading from "@/components/SampleReading";
+import TarotFan from "@/components/TarotFan";
 import Icon from "@/components/Icon";
 
 const fadeUp = {
@@ -242,34 +243,12 @@ export default function Home() {
           <p className="mx-auto mt-4 max-w-lg text-cream/75">
             Free, every day. Draw today&apos;s card in seconds.
           </p>
-          <div className="mt-8 flex justify-center gap-3">
-            {MAJORS.slice(0, 5).map((c, i) => (
-              <motion.div
-                key={c.id}
-                initial={{ opacity: 0, y: 20, rotate: (i - 2) * 6 }}
-                whileInView={{ opacity: 1, y: 0, rotate: (i - 2) * 6 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.08, duration: 0.5 }}
-              >
-                {/* Audit 4 phone check: 5 cards at 72px + 4 x 12px gaps
-                    = 408px, wider than a 360px phone's 328px content
-                    width, so the home page scrolled horizontally.
-                    52px cards give 5 x 52 + 4 x 12 = 308px, inside
-                    328px, with the sm size unchanged. */}
-                <div
-                  className="float-slow relative h-24 w-[3.25rem] overflow-hidden rounded-lg border border-gold/30 sm:h-36 sm:w-24"
-                  style={{ animationDelay: `${i * 0.7}s` }}
-                >
-                  <Image
-                    src={c.image}
-                    alt={c.name}
-                    fill
-                    sizes="96px"
-                    className="object-cover"
-                  />
-                </div>
-              </motion.div>
-            ))}
+          {/* Batch 11: the flat 5-card row is now a tarot fan, built
+              as an original component from the fan pattern only.
+              Phone width: 72 + 4 x 48 = 264px, inside a 360px phone's
+              328px content width, so no horizontal scroll. */}
+          <div className="mt-8">
+            <TarotFan cards={MAJORS.slice(0, 5)} />
           </div>
           <Link
             href="/daily"
