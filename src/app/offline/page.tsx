@@ -13,8 +13,8 @@ export default function OfflinePage() {
         The mists are thick
       </h1>
       <p className="mt-3 text-cream/75">
-        You appear to be offline. Pages you have already visited — including
-        your card images — are saved on this device and will work without a
+        You appear to be offline. Pages you have already visited, including
+        your card images, are saved on this device and will work without a
         connection.
       </p>
       <Link

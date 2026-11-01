@@ -298,7 +298,7 @@ function GateScreen({
               <span className="font-display text-lg text-goldbright">{i + 1}</span>
               <span>
                 <span className="font-semibold text-cream">{p.label}</span>
-                <span className="text-mist"> — {p.hint}</span>
+                <span className="text-mist">: {p.hint}</span>
               </span>
             </li>
           ))}

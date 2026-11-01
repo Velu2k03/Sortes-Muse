@@ -99,7 +99,7 @@ export default function SpreadsPage() {
                 {s.positions.map((p) => (
                   <li key={p.key} className="text-xs text-cream/80">
                     <span className="text-goldbright">{p.label}</span>
-                    {" — "}
+                    {": "}
                     {p.hint}
                   </li>
                 ))}
