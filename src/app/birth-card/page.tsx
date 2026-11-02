@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { MAJORS } from "@/lib/cards";
+import ThemedDatePicker from "@/components/ThemedDatePicker";
 
 // Birth card calculator, calculated in memory only. The date you enter
 // is never stored, never sent to a server, and never sent to AI.
@@ -44,13 +45,7 @@ export default function BirthCardPage() {
         <label htmlFor="birth-card-date" className="mb-1.5 block text-sm font-medium text-cream">
           Birth date
         </label>
-        <input
-          id="birth-card-date"
-          type="date"
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
-          className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream focus:border-gold/60 focus:outline-none"
-        />
+        <ThemedDatePicker id="birth-card-date" value={date} onChange={setDate} />
         <p className="mt-3 text-sm text-cream/70">
           Method: add all digits of the date, then keep adding the digits of
           the result until the total is 22 or less. 1 is The Magician through

@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { dailyHoroscope, weeklyHoroscope, SUN_SIGNS, type SunSign } from "@/lib/daily";
 import Icon from "@/components/Icon";
+import ThemedDatePicker from "@/components/ThemedDatePicker";
+import OptionWheel from "@/components/OptionWheel";
 
 // Daily sun-sign horoscope. Text is written in-house for Sortes, dated,
 // and clearly labelled as a general reflection, not a personal reading
@@ -17,6 +19,14 @@ export default function HoroscopePage() {
   const todayKey = MODULE_TODAY_KEY;
   const [sign, setSign] = useState<SunSign>("Aries");
   const [date, setDate] = useState(todayKey);
+  const [reducedMotion, setReducedMotion] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const sync = () => setReducedMotion(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
   const [view, setView] = useState<"daily" | "weekly">("daily");
   const h = dailyHoroscope(sign, date || todayKey);
   const w = weeklyHoroscope(sign, date || todayKey);
@@ -33,33 +43,39 @@ export default function HoroscopePage() {
       </div>
       <div className="mx-auto mt-8 grid gap-4 rounded-3xl border border-gold/25 bg-panel/70 p-6 sm:grid-cols-2">
         <div>
-          <label htmlFor="horoscope-sign" className="mb-1.5 block text-sm font-medium text-cream">
+          <span className="mb-1.5 block text-sm font-medium text-cream">
             Sun sign
-          </label>
-          <select
-            id="horoscope-sign"
-            value={sign}
-            onChange={(e) => setSign(e.target.value as SunSign)}
-            className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream focus:border-gold/60 focus:outline-none"
-          >
-            {SUN_SIGNS.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </select>
+          </span>
+          {reducedMotion ? (
+            <select
+              id="horoscope-sign"
+              value={sign}
+              onChange={(e) => setSign(e.target.value as SunSign)}
+              className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream focus:border-gold/60 focus:outline-none"
+            >
+              {SUN_SIGNS.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <div className="h-64">
+              <OptionWheel
+                items={[...SUN_SIGNS]}
+                defaultSelected={SUN_SIGNS.indexOf(sign)}
+                onChange={(index) => setSign(SUN_SIGNS[index])}
+                textColor="#9ca3af"
+                activeColor="#f4d03f"
+              />
+            </div>
+          )}
         </div>
         <div>
           <label htmlFor="horoscope-date" className="mb-1.5 block text-sm font-medium text-cream">
             Date
           </label>
-          <input
-            id="horoscope-date"
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream focus:border-gold/60 focus:outline-none"
-          />
+          <ThemedDatePicker id="horoscope-date" value={date} onChange={setDate} />
         </div>
       </div>
       <div

@@ -53,12 +53,20 @@ export default function ChartsClient() {
     return () => mq.removeEventListener("change", sync);
   }, []);
   const SYSTEM_ORDER: ChartSystem[] = ["ziwei", "western", "vedic"];
+  const formRef = useRef<HTMLFormElement | null>(null);
   const selectSystem = (s: ChartSystem) => {
     setSystem(s);
     setResult(null);
     setInterpretation("");
     setInterpError("");
     setSaved(false);
+    // Picking a system brings the form up into view, so the fields
+    // for the new system are right there instead of leaving the
+    // user staring at the wheel.
+    formRef.current?.scrollIntoView({
+      behavior: reducedMotion ? "auto" : "smooth",
+      block: "start",
+    });
   };
   // Traditional square is the default Ziwei view: it passed the re-audit
   // cleanly, while the ring edge labels still crowd and overlap. Ring
@@ -361,7 +369,7 @@ export default function ChartsClient() {
         </div>
       )}
 
-      <form onSubmit={onSubmit} className="mx-auto mt-8 max-w-xl rounded-3xl border border-gold/25 bg-panel/70 p-6">
+      <form ref={formRef} onSubmit={onSubmit} className="mx-auto mt-8 max-w-xl rounded-3xl border border-gold/25 bg-panel/70 p-6">
         {/* Audit 6: Use example lives at the top of the form, not only
             at its bottom, so it is visible without scrolling once the
             system tabs are on screen, on desktop and at 390px. */}
@@ -397,78 +405,135 @@ export default function ChartsClient() {
             <ThemedDatePicker id="chart-date" value={date} onChange={setDate} />
           </div>
           <div>
-            <label htmlFor="chart-time" className={labelClass}>
-              Birth time
-            </label>
-            <input
-              id="chart-time"
-              type="time"
-              disabled={unknownTime}
-              value={time}
-              onChange={(e) => setTime(e.target.value)}
-              className={inputClass}
-            />
-            <label className="mt-2 flex items-center gap-2 text-sm text-cream/80">
+            <span className={labelClass}>Birth time</span>
+            <label className="flex items-center gap-2 text-sm text-cream/80">
               <input type="checkbox" checked={unknownTime} onChange={(e) => setUnknownTime(e.target.checked)} />
               I do not know the birth time
             </label>
-            {!unknownTime && !reducedMotion && (
-              <div className="mt-4 flex flex-col items-center">
-                <CometDial
-                  value={Number(time.split(":")[0] ?? 8)}
-                  min={0}
-                  max={23}
-                  step={1}
-                  unit=":00"
-                  label="Birth hour"
-                  accent="#d4af37"
-                  ink="#ede6d6"
-                  onChange={(hour) => {
-                    const minutes = time.split(":")[1] ?? "00";
-                    setTime(`${String(hour).padStart(2, "0")}:${minutes}`);
-                  }}
-                />
-                <p className="mt-2 text-center text-sm text-cream/75">
-                  Turn the dial to set the birth hour, then press Calculate chart.
-                </p>
-              </div>
+            {/* The dials are the time control now; the plain time box
+                is gone except under reduced motion, where the dials
+                are off and the box is the only way to set a time. */}
+            {reducedMotion ? (
+              <input
+                id="chart-time"
+                type="time"
+                disabled={unknownTime}
+                value={time}
+                onChange={(e) => setTime(e.target.value)}
+                className={`${inputClass} mt-2`}
+              />
+            ) : (
+              !unknownTime && (
+                <div className="mt-4 flex flex-col items-center">
+                  <div className="flex items-center justify-center gap-1">
+                    <div className="flex flex-col items-center">
+                      <CometDial
+                        value={Number(time.split(":")[0] ?? 8)}
+                        min={0}
+                        max={23}
+                        step={1}
+                        size={150}
+                        unit=""
+                        label="Birth hour"
+                        accent="#d4af37"
+                        ink="#ede6d6"
+                        onChange={(hour) => {
+                          const minutes = time.split(":")[1] ?? "00";
+                          setTime(`${String(hour).padStart(2, "0")}:${minutes}`);
+                        }}
+                      />
+                      <span className="mt-1 text-xs text-mist">Hour</span>
+                    </div>
+                    <span className="pb-5 font-display text-3xl text-goldbright">:</span>
+                    <div className="flex flex-col items-center">
+                      <CometDial
+                        value={Number(time.split(":")[1] ?? 0)}
+                        min={0}
+                        max={59}
+                        step={1}
+                        size={150}
+                        unit=""
+                        label="Birth minute"
+                        accent="#d4af37"
+                        ink="#ede6d6"
+                        onChange={(minute) => {
+                          const hours = time.split(":")[0] ?? "08";
+                          setTime(`${hours}:${String(minute).padStart(2, "0")}`);
+                        }}
+                      />
+                      <span className="mt-1 text-xs text-mist">Minute</span>
+                    </div>
+                  </div>
+                  <p className="mt-2 text-center text-sm text-cream/75">
+                    Turn the dials to set the birth time, then press Calculate chart.
+                  </p>
+                </div>
+              )
             )}
           </div>
           {system === "ziwei" && (
             <div>
-              <label htmlFor="chart-gender" className={labelClass}>
-                Gender
-              </label>
-              <select id="chart-gender" value={gender} onChange={(e) => setGender(e.target.value as "male" | "female")} className={inputClass}>
-                <option value="female">Female</option>
-                <option value="male">Male</option>
-              </select>
+              <span className={labelClass}>Gender</span>
+              <div role="group" className="mt-1 flex flex-wrap gap-3" aria-label="Gender">
+                {(["female", "male"] as const).map((g) => (
+                  <button
+                    key={g}
+                    type="button"
+                    onClick={() => setGender(g)}
+                    className={`rounded-full px-4 py-2 text-sm font-bold ${gender === g ? "btn-gold" : "border border-gold/40 text-goldbright"}`}
+                    aria-pressed={gender === g}
+                  >
+                    {g === "female" ? "Female" : "Male"}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
           <div>
-            <label htmlFor="chart-place" className={labelClass}>
-              Birthplace
-            </label>
-            <select
-              id="chart-place"
-              value={preset}
-              onChange={(e) => {
-                const found = PRESETS.find((p) => p.label === e.target.value);
-                setPreset(e.target.value);
-                if (found) {
-                  setLatitude(String(found.latitude));
-                  setLongitude(String(found.longitude));
-                }
-              }}
-              className={inputClass}
-            >
-              {PRESETS.map((p) => (
-                <option key={p.label} value={p.label}>
-                  {p.label}
-                </option>
-              ))}
-              <option value="Custom">Custom coordinates</option>
-            </select>
+            <span className={labelClass}>Birthplace</span>
+            {reducedMotion ? (
+              <select
+                id="chart-place"
+                value={preset}
+                onChange={(e) => {
+                  const found = PRESETS.find((p) => p.label === e.target.value);
+                  setPreset(e.target.value);
+                  if (found) {
+                    setLatitude(String(found.latitude));
+                    setLongitude(String(found.longitude));
+                  }
+                }}
+                className={inputClass}
+              >
+                {PRESETS.map((p) => (
+                  <option key={p.label} value={p.label}>
+                    {p.label}
+                  </option>
+                ))}
+                <option value="Custom">Custom coordinates</option>
+              </select>
+            ) : (
+              <div className="h-64">
+                <OptionWheel
+                  items={[...PRESETS.map((p) => p.label), "Custom coordinates"]}
+                  defaultSelected={(() => {
+                    const i = PRESETS.findIndex((p) => p.label === preset);
+                    return i >= 0 ? i : PRESETS.length;
+                  })()}
+                  onChange={(index) => {
+                    const label = index < PRESETS.length ? PRESETS[index].label : "Custom";
+                    const found = PRESETS.find((p) => p.label === label);
+                    setPreset(label);
+                    if (found) {
+                      setLatitude(String(found.latitude));
+                      setLongitude(String(found.longitude));
+                    }
+                  }}
+                  textColor="#9ca3af"
+                  activeColor="#f4d03f"
+                />
+              </div>
+            )}
           </div>
           <div>
             <label htmlFor="chart-lat" className={labelClass}>
@@ -703,16 +768,20 @@ export default function ChartsClient() {
             </p>
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
               <div>
-                <label htmlFor="chart-focus" className={labelClass}>
-                  Focus area
-                </label>
-                <select id="chart-focus" value={focus} onChange={(e) => setFocus(e.target.value as typeof focus)} className={inputClass}>
+                <span className={labelClass}>Focus area</span>
+                <div role="group" className="mt-1 flex flex-wrap gap-2" aria-label="Focus area">
                   {FOCUS_AREAS.map((f) => (
-                    <option key={f} value={f}>
+                    <button
+                      key={f}
+                      type="button"
+                      onClick={() => setFocus(f)}
+                      className={`rounded-full px-3 py-1.5 text-sm font-bold ${focus === f ? "btn-gold" : "border border-gold/40 text-goldbright"}`}
+                      aria-pressed={focus === f}
+                    >
                       {f}
-                    </option>
+                    </button>
                   ))}
-                </select>
+                </div>
               </div>
               <div>
                 <label htmlFor="chart-question" className={labelClass}>
