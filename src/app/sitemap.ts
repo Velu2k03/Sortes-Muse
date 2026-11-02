@@ -21,6 +21,8 @@ const PAGES = [
   "/history",
   "/credits",
   "/about",
+  "/faq",
+  "/birth-card",
   "/guides",
   "/guides/what-is-tarot",
   "/guides/how-to-ask-a-tarot-question",

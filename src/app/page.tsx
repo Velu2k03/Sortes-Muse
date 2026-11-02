@@ -128,6 +128,82 @@ export default function Home() {
 
       <StatsStrip />
 
+      {/* WHAT DO YOU SEEK */}
+      <section className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+        <h2 className="text-center font-display text-3xl text-goldbright sm:text-4xl">
+          What do you seek?
+        </h2>
+        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            { href: "/spreads/love-insight", label: "Love", text: "You, them, and the connection." },
+            { href: "/spreads/career-path", label: "Career", text: "Current, obstacle, and next step." },
+            { href: "/spreads/weekly-outlook", label: "The week ahead", text: "Focus, challenge, and opportunity." },
+            { href: "/spreads/quick-insight", label: "A general question", text: "One card, one clear mirror. First reading free." },
+          ].map((s) => (
+            <Link
+              key={s.href}
+              href={s.href}
+              className="rounded-3xl border border-gold/25 bg-panel/70 p-6 hover:border-gold/60"
+            >
+              <p className="font-display text-2xl text-goldbright">{s.label}</p>
+              <p className="mt-2 text-sm leading-relaxed text-cream/75">{s.text}</p>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      {/* SPREADS PREVIEW */}
+      <section className="border-y border-gold/10 bg-navydeep/40 py-16">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <motion.div {...fadeUp} className="text-center">
+            <h2 className="font-display text-4xl text-goldbright sm:text-5xl">
+              Choose your spread
+            </h2>
+            <p className="mx-auto mt-4 max-w-xl text-cream/75">
+              From one card to the full ten-card spread. Your first Quick
+              Insight is free.
+            </p>
+            <p className="mx-auto mt-3 max-w-xl text-sm text-cream/60">
+              Readings are for reflection and perspective, never guaranteed predictions.
+            </p>
+          </motion.div>
+          <div className="mt-10 grid gap-5 md:grid-cols-3">
+            {SPREADS.map((s, i) => (
+              <motion.div
+                key={s.slug}
+                {...fadeUp}
+                transition={{ ...fadeUp.transition, delay: i * 0.05 }}
+                className="relative overflow-hidden rounded-3xl border border-gold/25 bg-panel/70 p-7"
+              >
+                {s.slug === "quick-insight" && (
+                  <span className="absolute right-4 top-4 rounded-full bg-gold px-3 py-1 text-xs font-bold text-ink">
+                    FIRST FREE
+                  </span>
+                )}
+                <p className="text-xs uppercase tracking-[0.25em] text-mist">
+                  {s.cards} {s.cards === 1 ? "card" : "cards"}
+                </p>
+                <h3 className="mt-2 font-display text-3xl text-cream">{s.name}</h3>
+                <p className="mt-3 min-h-[3.5rem] text-sm leading-relaxed text-cream/75">
+                  {s.description}
+                </p>
+                <p className="mt-4 font-display text-2xl text-goldbright">
+                  {s.slug === "quick-insight" ? "Free" : "1 credit"}
+                </p>
+                <Link
+                  href={`/spreads/${s.slug}`}
+                  className={`mt-5 block rounded-xl px-4 py-3 text-center font-semibold ${
+                    s.slug === "quick-insight" ? "btn-gold" : "btn-ghost"
+                  }`}
+                >
+                  {s.slug === "quick-insight" ? "Start free reading" : "View spread"}
+                </Link>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* WHAT IS TAROT */}
       <section className="mx-auto max-w-4xl px-4 py-16 sm:px-6">
         <motion.div {...fadeUp}>
@@ -177,55 +253,6 @@ export default function Home() {
             </div>
           ))}
         </motion.div>
-      </section>
-
-      {/* SPREADS PREVIEW */}
-      <section className="border-y border-gold/10 bg-navydeep/40 py-16">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <motion.div {...fadeUp} className="text-center">
-            <h2 className="font-display text-4xl text-goldbright sm:text-5xl">
-              Choose your spread
-            </h2>
-            <p className="mx-auto mt-4 max-w-xl text-cream/75">
-              From one card to the full ten-card spread. Your first Quick
-              Insight is free.
-            </p>
-          </motion.div>
-          <div className="mt-10 grid gap-5 md:grid-cols-3">
-            {SPREADS.map((s, i) => (
-              <motion.div
-                key={s.slug}
-                {...fadeUp}
-                transition={{ ...fadeUp.transition, delay: i * 0.05 }}
-                className="relative overflow-hidden rounded-3xl border border-gold/25 bg-panel/70 p-7"
-              >
-                {s.slug === "quick-insight" && (
-                  <span className="absolute right-4 top-4 rounded-full bg-gold px-3 py-1 text-xs font-bold text-ink">
-                    FIRST FREE
-                  </span>
-                )}
-                <p className="text-xs uppercase tracking-[0.25em] text-mist">
-                  {s.cards} {s.cards === 1 ? "card" : "cards"}
-                </p>
-                <h3 className="mt-2 font-display text-3xl text-cream">{s.name}</h3>
-                <p className="mt-3 min-h-[3.5rem] text-sm leading-relaxed text-cream/75">
-                  {s.description}
-                </p>
-                <p className="mt-4 font-display text-2xl text-goldbright">
-                  {s.slug === "quick-insight" ? "Free" : "1 credit"}
-                </p>
-                <Link
-                  href={`/spreads/${s.slug}`}
-                  className={`mt-5 block rounded-xl px-4 py-3 text-center font-semibold ${
-                    s.slug === "quick-insight" ? "btn-gold" : "btn-ghost"
-                  }`}
-                >
-                  {s.slug === "quick-insight" ? "Start free reading" : "View spread"}
-                </Link>
-              </motion.div>
-            ))}
-          </div>
-        </div>
       </section>
 
       {/* SAMPLE READING TEASER */}

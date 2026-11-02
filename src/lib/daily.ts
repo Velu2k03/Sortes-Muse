@@ -99,6 +99,47 @@ export function dailyHoroscope(sign: SunSign, date: string): DailyHoroscope {
   };
 }
 
+const WEEKLY_LINES = [
+  "This week, choose one theme and let it organise the rest. A week with a single focus is easier to look back on than a week with seven half finished plans.",
+  "A conversation you have been putting off may be easier this week than last week. Try the shorter, kinder version first.",
+  "Expect one plan to change midweek. That change is not a failure of planning, it is the week telling you what actually matters.",
+  "Finish one small thing early in the week. That finished feeling is useful fuel for the harder work later in the week.",
+  "Rest is part of a week, not a break from it. Protect one calm evening and see how the rest of the week feels after it.",
+  "Other people may need more from you this week than usual. Decide in advance where your limit is, and hold it kindly.",
+  "Look for a pattern across the week, not a verdict on any single day. One difficult day does not define a week.",
+];
+
+export interface WeeklyHoroscope {
+  sign: SunSign;
+  weekStart: string;
+  theme: string;
+  reflection: string;
+  luckyColour: string;
+  luckyNumber: number;
+}
+
+export function weekStartMonday(date: string): string {
+  const d = new Date(`${date}T12:00:00`);
+  const day = d.getDay();
+  const diff = (day + 6) % 7;
+  d.setDate(d.getDate() - diff);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+export function weeklyHoroscope(sign: SunSign, date: string): WeeklyHoroscope {
+  const start = weekStartMonday(date);
+  const h = hashString(`${sign}|week|${start}`);
+  const weekNum = Math.floor(dayOfYear(start) / 7);
+  return {
+    sign,
+    weekStart: start,
+    theme: SIGN_THEMES[sign],
+    reflection: WEEKLY_LINES[(h + weekNum) % WEEKLY_LINES.length],
+    luckyColour: LUCKY_COLOURS[(h + weekNum) % LUCKY_COLOURS.length],
+    luckyNumber: (h % 9) + 1,
+  };
+}
+
 export function isSunSign(v: string): v is SunSign {
   return (SUN_SIGNS as readonly string[]).includes(v);
 }

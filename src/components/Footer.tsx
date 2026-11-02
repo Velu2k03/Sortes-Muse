@@ -24,6 +24,8 @@ export default function Footer() {
             <li><Link href="/credits" className="text-cream/80 hover:text-goldbright">Credits</Link></li>
             <li><Link href="/history" className="text-cream/80 hover:text-goldbright">Journal</Link></li>
             <li><Link href="/guides" className="text-cream/80 hover:text-goldbright">Guides</Link></li>
+            <li><Link href="/faq" className="text-cream/80 hover:text-goldbright">FAQ</Link></li>
+            <li><Link href="/birth-card" className="text-cream/80 hover:text-goldbright">Birth Card</Link></li>
           </ul>
         </div>
         <div>
