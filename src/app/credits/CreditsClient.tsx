@@ -8,6 +8,7 @@ import { getPurchaseHistory, type Purchase } from "@/lib/storage";
 import { useAuth } from "@/components/AuthProvider";
 import CheckoutModal from "@/components/CheckoutModal";
 import PurchaseConfirmer from "@/components/PurchaseConfirmer";
+import Counter from "@/components/Counter";
 import { useSearchParams } from "next/navigation";
 
 interface ServerTx {
@@ -23,6 +24,14 @@ export default function CreditsPage() {
   const searchParams = useSearchParams();
   const justPurchased = searchParams.get("purchase") === "success";
   const [open, setOpen] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const sync = () => setReducedMotion(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
   const [localHistory, setLocalHistory] = useState<Purchase[]>([]);
   const [serverTx, setServerTx] = useState<ServerTx[] | null>(null);
 
@@ -46,12 +55,26 @@ export default function CreditsPage() {
       {/* Header now lives in the server page, see page.tsx, so the
           H1 is in the initial HTML. Balance stays centered here. */}
       <div className="text-center">
-        <p className="num mt-6 text-7xl font-bold text-cream">
-          {credits ?? 0}
-          <span className="ml-2 align-middle font-body text-lg text-mist">
-            {(credits ?? 0) === 1 ? "reading" : "readings"}
-          </span>
-        </p>
+        {reducedMotion ? (
+          <p className="num mt-6 text-7xl font-bold text-cream">
+            {credits ?? 0}
+            <span className="ml-2 align-middle font-body text-lg text-mist">
+              {(credits ?? 0) === 1 ? "reading" : "readings"}
+            </span>
+          </p>
+        ) : (
+          <div className="mt-6 flex items-baseline justify-center gap-2">
+            <Counter
+              value={credits ?? 0}
+              textColor="#ede6d6"
+              fontSize={72}
+              fontWeight="bold"
+            />
+            <span className="font-body text-lg text-mist">
+              {(credits ?? 0) === 1 ? "reading" : "readings"}
+            </span>
+          </div>
+        )}
         <p className="mx-auto mt-4 max-w-md text-sm text-cream/75">
           1 credit = 1 full reading, any spread. Your daily card is always
           free and never uses a credit. Credits never expire.
