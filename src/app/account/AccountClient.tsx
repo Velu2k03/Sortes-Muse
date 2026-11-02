@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { getSupabaseBrowser } from "@/lib/supabase-browser";
-import { SITE_URL } from "@/lib/site";
 
 interface ServerTx {
   id: string;
@@ -130,7 +129,13 @@ export default function AccountPage() {
       if (supabase) {
         const { error } = await supabase.auth.signInWithOtp({
           email: email.trim().toLowerCase(),
-          options: { emailRedirectTo: `${SITE_URL.replace(/\/$/, "")}/auth/callback` },
+          // Use the origin the visitor is actually on, not the hardcoded
+          // canonical domain: Supabase only allows redirect URLs that are
+          // in its allow list, and the canonical domain was not in it,
+          // which rejected the code request. The visitor's origin must
+          // be in that list (vercel.app already is; resonantatlas.com
+          // must be added in the Supabase dashboard).
+          options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
         });
         if (error) throw new Error(error.message);
         setStep("code");
