@@ -59,6 +59,16 @@ export interface Reading {
   nextStep?: string;
   firstName?: string;
   free: boolean;
+  // M2.1: follow-up thread on this reading (tarot only, cap 3).
+  followUps?: FollowUp[];
   // Chart readings only: a positions-only summary, never birth data.
   chartSummary?: string;
+}
+
+// M2.1: one follow-up exchange within a reading thread.
+export interface FollowUp {
+  question: string;
+  answer: string;
+  createdAt: string;
+  free: boolean;
 }

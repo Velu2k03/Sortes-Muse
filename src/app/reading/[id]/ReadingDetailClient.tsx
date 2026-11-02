@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { getReading } from "@/lib/storage";
-import type { Reading } from "@/lib/types";
+import { getReading, updateReading as updateLocalReading } from "@/lib/storage";
+import type { Reading, FollowUp } from "@/lib/types";
 import { useAuth } from "@/components/AuthProvider";
 import { getCard, orientationKeywords, orientationMeaning } from "@/lib/cards";
 import TarotCard from "@/components/TarotCard";
@@ -19,10 +19,15 @@ export default function ReadingDetail({ id }: { id: string }) {
   const [zoomCard, setZoomCard] = useState<string | null>(null);
   // M1.1: the one next step the seeker chooses after reading. Kept in
   // local state for editing, saved onto the reading on Save.
-  const { updateReading } = useAuth();
+  const { updateReading, user, spend, add, refresh } = useAuth();
   const [nextStepInput, setNextStepInput] = useState("");
   const [nextStepSaved, setNextStepSaved] = useState(false);
   const [nextStepSaving, setNextStepSaving] = useState(false);
+
+  // M2.1: follow-up thread state
+  const [followUpQ, setFollowUpQ] = useState("");
+  const [followUpLoading, setFollowUpLoading] = useState(false);
+  const [followUpError, setFollowUpError] = useState<string | null>(null);
 
   useEffect(() => {
     queueMicrotask(() => setReading(getReading(id) ?? null));
@@ -206,18 +211,181 @@ export default function ReadingDetail({ id }: { id: string }) {
           drawn={reading.cards}
           date={reading.createdAt}
         />
-        <div className="rule-gold w-24" />
-        <p className="font-display text-2xl text-cream">Still turning it over?</p>
-        <p className="max-w-md text-sm text-cream/75">
-          Start a new clarifying reading on the same question. It draws
-          fresh cards; your previous reading stays in your history.
-        </p>
-        <Link
-          href="/spreads/quick-insight"
-          className="btn-gold rounded-xl px-8 py-3 font-bold"
-        >
-          Ask a follow-up · 1 credit
-        </Link>
+
+        {/* M2.1: follow-up section (tarot readings with an interpretation only) */}
+        {reading.aiGenerated && reading.interpretation && !reading.chartSummary && (
+          <>
+            <div className="rule-gold w-24" />
+            <p className="font-display text-2xl text-cream">Still turning it over?</p>
+
+            {/* Existing follow-ups, oldest first */}
+            {(reading.followUps ?? []).length > 0 && (
+              <div className="w-full space-y-4 text-left">
+                {(reading.followUps ?? []).map((fu: FollowUp, i: number) => (
+                  <div
+                    key={i}
+                    className="rounded-2xl border border-gold/20 bg-panel/50 p-4"
+                  >
+                    <p className="text-xs uppercase tracking-[0.2em] text-gold">
+                      Follow-up {i + 1}{fu.free ? " (free)" : " (1 credit)"}
+                    </p>
+                    <p className="mt-1 text-sm italic text-cream/80">
+                      &ldquo;{fu.question}&rdquo;
+                    </p>
+                    <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-cream/90">
+                      {fu.answer}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Follow-up input or thread-complete notice */}
+            {(reading.followUps ?? []).length >= 3 ? (
+              <p className="text-sm text-mist">
+                This thread is complete. You have used all 3 follow-ups for
+                this reading.
+              </p>
+            ) : (
+              <div className="w-full space-y-3">
+                <div className="flex flex-col gap-3 sm:flex-row">
+                  <input
+                    type="text"
+                    value={followUpQ}
+                    onChange={(e) => {
+                      setFollowUpQ(e.target.value);
+                      setFollowUpError(null);
+                    }}
+                    placeholder="Ask a follow-up about this reading..."
+                    maxLength={300}
+                    aria-label="Follow-up question"
+                    className="w-full flex-1 rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    disabled={followUpLoading || !followUpQ.trim()}
+                    onClick={async () => {
+                      const q = followUpQ.trim();
+                      if (!q) return;
+                      setFollowUpLoading(true);
+                      setFollowUpError(null);
+
+                      const existingCount = (reading.followUps ?? []).length;
+                      const isFree = existingCount === 0;
+
+                      // Guest pre-spend for non-free follow-ups (M0.1 pattern).
+                      let guestPreSpent = false;
+                      if (!user && !isFree) {
+                        const ok = await spend(1);
+                        if (!ok) {
+                          setFollowUpError("You need 1 credit for this follow-up.");
+                          setFollowUpLoading(false);
+                          return;
+                        }
+                        guestPreSpent = true;
+                      }
+
+                      try {
+                        const payload: Record<string, unknown> = { question: q };
+                        if (user) {
+                          payload.readingId = reading.id;
+                        } else {
+                          // Guest: send whitelisted reading fields
+                          payload.reading = {
+                            question: reading.question,
+                            interpretation: reading.interpretation,
+                            aiGenerated: reading.aiGenerated,
+                            cards: reading.cards.map((c) => ({
+                              cardId: c.cardId,
+                              position: c.position,
+                              name: getCard(c.cardId)?.name,
+                            })),
+                            category: reading.category,
+                            firstImpression: reading.firstImpression,
+                            nextStep: reading.nextStep,
+                            followUps: reading.followUps,
+                          };
+                        }
+
+                        const res = await fetch("/api/reading/follow-up", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify(payload),
+                        });
+                        const data = await res.json();
+
+                        if (!res.ok) {
+                          // Refund guest pre-spend on failure
+                          if (guestPreSpent) await add(1);
+                          setFollowUpError(
+                            data.error || "Something went wrong. Please try again."
+                          );
+                          setFollowUpLoading(false);
+                          return;
+                        }
+
+                        // Update local reading with returned followUps.
+                        // Do NOT rely on the PATCH path: the follow-up route
+                        // already updated the server copy for signed-in users,
+                        // and updateReading only PATCHes nextStep anyway.
+                        if (data.followUps) {
+                          const updated = updateLocalReading(reading.id, {
+                            followUps: data.followUps,
+                          });
+                          if (updated) setReading(updated);
+                        }
+
+                        // Sync credits display for signed-in users: the
+                        // route already spent server-side, so refresh the
+                        // balance from the server.
+                        if (user && typeof data.credits === "number") {
+                          await refresh();
+                        }
+
+                        setFollowUpQ("");
+                      } catch {
+                        if (guestPreSpent) await add(1);
+                        setFollowUpError(
+                          "Could not reach the server. Please try again."
+                        );
+                      } finally {
+                        setFollowUpLoading(false);
+                      }
+                    }}
+                    className="btn-gold whitespace-nowrap rounded-xl px-6 py-3 font-bold disabled:opacity-40"
+                  >
+                    {followUpLoading
+                      ? "Thinking..."
+                      : (reading.followUps ?? []).length === 0
+                        ? "Ask a follow-up \u00b7 free"
+                        : "Ask a follow-up \u00b7 1 credit"}
+                  </button>
+                </div>
+                {followUpError && (
+                  <p className="text-sm text-red-400">{followUpError}</p>
+                )}
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Non-tarot or no-interpretation: show the old new-reading link */}
+        {!(reading.aiGenerated && reading.interpretation && !reading.chartSummary) && (
+          <>
+            <div className="rule-gold w-24" />
+            <p className="font-display text-2xl text-cream">Still turning it over?</p>
+            <p className="max-w-md text-sm text-cream/75">
+              Start a new clarifying reading on the same question. It draws
+              fresh cards; your previous reading stays in your history.
+            </p>
+            <Link
+              href="/spreads/quick-insight"
+              className="btn-gold rounded-xl px-8 py-3 font-bold"
+            >
+              Ask a follow-up &middot; 1 credit
+            </Link>
+          </>
+        )}
       </div>
 
       <p className="mx-auto mt-8 max-w-md text-center text-xs italic leading-relaxed text-mist">

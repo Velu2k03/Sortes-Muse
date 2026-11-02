@@ -412,6 +412,18 @@ export async function updateReadingForUser(
   return true;
 }
 
+// M2.1: fetch a single reading by id, scoped to the owning user.
+export async function getReadingForUser(userId: string, id: string): Promise<unknown | null> {
+  await ensureSchema();
+  if (usePostgres) {
+    const { rows } = await sql`SELECT data FROM readings WHERE id = ${id} AND user_id = ${userId} LIMIT 1`;
+    return rows.length > 0 ? (rows[0] as { data: unknown }).data : null;
+  }
+  const db = await readLocal();
+  const row = db.readings.find((r) => r.id === id && r.user_id === userId);
+  return row ? row.data : null;
+}
+
 export async function listReadingsForUser(userId: string): Promise<unknown[]> {
   await ensureSchema();
   if (usePostgres) {
