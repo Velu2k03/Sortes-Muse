@@ -14,7 +14,7 @@ export async function generateMetadata({
 }) {
   const guide = getGuide((await params).slug);
   if (!guide) return {};
-  return { title: guide.title, description: guide.description };
+  return { title: guide.title, description: guide.description, alternates: { canonical: `/guides/${guide.slug}` } };
 }
 
 export default async function GuidePage({

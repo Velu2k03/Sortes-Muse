@@ -5,6 +5,7 @@ export const metadata = {
   title: "Frequently asked questions",
   description:
     "Sortes answers: what is free, how credits work, whether readings are predictions, how birth data is handled, and how sign-in works.",
+  alternates: { canonical: "/faq" },
 };
 
 const FAQS = [

@@ -3,6 +3,7 @@ import { APP_NAME, APP_SHORT, CONTACT_EMAIL, SITE_URL } from "@/lib/site";
 export const metadata = {
   title: "Privacy Policy",
   description: `How ${APP_SHORT} collects, uses, and deletes your data.`,
+  alternates: { canonical: "/privacy" },
 };
 
 const UPDATED = "September 29, 2026";

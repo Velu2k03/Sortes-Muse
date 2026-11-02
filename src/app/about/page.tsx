@@ -5,6 +5,7 @@ export const metadata = {
   title: "About Sortes",
   description:
     "Sortes by Resonant Atlas: a tarot reading app for reflection. Who runs it, what it offers, how it handles your data, and how to contact it.",
+  alternates: { canonical: "/about" },
 };
 
 export default function AboutPage() {

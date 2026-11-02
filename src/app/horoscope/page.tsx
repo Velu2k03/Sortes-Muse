@@ -79,9 +79,9 @@ export default function HoroscopePage() {
         ))}
       </div>
       <article className="mt-6 rounded-3xl border border-gold/25 bg-panel/70 p-6">
-        <p className="text-xs uppercase tracking-[0.25em] text-gold">
+        <h2 className="text-xs uppercase tracking-[0.25em] text-gold">
           {view === "daily" ? `${h.sign} · ${h.date}` : `${w.sign} · Week starting ${w.weekStart}`}
-        </p>
+        </h2>
         <p className="mt-3 text-lg leading-relaxed text-cream">{view === "daily" ? h.theme : w.theme}</p>
         <p className="mt-3 leading-relaxed text-cream/85">{view === "daily" ? h.reflection : w.reflection}</p>
         <div className="mt-4 flex flex-wrap gap-x-6 gap-y-1 text-sm text-cream/80">

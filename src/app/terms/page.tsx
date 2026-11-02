@@ -3,6 +3,7 @@ import { APP_SHORT, CONTACT_EMAIL } from "@/lib/site";
 export const metadata = {
   title: "Terms of Service",
   description: `The terms governing your use of ${APP_SHORT}.`,
+  alternates: { canonical: "/terms" },
 };
 
 const UPDATED = "September 29, 2026";

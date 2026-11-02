@@ -54,7 +54,8 @@ export default function BirthCardPage() {
         <p className="mt-3 text-sm text-cream/70">
           Method: add all digits of the date, then keep adding the digits of
           the result until the total is 22 or less. 1 is The Magician through
-          21 is The World, and 22 is The Fool.
+          21 is The World, and 22 is The Fool. Pick a date and your card
+          appears below, no button needed.
         </p>
       </div>
       {card && num !== null && (
