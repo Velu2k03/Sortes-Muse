@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { CARDS, MAJORS, cardsBySuit, SUITS, suitLabel } from "@/lib/cards";
 import CardModal from "@/components/CardModal";
@@ -24,6 +24,12 @@ export default function DeckPage() {
   const [selected, setSelected] = useState<string | null>(null);
   const [view, setView] = useState<"spiral" | "list">("spiral");
   const [reducedMotion, setReducedMotion] = useState(false);
+  // The spiral sets pointer capture on press, so a real tap's click event
+  // is retargeted to the spiral root and never lands on a card. Detect
+  // taps ourselves on press and release instead, and look the card up
+  // from the pointer position, so a tap opens the detail and a drag
+  // (moved more than 12px) still only spins the helix.
+  const tapStartRef = useRef<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -145,6 +151,21 @@ export default function DeckPage() {
             }}
             onClick={(e) => {
               const item = (e.target as HTMLElement).closest('[role="listitem"]');
+              const name = item?.getAttribute("aria-label");
+              const card = cards.find((c) => c.name === name);
+              if (card) setSelected(card.id);
+            }}
+            onPointerDown={(e) => {
+              tapStartRef.current = { x: e.clientX, y: e.clientY };
+            }}
+            onPointerUp={(e) => {
+              const start = tapStartRef.current;
+              tapStartRef.current = null;
+              if (!start) return;
+              const moved = Math.hypot(e.clientX - start.x, e.clientY - start.y);
+              if (moved > 12) return;
+              const under = document.elementFromPoint(e.clientX, e.clientY);
+              const item = under?.closest('[role="listitem"]');
               const name = item?.getAttribute("aria-label");
               const card = cards.find((c) => c.name === name);
               if (card) setSelected(card.id);
