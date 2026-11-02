@@ -23,11 +23,13 @@ export default function Footer() {
             <li><Link href="/deck" className="text-cream/80 hover:text-goldbright">Card Meanings</Link></li>
             <li><Link href="/credits" className="text-cream/80 hover:text-goldbright">Credits</Link></li>
             <li><Link href="/history" className="text-cream/80 hover:text-goldbright">Journal</Link></li>
+            <li><Link href="/guides" className="text-cream/80 hover:text-goldbright">Guides</Link></li>
           </ul>
         </div>
         <div>
           <p className="text-xs uppercase tracking-[0.2em] text-gold">Trust</p>
           <ul className="mt-3 space-y-2 text-sm">
+            <li><Link href="/about" className="text-cream/80 hover:text-goldbright">About Sortes</Link></li>
             <li><Link href="/privacy" className="text-cream/80 hover:text-goldbright">Privacy Policy</Link></li>
             <li><Link href="/terms" className="text-cream/80 hover:text-goldbright">Terms of Service</Link></li>
             <li>
