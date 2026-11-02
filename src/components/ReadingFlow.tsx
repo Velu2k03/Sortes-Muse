@@ -25,6 +25,7 @@ import {
   trackReadingStarted,
   trackReadingCompleted,
 } from "@/components/Analytics";
+import { ClickSpark } from "@/components/ReactBits";
 
 type Phase = "gate" | "shuffling" | "dealt" | "revealed";
 
@@ -308,26 +309,30 @@ function GateScreen({
       <div className="mt-8">
         {isFreeAvailable ? (
           <>
-            <button
-              type="button"
-              onClick={onBegin}
-              className="btn-gold w-full rounded-2xl px-8 py-4 text-lg font-bold sm:w-auto"
-            >
-              ✦ Begin your free reading
-            </button>
+            <ClickSpark className="click-spark--responsive">
+              <button
+                type="button"
+                onClick={onBegin}
+                className="btn-gold w-full rounded-2xl px-8 py-4 text-lg font-bold sm:w-auto"
+              >
+                ✦ Begin your free reading
+              </button>
+            </ClickSpark>
             <p className="mt-3 text-sm text-mist">
               Free, no card required. One per seeker.
             </p>
           </>
         ) : credits >= 1 ? (
           <>
-            <button
-              type="button"
-              onClick={() => router.push(`/intake/${spread.slug}`)}
-              className="btn-gold w-full rounded-2xl px-8 py-4 text-lg font-bold sm:w-auto"
-            >
-              ✦ Personalize and begin · 1 credit
-            </button>
+            <ClickSpark className="click-spark--responsive">
+              <button
+                type="button"
+                onClick={() => router.push(`/intake/${spread.slug}`)}
+                className="btn-gold w-full rounded-2xl px-8 py-4 text-lg font-bold sm:w-auto"
+              >
+                ✦ Personalize and begin · 1 credit
+              </button>
+            </ClickSpark>
             <p className="mt-3 text-sm text-mist">
               You have {credits} {credits === 1 ? "credit" : "credits"}. Tell
               your story, and the reading is woven around it.

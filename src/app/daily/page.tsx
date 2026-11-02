@@ -14,6 +14,7 @@ import TarotCard from "@/components/TarotCard";
 import CardModal from "@/components/CardModal";
 import { trackDailyCardDrawn } from "@/components/Analytics";
 import Icon from "@/components/Icon";
+import { ClickSpark, StarBorder } from "@/components/ReactBits";
 
 type Phase = "idle" | "shuffling" | "revealed";
 
@@ -91,13 +92,17 @@ export default function DailyPage() {
               className="flex flex-col items-center"
             >
               <TarotCard cardId={null} size="lg" disabled />
-              <button
-                type="button"
-                onClick={draw}
-                className="btn-gold mt-8 rounded-2xl px-10 py-4 text-lg font-bold"
-              >
-                <Icon name="sparkle" size={20} className="mr-2 inline-block align-[-3px]" />Draw today&apos;s card
-              </button>
+              <StarBorder radius="1rem" className="mt-8">
+                <ClickSpark>
+                  <button
+                    type="button"
+                    onClick={draw}
+                    className="btn-gold rounded-2xl px-10 py-4 text-lg font-bold"
+                  >
+                    <Icon name="sparkle" size={20} className="mr-2 inline-block align-[-3px]" />Draw today&apos;s card
+                  </button>
+                </ClickSpark>
+              </StarBorder>
             </motion.div>
           )}
 

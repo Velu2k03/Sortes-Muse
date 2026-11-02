@@ -3,13 +3,13 @@
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { SPREADS } from "@/lib/tarot";
 import { MAJORS } from "@/lib/cards";
 import { TAGLINE } from "@/lib/site";
 import StatsStrip from "@/components/StatsStrip";
 import SampleReading from "@/components/SampleReading";
 import TarotFan from "@/components/TarotFan";
 import Icon from "@/components/Icon";
+import { DarkVeil, MagicBento, ShinyText, StarBorder } from "@/components/ReactBits";
 
 const fadeUp = {
   initial: { opacity: 0, y: 24 },
@@ -33,6 +33,7 @@ export default function Home() {
             className="object-cover opacity-70"
           />
           <div className="absolute inset-0 bg-gradient-to-b from-ink/60 via-ink/75 to-ink" />
+          <DarkVeil />
           {/* Ambient drifting glows */}
           <div
             className="nebula absolute -left-32 top-1/4 h-[28rem] w-[28rem] rounded-full opacity-25 blur-3xl"
@@ -69,7 +70,7 @@ export default function Home() {
             animate={{ opacity: 1, y: 0 }}
             className="mt-4 font-display text-2xl italic text-goldbright sm:text-3xl"
           >
-            {TAGLINE}
+            <ShinyText>{TAGLINE}</ShinyText>
           </motion.p>
           <motion.p
             initial={false}
@@ -93,18 +94,22 @@ export default function Home() {
             animate={{ opacity: 1, y: 0 }}
             className="mt-10 flex w-full max-w-xl flex-col gap-3 sm:flex-row sm:flex-nowrap sm:justify-center"
           >
-            <Link
-              href="/daily"
-              className="btn-gold shrink-0 whitespace-nowrap rounded-2xl px-8 py-4 text-center text-lg font-bold"
-            >
-              <Icon name="sparkle" size={20} className="mr-2 inline-block align-[-3px]" />Draw a Card
-            </Link>
-            <Link
-              href="/spreads"
-              className="btn-ghost shrink-0 whitespace-nowrap rounded-2xl px-8 py-4 text-center text-lg font-semibold"
-            >
-              Begin a Reading <Icon name="arrowRight" size={20} className="ml-2 inline-block align-[-3px]" />
-            </Link>
+            <StarBorder radius="1rem" className="shrink-0">
+              <Link
+                href="/daily"
+                className="btn-gold shrink-0 whitespace-nowrap rounded-2xl px-8 py-4 text-center text-lg font-bold"
+              >
+                <Icon name="sparkle" size={20} className="mr-2 inline-block align-[-3px]" />Draw a Card
+              </Link>
+            </StarBorder>
+            <StarBorder radius="1rem" className="shrink-0">
+              <Link
+                href="/spreads"
+                className="btn-gold shrink-0 whitespace-nowrap rounded-2xl px-8 py-4 text-center text-lg font-semibold"
+              >
+                Begin a Reading <Icon name="arrowRight" size={20} className="ml-2 inline-block align-[-3px]" />
+              </Link>
+            </StarBorder>
           </motion.div>
           <motion.p
             initial={false}
@@ -167,40 +172,7 @@ export default function Home() {
               Readings are for reflection and perspective, never guaranteed predictions.
             </p>
           </motion.div>
-          <div className="mt-10 grid gap-5 md:grid-cols-3">
-            {SPREADS.map((s, i) => (
-              <motion.div
-                key={s.slug}
-                {...fadeUp}
-                transition={{ ...fadeUp.transition, delay: i * 0.05 }}
-                className="relative overflow-hidden rounded-3xl border border-gold/25 bg-panel/70 p-7"
-              >
-                {s.slug === "quick-insight" && (
-                  <span className="absolute right-4 top-4 rounded-full bg-gold px-3 py-1 text-xs font-bold text-ink">
-                    FIRST FREE
-                  </span>
-                )}
-                <p className="text-xs uppercase tracking-[0.25em] text-mist">
-                  {s.cards} {s.cards === 1 ? "card" : "cards"}
-                </p>
-                <h3 className="mt-2 font-display text-3xl text-cream">{s.name}</h3>
-                <p className="mt-3 min-h-[3.5rem] text-sm leading-relaxed text-cream/75">
-                  {s.description}
-                </p>
-                <p className="mt-4 font-display text-2xl text-goldbright">
-                  {s.slug === "quick-insight" ? "Free" : "1 credit"}
-                </p>
-                <Link
-                  href={`/spreads/${s.slug}`}
-                  className={`mt-5 block rounded-xl px-4 py-3 text-center font-semibold ${
-                    s.slug === "quick-insight" ? "btn-gold" : "btn-ghost"
-                  }`}
-                >
-                  {s.slug === "quick-insight" ? "Start free reading" : "View spread"}
-                </Link>
-              </motion.div>
-            ))}
-          </div>
+          <MagicBento />
         </div>
       </section>
 
@@ -277,12 +249,14 @@ export default function Home() {
           <div className="mt-8">
             <TarotFan cards={MAJORS.slice(0, 5)} />
           </div>
-          <Link
-            href="/daily"
-            className="btn-gold mt-8 inline-block rounded-2xl px-8 py-3.5 font-bold"
-          >
-            Draw today&apos;s card
-          </Link>
+          <StarBorder radius="1rem" className="mt-8">
+            <Link
+              href="/daily"
+              className="btn-gold inline-block rounded-2xl px-8 py-3.5 font-bold"
+            >
+              Draw today&apos;s card
+            </Link>
+          </StarBorder>
         </motion.div>
       </section>
     </div>
