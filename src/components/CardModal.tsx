@@ -1,9 +1,9 @@
 "use client";
 
-import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect } from "react";
 import { getCard } from "@/lib/cards";
+import HoloCard from "@/components/HoloCard";
 
 interface Props {
   cardId: string | null;
@@ -45,13 +45,19 @@ export default function CardModal({ cardId, onClose }: Props) {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex flex-col gap-6 sm:flex-row">
-              <div className="relative mx-auto h-64 w-40 shrink-0 overflow-hidden rounded-xl border border-gold/40 sm:mx-0">
-                <Image
-                  src={card.image}
+              <div className="mx-auto shrink-0 sm:mx-0">
+                {/* One card only, so one WebGL context. Gold preset and
+                    Sortes gold foil keep it in the site palette. No
+                    back image, so it is not flippable and a tap here
+                    never conflicts with closing the modal. If WebGL
+                    fails, the plain card image underneath still shows. */}
+                <HoloCard
+                  image={card.image}
                   alt={card.name}
-                  fill
-                  sizes="160px"
-                  className="object-cover"
+                  preset="gold"
+                  foilColor="#d4af37"
+                  width={160}
+                  radius={12}
                 />
               </div>
               <div className="min-w-0 flex-1">
