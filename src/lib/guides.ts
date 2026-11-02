@@ -43,7 +43,7 @@ export const GUIDES: Guide[] = [
       {
         heading: "How Sortes uses tarot",
         paragraphs: [
-          "Sortes has three free entry points. The daily card is one free card each day, with no account and no payment. The deck browser lets you read all 78 card meanings at your own pace. The spreads are the paid readings: Quick Insight with one card, Past, Present, Future with three cards, and the Celtic Cross with ten cards. The first full reading is free, and later readings cost one credit each.",
+          "Sortes has three free entry points. The daily card is one free card each day, with no account and no payment. The deck browser lets you read all 78 card meanings at your own pace. The spreads are the paid readings: Quick Insight with one card, topic spreads with three cards, and the Celtic Cross with ten cards. The first full reading is free, and later readings cost one credit each.",
         ],
       },
     ],
@@ -143,6 +143,38 @@ export const GUIDES: Guide[] = [
         heading: "Which one to use",
         paragraphs: [
           "Use a tarot spread when you have a specific question and want to act soon. Use a chart when you want to understand a pattern that keeps repeating, or to compare how three traditions describe the same birth moment. Use both when a decision sits inside a longer pattern: the chart shows the pattern, and the spread shows the next step inside it.",
+        ],
+      },
+    ],
+  },
+  {
+    slug: "topic-spreads-love-career-week",
+    title: "Love, career, and weekly spreads: which one fits your question?",
+    description:
+      "Sortes topic spreads use three cards each. Love Insight, Career Path, and Weekly Outlook, and how to pick the right one for your question.",
+    sections: [
+      {
+        heading: "Love Insight: you, them, and the connection",
+        paragraphs: [
+          "Love Insight draws three cards: You, Them, and Connection. It is for a relationship question where two people are involved, not for a question about one person alone. Ask about the relationship itself, for example what needs attention between you, rather than asking what the other person secretly thinks, which tarot cannot answer for you.",
+        ],
+      },
+      {
+        heading: "Career Path: current, obstacle, and next step",
+        paragraphs: [
+          "Career Path draws three cards: Current, Obstacle, and Next Step. It is for a work question where you need a practical next move, not a prediction about a job offer. Ask about the step in front of you, for example what is blocking a project, rather than asking whether you will be promoted, which no spread can guarantee.",
+        ],
+      },
+      {
+        heading: "Weekly Outlook: focus, challenge, and opportunity",
+        paragraphs: [
+          "Weekly Outlook draws three cards: Focus, Challenge, and Opportunity. It is for the week ahead as a whole, not for a single decision. Use it at the start of a week to choose where to put your attention, and read it as reflection, not as a forecast of what will happen on a given day.",
+        ],
+      },
+      {
+        heading: "Pricing, same as every spread",
+        paragraphs: [
+          "Topic spreads cost one credit each, like every full reading in Sortes, after your first free Quick Insight reading. The daily card and the deck browser stay free, and a spread never asks for a card payment directly: credits are bought in packs on the credits page.",
         ],
       },
     ],
