@@ -339,6 +339,119 @@ export function calculateWestern(input: {
   };
 }
 
+// M3.1: transit-to-natal aspects. Transit positions are computed
+// with calculateWestern at latitude 0, longitude 0, 12:00 local time,
+// which at Greenwich is 12:00 UTC: a stated, geocentric noon-UTC
+// reference. Houses and angles are never used here, only planet
+// longitudes, so the reference location barely matters (the Moon's
+// topocentric shift is about a degree at most). The Moon moves about
+// 13 degrees a day, so same-day Moon aspects are approximate by
+// nature; the UI must say so. Aspect orbs are published here, not
+// hidden: conjunction 6, sextile 4, square 5, trine 5, opposition 6.
+// A pair matches at most one aspect by geometry (angles are at least
+// 30 degrees apart, orbs sum to at most 11).
+export interface TransitPlanet {
+  name: string;
+  longitude: number;
+  sign: string;
+  retrograde: boolean;
+}
+export interface TransitAspect {
+  transitPlanet: string;
+  natalPlanet: string;
+  aspect: string;
+  orb: number;
+  state: "applying" | "separating" | "steady";
+}
+export interface TransitResult {
+  date: string;
+  transitPlanets: TransitPlanet[];
+  moonSign: string;
+  aspects: TransitAspect[];
+}
+
+const TRANSIT_ASPECTS = [
+  { name: "conjunction", angle: 0, orb: 6 },
+  { name: "sextile", angle: 60, orb: 4 },
+  { name: "square", angle: 90, orb: 5 },
+  { name: "trine", angle: 120, orb: 5 },
+  { name: "opposition", angle: 180, orb: 6 },
+] as const;
+
+function norm360(x: number): number {
+  return ((x % 360) + 360) % 360;
+}
+
+function angularSeparation(a: number, b: number): number {
+  const diff = Math.abs(norm360(a) - norm360(b));
+  return Math.min(diff, 360 - diff);
+}
+
+export function computeTransits(
+  natalPlanets: Array<{ name: string; longitude: number }>,
+  date: string
+): TransitResult {
+  if (!Array.isArray(natalPlanets) || natalPlanets.length === 0) {
+    throw new Error("natalPlanets must be a non-empty array");
+  }
+  for (const p of natalPlanets) {
+    if (!p || typeof p.name !== "string" || !p.name || typeof p.longitude !== "number" || !Number.isFinite(p.longitude)) {
+      throw new Error("each natal planet needs a name and a finite longitude");
+    }
+  }
+  const { y, m, d } = parseDate(date);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const atDate = (yy: number, mm: number, dd: number) =>
+    calculateWestern({ date: `${yy}-${pad(mm)}-${pad(dd)}`, hour: 12, minute: 0, latitude: 0, longitude: 0 });
+  const now = atDate(y, m, d);
+  const next = new Date(Date.UTC(y, m - 1, d));
+  next.setUTCDate(next.getUTCDate() + 1);
+  const later = atDate(next.getUTCFullYear(), next.getUTCMonth() + 1, next.getUTCDate());
+  const laterByName = new Map(later.planets.map((p) => [p.name, p.longitude]));
+
+  const aspects: TransitAspect[] = [];
+  for (const t of now.planets) {
+    const laterLon = laterByName.get(t.name);
+    for (const n of natalPlanets) {
+      const sep = angularSeparation(t.longitude, n.longitude);
+      for (const asp of TRANSIT_ASPECTS) {
+        const orb = Math.abs(sep - asp.angle);
+        if (orb > asp.orb) continue;
+        let state: TransitAspect["state"] = "steady";
+        if (typeof laterLon === "number") {
+          const sepLater = angularSeparation(laterLon, n.longitude);
+          const orbLater = Math.abs(sepLater - asp.angle);
+          if (orbLater < orb - 0.001) state = "applying";
+          else if (orbLater > orb + 0.001) state = "separating";
+        }
+        aspects.push({
+          transitPlanet: t.name,
+          natalPlanet: n.name,
+          aspect: asp.name,
+          orb: Math.round(orb * 100) / 100,
+          state,
+        });
+      }
+    }
+  }
+  aspects.sort((a, b) => a.orb - b.orb);
+  // The Moon is always among the ten bodies; a missing Moon means the
+  // engine itself failed, so fail loudly instead of naming a wrong sign.
+  const moon = now.planets.find((p) => p.name === "Moon");
+  if (!moon) throw new Error("transit calculation returned no Moon");
+  return {
+    date,
+    transitPlanets: now.planets.map((p) => ({
+      name: p.name,
+      longitude: p.longitude,
+      sign: p.sign,
+      retrograde: p.retrograde,
+    })),
+    moonSign: moon.sign,
+    aspects,
+  };
+}
+
 export function calculateChart(input: ChartInput): ZiweiResult | WesternResult {
   if (input.system === "ziwei") {
     return calculateZiwei({ date: input.date, hour: input.hour, minute: input.minute, gender: input.gender, longitude: input.longitude });

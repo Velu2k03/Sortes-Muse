@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { dailyHoroscope, weeklyHoroscope, SUN_SIGNS, type SunSign } from "@/lib/daily";
 import Icon from "@/components/Icon";
 import ThemedDatePicker from "@/components/ThemedDatePicker";
@@ -110,6 +111,14 @@ export default function HoroscopePage() {
         </div>
         <p className="mt-4 text-sm text-cream/60">
           General sun-sign reflection only. For a personal reading, draw a card or cast a birth chart.
+        </p>
+        <p className="mt-3 text-sm text-cream/75">
+          Want transits computed from your own chart?{" "}
+          <Link href="/charts" className="font-semibold text-goldbright underline">
+            Cast a Western chart
+          </Link>{" "}
+          and open Today&apos;s transits to this chart under the wheel. That view uses real
+          planetary positions matched to your natal planets; this page does not.
         </p>
       </article>
     </div>

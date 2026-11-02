@@ -4,7 +4,7 @@
 // Privacy: test birth data below is used only in-memory for this check;
 // nothing here is stored, sent to AI, or written to a database.
 import assert from "node:assert";
-import { calculateZiwei, calculateWestern, timeIndexForHour, applyLongitudeCorrection } from "../src/lib/charts.ts";
+import { calculateZiwei, calculateWestern, computeTransits, timeIndexForHour, applyLongitudeCorrection } from "../src/lib/charts.ts";
 import { calculateVedic } from "../src/lib/vedic.ts";
 import { SQUARE_CELLS, squareCellForPalaceIndex } from "../src/lib/ziwei-square.ts";
 import { dailyHoroscope } from "../src/lib/daily.ts";
@@ -101,6 +101,32 @@ assert.throws(
   /birth hour/,
   "ziwei unknown time must throw asking for a birth hour"
 );
+
+// M3.1: transit-to-natal honesty tests. The natal chart is the golden
+// Western case (1990-01-01, Manila); transits are computed for
+// 2026-11-03, a date safely inside Scorpio season for the Sun.
+const natalA = westA.planets.map((p) => ({ name: p.name, longitude: p.longitude }));
+const trA = computeTransits(natalA, "2026-11-03");
+const trSun = trA.transitPlanets.find((p) => p.name === "Sun");
+assert.equal(trSun.sign, "Scorpio", "transit Sun on 2026-11-03 must be Scorpio");
+assert.ok(trSun.longitude >= 211 && trSun.longitude <= 241, "transit Sun longitude must sit inside Scorpio");
+assert.ok(trA.aspects.length > 0, "a real date must yield at least one transit aspect in orb");
+const ORB_MAX = { conjunction: 6, sextile: 4, square: 5, trine: 5, opposition: 6 };
+assert.ok(trA.aspects.every((a) => a.orb <= ORB_MAX[a.aspect]), "every transit aspect must respect its published orb");
+assert.ok(trA.aspects.every((a) => ["applying", "separating", "steady"].includes(a.state)), "every transit aspect needs a motion state");
+const seenPairs = new Set(trA.aspects.map((a) => `${a.transitPlanet}|${a.natalPlanet}|${a.aspect}`));
+assert.equal(seenPairs.size, trA.aspects.length, "no transit pair may list the same aspect twice");
+assert.ok(trA.aspects.every((a) => a.orb >= 0), "transit orbs must be non-negative");
+// The Moon crosses a sign in about 2.3 days, so any 4-day window must
+// show at least two distinct Moon signs. This is the horoscope
+// honesty test: transit output must change with the date.
+const moonSigns = ["2026-11-03", "2026-11-04", "2026-11-05", "2026-11-06"].map(
+  (d) => computeTransits(natalA, d).moonSign
+);
+assert.ok(new Set(moonSigns).size >= 2, "transit Moon sign must change within a 4-day window");
+assert.throws(() => computeTransits(natalA, "2026-13-40"), /real calendar date/, "transit with an invalid date must throw");
+assert.throws(() => computeTransits([], "2026-11-03"), /non-empty/, "transit with no natal planets must throw");
+console.log("transits 2026-11-03:", "Moon", trA.moonSign, "| aspects:", trA.aspects.length, "| tightest:", trA.aspects[0].transitPlanet, trA.aspects[0].aspect, trA.aspects[0].natalPlanet, `orb ${trA.aspects[0].orb}`, trA.aspects[0].state, "| Moon signs 11-03..06:", moonSigns.join(", "));
 
 // Ziwei ring geometry: 12 sectors, 30 degrees each, clockwise from the top.
 // 0 degrees is the top of the circle, 90 degrees is the right.

@@ -10,6 +10,7 @@ import ThemedDatePicker from "@/components/ThemedDatePicker";
 import CardBurst from "@/components/CardBurst";
 import ZiweiChartBoard, { type ZiweiView } from "@/components/ZiweiChartBoard";
 import WesternWheel from "@/components/WesternWheel";
+import WesternTransits from "@/components/WesternTransits";
 import VedicChart from "@/components/VedicChart";
 import { useAuth } from "@/components/AuthProvider";
 import Icon from "@/components/Icon";
@@ -746,6 +747,13 @@ export default function ChartsClient() {
               <WesternWheel key={JSON.stringify(result)} result={result} />
             )}
           </div>
+
+          {/* M3.1: transit-to-natal horoscope, Western charts only.
+              The natal planets come from the chart just calculated
+              in-memory; nothing new is stored for this. */}
+          {result.system === "western" && (
+            <WesternTransits planets={result.planets} unknownTime={result.unknownTime} />
+          )}
 
           <section className="mt-10 scroll-mt-24 rounded-3xl border border-gold/20 bg-panel/50 p-6" aria-label="Chart legend">
             <h3 className="font-display text-2xl text-goldbright">{result.system === "ziwei" && ziweiLang === "zh" ? "如何读这张星盘" : "How to read this chart"}</h3>
