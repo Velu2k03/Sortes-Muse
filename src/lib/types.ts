@@ -29,7 +29,6 @@ export interface Spread {
   slug: string;
   name: string;
   cards: number;
-  price: number;
   description: string;
   positions: SpreadPosition[];
   locked: boolean;

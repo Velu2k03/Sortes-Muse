@@ -50,7 +50,8 @@ export default function AboutPage() {
           <p className="mt-3">
             Guest daily cards, credit balance, and reading history live in your
             browser until you create an account. Raw tarot intake data is
-            deleted after 30 days. For charts, only calculated positions,
+            never stored on a server; only the question and the finished
+            reading are saved in your history. For charts, only calculated positions,
             signs, and palaces are stored, never raw birth date, time, or
             place, and raw birth data is never sent to an AI prompt. Full
             details are in the Privacy Policy.

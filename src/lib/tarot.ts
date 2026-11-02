@@ -8,7 +8,6 @@ export const SPREADS: Spread[] = [
     slug: "quick-insight",
     name: "Quick Insight",
     cards: 1,
-    price: 0.99,
     description:
       "One card, one clear mirror. Your first full reading is free, no card required.",
     positions: [
@@ -24,7 +23,6 @@ export const SPREADS: Spread[] = [
     slug: "past-present-future",
     name: "Past / Present / Future",
     cards: 3,
-    price: 1.99,
     description:
       "Three cards tracing where you have been, where you stand, and where the path leads.",
     positions: [
@@ -38,7 +36,6 @@ export const SPREADS: Spread[] = [
     slug: "love-insight",
     name: "Love Insight",
     cards: 3,
-    price: 1.99,
     description:
       "Three cards for a relationship question. You, the other person, and what connects you.",
     positions: [
@@ -52,7 +49,6 @@ export const SPREADS: Spread[] = [
     slug: "career-path",
     name: "Career Path",
     cards: 3,
-    price: 1.99,
     description:
       "Three cards for a work question. Where you stand, what is in the way, and the next step.",
     positions: [
@@ -66,7 +62,6 @@ export const SPREADS: Spread[] = [
     slug: "weekly-outlook",
     name: "Weekly Outlook",
     cards: 3,
-    price: 1.99,
     description:
       "Three cards for the week ahead. A focus, a challenge, and an opportunity.",
     positions: [
@@ -80,7 +75,6 @@ export const SPREADS: Spread[] = [
     slug: "celtic-cross",
     name: "Celtic Cross",
     cards: 10,
-    price: 2.99,
     description:
       "The classic ten-card spread. The full landscape: forces, hopes, and outcome.",
     positions: [

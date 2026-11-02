@@ -141,8 +141,8 @@ export default function ReadingDetail({ id }: { id: string }) {
         <div className="rule-gold w-24" />
         <p className="font-display text-2xl text-cream">Still turning it over?</p>
         <p className="max-w-md text-sm text-cream/75">
-          Ask a follow-up and draw a clarifying reading on the same question,
-          with your story carried forward.
+          Start a new clarifying reading on the same question. It draws
+          fresh cards; your previous reading stays in your history.
         </p>
         <Link
           href="/spreads/quick-insight"

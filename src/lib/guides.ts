@@ -65,7 +65,7 @@ export const GUIDES: Guide[] = [
         heading: "One question, one story",
         paragraphs: [
           "Sortes asks for one question and a short story behind it, plus a category such as love, career, finances, academics, or health. The story matters more than the wording. A question with context, such as what has already happened and what worries you most, lets the reading speak to your actual situation instead of a generic theme.",
-          "Keep the story short and honest. You do not need to share names, dates, or private details. A first name and the shape of the situation are enough, and raw intake data is deleted after 30 days.",
+          "Keep the story short and honest. You do not need to share names, dates, or private details. A first name and the shape of the situation are enough, and raw intake data is never stored on a server.",
         ],
       },
       {
@@ -135,8 +135,8 @@ export const GUIDES: Guide[] = [
       {
         heading: "Privacy, in one paragraph",
         paragraphs: [
-          "For charts, Sortes calculates positions and stores only those positions, signs, and palaces. It does not store your raw birth date, time, or place in the database, and it never sends raw birth data to an AI prompt. The AI interpretation receives only positions, signs, houses, and stars, plus your question or focus. For tarot, raw intake data is deleted after 30 days.",
-          "A chart calculation also uses a longitude correction, not a full timezone database: the correction is four minutes per degree between your longitude and the nearest fifteen-degree meridian, so a birth time near a double-hour or house boundary may fall on either side. That limit is shown on the charts page itself.",
+          "For charts, Sortes calculates positions and stores only those positions, signs, and palaces. It does not store your raw birth date, time, or place in the database, and it never sends raw birth data to an AI prompt. The AI interpretation receives only positions, signs, houses, and stars, plus your question or focus. For tarot, raw intake data is never stored on a server; only the question and the finished reading are saved in history.",
+          "Time conversion differs by system: Western uses a timezone database with DST rules for the birthplace on the birth date, Vedic converts by longitude divided by 15 only, and Ziwei applies a longitude correction of four minutes per degree from the nearest fifteen-degree meridian. A birth time near a double-hour or house boundary may fall on either side under the longitude-only systems. Those limits are shown on the charts page itself.",
         ],
       },
       {

@@ -374,14 +374,14 @@ export default function ChartsClient() {
             first-time user had to scroll to the system tabs and the
             Use example button. It is now collapsed by default; the
             full text, including the timezone and privacy notes, is
-            still one tap away, and the timezone disclosure below the
-            form is untouched. */}
+            still one tap away, and the per-system timezone disclosure
+            is below the form. */}
         <details className="mx-auto mt-4 max-w-xl rounded-2xl border border-gold/20 bg-panel/50 p-4 text-left text-sm leading-relaxed text-cream/75">
           <summary className="cursor-pointer font-semibold text-goldbright">How each system uses your inputs (tap for details)</summary>
           <ul className="mt-2 list-disc space-y-1 pl-5">
             <li>Gender: Ziwei only, palace placement depends on it.</li>
             <li>Birthplace: all three systems. Western and Vedic need it for Rising and houses; Ziwei needs longitude for its correction.</li>
-            <li>Birth time: clock time at the birthplace. No timezone database, no DST, so a time near a boundary may differ by one division. Unknown time is calculated at noon, Rising and houses approximate.</li>
+            <li>Birth time: clock time at the birthplace. Western converts it with a real timezone database, including DST rules for the birthplace on the birth date. Vedic and Ziwei use longitude only, so a time near a boundary may differ by one division. Unknown time is calculated at noon, Rising and houses approximate.</li>
             <li>Calculation is free and unsaved. Interpretation is separate: 1 credit, first per system free.</li>
           </ul>
         </details>
@@ -628,9 +628,9 @@ export default function ChartsClient() {
           </p>
         )}
         <details className="mt-5 rounded-xl border border-gold/25 bg-panel/50 px-4 py-3 text-sm leading-relaxed text-cream/80">
-          <summary className="cursor-pointer font-semibold text-goldbright">Before you calculate, please note: clock time at the birthplace, longitude-only conversion (tap for details)</summary>
+          <summary className="cursor-pointer font-semibold text-goldbright">Before you calculate, please note: how birth time is converted (tap for details)</summary>
           <p className="mt-2">
-            Birth time is clock time at the birthplace. Conversion is longitude-only, no timezone database, no DST, no equation of time, so a time near a boundary may differ by one division. No timezone lookup is added.
+            Birth time is clock time at the birthplace. Western converts it to UTC with a timezone database that includes DST rules for the birthplace on the birth date. Vedic converts it to UT by longitude divided by 15 only, with no timezone database and no DST. Ziwei applies a longitude correction only, 4 minutes per degree from the nearest 15 degree meridian, with no equation of time and no DST. A time near a boundary may differ by one division under the longitude-only systems.
           </p>
         </details>
         <div className="mt-6 flex flex-wrap gap-3">

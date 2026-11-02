@@ -209,7 +209,13 @@ console.log("charts-check: all assertions passed");
   assert.ok(charts.includes('setShowGlosses(lang === "zh")'), "glosses must default off in English and on in Chinese");
   assert.ok(charts.includes("Show Chinese glosses"), "glosses toggle label must exist");
   assert.ok(charts.includes("<details") && charts.includes("Before you calculate, please note"), "timezone disclosure must be collapsible, not a long block above Calculate");
-  assert.ok(charts.includes("No timezone lookup is added"), "collapsed disclosure must keep the no-timezone-DB, no-DST wording");
+  // M0.2: the old blanket "no timezone database, no DST" wording was
+  // false for Western (its library converts with a real timezone
+  // database including DST). The disclosure must now state the
+  // per-system truth instead of freezing the old wording.
+  assert.ok(charts.includes("timezone database that includes DST rules"), "collapsed disclosure must state Western timezone database plus DST");
+  assert.ok(charts.includes("longitude divided by 15 only"), "collapsed disclosure must state Vedic longitude-only conversion");
+  assert.ok(charts.includes("longitude correction only"), "collapsed disclosure must state Ziwei longitude-only correction");
   assert.ok(charts.includes("Share chart as image"), "Share button must exist on results, not only after interpretation");
   // Share button must appear before the chart board (result level), not only in the interpretation section.
   const shareIdx = charts.indexOf("Share chart as image");

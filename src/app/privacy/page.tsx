@@ -95,7 +95,7 @@ export default function PrivacyPage() {
         <section>
           <h2 className="font-display text-2xl text-goldbright">5. Data retention and deletion</h2>
           <ul className="mt-2 list-disc space-y-2 pl-5">
-            <li>Raw intake form data: deleted automatically after 30 days.</li>
+            <li>Raw intake form data: never stored on a server. Only the question and the finished reading are saved in your history.</li>
             <li>Generated readings: kept until you delete them or your account.</li>
             <li>Purchase records: kept as required for accounting and tax law.</li>
             <li>

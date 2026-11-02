@@ -27,7 +27,7 @@ const FAQS = [
   },
   {
     q: "How long is tarot intake data kept?",
-    a: "Raw tarot intake data is deleted after 30 days. Guest daily cards, credit balance, and reading history live in your browser until you create an account, and then they move into your account automatically.",
+    a: "Raw tarot intake data is never stored on a server. Guest daily cards, credit balance, and reading history live in your browser until you create an account, and then they move into your account automatically.",
   },
   {
     q: "How do I sign in?",

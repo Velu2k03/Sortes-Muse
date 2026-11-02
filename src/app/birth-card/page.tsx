@@ -38,7 +38,8 @@ export default function BirthCardPage() {
         <p className="mx-auto mt-4 max-w-xl text-cream/75">
           One Major Arcana card from your birth date, calculated here in your
           browser. The date is never stored, never sent to a server, and never
-          sent to AI. A reflection tool, not a prediction.
+          sent to AI. A reflection tool, not a prediction. This is a playful
+          numerology mapping, not astrology and not a chart.
         </p>
       </div>
       <div className="mx-auto mt-8 rounded-3xl border border-gold/25 bg-panel/70 p-6">

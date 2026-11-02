@@ -9,6 +9,11 @@ export const dynamic = "force-dynamic";
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 const TIMEOUT_MS = 25000;
+// M0.2 health guardrail parity: the chart route already appends this
+// server-side when missing; the tarot route now does the same, so the
+// closing sentence does not depend on the model obeying the prompt.
+const HEALTH_CLOSE =
+  "This reflection is not medical advice. Please speak with a licensed professional about any health concern.";
 
 // Simple in-memory rate limit: 20 generations per IP per hour.
 const hits = new Map<string, { count: number; resetAt: number }>();
@@ -231,6 +236,13 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // Enforce the health closing sentence server-side instead of trusting
+  // the model to include it.
+  const finalText =
+    isHealth && !generated.text.includes(HEALTH_CLOSE)
+      ? `${generated.text}\n\n${HEALTH_CLOSE}`
+      : generated.text;
+
   // Spend only after a real generation, so a failed generation can never
   // cost a credit and no refund path is needed. The spend is atomic
   // (credits >= 1 checked in the update); if it fails, the text is
@@ -245,7 +257,7 @@ export async function POST(req: NextRequest) {
     }
     const user = await getUserById(session.userId);
     return NextResponse.json({
-      interpretation: generated.text,
+      interpretation: finalText,
       model: generated.model,
       fallback: false,
       credits: user?.credits ?? 0,
@@ -253,7 +265,7 @@ export async function POST(req: NextRequest) {
   }
 
   return NextResponse.json({
-    interpretation: generated.text,
+    interpretation: finalText,
     model: generated.model,
     fallback: false,
   });
