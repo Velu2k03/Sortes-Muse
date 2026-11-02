@@ -320,7 +320,7 @@ console.log("charts-check: all assertions passed");
   assert.ok(wheel.includes("Read them here too, in longitude order"), "staggered list intro must say 'here too', not 'instead of from the wheel'");
   assert.ok(!wheel.includes("instead of from the wheel"), "old contradictory list intro must be gone");
   const account = fs.readFileSync("src/app/account/AccountClient.tsx", "utf8");
-  assert.ok(account.includes("6-digit code will be sent"), "account page must preview the code step before sending a code");
+  assert.ok(account.includes("{codeLength}-digit code will be sent"), "account page must preview the code step before sending a code");
   assert.ok(account.includes("Code field preview"), "account page must show the code field format preview");
   const auth = fs.readFileSync("src/lib/auth.ts", "utf8");
   assert.ok(auth.includes('padStart(6, "0")'), "code length preview must match auth.ts: 6 digits");
