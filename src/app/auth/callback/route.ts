@@ -19,7 +19,10 @@ export const dynamic = "force-dynamic";
  * instead of a broken page, and can retry with the code flow.
  */
 export async function GET(req: NextRequest) {
-  const base = SITE_URL.replace(/\/$/, "");
+  // Use the request origin, not the hardcoded canonical domain, so the
+  // session cookie is set on the same domain the visitor started on.
+  // Falls back to SITE_URL only if the request has no origin.
+  const base = req.nextUrl.origin || SITE_URL.replace(/\/$/, "");
   const fail = NextResponse.redirect(`${base}/account?auth=error`);
   try {
     if (!authConfigured()) return fail;
