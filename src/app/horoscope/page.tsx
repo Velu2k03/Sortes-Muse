@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { dailyHoroscope, SUN_SIGNS, type SunSign } from "@/lib/daily";
+import { dailyHoroscope, weeklyHoroscope, SUN_SIGNS, type SunSign } from "@/lib/daily";
 import Icon from "@/components/Icon";
 
 // Daily sun-sign horoscope. Text is written in-house for Sortes, dated,
@@ -17,7 +17,9 @@ export default function HoroscopePage() {
   const todayKey = MODULE_TODAY_KEY;
   const [sign, setSign] = useState<SunSign>("Aries");
   const [date, setDate] = useState(todayKey);
+  const [view, setView] = useState<"daily" | "weekly">("daily");
   const h = dailyHoroscope(sign, date || todayKey);
+  const w = weeklyHoroscope(sign, date || todayKey);
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6">
@@ -60,18 +62,31 @@ export default function HoroscopePage() {
           />
         </div>
       </div>
+      <div className="mt-8 flex justify-center gap-1 rounded-xl border border-gold/25 bg-panel/70 p-1">
+        {(["daily", "weekly"] as const).map((v) => (
+          <button
+            key={v}
+            type="button"
+            onClick={() => setView(v)}
+            aria-pressed={view === v}
+            className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${view === v ? "bg-gold/20 text-goldbright" : "text-mist hover:text-cream"}`}
+          >
+            {v === "daily" ? "Daily" : "Weekly"}
+          </button>
+        ))}
+      </div>
       <article className="mt-6 rounded-3xl border border-gold/25 bg-panel/70 p-6">
         <p className="text-xs uppercase tracking-[0.25em] text-gold">
-          {h.sign} · {h.date}
+          {view === "daily" ? `${h.sign} · ${h.date}` : `${w.sign} · Week starting ${w.weekStart}`}
         </p>
-        <p className="mt-3 text-lg leading-relaxed text-cream">{h.theme}</p>
-        <p className="mt-3 leading-relaxed text-cream/85">{h.reflection}</p>
+        <p className="mt-3 text-lg leading-relaxed text-cream">{view === "daily" ? h.theme : w.theme}</p>
+        <p className="mt-3 leading-relaxed text-cream/85">{view === "daily" ? h.reflection : w.reflection}</p>
         <div className="mt-4 flex flex-wrap gap-x-6 gap-y-1 text-sm text-cream/80">
           <span>
-            Lucky colour: <strong className="text-cream">{h.luckyColour}</strong>
+            Lucky colour: <strong className="text-cream">{view === "daily" ? h.luckyColour : w.luckyColour}</strong>
           </span>
           <span>
-            Lucky number: <strong className="num text-cream">{h.luckyNumber}</strong>
+            Lucky number: <strong className="num text-cream">{view === "daily" ? h.luckyNumber : w.luckyNumber}</strong>
           </span>
         </div>
         <p className="mt-4 text-sm text-cream/60">
