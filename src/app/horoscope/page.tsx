@@ -62,14 +62,17 @@ export default function HoroscopePage() {
           />
         </div>
       </div>
-      <div className="mt-8 flex justify-center gap-1 rounded-xl border border-gold/25 bg-panel/70 p-1">
+      <div
+        className="rubber-segment mt-8 mx-auto flex w-full max-w-xs justify-center gap-1 rounded-xl border border-gold/25 bg-panel/70 p-1"
+        data-active={view}
+      >
         {(["daily", "weekly"] as const).map((v) => (
           <button
             key={v}
             type="button"
             onClick={() => setView(v)}
             aria-pressed={view === v}
-            className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${view === v ? "bg-gold/20 text-goldbright" : "text-mist hover:text-cream"}`}
+            className={`rubber-segment__button relative z-10 flex-1 rounded-lg px-4 py-2 text-sm font-semibold transition ${view === v ? "text-goldbright" : "text-mist hover:text-cream"}`}
           >
             {v === "daily" ? "Daily" : "Weekly"}
           </button>

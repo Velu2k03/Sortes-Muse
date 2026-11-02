@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import ReadingWait, { PROCESSING_LINES } from "@/components/ReadingWait";
 import { getSpread, drawCards } from "@/lib/tarot";
 import { getCard } from "@/lib/cards";
 import {
@@ -20,13 +21,6 @@ import { trackReadingStarted, trackReadingCompleted } from "@/components/Analyti
 
 type Step = "category" | "form" | "confirm" | "processing";
 
-const PROCESSING_LINES = [
-  "Casting the lots…",
-  "Reading your story…",
-  "Weaving the cards together…",
-  "Almost there…",
-];
-
 export default function IntakeFlow({ slug }: { slug: string }) {
   const router = useRouter();
   const spread = useMemo(() => getSpread(slug), [slug]);
@@ -38,6 +32,7 @@ export default function IntakeFlow({ slug }: { slug: string }) {
   const [question, setQuestion] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [processingLine, setProcessingLine] = useState(0);
+  const [processingComplete, setProcessingComplete] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const category = categoryKey ? getCategory(categoryKey) : null;
@@ -67,6 +62,8 @@ export default function IntakeFlow({ slug }: { slug: string }) {
       return;
     }
     setBusy(true);
+    setProcessingLine(0);
+    setProcessingComplete(false);
     const ok = await spend(1);
     if (!ok) {
       setError("You are out of credits. Please top up to continue.");
@@ -78,7 +75,7 @@ export default function IntakeFlow({ slug }: { slug: string }) {
     setError(null);
 
     const lineTimer = setInterval(
-      () => setProcessingLine((l) => (l + 1) % PROCESSING_LINES.length),
+      () => setProcessingLine((line) => Math.min(line + 1, PROCESSING_LINES.length - 1)),
       2600
     );
 
@@ -135,6 +132,8 @@ export default function IntakeFlow({ slug }: { slug: string }) {
       setCachedInterpretation(reading.id, interpretation);
       trackReadingCompleted(`${spread.slug}-personalized`, true);
       clearInterval(lineTimer);
+      setProcessingComplete(true);
+      await new Promise((resolve) => window.setTimeout(resolve, 500));
       router.push(`/reading/${reading.id}`);
     } catch {
       clearInterval(lineTimer);
@@ -387,37 +386,15 @@ export default function IntakeFlow({ slug }: { slug: string }) {
         )}
 
         {step === "processing" && (
-          <motion.div
+          <div
             key="processing"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
             className="flex min-h-[55vh] flex-col items-center justify-center text-center"
-            aria-live="polite"
           >
-            <motion.div
-              animate={{ scale: [1, 1.25, 1], opacity: [0.7, 1, 0.7] }}
-              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-              className="flex h-36 w-36 items-center justify-center rounded-full border border-gold/50 bg-gold/10"
-            >
-              <span className="font-display text-6xl text-gold">✦</span>
-            </motion.div>
-            <AnimatePresence mode="wait">
-              <motion.p
-                key={processingLine}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                className="mt-10 font-display text-3xl italic text-goldbright"
-              >
-                {PROCESSING_LINES[processingLine]}
-              </motion.p>
-            </AnimatePresence>
-            <p className="mt-4 max-w-sm text-sm text-mist">
-              Breathe slowly. Your cards are being drawn and your story woven
-              into their meanings. This usually takes a few seconds.
-            </p>
-          </motion.div>
+            <ReadingWait
+              activeStep={processingLine}
+              complete={processingComplete}
+            />
+          </div>
         )}
       </AnimatePresence>
     </div>
@@ -441,7 +418,7 @@ function StepDots({ step }: { step: Step }) {
           >
             {i + 1}
           </div>
-          <span className={`text-xs ${i <= current ? "text-goldbright" : "text-mist"}`}>
+          <span className={`hidden text-xs sm:inline ${i <= current ? "text-goldbright" : "text-mist"}`}>
             {labels[i]}
           </span>
           {i < order.length - 1 && <div className="mx-1 h-px w-6 bg-gold/30" />}
