@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
+import { getSupabaseBrowser } from "@/lib/supabase-browser";
+import { SITE_URL } from "@/lib/site";
 
 interface ServerTx {
   id: string;
@@ -29,6 +31,9 @@ export default function AccountPage() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [pwNotice, setPwNotice] = useState<string | null>(null);
   const [transactions, setTransactions] = useState<ServerTx[] | null>(null);
+  // Supabase sends an 8 digit code in production; the local fallback
+  // sends a 6 digit code. The UI follows whichever sender is active.
+  const codeLength = getSupabaseBrowser() ? 8 : 6;
 
   useEffect(() => {
     if (user) {
@@ -118,6 +123,19 @@ export default function AccountPage() {
     setError(null);
     setDevCode(null);
     try {
+      // Supabase first in production: it sends the 8 digit code and
+      // the magic link itself, so no separate email sender is needed.
+      // Local dev without Supabase falls back to the old local code.
+      const supabase = getSupabaseBrowser();
+      if (supabase) {
+        const { error } = await supabase.auth.signInWithOtp({
+          email: email.trim().toLowerCase(),
+          options: { emailRedirectTo: `${SITE_URL.replace(/\/$/, "")}/auth/callback` },
+        });
+        if (error) throw new Error(error.message);
+        setStep("code");
+        return;
+      }
       const res = await fetch("/api/auth/request-code", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -139,6 +157,26 @@ export default function AccountPage() {
     setBusy(true);
     setError(null);
     try {
+      const supabase = getSupabaseBrowser();
+      if (supabase) {
+        const { data, error } = await supabase.auth.verifyOtp({
+          email: email.trim().toLowerCase(),
+          token: code.trim(),
+          type: "email",
+        });
+        if (error) throw new Error(error.message);
+        const session = data.session;
+        if (!session) throw new Error("No session was created. Please request a new code.");
+        const res = await fetch("/api/auth/supabase-session", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ accessToken: session.access_token }),
+        });
+        const bridged = await parseJson(res);
+        if (!res.ok) throw new Error(bridged.error ?? "Something went wrong.");
+        await afterSignIn();
+        return;
+      }
       const res = await fetch("/api/auth/verify-code", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -291,12 +329,12 @@ export default function AccountPage() {
               </div>
               <div className="rounded-xl border border-gold/25 bg-panel/50 p-4">
                 <p className="text-sm text-cream/80">
-                  Next step: a 6-digit code will be sent to this email, and you will enter it in a 6-digit field on the
+                  Next step: a {codeLength}-digit code will be sent to this email, and you will enter it in a {codeLength}-digit field on the
                   next step. Nothing is sent until you tap Send sign-in code below.
                 </p>
                 <p className="mt-3 text-xs uppercase tracking-[0.2em] text-mist">Code field preview</p>
                 <div className="mt-2 flex gap-2" aria-hidden="true">
-                  {[0, 1, 2, 3, 4, 5].map((i) => (
+                  {Array.from({ length: codeLength }, (_, i) => i).map((i) => (
                     <span key={i} className="flex h-11 w-10 items-center justify-center rounded-lg border border-gold/25 bg-panel/70 text-lg text-mist">
                       ·
                     </span>
@@ -314,7 +352,7 @@ export default function AccountPage() {
           ) : (
             <form onSubmit={verifyCode} className="mt-6 space-y-4">
               <p className="text-sm text-cream/75">
-                We sent a 6-digit code to <span className="text-goldbright">{email}</span>.
+                We sent a {codeLength}-digit code to <span className="text-goldbright">{email}</span>.
               </p>
               <div>
                 <label htmlFor="acct-code" className="mb-1.5 block text-sm font-medium text-cream">
@@ -325,11 +363,11 @@ export default function AccountPage() {
                   type="text"
                   inputMode="numeric"
                   required
-                  pattern="\d{6}"
-                  maxLength={6}
+                  pattern={codeLength === 8 ? "\d{8}" : "\d{6}"}
+                  maxLength={codeLength}
                   value={code}
                   onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-                  placeholder="123456"
+                  placeholder={codeLength === 8 ? "12345678" : "123456"}
                   className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-center text-2xl tracking-[0.5em] text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none"
                 />
               </div>
@@ -341,7 +379,7 @@ export default function AccountPage() {
               )}
               <button
                 type="submit"
-                disabled={busy || code.length !== 6}
+                disabled={busy || code.length !== codeLength}
                 className="btn-gold w-full rounded-xl px-6 py-3.5 font-bold disabled:opacity-50"
               >
                 {busy ? "Verifying…" : "Sign in"}

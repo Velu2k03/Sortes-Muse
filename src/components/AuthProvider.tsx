@@ -15,6 +15,7 @@ import {
   saveReading,
 } from "@/lib/storage";
 import type { Reading } from "@/lib/types";
+import { getSupabaseBrowser } from "@/lib/supabase-browser";
 
 export interface AuthUser {
   id: string;
@@ -153,6 +154,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = useCallback(async () => {
     await fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
+    // Best effort: clear the Supabase session too, so it does not
+    // silently re-establish a Sortes session on the next visit.
+    await getSupabaseBrowser()?.auth.signOut().catch(() => {});
     localStorage.removeItem(MIGRATED_KEY);
     setUser(null);
     setCredits(getCredits());

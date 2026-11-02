@@ -7,7 +7,15 @@ const COOKIE_NAME = "sortes_session";
 const SESSION_DAYS = 30;
 
 function secret(): Uint8Array {
-  const s = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET;
+  // Server-only fallback, in order: a dedicated auth secret, then the
+  // Supabase JWT secret already present on the server. The Supabase
+  // value is never sent to the browser and never logged; it is only
+  // used here to sign Sortes' own session cookie, so password sign-in
+  // and the Supabase bridge work in production without a new secret.
+  const s =
+    process.env.AUTH_SECRET ||
+    process.env.NEXTAUTH_SECRET ||
+    process.env.SUPABASE_JWT_SECRET;
   if (!s) {
     if (process.env.NODE_ENV === "production") {
       throw new Error("AUTH_SECRET is required in production.");
@@ -65,7 +73,12 @@ export async function getSession(): Promise<{ userId: string; email: string } | 
  * instead of creating an account and then returning a 500 with no
  * session (which made retry look like a 409 duplicate). */
 export function authConfigured(): boolean {
-  return Boolean(process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || process.env.NODE_ENV !== "production");
+  return Boolean(
+    process.env.AUTH_SECRET ||
+      process.env.NEXTAUTH_SECRET ||
+      process.env.SUPABASE_JWT_SECRET ||
+      process.env.NODE_ENV !== "production"
+  );
 }
 
 export const SESSION_COOKIE = COOKIE_NAME;
