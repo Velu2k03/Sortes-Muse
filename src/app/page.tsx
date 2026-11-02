@@ -8,6 +8,7 @@ import { TAGLINE } from "@/lib/site";
 import StatsStrip from "@/components/StatsStrip";
 import SampleReading from "@/components/SampleReading";
 import TarotFan from "@/components/TarotFan";
+import OrbitImages from "@/components/OrbitImages";
 import Icon from "@/components/Icon";
 import { DarkVeil, MagicBento, ShinyText, StarBorder } from "@/components/ReactBits";
 
@@ -175,6 +176,8 @@ export default function Home() {
           <MagicBento />
         </div>
       </section>
+
+      <OrbitImages />
 
       {/* WHAT IS TAROT */}
       <section className="mx-auto max-w-4xl px-4 py-16 sm:px-6">
