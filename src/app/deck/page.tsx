@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { CARDS, MAJORS, cardsBySuit, SUITS, suitLabel } from "@/lib/cards";
 import CardModal from "@/components/CardModal";
+import InfiniteSpiral from "@/components/InfiniteSpiral";
 
 type Filter = "all" | "major" | "wands" | "cups" | "swords" | "pentacles";
 
@@ -21,6 +22,16 @@ export default function DeckPage() {
   const [filter, setFilter] = useState<Filter>("all");
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<string | null>(null);
+  const [view, setView] = useState<"spiral" | "list">("spiral");
+  const [reducedMotion, setReducedMotion] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const sync = () => setReducedMotion(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
 
   useEffect(() => {
     const cardId = new URLSearchParams(window.location.search).get("card");
@@ -86,9 +97,85 @@ export default function DeckPage() {
           {cards.length} {cards.length === 1 ? "card" : "cards"}
           {filter !== "all" && filter !== "major" && ` · ${suitLabel(filter)}`}
         </p>
+        <div role="group" className="flex gap-2" aria-label="Deck view">
+          <button
+            type="button"
+            aria-pressed={view === "spiral" && !reducedMotion}
+            onClick={() => setView("spiral")}
+            className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+              view === "spiral" && !reducedMotion
+                ? "bg-gold text-ink"
+                : "border border-gold/30 text-cream/80 hover:border-gold/60 hover:text-goldbright"
+            }`}
+          >
+            Spiral
+          </button>
+          <button
+            type="button"
+            aria-pressed={view === "list" || reducedMotion}
+            onClick={() => setView("list")}
+            className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+              view === "list" || reducedMotion
+                ? "bg-gold text-ink"
+                : "border border-gold/30 text-cream/80 hover:border-gold/60 hover:text-goldbright"
+            }`}
+          >
+            List
+          </button>
+        </div>
+        {reducedMotion && (
+          <p className="text-xs text-mist">
+            Reduced motion is on, so the deck shows as a list.
+          </p>
+        )}
       </div>
 
-      <div className="mt-8 grid grid-cols-3 gap-3 sm:grid-cols-4 sm:gap-4 md:grid-cols-6">
+      {view === "spiral" && !reducedMotion ? (
+        <div className="mt-8">
+          <p className="text-center text-sm text-cream/75">
+            Drag the helix to spin it, tap a card to read its story.
+          </p>
+          <div
+            className="h-[560px]"
+            onClick={(e) => {
+              const item = (e.target as HTMLElement).closest('[role="listitem"]');
+              const name = item?.getAttribute("aria-label");
+              const card = cards.find((c) => c.name === name);
+              if (card) setSelected(card.id);
+            }}
+          >
+            <InfiniteSpiral
+              items={cards.map((c) => ({
+                id: c.id,
+                src: c.image,
+                alt: c.name,
+                label: c.name,
+              }))}
+              animationMode="all"
+              speed={0.55}
+              direction="up"
+              radius={170}
+              cardWidth={120}
+              cardHeight={200}
+              verticalSpacing={60}
+              perspective={1000}
+              cardsPerTurn={7}
+              centerScale={1.2}
+              edgeFade={0.3}
+              edgeBlur={6}
+              pauseOnHover
+              imageFit="cover"
+            />
+          </div>
+          {cards.length === 0 && (
+            <p className="mt-8 text-center text-mist">
+              No cards match your search. Try another name.
+            </p>
+          )}
+        </div>
+      ) : (
+        <>
+        <div className="mt-8 grid grid-cols-3 gap-3 sm:grid-cols-4 sm:gap-4 md:grid-cols-6">
         {cards.map((c, i) => (
           <motion.button
             key={c.id}
@@ -127,6 +214,8 @@ export default function DeckPage() {
         <p className="mt-16 text-center text-mist">
           No cards match your search. Try another name.
         </p>
+      )}
+      </>
       )}
 
       <CardModal cardId={selected} onClose={() => setSelected(null)} />
