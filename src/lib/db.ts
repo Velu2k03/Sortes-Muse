@@ -1,10 +1,16 @@
-import { sql } from "@vercel/postgres";
+import postgres from "postgres";
 import { promises as fs } from "fs";
 import path from "path";
 
 /**
  * Database layer.
- * - Production: Vercel Postgres (or any Postgres) via POSTGRES_URL / DATABASE_URL.
+ * - Production: standard Postgres TCP via the `postgres` package (Unlicense)
+ *   using POSTGRES_URL / DATABASE_URL. This deliberately replaces
+ *   @vercel/postgres: its Neon HTTP driver rewrites the first hostname label
+ *   to "api.", turning a Supabase pooler host into api.pooler.supabase.com,
+ *   which does not resolve (production 500s on signup/login, 2026-11-02).
+ *   `prepare: false` is required: Supabase transaction mode (port 6543)
+ *   does not support prepared statements.
  * - Local dev without a database: a gitignored JSON file store with the same
  *   interface, so auth/credits/transactions work end to end with zero setup.
  *
@@ -33,6 +39,33 @@ export interface DbTransaction {
 const usePostgres = Boolean(
   process.env.POSTGRES_URL || process.env.DATABASE_URL
 );
+
+const connectionString =
+  process.env.POSTGRES_URL || process.env.DATABASE_URL || "";
+
+// postgres.js template tag returns rows directly; wrap it so the rest of
+// this file keeps its existing `{ rows }` shape from @vercel/postgres.
+const pg = usePostgres
+  ? postgres(connectionString, {
+      ssl: "require",
+      prepare: false,
+      max: 1,
+      idle_timeout: 20,
+      connect_timeout: 10,
+    })
+  : null;
+
+async function sql(
+  strings: TemplateStringsArray,
+  ...values: unknown[]
+): Promise<{ rows: unknown[] }> {
+  if (!pg) throw new Error("Database not configured");
+  const rows = await (pg as unknown as (
+    strings: TemplateStringsArray,
+    ...values: unknown[]
+  ) => Promise<unknown[]>)(strings, ...values);
+  return { rows };
+}
 
 const LOCAL_PATH = path.join(process.cwd(), "data", "local-db.json");
 
