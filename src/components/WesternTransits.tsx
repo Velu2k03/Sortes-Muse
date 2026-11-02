@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import type { WesternPlanet } from "@/lib/charts";
 
 // M3.1: transit-to-natal horoscope for a Western chart already
@@ -147,7 +148,10 @@ export default function WesternTransits({
             Positions are geocentric, computed for 12:00 UTC on the chosen date. The Moon moves
             fastest, so same-day Moon aspects are approximate. Houses and angles are not used:
             transits here are longitude to longitude only. Aspect glosses are generic for the
-            aspect type, not predictions about you.
+            aspect type, not predictions about you.{" "}
+            <Link href="/methodology" className="font-semibold text-goldbright underline">
+              How we calculate this
+            </Link>
           </p>
         </div>
       )}

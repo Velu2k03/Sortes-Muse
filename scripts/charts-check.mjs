@@ -5,7 +5,7 @@
 // nothing here is stored, sent to AI, or written to a database.
 import assert from "node:assert";
 import { calculateZiwei, calculateWestern, computeTransits, timeIndexForHour, applyLongitudeCorrection } from "../src/lib/charts.ts";
-import { calculateVedic } from "../src/lib/vedic.ts";
+import { calculateVedic, navamsaSign, dasamsaSign, computePanchanga, computeGochara } from "../src/lib/vedic.ts";
 import { SQUARE_CELLS, squareCellForPalaceIndex } from "../src/lib/ziwei-square.ts";
 import { dailyHoroscope } from "../src/lib/daily.ts";
 import { chartInterpretationCost } from "../src/lib/chart-pricing.ts";
@@ -207,6 +207,95 @@ assert.equal(vedicB.sunSign, "Gemini");
 assert.equal(vedicB.moonNakshatra, "Anuradha");
 assert.equal(vedicB.moonNakshatraPada, 3);
 console.log("vedic A:", vedicA.sunSign, vedicA.moonSign, vedicA.moonNakshatra, vedicA.moonNakshatraPada, "| B:", vedicB.sunSign, vedicB.moonNakshatra, vedicB.moonNakshatraPada);
+
+// M3.2: divisional charts on the golden case. Moon Aquarius 302.80:
+// fixed sign, so D9 starts at the 9th from Aquarius (Libra), pada 0
+// gives Libra; Aquarius is the 11th sign (odd-numbered), so D10
+// starts at Aquarius itself, part 0 gives Aquarius. Sun Sagittarius
+// 256.58: dual sign, so D9 starts at the 5th from Sagittarius
+// (Aries), pada 4 gives Leo; Sagittarius is odd-numbered, so D10
+// starts at itself, part 5 gives Taurus.
+const vedicMoon = vedicA.planets.find((p) => p.name === "moon");
+const vedicSun = vedicA.planets.find((p) => p.name === "sun");
+assert.equal(navamsaSign(vedicMoon.longitude), "Libra", "golden Moon D9 must be Libra");
+assert.equal(dasamsaSign(vedicMoon.longitude), "Aquarius", "golden Moon D10 must be Aquarius");
+assert.equal(navamsaSign(vedicSun.longitude), "Leo", "golden Sun D9 must be Leo");
+assert.equal(dasamsaSign(vedicSun.longitude), "Taurus", "golden Sun D10 must be Taurus");
+assert.ok(vedicA.ascendantLongitude !== null, "known-time Vedic chart needs an ascendant longitude");
+assert.equal(vedicA.divisional.lagnaD9, navamsaSign(vedicA.ascendantLongitude), "D9 Lagna must match the ascendant navamsa");
+assert.equal(vedicA.divisional.lagnaD10, dasamsaSign(vedicA.ascendantLongitude), "D10 Lagna must match the ascendant dasamsa");
+assert.equal(vedicUnknown.divisional.lagnaD9, null, "unknown-time D9 Lagna must be withheld");
+assert.equal(vedicUnknown.divisional.lagnaD10, null, "unknown-time D10 Lagna must be withheld");
+assert.ok(vedicUnknown.divisional.planets.length === 9, "unknown-time divisional planet signs still compute");
+const TEST_SIGNS = ["Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo", "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces"];
+for (const p of vedicA.divisional.planets) {
+  const expectD9House = ((TEST_SIGNS.indexOf(p.d9) - TEST_SIGNS.indexOf(vedicA.divisional.lagnaD9) + 12) % 12) + 1;
+  const expectD10House = ((TEST_SIGNS.indexOf(p.d10) - TEST_SIGNS.indexOf(vedicA.divisional.lagnaD10) + 12) % 12) + 1;
+  assert.equal(p.d9House, expectD9House, `D9 house for ${p.name} must count from D9 Lagna`);
+  assert.equal(p.d10House, expectD10House, `D10 house for ${p.name} must count from D10 Lagna`);
+}
+console.log("divisional golden: Moon D9 Libra, D10 Aquarius; Sun D9 Leo, D10 Taurus; D9 Lagna", vedicA.divisional.lagnaD9, "; D10 Lagna", vedicA.divisional.lagnaD10);
+
+// M3.2: panchanga on the golden case. Sun 256.58, Moon 302.80:
+// elongation 46.22 gives tithi index 3 (Shukla Chaturthi), Moon
+// nakshatra Dhanishta, yoga index 14 (Vajra), karana index 7, which
+// is Vishti: the karana cycle starts with Kimstughna at index 0,
+// so index 7 is the seventh movable karana, not Bava. And
+// 1990-01-01 was a Monday.
+const panA = computePanchanga(256.5809, 302.7988, "1990-01-01");
+assert.equal(panA.tithi, "Chaturthi", "golden tithi must be Chaturthi");
+assert.equal(panA.paksha, "Shukla", "golden paksha must be Shukla");
+assert.equal(panA.nakshatra, "Dhanishta", "golden panchanga nakshatra must be Dhanishta");
+assert.equal(panA.yoga, "Vajra", "golden yoga must be Vajra");
+assert.equal(panA.karana, "Vishti", "golden karana must be Vishti");
+assert.equal(panA.vara, "Monday", "1990-01-01 must be a Monday");
+console.log("panchanga golden:", panA.paksha, panA.tithi, "|", panA.nakshatra, "|", panA.yoga, "|", panA.karana, "|", panA.vara);
+// M3.2: karana regression against published tables. At noon UTC on
+// 2026-11-03 the elongation is about 290.9 degrees, and published
+// panchanga tables for that day list Vanija running into the
+// evening, not Vishti. The naive Bava-first mapping fails this;
+// the Kimstughna-first mapping passes it.
+const panNov = computePanchanga(196.8444, 127.7579, "2026-11-03");
+assert.equal(panNov.tithi, "Dashami", "2026-11-03 tithi must be Dashami");
+assert.equal(panNov.paksha, "Krishna", "2026-11-03 paksha must be Krishna");
+assert.equal(panNov.nakshatra, "Magha", "2026-11-03 nakshatra must be Magha");
+assert.equal(panNov.yoga, "Brahma", "2026-11-03 yoga must be Brahma");
+assert.equal(panNov.karana, "Vanija", "2026-11-03 karana must be Vanija");
+assert.equal(panNov.vara, "Tuesday", "2026-11-03 must be a Tuesday");
+console.log("panchanga 2026-11-03:", panNov.paksha, panNov.tithi, "|", panNov.nakshatra, "|", panNov.yoga, "|", panNov.karana, "|", panNov.vara);
+
+// M3.2: Gochara sign-based Drishti. Structural rule: every listed
+// aspect must sit in its transit planet's rule set, and every house
+// from the Moon must count in signs from the natal Moon sign.
+const goA = computeGochara(vedicMoon.longitude, vedicA.planets.map((p) => ({ name: p.name, longitude: p.longitude })), "2026-11-03");
+assert.equal(goA.date, "2026-11-03", "gochara must echo its date");
+assert.ok(goA.planets.length === 9, "gochara needs all 9 grahas");
+assert.ok(goA.panchanga.tithi && goA.panchanga.nakshatra && goA.panchanga.yoga && goA.panchanga.karana, "gochara must carry a full panchanga");
+const DRISHTI_TEST = { sun: [7], moon: [7], mercury: [7], venus: [7], mars: [4, 7, 8], jupiter: [5, 7, 9], saturn: [3, 7, 10], rahu: [7], ketu: [7] };
+const natalMoonIdx = TEST_SIGNS.indexOf("Aquarius");
+for (const t of goA.planets) {
+  const expectHouse = ((TEST_SIGNS.indexOf(t.sign) - natalMoonIdx + 12) % 12) + 1;
+  assert.equal(t.houseFromMoon, expectHouse, `house from Moon for transit ${t.name} must count in signs`);
+  for (const a of t.aspects) {
+    assert.ok((DRISHTI_TEST[t.name] ?? [7]).includes(a.housesAway), `transit ${t.name} must only aspect ${DRISHTI_TEST[t.name]} signs`);
+  }
+}
+// Directional rule test: put a natal planet in the 4th sign from
+// transit Mars and in the 6th sign from it. The 4th must be
+// aspected (Mars rules 4, 7, 8); the 6th must not.
+const marsT = goA.planets.find((p) => p.name === "mars");
+const marsIdx = TEST_SIGNS.indexOf(marsT.sign);
+const fourthLon = ((marsIdx + 3) % 12) * 30 + 5;
+const sixthLon = ((marsIdx + 5) % 12) * 30 + 5;
+const goMars = computeGochara(vedicMoon.longitude, [
+  { name: "sun", longitude: fourthLon },
+  { name: "moon", longitude: sixthLon },
+], "2026-11-03");
+const marsAspects = goMars.planets.find((p) => p.name === "mars").aspects;
+assert.ok(marsAspects.some((a) => a.natalPlanet === "sun" && a.housesAway === 4), "transit Mars must aspect the 4th sign");
+assert.ok(!marsAspects.some((a) => a.natalPlanet === "moon"), "transit Mars must not aspect the 6th sign");
+assert.throws(() => computeGochara(vedicMoon.longitude, [], "2026-13-40"), /real calendar date/, "gochara with an invalid date must throw");
+console.log("gochara 2026-11-03: transit Moon", goA.planets.find((p) => p.name === "moon").sign, "| Mars aspects:", marsAspects.map((a) => `${a.natalPlanet} ${a.housesAway}`).join(", ") || "(none)");
 
 // Daily sun-sign: original Sortes text, deterministic per sign and date.
 const dailyA = dailyHoroscope("Aries", "2026-11-01");

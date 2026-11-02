@@ -55,6 +55,44 @@ export default function VedicChart({ result }: { result: VedicResult }) {
       </div>
       <details className="mt-4 scroll-mt-24 rounded-2xl border border-gold/25 bg-panel/70 p-4">
         <summary className="cursor-pointer text-sm font-semibold text-goldbright">
+          Navamsa (D9) and Dasamsa (D10) (tap to list)
+        </summary>
+        <p className="mt-2 text-sm text-cream/75">
+          Divisional charts from the same natal positions, by the Parashara rules stated on
+          the methodology page. D9 refines the Moon chart themes; D10 refines career themes.
+          {result.divisional.lagnaD9
+            ? ` D9 Lagna: ${result.divisional.lagnaD9}. D10 Lagna: ${result.divisional.lagnaD10}.`
+            : " Divisional Lagnas are withheld: the birth time is unknown."}
+        </p>
+        <div className="mt-3 overflow-x-auto">
+          <table className="min-w-[420px] w-full text-left text-sm text-cream/85">
+            <thead>
+              <tr className="border-b border-gold/25 text-cream/80">
+                <th className="py-2 pr-4">Planet</th>
+                <th className="py-2 pr-4">D9 sign</th>
+                <th className="py-2 pr-4">D10 sign</th>
+              </tr>
+            </thead>
+            <tbody>
+              {result.divisional.planets.map((p) => (
+                <tr key={p.name} className="border-b border-gold/10">
+                  <td className="py-2 pr-4 font-semibold capitalize text-cream">{p.name}</td>
+                  <td className="py-2 pr-4">
+                    {p.d9}
+                    {p.d9House !== null && ` (house ${p.d9House} from D9 Lagna)`}
+                  </td>
+                  <td className="py-2 pr-4">
+                    {p.d10}
+                    {p.d10House !== null && ` (house ${p.d10House} from D10 Lagna)`}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </details>
+      <details className="mt-4 scroll-mt-24 rounded-2xl border border-gold/25 bg-panel/70 p-4">
+        <summary className="cursor-pointer text-sm font-semibold text-goldbright">
           Mahadasha timeline (tap to list)
         </summary>
         <ul className="mt-2 space-y-1 text-sm text-cream/85">

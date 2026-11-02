@@ -20,6 +20,7 @@ const PAGES = [
   "/spreads/celtic-cross",
   "/history",
   "/credits",
+  "/methodology",
   "/about",
   "/faq",
   "/birth-card",

@@ -11,6 +11,7 @@ import CardBurst from "@/components/CardBurst";
 import ZiweiChartBoard, { type ZiweiView } from "@/components/ZiweiChartBoard";
 import WesternWheel from "@/components/WesternWheel";
 import WesternTransits from "@/components/WesternTransits";
+import VedicTransits from "@/components/VedicTransits";
 import VedicChart from "@/components/VedicChart";
 import { useAuth } from "@/components/AuthProvider";
 import Icon from "@/components/Icon";
@@ -753,6 +754,16 @@ export default function ChartsClient() {
               in-memory; nothing new is stored for this. */}
           {result.system === "western" && (
             <WesternTransits planets={result.planets} unknownTime={result.unknownTime} />
+          )}
+          {/* M3.2: Gochara plus panchanga, Vedic charts only. The
+              natal Moon longitude comes from the chart just
+              calculated in-memory; nothing new is stored for this. */}
+          {result.system === "vedic" && (
+            <VedicTransits
+              moonLongitude={result.planets.find((p) => p.name === "moon")?.longitude ?? 0}
+              planets={result.planets}
+              unknownTime={result.unknownTime}
+            />
           )}
 
           <section className="mt-10 scroll-mt-24 rounded-3xl border border-gold/20 bg-panel/50 p-6" aria-label="Chart legend">
