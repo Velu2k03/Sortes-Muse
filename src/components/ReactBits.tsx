@@ -148,11 +148,17 @@ function startBentoWave(event: React.MouseEvent<HTMLElement>) {
 
 export function MagicBento() {
   return (
-    <div className="magic-bento mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3">
+    <div className="magic-bento mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-6">
       {SPREADS.map((spread) => (
         <article
           key={spread.slug}
-          className="magic-bento__card relative overflow-hidden rounded-3xl border border-gold/25 bg-panel/70 p-7"
+          className={`magic-bento__card relative overflow-hidden rounded-3xl border border-gold/25 bg-panel/70 p-7 ${
+            spread.slug === "quick-insight"
+              ? "lg:col-span-2 lg:row-span-2"
+              : spread.slug === "past-present-future"
+                ? "lg:col-span-4"
+                : "lg:col-span-2"
+          }`}
           onPointerMove={updateBentoPosition}
           onPointerLeave={(event) => {
             event.currentTarget.style.removeProperty("--bento-x");
