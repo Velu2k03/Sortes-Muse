@@ -13,6 +13,8 @@ import WesternWheel from "@/components/WesternWheel";
 import VedicChart from "@/components/VedicChart";
 import { useAuth } from "@/components/AuthProvider";
 import Icon from "@/components/Icon";
+import OptionWheel from "@/components/OptionWheel";
+import CometDial from "@/components/CometDial";
 import { chartFreeUsed, markChartFreeUsed, makeReading, type ChartFreeSystem } from "@/lib/storage";
 import { chartInterpretationCost } from "@/lib/chart-pricing";
 
@@ -42,6 +44,22 @@ const PRESETS: { label: string; latitude: number; longitude: number }[] = [
 export default function ChartsClient() {
   const { credits, spend, persistReading } = useAuth();
   const [system, setSystem] = useState<ChartSystem>("ziwei");
+  const [reducedMotion, setReducedMotion] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const sync = () => setReducedMotion(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+  const SYSTEM_ORDER: ChartSystem[] = ["ziwei", "western", "vedic"];
+  const selectSystem = (s: ChartSystem) => {
+    setSystem(s);
+    setResult(null);
+    setInterpretation("");
+    setInterpError("");
+    setSaved(false);
+  };
   // Traditional square is the default Ziwei view: it passed the re-audit
   // cleanly, while the ring edge labels still crowd and overlap. Ring
   // stays as an alternative toggle, it is not removed.
@@ -310,27 +328,38 @@ export default function ChartsClient() {
         </details>
       </div>
 
-      <div className="mx-auto mt-8 flex max-w-lg flex-wrap gap-3">
-        {(["ziwei", "western", "vedic"] as const).map((s) => (
-          <button
-            key={s}
-            type="button"
-            onClick={() => {
-              setSystem(s);
-              setResult(null);
-              setInterpretation("");
-              setInterpError("");
-              setSaved(false);
-            }}
-            className={`flex-1 rounded-full px-4 py-2.5 text-sm font-bold ${
-              system === s ? "btn-gold" : "border border-gold/40 text-goldbright"
-            }`}
-            aria-pressed={system === s}
-          >
-            {s === "ziwei" ? "Ziwei" : s === "vedic" ? "Vedic" : "Western"}
-          </button>
-        ))}
-      </div>
+      {reducedMotion ? (
+        <div className="mx-auto mt-8 flex max-w-lg flex-wrap gap-3">
+          {SYSTEM_ORDER.map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => selectSystem(s)}
+              className={`flex-1 rounded-full px-4 py-2.5 text-sm font-bold ${
+                system === s ? "btn-gold" : "border border-gold/40 text-goldbright"
+              }`}
+              aria-pressed={system === s}
+            >
+              {s === "ziwei" ? "Ziwei" : s === "vedic" ? "Vedic" : "Western"}
+            </button>
+          ))}
+        </div>
+      ) : (
+        <div className="mx-auto mt-8 max-w-lg">
+          <p className="text-center text-sm text-cream/75">Turn the wheel to choose a system</p>
+          {/* The wheel sizes itself to its parent, so it needs a real
+              height here, otherwise its items are clipped invisible. */}
+          <div className="h-64">
+            <OptionWheel
+              items={["Ziwei", "Western", "Vedic"]}
+              defaultSelected={SYSTEM_ORDER.indexOf(system)}
+              onChange={(index) => selectSystem(SYSTEM_ORDER[index])}
+              textColor="#9ca3af"
+              activeColor="#f4d03f"
+            />
+          </div>
+        </div>
+      )}
 
       <form onSubmit={onSubmit} className="mx-auto mt-8 max-w-xl rounded-3xl border border-gold/25 bg-panel/70 p-6">
         {/* Audit 6: Use example lives at the top of the form, not only
@@ -383,6 +412,27 @@ export default function ChartsClient() {
               <input type="checkbox" checked={unknownTime} onChange={(e) => setUnknownTime(e.target.checked)} />
               I do not know the birth time
             </label>
+            {!unknownTime && !reducedMotion && (
+              <div className="mt-4 flex flex-col items-center">
+                <CometDial
+                  value={Number(time.split(":")[0] ?? 8)}
+                  min={0}
+                  max={23}
+                  step={1}
+                  unit=":00"
+                  label="Birth hour"
+                  accent="#d4af37"
+                  ink="#ede6d6"
+                  onChange={(hour) => {
+                    const minutes = time.split(":")[1] ?? "00";
+                    setTime(`${String(hour).padStart(2, "0")}:${minutes}`);
+                  }}
+                />
+                <p className="mt-2 text-center text-sm text-cream/75">
+                  Turn the dial to set the birth hour, then press Calculate chart.
+                </p>
+              </div>
+            )}
           </div>
           {system === "ziwei" && (
             <div>
