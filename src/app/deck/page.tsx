@@ -137,6 +137,12 @@ export default function DeckPage() {
           </p>
           <div
             className="h-[560px]"
+            style={{
+              maskImage:
+                "linear-gradient(to bottom, transparent 0%, black 12%, black 88%, transparent 100%)",
+              WebkitMaskImage:
+                "linear-gradient(to bottom, transparent 0%, black 12%, black 88%, transparent 100%)",
+            }}
             onClick={(e) => {
               const item = (e.target as HTMLElement).closest('[role="listitem"]');
               const name = item?.getAttribute("aria-label");
@@ -154,12 +160,16 @@ export default function DeckPage() {
               animationMode="all"
               speed={0.55}
               direction="up"
+              grayscale={0}
               radius={170}
               cardWidth={120}
-              cardHeight={200}
-              verticalSpacing={60}
+              cardHeight={180}
+              verticalSpacing={58}
               perspective={1000}
               cardsPerTurn={7}
+              rotation={0}
+              cardTilt={0}
+              cardRadius={10}
               centerScale={1.2}
               edgeFade={0.3}
               edgeBlur={6}

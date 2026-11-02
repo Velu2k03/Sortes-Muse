@@ -2,8 +2,9 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect } from "react";
-import { getCard } from "@/lib/cards";
+import { getCard, suitLabel } from "@/lib/cards";
 import HoloCard from "@/components/HoloCard";
+import FadeContent from "@/components/FadeContent";
 
 interface Props {
   cardId: string | null;
@@ -37,13 +38,22 @@ export default function CardModal({ cardId, onClose }: Props) {
           aria-label={card.name}
         >
           <motion.div
-            className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-t-3xl border border-gold/30 bg-navydeep p-6 sm:rounded-3xl sm:p-8"
+            className="relative max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-t-3xl border border-gold/30 bg-navydeep p-6 sm:rounded-3xl sm:p-8"
             initial={{ y: 60, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 60, opacity: 0 }}
             transition={{ type: "spring", damping: 28, stiffness: 300 }}
             onClick={(e) => e.stopPropagation()}
           >
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close card details"
+              className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-gold/40 bg-navydeep/90 text-xl leading-none text-goldbright hover:border-gold hover:bg-gold/20"
+            >
+              ×
+            </button>
+            <FadeContent trigger="mount" effect="fade" blur duration={0.7} stagger={0.08}>
             <div className="flex flex-col gap-6 sm:flex-row">
               <div className="mx-auto shrink-0 sm:mx-0">
                 {/* One card only, so one WebGL context. Gold preset and
@@ -60,14 +70,14 @@ export default function CardModal({ cardId, onClose }: Props) {
                   radius={12}
                 />
               </div>
-              <div className="min-w-0 flex-1">
+              <div className="min-w-0 flex-1 text-center sm:text-left">
                 <p className="text-xs uppercase tracking-[0.25em] text-mist">
                   {card.arcana === "major"
                     ? `Major Arcana · ${card.number}`
-                    : /* Minor card names already end with their suit
-                       ("Seven of Cups"), so adding suitLabel again
-                       rendered "Cups · Cups". */
-                      card.name}
+                    : /* The name itself is the title below, so repeating
+                       it here showed the name twice. The eyebrow now
+                       carries the arcana and suit instead. */
+                      `Minor Arcana · ${card.suit ? suitLabel(card.suit) : ""}`}
                 </p>
                 <h2 className="mt-1 font-display text-4xl text-goldbright">
                   {card.name}
@@ -78,7 +88,7 @@ export default function CardModal({ cardId, onClose }: Props) {
                     <p className="text-xs uppercase tracking-widest text-gold">
                       Upright
                     </p>
-                    <div className="mt-1 flex flex-wrap gap-1.5">
+                    <div className="mt-1 flex flex-wrap justify-center gap-1.5 sm:justify-start">
                       {card.keywords.upright.map((k) => (
                         <span
                           key={k}
@@ -96,7 +106,7 @@ export default function CardModal({ cardId, onClose }: Props) {
                     <p className="text-xs uppercase tracking-widest text-cream">
                       Reversed
                     </p>
-                    <div className="mt-1 flex flex-wrap gap-1.5">
+                    <div className="mt-1 flex flex-wrap justify-center gap-1.5 sm:justify-start">
                       {card.keywords.reversed.map((k) => (
                         <span
                           key={k}
@@ -129,14 +139,7 @@ export default function CardModal({ cardId, onClose }: Props) {
                 future.
               </p>
             </div>
-
-            <button
-              type="button"
-              onClick={onClose}
-              className="btn-ghost mt-6 w-full rounded-xl px-4 py-3 text-sm font-semibold"
-            >
-              Close
-            </button>
+            </FadeContent>
           </motion.div>
         </motion.div>
       )}
