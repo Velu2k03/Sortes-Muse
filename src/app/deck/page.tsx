@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { CARDS, MAJORS, cardsBySuit, SUITS, suitLabel } from "@/lib/cards";
 import CardModal from "@/components/CardModal";
@@ -21,6 +21,13 @@ export default function DeckPage() {
   const [filter, setFilter] = useState<Filter>("all");
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<string | null>(null);
+
+  useEffect(() => {
+    const cardId = new URLSearchParams(window.location.search).get("card");
+    if (!cardId || !CARDS.some((card) => card.id === cardId)) return;
+    const frame = window.requestAnimationFrame(() => setSelected(cardId));
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
 
   const cards = useMemo(() => {
     let list = CARDS;
