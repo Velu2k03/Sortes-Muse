@@ -13,8 +13,11 @@ import { drawSingle } from "@/lib/tarot";
 import TarotCard from "@/components/TarotCard";
 import CardModal from "@/components/CardModal";
 import { trackDailyCardDrawn } from "@/components/Analytics";
-import Icon from "@/components/Icon";
-import { ClickSpark, StarBorder } from "@/components/ReactBits";
+import { StarBorder } from "@/components/ReactBits";
+import HoldButton from "@/components/HoldButton";
+import FlipCard from "@/components/FlipCard";
+import BlurText from "@/components/BlurText";
+import Image from "next/image";
 
 type Phase = "idle" | "shuffling" | "revealed";
 
@@ -27,7 +30,12 @@ export default function DailyPage() {
   const [daily, setDaily] = useState<DailyCardState | null>(null);
   const [streak, setStreak] = useState(0);
   const [zoomOpen, setZoomOpen] = useState(false);
+  const [flipped, setFlipped] = useState(false);
   const drawTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (daily) setFlipped(daily.reversed);
+  }, [daily]);
 
   useEffect(() => {
     const existing = getDailyCard();
@@ -93,16 +101,26 @@ export default function DailyPage() {
             >
               <TarotCard cardId={null} size="lg" disabled />
               <StarBorder radius="1rem" className="mt-8">
-                <ClickSpark>
-                  <button
-                    type="button"
-                    onClick={draw}
-                    className="btn-gold rounded-2xl px-10 py-4 text-lg font-bold"
-                  >
-                    <Icon name="sparkle" size={20} className="mr-2 inline-block align-[-3px]" />Draw today&apos;s card
-                  </button>
-                </ClickSpark>
+                <HoldButton
+                  size="lg"
+                  holdTime={1200}
+                  backgroundColor="#1a1f2e"
+                  fillColor="#d4af37"
+                  textColor="#ede6d6"
+                  fillTextColor="#0a0e1a"
+                  doneLabel="Casting…"
+                  onHold={draw}
+                >
+                  Hold to draw today&apos;s card
+                </HoldButton>
               </StarBorder>
+              <button
+                type="button"
+                onClick={draw}
+                className="mt-4 text-sm text-mist underline underline-offset-4 hover:text-goldbright"
+              >
+                Prefer a tap? Draw now
+              </button>
             </motion.div>
           )}
 
@@ -134,15 +152,39 @@ export default function DailyPage() {
               animate={{ opacity: 1 }}
               className="flex w-full flex-col items-center"
             >
-              <TarotCard
-                cardId={daily.cardId}
-                reversed={daily.reversed}
-                revealed
-                size="lg"
-                label={daily.reversed ? "Reversed" : "Upright"}
-                onFlip={() => setZoomOpen(true)}
+              <FlipCard
+                width={220}
+                height={367}
+                flipped={flipped}
+                onFlipChange={setFlipped}
+                flipOnClick
+                draggable={false}
+                tilt={false}
+                glare={false}
+                radius={22}
+                background="#1a1f2e"
+                ariaLabel={`${card.name}, tap to flip`}
+                front={
+                  <span className="relative block h-full w-full">
+                    <Image src={card.image} alt="" fill className="object-cover" />
+                  </span>
+                }
+                back={
+                  <span className="relative block h-full w-full rotate-180">
+                    <Image src={card.image} alt="" fill className="object-cover" />
+                  </span>
+                }
               />
-              <p className="mt-3 text-xs text-mist">Tap the card to enlarge it.</p>
+              <p className="mt-3 text-xs text-mist">
+                {flipped ? "Reversed" : "Upright"} · Tap the card to flip it.
+              </p>
+              <button
+                type="button"
+                onClick={() => setZoomOpen(true)}
+                className="mt-2 text-sm text-mist underline underline-offset-4 hover:text-goldbright"
+              >
+                Enlarge the card
+              </button>
               {zoomOpen && (
                 <CardModal cardId={daily.cardId} onClose={() => setZoomOpen(false)} />
               )}
@@ -165,9 +207,13 @@ export default function DailyPage() {
                     </span>
                   ))}
                 </div>
-                <p className="mx-auto mt-5 max-w-lg leading-relaxed text-cream/90">
-                  {orientationMeaning(card, daily.reversed)}
-                </p>
+                <BlurText
+                  text={orientationMeaning(card, daily.reversed)}
+                  animateBy="words"
+                  direction="top"
+                  delay={600}
+                  className="mx-auto mt-5 max-w-lg leading-relaxed text-cream/90"
+                />
                 <p className="mt-6 text-xs italic text-mist">
                   A reflection for today, not a prediction. Come back tomorrow
                   for a new card

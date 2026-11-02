@@ -1,7 +1,11 @@
 "use client";
 
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useState } from "react";
 import "./ReadingWait.css";
+import LatticeLoader from "@/components/LatticeLoader";
+import ThoughtLine from "@/components/ThoughtLine";
+import StatusMark from "@/components/StatusMark";
+import FoldText from "@/components/FoldText";
 
 export const PROCESSING_LINES = [
   "Casting the lots",
@@ -30,8 +34,29 @@ export default function ReadingWait({
   const minutes = Math.floor(elapsedSeconds / 60).toString().padStart(2, "0");
   const seconds = (elapsedSeconds % 60).toString().padStart(2, "0");
 
+  const currentLine = complete
+    ? PROCESSING_LINES[PROCESSING_LINES.length - 1]
+    : PROCESSING_LINES[Math.min(activeStep, PROCESSING_LINES.length - 1)];
+
   return (
     <div className="reading-wait" aria-live="polite">
+      {complete && (
+        <FoldText
+          text="Your reading is ready"
+          trigger="mount"
+          color="#f4d03f"
+          fontSize="1.75rem"
+          className="mb-4"
+        />
+      )}
+      {!complete && (
+        <ThoughtLine
+          label={currentLine}
+          working
+          color="#d4af37"
+          showTimer={false}
+        />
+      )}
       <ol className={`reading-trace${complete ? " reading-trace--complete" : ""}`}>
         {PROCESSING_LINES.map((line, index) => (
           <li
@@ -45,7 +70,18 @@ export default function ReadingWait({
             }
           >
             <span className="reading-trace__marker" aria-hidden="true">
-              {complete || index < activeStep ? "✓" : index + 1}
+              <StatusMark
+                status={
+                  complete || index < activeStep
+                    ? "done"
+                    : index === activeStep
+                      ? "running"
+                      : "pending"
+                }
+                size={22}
+                color="#d4af37"
+                doneColor="#d4af37"
+              />
             </span>
             <span>{line}</span>
           </li>
@@ -53,15 +89,16 @@ export default function ReadingWait({
       </ol>
 
       <div className="lattice-loader-row">
-        <div className="lattice-loader" aria-hidden="true">
-          {Array.from({ length: 25 }, (_, index) => (
-            <span
-              key={index}
-              className="lattice-loader__cell"
-              style={{ "--cell-index": index } as CSSProperties}
-            />
-          ))}
-        </div>
+        <LatticeLoader
+          label={currentLine}
+          doneLabel="Done"
+          status={complete ? "done" : "working"}
+          color="#d4af37"
+          doneColor="#d4af37"
+          showTimer={false}
+          elapsed={elapsedSeconds}
+          glow
+        />
         <div className="reading-stopwatch" role="timer" aria-live="off">
           <span className="reading-stopwatch__time">
             {minutes}:{seconds}
@@ -70,10 +107,12 @@ export default function ReadingWait({
         </div>
       </div>
 
-      <p className="mt-4 max-w-sm text-sm text-mist">
-        Breathe slowly. Your cards are being drawn and your story woven into their meanings.
-        This usually takes a few seconds.
-      </p>
+      {!complete && (
+        <p className="mt-4 max-w-sm text-sm text-mist">
+          Breathe slowly. Your cards are being drawn and your story woven into their meanings.
+          This usually takes a few seconds.
+        </p>
+      )}
     </div>
   );
 }
