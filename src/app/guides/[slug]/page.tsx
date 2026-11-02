@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { GUIDES, getGuide } from "@/lib/guides";
+import { APP_NAME, SITE_URL, CONTACT_EMAIL } from "@/lib/site";
 
 export function generateStaticParams() {
   return GUIDES.map((g) => ({ slug: g.slug }));
@@ -25,6 +26,20 @@ export default async function GuidePage({
   if (!guide) notFound();
   return (
     <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Article",
+            headline: guide.title,
+            description: guide.description,
+            author: { "@type": "Organization", name: "Resonant Atlas", email: CONTACT_EMAIL },
+            publisher: { "@type": "Organization", name: APP_NAME, url: SITE_URL },
+            mainEntityOfPage: `${SITE_URL}/guides/${guide.slug}`,
+          }),
+        }}
+      />
       <Link href="/guides" className="text-sm font-semibold text-goldbright underline underline-offset-4">
         All guides
       </Link>

@@ -1,0 +1,33 @@
+# Sortes by Resonant Atlas
+
+Sortes is a tarot reading web app for reflection and perspective, not guaranteed prediction. It offers a free daily card, a browser for all 78 Rider-Waite card meanings, tarot spreads, daily horoscopes, and three birth chart systems (Ziwei, Western, Vedic). Calculation is free. Interpretation is 1 credit, first per system free. Later tarot readings cost 1 credit each, after a first free Quick Insight reading.
+
+Live site: https://sortes-muse.vercel.app/
+Canonical site: https://sortes.resonantatlas.com/
+
+## Pages
+- https://sortes-muse.vercel.app/
+- https://sortes-muse.vercel.app/daily
+- https://sortes-muse.vercel.app/deck
+- https://sortes-muse.vercel.app/spreads
+- https://sortes-muse.vercel.app/spreads/quick-insight
+- https://sortes-muse.vercel.app/spreads/past-present-future
+- https://sortes-muse.vercel.app/spreads/love-insight
+- https://sortes-muse.vercel.app/spreads/career-path
+- https://sortes-muse.vercel.app/spreads/weekly-outlook
+- https://sortes-muse.vercel.app/spreads/celtic-cross
+- https://sortes-muse.vercel.app/charts
+- https://sortes-muse.vercel.app/horoscope
+- https://sortes-muse.vercel.app/guides
+- https://sortes-muse.vercel.app/guides/what-is-tarot
+- https://sortes-muse.vercel.app/guides/how-to-ask-a-tarot-question
+- https://sortes-muse.vercel.app/guides/celtic-cross-explained
+- https://sortes-muse.vercel.app/guides/tarot-and-birth-charts
+- https://sortes-muse.vercel.app/guides/topic-spreads-love-career-week
+- https://sortes-muse.vercel.app/about
+- https://sortes-muse.vercel.app/credits
+- https://sortes-muse.vercel.app/privacy
+- https://sortes-muse.vercel.app/terms
+
+## Privacy, in brief
+Guest daily cards, credit balance, and reading history live in the browser until an account is created. Raw tarot intake data is deleted after 30 days. For charts, only calculated positions, signs, and palaces are stored, never raw birth date, time, or place, and raw birth data is never sent to an AI prompt.
