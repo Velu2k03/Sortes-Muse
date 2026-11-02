@@ -15,9 +15,8 @@ import CardModal from "@/components/CardModal";
 import { trackDailyCardDrawn } from "@/components/Analytics";
 import { StarBorder } from "@/components/ReactBits";
 import HoldButton from "@/components/HoldButton";
-import FlipCard from "@/components/FlipCard";
+import HoloCard from "@/components/HoloCard";
 import BlurText from "@/components/BlurText";
-import Image from "next/image";
 
 type Phase = "idle" | "shuffling" | "revealed";
 
@@ -30,12 +29,7 @@ export default function DailyPage() {
   const [daily, setDaily] = useState<DailyCardState | null>(null);
   const [streak, setStreak] = useState(0);
   const [zoomOpen, setZoomOpen] = useState(false);
-  const [flipped, setFlipped] = useState(false);
   const drawTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    if (daily) setFlipped(daily.reversed);
-  }, [daily]);
 
   useEffect(() => {
     const existing = getDailyCard();
@@ -152,39 +146,30 @@ export default function DailyPage() {
               animate={{ opacity: 1 }}
               className="flex w-full flex-col items-center"
             >
-              <FlipCard
-                width={220}
-                height={367}
-                flipped={flipped}
-                onFlipChange={setFlipped}
-                flipOnClick
-                draggable={false}
-                tilt={false}
-                glare={false}
-                radius={22}
-                background="#1a1f2e"
-                ariaLabel={`${card.name}, tap to flip`}
-                front={
-                  <span className="relative block h-full w-full">
-                    <Image src={card.image} alt="" fill className="object-cover" />
-                  </span>
-                }
-                back={
-                  <span className="relative block h-full w-full rotate-180">
-                    <Image src={card.image} alt="" fill className="object-cover" />
-                  </span>
-                }
-              />
-              <p className="mt-3 text-xs text-mist">
-                {flipped ? "Reversed" : "Upright"} · Tap the card to flip it.
-              </p>
+              {/* No flip: the card shows face up at once, reversed
+                  cards simply sit upside down. Tapping the card
+                  enlarges it, and the holo is gold, never rainbow,
+                  the same gold preset the card detail already uses. */}
               <button
                 type="button"
                 onClick={() => setZoomOpen(true)}
-                className="mt-2 text-sm text-mist underline underline-offset-4 hover:text-goldbright"
+                aria-label={`Enlarge ${card.name}`}
+                className="cursor-pointer rounded-[22px] focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
               >
-                Enlarge the card
+                <span className={daily.reversed ? "block rotate-180" : "block"}>
+                  <HoloCard
+                    image={card.image}
+                    alt={card.name}
+                    preset="gold"
+                    foilColor="#d4af37"
+                    width={220}
+                    radius={22}
+                  />
+                </span>
               </button>
+              <p className="mt-3 text-xs text-mist">
+                {daily.reversed ? "Reversed" : "Upright"} · Tap the card to enlarge it.
+              </p>
               {zoomOpen && (
                 <CardModal cardId={daily.cardId} onClose={() => setZoomOpen(false)} />
               )}
