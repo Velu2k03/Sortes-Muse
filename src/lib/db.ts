@@ -388,6 +388,30 @@ export async function saveReadingForUser(userId: string, reading: { id: string; 
   }
 }
 
+// M1.1: merge a patch into a stored reading's JSON. The server copy
+// previously only ever inserted (ON CONFLICT DO NOTHING), so an edit
+// like a chosen next step would silently stay stale server-side.
+export async function updateReadingForUser(
+  userId: string,
+  id: string,
+  patch: Record<string, unknown>
+): Promise<boolean> {
+  await ensureSchema();
+  if (usePostgres) {
+    const { rows } = await sql`UPDATE readings
+      SET data = data || ${JSON.stringify(patch)}::jsonb
+      WHERE id = ${id} AND user_id = ${userId}
+      RETURNING id`;
+    return rows.length > 0;
+  }
+  const db = await readLocal();
+  const row = db.readings.find((r) => r.id === id && r.user_id === userId);
+  if (!row) return false;
+  row.data = { ...(row.data as Record<string, unknown>), ...patch };
+  await writeLocal(db);
+  return true;
+}
+
 export async function listReadingsForUser(userId: string): Promise<unknown[]> {
   await ensureSchema();
   if (usePostgres) {

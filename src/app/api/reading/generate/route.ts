@@ -3,6 +3,8 @@ import { getSession } from "@/lib/auth";
 import { getUserById, spendUserCredits } from "@/lib/db";
 import cardsData from "@/data/cards.json";
 import { SENSITIVE_KEYS } from "@/lib/intake";
+import { getSpread } from "@/lib/tarot";
+import { computeSpreadFacts, type FactCard } from "@/lib/spread-facts";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -42,6 +44,7 @@ interface Intake {
   answers: Record<string, string>;
   story: string;
   question: string;
+  firstImpression?: string;
 }
 
 const TAGALOG_MARKERS =
@@ -51,10 +54,31 @@ function detectTaglish(text: string): boolean {
   return TAGALOG_MARKERS.test(text);
 }
 
-function cardById(id: string) {
-  return (cardsData as Array<{ id: string; keywords: { upright: string[]; reversed: string[] }; meaning: { upright: string; reversed: string } }>).find(
-    (c) => c.id === id
-  );
+type DeckCard = {
+  id: string;
+  name: string;
+  arcana: "major" | "minor";
+  suit: string | null;
+  number: number;
+  keywords: { upright: string[]; reversed: string[] };
+  meaning: { upright: string; reversed: string };
+};
+
+function cardById(id: string): DeckCard | undefined {
+  return (cardsData as DeckCard[]).find((c) => c.id === id);
+}
+
+// M1.1 output validation: a reading must be substantive and grounded
+// in the actual draw. Invalid text is discarded and the next model is
+// tried; if no model validates, the route fails honestly with no spend
+// (the M0.1 fallback path). The thresholds are deliberately lenient:
+// the goal is to catch generic filler, not to police good prose.
+function isValidReading(text: string, cards: ApiCard[]): boolean {
+  const words = text.split(/\s+/).filter(Boolean).length;
+  if (words < 100 || words > 1200) return false;
+  const lower = text.toLowerCase();
+  const mentioned = cards.filter((c) => lower.includes(c.name.toLowerCase())).length;
+  return mentioned >= Math.ceil(cards.length / 2);
 }
 
 function buildSystemPrompt(firstName: string, taglish: boolean, isHealth: boolean): string {
@@ -70,13 +94,19 @@ Rules you must always follow:
 - Address the seeker by first name (${firstName}) in a warm, second-person voice.
 - Frame everything as reflection and perspective, NEVER as guaranteed prediction. Never claim certainty about the future. Use language like "this may invite you to consider", "a mirror for", "worth sitting with".
 - Weave each card's traditional meaning into THEIR specific situation and question. Reference card names, positions, and orientations naturally.
-- Keep the reading 350-550 words. Structure: a short opening that names their question, one section per card position, then a closing reflection with one gentle question for them to sit with.
+- Name every drawn card in its position. When the spread facts name a dominant suit and element, name them and say what they emphasize. When the spread facts name a tension pair, name both cards and the tension between them. Never invent a card, a position, or a relationship that is not in the spread facts.
+- Keep the reading 350-550 words. Structure: a short opening that names their question, one section per card position, then a closing reflection with exactly one reflection question for them to sit with.
 - Never moralize, never repeat their story back verbatim, never invent facts about them beyond what they shared.
 - ${language}
 ${healthGuard}`;
 }
 
-function buildUserPrompt(cards: ApiCard[], intake: Intake): string {
+function buildUserPrompt(
+  cards: ApiCard[],
+  intake: Intake,
+  spreadLabel: string,
+  factsSummary: string
+): string {
   const cardLines = cards
     .map((c) => {
       const data = cardById(c.cardId);
@@ -98,6 +128,7 @@ function buildUserPrompt(cards: ApiCard[], intake: Intake): string {
     .map(([k, v]) => `${k}: ${v.trim()}`)
     .join("\n");
 
+  const impression = (intake.firstImpression ?? "").trim().slice(0, 100);
   return `Area of life: ${intake.categoryName}
 Seeker's first name: ${intake.firstName}
 
@@ -109,6 +140,11 @@ ${intake.story}
 
 The exact question they want clarity on:
 ${intake.question}
+${impression ? `\nSeeker's first impression, in their own word: ${impression}\n` : ""}
+Spread: ${spreadLabel}
+
+Spread facts, computed from the draw (use these, do not invent others):
+${factsSummary}
 
 Cards drawn:
 ${cardLines}
@@ -175,6 +211,32 @@ export async function POST(req: NextRequest) {
   const taglish = detectTaglish(`${intake.story} ${intake.question}`);
   const isHealth = intake.category === "health";
 
+  // M1.1: computed spread facts ground the interpretation in the draw.
+  // Unknown card ids are skipped for facts (validation still uses the
+  // client-provided names); an unknown spread slug falls back to itself.
+  const factCards: FactCard[] = cards
+    .map((c) => {
+      const d = cardById(c.cardId);
+      if (!d) return null;
+      return {
+        cardId: c.cardId,
+        name: d.name,
+        reversed: c.reversed,
+        position: c.position,
+        arcana: d.arcana,
+        suit: d.suit,
+        number: d.number,
+      };
+    })
+    .filter((c): c is FactCard => c !== null);
+  const factsSummary = computeSpreadFacts(factCards).summary;
+  let spreadLabel = body.spreadSlug ?? "custom spread";
+  try {
+    if (body.spreadSlug) spreadLabel = `${getSpread(body.spreadSlug).name} (${body.spreadSlug})`;
+  } catch {
+    // Unknown slug: keep the raw slug as the label.
+  }
+
   // Try each model in order; rate-limited or retired free models fail fast
   // and we move to the next one instead of giving up.
   let generated: { text: string; model: string } | null = null;
@@ -199,7 +261,7 @@ export async function POST(req: NextRequest) {
               role: "system",
               content: buildSystemPrompt(firstName, taglish, isHealth),
             },
-            { role: "user", content: buildUserPrompt(cards, intake) },
+            { role: "user", content: buildUserPrompt(cards, intake, spreadLabel, factsSummary) },
           ],
           temperature: 0.8,
           max_tokens: 1200,
@@ -212,6 +274,9 @@ export async function POST(req: NextRequest) {
       const text: string | undefined =
         data?.choices?.[0]?.message?.content?.trim();
       if (!text) throw new Error("Empty model response");
+      // M1.1: discard ungrounded text and try the next model instead
+      // of delivering generic filler as a personal reading.
+      if (!isValidReading(text, cards)) throw new Error("Ungrounded model response");
 
       generated = { text, model: data?.model ?? model };
       clearTimeout(timer);

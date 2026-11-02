@@ -167,6 +167,19 @@ export function getReading(id: string): Reading | null {
   return getHistory().find((r) => r.id === id) ?? null;
 }
 
+// M1.1: update an existing reading in place (by id), instead of
+// saveReading's unshift, which would duplicate it. Returns the updated
+// reading, or null when the id is not in local history.
+export function updateReading(id: string, patch: Partial<Reading>): Reading | null {
+  const h = getHistory();
+  const idx = h.findIndex((r) => r.id === id);
+  if (idx < 0) return null;
+  const updated = { ...h[idx], ...patch, id: h[idx].id };
+  h[idx] = updated;
+  write(K.history, h.slice(0, MAX_HISTORY));
+  return updated;
+}
+
 export function makeReading(partial: Omit<Reading, "id" | "createdAt">): Reading {
   return {
     ...partial,

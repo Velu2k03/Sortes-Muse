@@ -51,6 +51,12 @@ export interface Reading {
   aiGenerated: boolean;
   category?: string;
   question?: string;
+  // M1.1: the question as first written, when the confirm-step rewrite
+  // changed it; the first word the seeker gave for their reaction to
+  // the drawn cards; and the one next step they chose after reading.
+  originalQuestion?: string;
+  firstImpression?: string;
+  nextStep?: string;
   firstName?: string;
   free: boolean;
   // Chart readings only: a positions-only summary, never birth data.

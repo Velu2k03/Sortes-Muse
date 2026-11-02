@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { getReading } from "@/lib/storage";
 import type { Reading } from "@/lib/types";
+import { useAuth } from "@/components/AuthProvider";
 import { getCard, orientationKeywords, orientationMeaning } from "@/lib/cards";
 import TarotCard from "@/components/TarotCard";
 import CardModal from "@/components/CardModal";
@@ -16,10 +17,22 @@ import TypewriterText from "@/components/TypewriterText";
 export default function ReadingDetail({ id }: { id: string }) {
   const [reading, setReading] = useState<Reading | null | undefined>(undefined);
   const [zoomCard, setZoomCard] = useState<string | null>(null);
+  // M1.1: the one next step the seeker chooses after reading. Kept in
+  // local state for editing, saved onto the reading on Save.
+  const { updateReading } = useAuth();
+  const [nextStepInput, setNextStepInput] = useState("");
+  const [nextStepSaved, setNextStepSaved] = useState(false);
+  const [nextStepSaving, setNextStepSaving] = useState(false);
 
   useEffect(() => {
     queueMicrotask(() => setReading(getReading(id) ?? null));
   }, [id]);
+
+  // Prefill the step input from the saved step once the reading loads,
+  // so clearing the field actually clears it instead of falling back.
+  useEffect(() => {
+    if (reading) setNextStepInput(reading.nextStep ?? "");
+  }, [reading?.id]);
 
   if (reading === undefined) {
     return <p className="py-20 text-center text-mist">Loading…</p>;
@@ -56,6 +69,16 @@ export default function ReadingDetail({ id }: { id: string }) {
       {reading.question && (
         <p className="mx-auto mt-4 max-w-xl text-center italic text-cream/80">
           “{reading.question}”
+        </p>
+      )}
+      {reading.originalQuestion && (
+        <p className="mx-auto mt-2 max-w-xl text-center text-xs text-mist">
+          First written as: “{reading.originalQuestion}”
+        </p>
+      )}
+      {reading.firstImpression && (
+        <p className="mx-auto mt-2 max-w-xl text-center text-sm text-goldbright">
+          Your first impression: {reading.firstImpression}
         </p>
       )}
 
@@ -129,6 +152,51 @@ export default function ReadingDetail({ id }: { id: string }) {
               Written for you in this moment. Tap the text to reveal it all at once.
             </p>
           </section>
+        )}
+      </div>
+
+      <div className="mx-auto mt-10 max-w-3xl rounded-3xl border border-gold/25 bg-panel/60 p-6 text-left sm:p-8">
+        <p className="text-xs uppercase tracking-[0.25em] text-gold">
+          My next step
+        </p>
+        <p className="mt-2 text-sm leading-relaxed text-cream/85">
+          One small step you choose from this reading. It is saved with
+          the reading, so your journal can remind you of it later.
+        </p>
+        <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+          <input
+            type="text"
+            value={nextStepInput}
+            onChange={(e) => {
+              setNextStepInput(e.target.value);
+              setNextStepSaved(false);
+            }}
+            placeholder="e.g. Message her before the weekend"
+            maxLength={300}
+            aria-label="My next step"
+            className="w-full flex-1 rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none"
+          />
+          <button
+            type="button"
+            disabled={nextStepSaving || !nextStepInput.trim()}
+            onClick={async () => {
+              const value = nextStepInput.trim();
+              if (!value) return;
+              setNextStepSaving(true);
+              const updated = await updateReading(reading.id, { nextStep: value });
+              setNextStepSaving(false);
+              if (updated) {
+                setReading(updated);
+                setNextStepSaved(true);
+              }
+            }}
+            className="btn-gold rounded-xl px-6 py-3 font-bold disabled:opacity-40"
+          >
+            {nextStepSaving ? "Saving…" : "Save step"}
+          </button>
+        </div>
+        {nextStepSaved && (
+          <p className="mt-2 text-sm text-goldbright">Saved with this reading.</p>
         )}
       </div>
 

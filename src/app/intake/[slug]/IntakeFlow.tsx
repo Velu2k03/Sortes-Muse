@@ -6,6 +6,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import ReadingWait, { PROCESSING_LINES } from "@/components/ReadingWait";
 import { getSpread, drawCards } from "@/lib/tarot";
 import { getCard } from "@/lib/cards";
+import { suggestQuestionRewrite } from "@/lib/question-rewrite";
+import type { DrawnCard } from "@/lib/types";
 import {
   INTAKE_CATEGORIES,
   getCategory,
@@ -19,7 +21,7 @@ import {
 import { useAuth } from "@/components/AuthProvider";
 import { trackReadingStarted, trackReadingCompleted } from "@/components/Analytics";
 
-type Step = "category" | "form" | "confirm" | "processing";
+type Step = "category" | "form" | "confirm" | "impression" | "processing";
 
 export default function IntakeFlow({ slug }: { slug: string }) {
   const router = useRouter();
@@ -30,12 +32,28 @@ export default function IntakeFlow({ slug }: { slug: string }) {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [story, setStory] = useState("");
   const [question, setQuestion] = useState("");
+  // M1.1: the question as first written, snapshotted when leaving the
+  // form step, so a confirm-step rewrite stays visible as a change.
+  const [originalQuestion, setOriginalQuestion] = useState("");
+  const [suggestionDismissed, setSuggestionDismissed] = useState(false);
+  // M1.1: cards are drawn at the confirm step and shown for a first
+  // impression before any generation or spending happens.
+  const [drawnCards, setDrawnCards] = useState<DrawnCard[] | null>(null);
+  const [impression, setImpression] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [processingLine, setProcessingLine] = useState(0);
   const [processingComplete, setProcessingComplete] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const category = categoryKey ? getCategory(categoryKey) : null;
+
+  // M1.1: rule-based rewrite suggestion for the confirm step. Editing
+  // the question re-arms the suggestion; using it clears it (the
+  // suggestion for an already-open question is null).
+  const questionSuggestion = useMemo(
+    () => suggestQuestionRewrite(question),
+    [question]
+  );
 
   const set = (key: string, value: string) =>
     setAnswers((a) => ({ ...a, [key]: value }));
@@ -53,8 +71,23 @@ export default function IntakeFlow({ slug }: { slug: string }) {
     return story.trim().length > 0 && question.trim().length > 0;
   };
 
-  const beginProcessing = async () => {
+  // M1.1: drawing is free and separate from generation. The confirm
+  // step draws the cards and shows them for a first impression; nothing
+  // is spent until the seeker taps "Reveal my reading". Going back and
+  // continuing again simply draws fresh cards.
+  const beginDraw = () => {
     if (!category) return;
+    if ((credits ?? 0) < 1) {
+      setError("You are out of credits. Please top up to continue.");
+      return;
+    }
+    setError(null);
+    setDrawnCards(drawCards(spread));
+    setStep("impression");
+  };
+
+  const beginGeneration = async () => {
+    if (!category || !drawnCards) return;
     // Guard against double-clicks: one tap, one credit.
     if (busy) return;
     if ((credits ?? 0) < 1) {
@@ -89,7 +122,9 @@ export default function IntakeFlow({ slug }: { slug: string }) {
     let failMessage =
       "The reading could not be generated just now. Your credit was not spent. Please try again in a moment.";
     try {
-      const cards = drawCards(spread);
+      const cards = drawnCards;
+      // One word only: the first token of whatever was typed.
+      const firstWord = impression.trim().split(/\s+/)[0] ?? "";
 
       // Strip sensitive fields (birthdays) before anything leaves the device.
       const safeAnswers: Record<string, string> = {};
@@ -104,6 +139,7 @@ export default function IntakeFlow({ slug }: { slug: string }) {
         answers: safeAnswers,
         story: story.trim(),
         question: question.trim(),
+        firstImpression: firstWord || undefined,
       };
 
       const res = await fetch("/api/reading/generate", {
@@ -142,6 +178,13 @@ export default function IntakeFlow({ slug }: { slug: string }) {
         aiGenerated: true,
         category: category.name,
         question: question.trim(),
+        // M1.1: keep the first-written question when the confirm step
+        // changed it, and the seeker's own first-impression word.
+        originalQuestion:
+          originalQuestion && originalQuestion !== question.trim()
+            ? originalQuestion
+            : undefined,
+        firstImpression: firstWord || undefined,
         firstName,
         free: false,
       });
@@ -157,7 +200,9 @@ export default function IntakeFlow({ slug }: { slug: string }) {
       router.push(`/reading/${reading.id}`);
     } catch {
       clearInterval(lineTimer);
-      setStep("confirm");
+      // Back to the impression step: the cards stay drawn, so the
+      // seeker can retry without paying again or re-drawing.
+      setStep("impression");
       setError(failMessage);
       // Guest refund only: guests pre-spent from the device wallet, so
       // a failed generation returns it. Signed-in users spent nothing
@@ -171,7 +216,8 @@ export default function IntakeFlow({ slug }: { slug: string }) {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6">
-      <StepDots step={step} />
+      {/* The impression step is part of the reading phase in the dots. */}
+      <StepDots step={step === "impression" ? "processing" : step} />
 
       <AnimatePresence mode="wait">
         {step === "category" && (
@@ -330,7 +376,11 @@ export default function IntakeFlow({ slug }: { slug: string }) {
               <button
                 type="button"
                 disabled={!formValid()}
-                onClick={() => setStep("confirm")}
+                onClick={() => {
+                  setOriginalQuestion(question);
+                  setSuggestionDismissed(false);
+                  setStep("confirm");
+                }}
                 className="btn-gold flex-1 rounded-xl px-6 py-3.5 font-bold disabled:cursor-not-allowed disabled:opacity-40"
               >
                 Review my reading
@@ -366,7 +416,18 @@ export default function IntakeFlow({ slug }: { slug: string }) {
                 </div>
                 <div>
                   <dt className="text-xs uppercase tracking-[0.2em] text-mist">Your question</dt>
-                  <dd className="mt-1 italic text-cream">“{question}”</dd>
+                  <dd className="mt-1">
+                    <input
+                      type="text"
+                      value={question}
+                      onChange={(e) => {
+                        setQuestion(e.target.value);
+                        setSuggestionDismissed(false);
+                      }}
+                      aria-label="Your question"
+                      className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base italic text-cream focus:border-gold/60 focus:outline-none"
+                    />
+                  </dd>
                 </div>
                 <div>
                   <dt className="text-xs uppercase tracking-[0.2em] text-mist">Cost</dt>
@@ -381,6 +442,38 @@ export default function IntakeFlow({ slug }: { slug: string }) {
                 <li>Readings are for reflection, never guaranteed predictions.</li>
               </ul>
             </div>
+
+            {questionSuggestion && !suggestionDismissed && (
+              <div className="mt-6 rounded-2xl border border-gold/25 bg-panel/60 p-4 text-left">
+                <p className="text-xs uppercase tracking-[0.2em] text-mist">
+                  Suggested stronger version
+                </p>
+                <p className="mt-2 text-sm italic text-cream">
+                  “{questionSuggestion}”
+                </p>
+                <p className="mt-1 text-xs text-mist">
+                  A suggestion from a fixed rule, not from AI. It frames
+                  your question as reflection instead of a verdict. You
+                  can edit it freely.
+                </p>
+                <div className="mt-3 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setQuestion(questionSuggestion)}
+                    className="btn-gold rounded-xl px-4 py-2 text-sm font-bold"
+                  >
+                    Use suggestion
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSuggestionDismissed(true)}
+                    className="btn-ghost rounded-xl px-4 py-2 text-sm font-semibold"
+                  >
+                    Keep mine
+                  </button>
+                </div>
+              </div>
+            )}
 
             {error && (
               <p className="mt-4 rounded-xl border border-red-400/40 bg-red-500/10 p-3 text-sm alert-error-text">
@@ -398,11 +491,92 @@ export default function IntakeFlow({ slug }: { slug: string }) {
               </button>
               <button
                 type="button"
-                onClick={beginProcessing}
+                onClick={beginDraw}
+                className="btn-gold flex-1 rounded-xl px-6 py-3.5 text-lg font-bold disabled:cursor-wait disabled:opacity-60"
+              >
+                ✦ Continue · draw the cards
+              </button>
+            </div>
+          </motion.div>
+        )}
+
+        {step === "impression" && drawnCards && category && (
+          <motion.div
+            key="impression"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            className="text-center"
+          >
+            <p className="text-xs uppercase tracking-[0.35em] text-gold">
+              Your cards are drawn
+            </p>
+            <h1 className="mt-3 font-display text-4xl text-goldbright sm:text-5xl">
+              First, what do you see?
+            </h1>
+            <p className="mx-auto mt-3 max-w-md text-sm text-cream/75">
+              Before the reading is written, give one word for your first
+              reaction to these cards. It is optional, and it travels
+              with the reading.
+            </p>
+
+            <ul className="mx-auto mt-8 max-w-md space-y-2 text-left">
+              {drawnCards.map((d) => (
+                <li
+                  key={d.positionKey}
+                  className="rounded-2xl border border-gold/25 bg-panel/60 px-4 py-3 text-sm text-cream"
+                >
+                  <span className="text-xs uppercase tracking-[0.2em] text-mist">
+                    {d.position} ·{" "}
+                  </span>
+                  {getCard(d.cardId).name}
+                  <span className="text-mist">
+                    {" "}
+                    · {d.reversed ? "reversed" : "upright"}
+                  </span>
+                </li>
+              ))}
+            </ul>
+
+            <div className="mx-auto mt-6 max-w-md">
+              <label
+                htmlFor="intake-impression"
+                className="mb-1.5 block text-left text-sm font-medium text-cream"
+              >
+                One word for your first reaction (optional)
+              </label>
+              <input
+                id="intake-impression"
+                type="text"
+                value={impression}
+                onChange={(e) => setImpression(e.target.value)}
+                placeholder="e.g. hopeful"
+                maxLength={40}
+                className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none"
+              />
+            </div>
+
+            {error && (
+              <p className="mx-auto mt-4 max-w-md rounded-xl border border-red-400/40 bg-red-500/10 p-3 text-sm alert-error-text">
+                {error}
+              </p>
+            )}
+
+            <div className="mx-auto mt-8 flex max-w-md gap-3">
+              <button
+                type="button"
+                onClick={() => setStep("confirm")}
+                className="btn-ghost rounded-xl px-6 py-3.5 font-semibold"
+              >
+                Back
+              </button>
+              <button
+                type="button"
+                onClick={beginGeneration}
                 disabled={busy}
                 className="btn-gold flex-1 rounded-xl px-6 py-3.5 text-lg font-bold disabled:cursor-wait disabled:opacity-60"
               >
-                {busy ? "✦ Casting…" : "✦ Continue · begin reading"}
+                {busy ? "✦ Casting…" : "✦ Reveal my reading"}
               </button>
             </div>
           </motion.div>

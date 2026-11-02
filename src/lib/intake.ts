@@ -108,6 +108,9 @@ export interface IntakePayload {
   answers: Record<string, string>;
   story: string;
   question: string;
+  // M1.1: the seeker's own one-word first reaction to the drawn cards,
+  // sent to the prompt and saved on the reading. Optional.
+  firstImpression?: string;
 }
 
 /** Keys that must never leave the device / never reach the AI model. */
