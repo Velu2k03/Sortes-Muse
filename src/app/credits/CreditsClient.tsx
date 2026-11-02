@@ -8,6 +8,7 @@ import { getPurchaseHistory, type Purchase } from "@/lib/storage";
 import { useAuth } from "@/components/AuthProvider";
 import CheckoutModal from "@/components/CheckoutModal";
 import PurchaseConfirmer from "@/components/PurchaseConfirmer";
+import SampleReading from "@/components/SampleReading";
 import Counter from "@/components/Counter";
 import { useSearchParams } from "next/navigation";
 
@@ -192,6 +193,12 @@ export default function CreditsPage() {
         Pay-per-reading, no subscriptions. Prices include everything; there
         are no hidden fees. Secure checkout is powered by Lemon Squeezy.
       </p>
+
+      {/* M2.2: the same labeled paid-reading sample as the home page,
+          so buyers see exactly what a reading contains before paying. */}
+      <div className="mt-10">
+        <SampleReading />
+      </div>
 
       <CheckoutModal open={open} onClose={() => setOpen(false)} />
     </div>

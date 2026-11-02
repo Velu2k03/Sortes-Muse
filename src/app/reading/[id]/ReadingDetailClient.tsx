@@ -29,6 +29,11 @@ export default function ReadingDetail({ id }: { id: string }) {
   const [followUpLoading, setFollowUpLoading] = useState(false);
   const [followUpError, setFollowUpError] = useState<string | null>(null);
 
+  // M2.2: 7-day revisit note state
+  const [revisitInput, setRevisitInput] = useState("");
+  const [revisitSaved, setRevisitSaved] = useState(false);
+  const [revisitSaving, setRevisitSaving] = useState(false);
+
   useEffect(() => {
     queueMicrotask(() => setReading(getReading(id) ?? null));
   }, [id]);
@@ -37,6 +42,11 @@ export default function ReadingDetail({ id }: { id: string }) {
   // so clearing the field actually clears it instead of falling back.
   useEffect(() => {
     if (reading) setNextStepInput(reading.nextStep ?? "");
+  }, [reading?.id]);
+
+  // Same prefill rule for the revisit note.
+  useEffect(() => {
+    if (reading) setRevisitInput(reading.revisitNote ?? "");
   }, [reading?.id]);
 
   if (reading === undefined) {
@@ -204,6 +214,90 @@ export default function ReadingDetail({ id }: { id: string }) {
           <p className="mt-2 text-sm text-goldbright">Saved with this reading.</p>
         )}
       </div>
+
+      {/* M2.2: 7-day revisit. Shown once a week has passed and no note
+          exists yet, or to display a saved note. Never shown early. */}
+      {(() => {
+        const parsed = Date.parse(reading.createdAt);
+        const ageDays = Number.isNaN(parsed)
+          ? 0
+          : Math.floor((Date.now() - parsed) / 86400000);
+        if (reading.revisitNote) {
+          return (
+            <div className="mx-auto mt-10 max-w-3xl rounded-3xl border border-gold/25 bg-panel/60 p-6 text-left sm:p-8">
+              <p className="text-xs uppercase tracking-[0.25em] text-gold">
+                What you noted on revisit
+              </p>
+              <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-cream/90">
+                {reading.revisitNote}
+              </p>
+              {reading.revisitAt && (
+                <p className="mt-2 text-xs text-mist">
+                  Noted{" "}
+                  {new Date(reading.revisitAt).toLocaleDateString(undefined, {
+                    year: "numeric",
+                    month: "short",
+                    day: "numeric",
+                  })}
+                </p>
+              )}
+            </div>
+          );
+        }
+        if (ageDays < 7) return null;
+        return (
+          <div className="mx-auto mt-10 max-w-3xl rounded-3xl border border-gold/25 bg-panel/60 p-6 text-left sm:p-8">
+            <p className="text-xs uppercase tracking-[0.25em] text-gold">
+              A week has passed
+            </p>
+            <p className="mt-2 text-sm leading-relaxed text-cream/85">
+              What has shifted since this reading? A line or two is enough.
+              It is saved with the reading, so your journal keeps the whole
+              arc, not just the first day.
+            </p>
+            <div className="mt-4 flex flex-col gap-3">
+              <textarea
+                value={revisitInput}
+                onChange={(e) => {
+                  setRevisitInput(e.target.value);
+                  setRevisitSaved(false);
+                }}
+                placeholder="e.g. I took the step, and the reply came faster than I feared"
+                maxLength={1000}
+                rows={3}
+                aria-label="Revisit note"
+                className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none"
+              />
+              <button
+                type="button"
+                disabled={revisitSaving || !revisitInput.trim()}
+                onClick={async () => {
+                  const value = revisitInput.trim();
+                  if (!value) return;
+                  setRevisitSaving(true);
+                  const updated = await updateReading(reading.id, {
+                    revisitNote: value,
+                    revisitAt: new Date().toISOString(),
+                  });
+                  setRevisitSaving(false);
+                  if (updated) {
+                    setReading(updated);
+                    setRevisitSaved(true);
+                  }
+                }}
+                className="btn-gold self-start rounded-xl px-6 py-3 font-bold disabled:opacity-40"
+              >
+                {revisitSaving ? "Saving…" : "Save revisit note"}
+              </button>
+            </div>
+            {revisitSaved && (
+              <p className="mt-2 text-sm text-goldbright">
+                Saved with this reading.
+              </p>
+            )}
+          </div>
+        );
+      })()}
 
       <div className="mx-auto mt-10 flex max-w-3xl flex-col items-center gap-4 rounded-3xl border border-gold/25 bg-panel/60 p-6 text-center sm:p-8">
         <ShareReading

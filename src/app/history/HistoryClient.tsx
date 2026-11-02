@@ -8,11 +8,18 @@ import { getHistory } from "@/lib/storage";
 import { useAuth } from "@/components/AuthProvider";
 import type { Reading } from "@/lib/types";
 import { getCard } from "@/lib/cards";
+import {
+  groupReadingsByDay,
+  isRevisitEligible,
+  monthlyReview,
+} from "@/lib/journal";
 
 /**
  * Journal: reading history (localStorage for guests, DB-synced for
- * logged-in users in Phase 7). Each entry carries an "Ask a follow-up"
- * upsell into a new clarifying reading.
+ * signed-in users). M2.2 turns the flat list into a timeline grouped
+ * by day, with a monthly pattern review and a ready-to-revisit
+ * section. Follow-ups now link to the real thread on the reading
+ * detail page (M2.1), not to a new reading.
  */
 export default function HistoryPage() {
   const { user } = useAuth();
@@ -74,82 +81,211 @@ export default function HistoryPage() {
       )}
 
       {history !== null && history.length > 0 && (
-        <div className="mt-10 space-y-4">
-          {history.map((r) => {
-            const date = new Date(r.createdAt).toLocaleDateString(undefined, {
+        <>
+          {/* M2.2: monthly pattern review, computed from the seeker's
+              own readings only. Free, always, no AI involved. */}
+          {(() => {
+            const now = new Date();
+            const review = monthlyReview(
+              history,
+              now.getFullYear(),
+              now.getMonth()
+            );
+            const monthLabel = now.toLocaleDateString(undefined, {
+              month: "long",
               year: "numeric",
-              month: "short",
-              day: "numeric",
             });
             return (
-              <article
-                key={r.id}
-                className="rounded-3xl border border-gold/20 bg-panel/60 p-5 sm:p-6"
-              >
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-                  <div className="flex -space-x-3">
-                    {r.cards.slice(0, 5).map((d) => (
-                      <div
-                        key={d.positionKey}
-                        className="relative h-20 w-12 overflow-hidden rounded-md border border-gold/40 bg-navydeep"
-                      >
-                        <Image
-                          src={getCard(d.cardId).image}
-                          alt=""
-                          fill
-                          sizes="48px"
-                          className="object-cover"
-                          style={
-                            d.reversed
-                              ? { transform: "rotate(180deg)" }
-                              : undefined
-                          }
-                        />
-                      </div>
-                    ))}
-                    {r.cards.length > 5 && (
-                      <div className="flex h-20 w-12 items-center justify-center rounded-md border border-gold/40 bg-navydeep text-xs text-goldbright">
-                        +{r.cards.length - 5}
-                      </div>
-                    )}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs uppercase tracking-[0.2em] text-mist">
-                      {date} · {r.free ? "Free reading" : "1 credit"}
-                      {r.aiGenerated ? " · Personalized" : ""}
+              <div className="mt-10 rounded-3xl border border-gold/20 bg-panel/60 p-5 sm:p-6">
+                <p className="text-xs uppercase tracking-[0.25em] text-gold">
+                  This month in your journal · {monthLabel}
+                </p>
+                {review.count === 0 ? (
+                  <p className="mt-2 text-sm text-cream/75">
+                    No readings this month yet. Your pattern review appears
+                    here once you cast one.
+                  </p>
+                ) : (
+                  <>
+                    <p className="mt-2 text-sm text-cream/85">
+                      {review.count}{" "}
+                      {review.count === 1 ? "reading" : "readings"} this
+                      month
+                      {review.categories.filter(
+                        (c) => c.name !== "uncategorized"
+                      ).length > 0 &&
+                        ` · ${review.categories
+                          .filter((c) => c.name !== "uncategorized")
+                          .map((c) => `${c.name} ×${c.count}`)
+                          .join(", ")}`}
+                      {review.stepsCount > 0 &&
+                        ` · ${review.stepsCount} next ${
+                          review.stepsCount === 1 ? "step" : "steps"
+                        } chosen`}
+                      {review.followUpsCount > 0 &&
+                        ` · ${review.followUpsCount} ${
+                          review.followUpsCount === 1
+                            ? "follow-up"
+                            : "follow-ups"
+                        } asked`}
+                      .
                     </p>
-                    <h2 className="mt-1 font-display text-2xl text-cream">
-                      {r.spreadName}
-                    </h2>
-                    {r.question && (
-                      <p className="mt-1 truncate text-sm italic text-cream/70">
-                        “{r.question}”
+                    {review.topCards.length > 0 && (
+                      <p className="mt-1 text-sm text-cream/75">
+                        Cards that kept appearing:{" "}
+                        {review.topCards
+                          .map(
+                            (c) =>
+                              `${getCard(c.cardId).name} (×${c.count})`
+                          )
+                          .join(", ")}
+                        .
                       </p>
                     )}
-                    {r.chartSummary && (
-                      <p className="mt-1 text-sm text-cream/70">{r.chartSummary}</p>
-                    )}
-                  </div>
-                  <div className="flex shrink-0 gap-2">
-                    <Link
-                      href={`/reading/${r.id}`}
-                      className="btn-ghost rounded-xl px-4 py-2.5 text-sm font-semibold"
-                    >
-                      Revisit
-                    </Link>
-                    <Link
-                      href="/spreads/quick-insight"
-                      className="btn-gold rounded-xl px-4 py-2.5 text-sm font-bold"
-                      title="Draw a clarifying reading on the same question"
-                    >
-                      Ask a follow-up
-                    </Link>
-                  </div>
-                </div>
-              </article>
+                  </>
+                )}
+                <p className="mt-2 text-xs text-mist">
+                  Computed from your own readings only. Never paywalled.
+                </p>
+              </div>
             );
-          })}
-        </div>
+          })()}
+
+          {/* M2.2: readings old enough to revisit, without a note yet. */}
+          {history.filter((r) => isRevisitEligible(r)).length > 0 && (
+            <div className="mt-10 rounded-3xl border border-gold/20 bg-panel/60 p-5 sm:p-6">
+              <p className="text-xs uppercase tracking-[0.25em] text-gold">
+                Ready to revisit
+              </p>
+              <p className="mt-2 text-sm text-cream/75">
+                A week has passed since these readings. A line on what
+                shifted keeps the whole arc in your journal.
+              </p>
+              <ul className="mt-4 space-y-2">
+                {history
+                  .filter((r) => isRevisitEligible(r))
+                  .map((r) => (
+                    <li
+                      key={r.id}
+                      className="flex items-center justify-between gap-3 rounded-xl border border-gold/15 bg-panel/40 px-4 py-3"
+                    >
+                      <span className="min-w-0">
+                        <span className="block truncate text-sm text-cream">
+                          {r.spreadName}
+                          {r.question ? ` · “${r.question}”` : ""}
+                        </span>
+                        <span className="text-xs text-mist">
+                          {new Date(r.createdAt).toLocaleDateString(
+                            undefined,
+                            {
+                              year: "numeric",
+                              month: "short",
+                              day: "numeric",
+                            }
+                          )}
+                        </span>
+                      </span>
+                      <Link
+                        href={`/reading/${r.id}`}
+                        className="shrink-0 text-sm font-semibold text-goldbright underline"
+                      >
+                        Write your note
+                      </Link>
+                    </li>
+                  ))}
+              </ul>
+            </div>
+          )}
+
+          {/* M2.2: timeline, grouped by day, newest first. */}
+          <div className="mt-10 space-y-8">
+            {groupReadingsByDay(history).map((group) => (
+              <section key={group.label}>
+                <p className="text-xs uppercase tracking-[0.25em] text-gold">
+                  {group.label}
+                </p>
+                <div className="mt-3 space-y-4">
+                  {group.readings.map((r) => (
+                    <article
+                      key={r.id}
+                      className="rounded-3xl border border-gold/20 bg-panel/60 p-5 sm:p-6"
+                    >
+                      <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+                        <div className="flex -space-x-3">
+                          {(r.cards ?? []).slice(0, 5).map((d) => (
+                            <div
+                              key={d.positionKey}
+                              className="relative h-20 w-12 overflow-hidden rounded-md border border-gold/40 bg-navydeep"
+                            >
+                              <Image
+                                src={getCard(d.cardId).image}
+                                alt=""
+                                fill
+                                sizes="48px"
+                                className="object-cover"
+                                style={
+                                  d.reversed
+                                    ? { transform: "rotate(180deg)" }
+                                    : undefined
+                                }
+                              />
+                            </div>
+                          ))}
+                          {(r.cards ?? []).length > 5 && (
+                            <div className="flex h-20 w-12 items-center justify-center rounded-md border border-gold/40 bg-navydeep text-xs text-goldbright">
+                              +{(r.cards ?? []).length - 5}
+                            </div>
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs uppercase tracking-[0.2em] text-mist">
+                            {r.free ? "Free reading" : "1 credit"}
+                            {r.aiGenerated ? " · Personalized" : ""}
+                            {(r.followUps?.length ?? 0) > 0 &&
+                              ` · ${r.followUps?.length} follow-up${
+                                (r.followUps?.length ?? 0) === 1 ? "" : "s"
+                              }`}
+                            {r.revisitNote && " · Revisited"}
+                          </p>
+                          <h2 className="mt-1 font-display text-2xl text-cream">
+                            {r.spreadName}
+                          </h2>
+                          {r.question && (
+                            <p className="mt-1 truncate text-sm italic text-cream/70">
+                              “{r.question}”
+                            </p>
+                          )}
+                          {r.chartSummary && (
+                            <p className="mt-1 text-sm text-cream/70">{r.chartSummary}</p>
+                          )}
+                        </div>
+                        <div className="flex shrink-0 gap-2">
+                          <Link
+                            href={`/reading/${r.id}`}
+                            className="btn-ghost rounded-xl px-4 py-2.5 text-sm font-semibold"
+                          >
+                            Open reading
+                          </Link>
+                          {r.aiGenerated &&
+                            r.interpretation &&
+                            !r.chartSummary && (
+                              <Link
+                                href={`/reading/${r.id}`}
+                                className="btn-gold rounded-xl px-4 py-2.5 text-sm font-bold"
+                                title="Continue the follow-up thread on this reading"
+                              >
+                                Follow-up
+                              </Link>
+                            )}
+                        </div>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </section>
+            ))}
+          </div>
+        </>
       )}
     </div>
   );

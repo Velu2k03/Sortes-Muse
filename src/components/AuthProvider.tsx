@@ -231,11 +231,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async (id: string, patch: Partial<Reading>) => {
       const updated = updateLocalReading(id, patch);
       if (!updated) return null;
-      if (user && patch.nextStep !== undefined) {
+      // Server-patchable keys only: nextStep (M1.1) and revisitNote
+      // (M2.2). followUps are excluded on purpose: the follow-up
+      // route already updates the server copy itself.
+      if (
+        user &&
+        (patch.nextStep !== undefined || patch.revisitNote !== undefined)
+      ) {
+        const body: Record<string, unknown> = { id };
+        if (patch.nextStep !== undefined) body.nextStep = patch.nextStep;
+        if (patch.revisitNote !== undefined) {
+          body.revisitNote = patch.revisitNote;
+          if (patch.revisitAt !== undefined) body.revisitAt = patch.revisitAt;
+        }
         await fetch("/api/history", {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id, nextStep: patch.nextStep }),
+          body: JSON.stringify(body),
         }).catch(() => {});
       }
       return updated;

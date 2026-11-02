@@ -61,6 +61,9 @@ export interface Reading {
   free: boolean;
   // M2.1: follow-up thread on this reading (tarot only, cap 3).
   followUps?: FollowUp[];
+  // M2.2: 7-day revisit note, saved on the reading itself.
+  revisitNote?: string;
+  revisitAt?: string;
   // Chart readings only: a positions-only summary, never birth data.
   chartSummary?: string;
 }
