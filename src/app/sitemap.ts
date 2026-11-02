@@ -17,6 +17,7 @@ const PAGES = [
   "/spreads/celtic-cross",
   "/history",
   "/credits",
+  "/about",
   "/guides",
   "/guides/what-is-tarot",
   "/guides/how-to-ask-a-tarot-question",
