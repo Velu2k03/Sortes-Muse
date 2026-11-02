@@ -17,6 +17,11 @@ const PAGES = [
   "/spreads/celtic-cross",
   "/history",
   "/credits",
+  "/guides",
+  "/guides/what-is-tarot",
+  "/guides/how-to-ask-a-tarot-question",
+  "/guides/celtic-cross-explained",
+  "/guides/tarot-and-birth-charts",
   "/privacy",
   "/terms",
 ];
