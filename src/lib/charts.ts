@@ -158,9 +158,16 @@ export function calculateZiwei(input: {
   gender: ChartGender;
   longitude?: number;
 }): ZiweiResult {
-  // Longitude correction, when a birthplace longitude is supplied and the
-  // time is known: shift the clock time before iztro picks its double-hour.
-  // Unknown time stays at noon with no correction.
+  // M1.2: Ziwei cannot be calculated without a birth hour. The twelve
+  // palaces are placed by the two-hour branch, so a noon double-hour
+  // layout would be a guess presented as a chart. Refuse honestly.
+  if (input.hour === null) {
+    throw new Error(
+      "Ziwei needs a birth hour: the twelve palaces are placed by the two-hour branch you were born in, so a chart from an unknown hour would be a guess."
+    );
+  }
+  // Longitude correction, when a birthplace longitude is supplied:
+  // shift the clock time before iztro picks its double-hour.
   let effDate = input.date;
   let effHour = input.hour;
   let effMinute = input.minute ?? 0;
@@ -219,6 +226,9 @@ export interface WesternPlanet {
   longitude: number;
   sign: string;
   house: number | null;
+  // M1.2: direction of motion, from a second calculation 24 hours
+  // later. True when the longitude decreases (apparent retrograde).
+  retrograde: boolean;
 }
 export interface WesternAspect {
   planet1: string;
@@ -229,12 +239,15 @@ export interface WesternAspect {
 export interface WesternResult {
   system: "western";
   sunSign: string;
-  ascendantSign: string;
-  ascendantLongitude: number;
-  midheavenSign: string;
-  midheavenLongitude: number;
+  // M1.2: null when birth time is unknown. Noon-derived angles are
+  // no longer presented as the seeker's Rising or Midheaven.
+  ascendantSign: string | null;
+  ascendantLongitude: number | null;
+  midheavenSign: string | null;
+  midheavenLongitude: number | null;
   unknownTime: boolean;
   planets: WesternPlanet[];
+  // Empty when birth time is unknown: no noon-derived houses.
   cusps: number[];
   aspectCount: number;
   aspects: WesternAspect[];
@@ -251,46 +264,69 @@ export function calculateWestern(input: {
   if (input.latitude < -90 || input.latitude > 90 || input.longitude < -180 || input.longitude > 180) {
     throw new Error("latitude/longitude out of range");
   }
+  // M1.2: unknown time still uses noon as a stand-in for planet
+  // positions only. Angles and houses are withheld, never noon-derived.
+  const unknown = input.hour === null;
   const hour = input.hour ?? 12;
-  const origin = new Origin({
-    year: y,
-    month: m - 1,
-    date: d,
-    hour,
-    minute: input.minute ?? 0,
-    latitude: input.latitude,
-    longitude: input.longitude,
-  });
-  const horoscope = new Horoscope({ origin, houseSystem: "placidus", zodiac: "tropical" }) as {
-    CelestialBodies: Record<string, {
-      label: string;
-      Sign: { label: string };
-      ChartPosition: { Ecliptic: { DecimalDegrees: number } };
-      House?: { id: number };
-    }>;
-    Houses: { ChartPosition: { StartPosition: { Ecliptic: { DecimalDegrees: number } } } }[];
-    SunSign: { label: string };
-    Ascendant: { Sign: { label: string }; ChartPosition: { Ecliptic: { DecimalDegrees: number } } };
-    Midheaven: { Sign: { label: string }; ChartPosition: { Ecliptic: { DecimalDegrees: number } } };
-    Aspects: { all: { point1Label: string; point2Label: string; label: string; orb: number }[] };
+  const minute = input.minute ?? 0;
+  const build = (yy: number, mm: number, dd: number) => {
+    const origin = new Origin({
+      year: yy,
+      month: mm - 1,
+      date: dd,
+      hour,
+      minute,
+      latitude: input.latitude,
+      longitude: input.longitude,
+    });
+    return new Horoscope({ origin, houseSystem: "placidus", zodiac: "tropical" }) as {
+      CelestialBodies: Record<string, {
+        label: string;
+        Sign: { label: string };
+        ChartPosition: { Ecliptic: { DecimalDegrees: number } };
+        House?: { id: number };
+      }>;
+      Houses: { ChartPosition: { StartPosition: { Ecliptic: { DecimalDegrees: number } } } }[];
+      SunSign: { label: string };
+      Ascendant: { Sign: { label: string }; ChartPosition: { Ecliptic: { DecimalDegrees: number } } };
+      Midheaven: { Sign: { label: string }; ChartPosition: { Ecliptic: { DecimalDegrees: number } } };
+      Aspects: { all: { point1Label: string; point2Label: string; label: string; orb: number }[] };
+    };
   };
+  const horoscope = build(y, m, d);
+  // M1.2 retrograde: same local clock one day later. A negative
+  // wrap-aware longitude change means apparent retrograde motion.
+  const nextDay = new Date(Date.UTC(y, m - 1, d));
+  nextDay.setUTCDate(nextDay.getUTCDate() + 1);
+  const later = build(
+    nextDay.getUTCFullYear(),
+    nextDay.getUTCMonth() + 1,
+    nextDay.getUTCDate()
+  );
+  const norm180 = (x: number) => ((x + 540) % 360) - 180;
   const bodies = horoscope.CelestialBodies;
-  const planets: WesternPlanet[] = WESTERN_PLANETS.filter((k) => bodies[k]).map((k) => ({
-    name: bodies[k].label,
-    longitude: bodies[k].ChartPosition.Ecliptic.DecimalDegrees,
-    sign: bodies[k].Sign.label,
-    house: bodies[k].House ? bodies[k].House.id : null,
-  }));
+  const laterBodies = later.CelestialBodies;
+  const planets: WesternPlanet[] = WESTERN_PLANETS.filter((k) => bodies[k]).map((k) => {
+    const lon = bodies[k].ChartPosition.Ecliptic.DecimalDegrees;
+    const laterLon = laterBodies[k]?.ChartPosition.Ecliptic.DecimalDegrees;
+    return {
+      name: bodies[k].label,
+      longitude: lon,
+      sign: bodies[k].Sign.label,
+      house: unknown ? null : bodies[k].House ? bodies[k].House.id : null,
+      retrograde: typeof laterLon === "number" ? norm180(laterLon - lon) < 0 : false,
+    };
+  });
   return {
     system: "western",
     sunSign: horoscope.SunSign.label,
-    ascendantSign: horoscope.Ascendant.Sign.label,
-    ascendantLongitude: horoscope.Ascendant.ChartPosition.Ecliptic.DecimalDegrees,
-    midheavenSign: horoscope.Midheaven.Sign.label,
-    midheavenLongitude: horoscope.Midheaven.ChartPosition.Ecliptic.DecimalDegrees,
-    unknownTime: input.hour === null,
+    ascendantSign: unknown ? null : horoscope.Ascendant.Sign.label,
+    ascendantLongitude: unknown ? null : horoscope.Ascendant.ChartPosition.Ecliptic.DecimalDegrees,
+    midheavenSign: unknown ? null : horoscope.Midheaven.Sign.label,
+    midheavenLongitude: unknown ? null : horoscope.Midheaven.ChartPosition.Ecliptic.DecimalDegrees,
+    unknownTime: unknown,
     planets,
-    cusps: horoscope.Houses.map((h) => h.ChartPosition.StartPosition.Ecliptic.DecimalDegrees),
+    cusps: unknown ? [] : horoscope.Houses.map((h) => h.ChartPosition.StartPosition.Ecliptic.DecimalDegrees),
     aspectCount: horoscope.Aspects.all.length,
     // Exposing the library's own aspect list, not new math: the count
     // alone told the user nothing, so the list is shown collapsibly.

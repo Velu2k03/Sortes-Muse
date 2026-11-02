@@ -42,6 +42,18 @@ export default function CustomWesternWheel({ result, theme }: { result: WesternR
   const gold = dark ? "#f4d03f" : "#7c5e00";
   const line = dark ? "#d4af37" : "#8a6d0a";
   const asc = result.ascendantLongitude;
+  const mc = result.midheavenLongitude;
+  // M1.2: without a birth time there is no Ascendant, Midheaven, or
+  // cusps to draw around. The parent skips the wheel in that case;
+  // this guard keeps the component safe for any caller.
+  if (asc === null || mc === null || result.cusps.length === 0) {
+    return (
+      <p className="text-sm text-cream/80">
+        No wheel without a birth time: the wheel is drawn around Rising
+        and the house cusps, which are withheld for unknown-time charts.
+      </p>
+    );
+  }
   // Screen angle for an ecliptic longitude: Ascendant at 180 degrees
   // (left), zodiac increasing counter-clockwise from there.
   const angleFor = (lon: number) => 180 - ((lon - asc + 360) % 360);
@@ -137,7 +149,7 @@ export default function CustomWesternWheel({ result, theme }: { result: WesternR
         // (8.3px), so Mc is nudged tangentially away from the
         // nearest sign glyph instead: 24px along the tangent
         // (-sin a, -cos a), in the direction away from that glyph.
-        const mcAngle = angleFor(result.midheavenLongitude);
+        const mcAngle = angleFor(mc);
         const signMids = SIGNS.map((_, i) => angleFor(i * 30) - 15);
         let nearest = signMids[0];
         let nearestDist = Math.abs(wrap180(mcAngle - nearest));

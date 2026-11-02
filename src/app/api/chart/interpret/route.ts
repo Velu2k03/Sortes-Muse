@@ -57,7 +57,39 @@ function num(v: unknown): number | null {
 
 // Build the prompt ONLY from whitelisted position fields. Returns null
 // when the chart shape is not recognisable for its system.
+// M1.2: aspects, cusps, retrograde, Ziwei brightness and
+// transformations, and Vedic dasha dates are now included, and
+// unknown-time charts omit angles and houses instead of receiving
+// noon-derived ones.
+const UNKNOWN_TIME_NOTE =
+  "Birth time unknown: planet positions use a noon stand-in, and Rising and houses are withheld and must not be interpreted.";
+const UNKNOWN_TIME_NOTE_WESTERN =
+  "Birth time unknown: planet positions use a noon stand-in, and Rising, Midheaven, and houses are withheld and must not be interpreted.";
+
+function planetLine(p: Record<string, unknown>): string {
+  const lon = num(p.longitude);
+  return `- ${str(p.name)}: ${str(p.sign)}${lon !== null ? `, ${lon.toFixed(2)} degrees` : ""}${typeof p.house === "number" ? `, house ${p.house}` : ""}${p.retrograde === true ? ", retrograde" : ""}`;
+}
+
+// Ziwei brightness and transformation glosses. Raw characters stay in
+// the prompt; the gloss only helps the model read them.
+const BRIGHTNESS_EN: Record<string, string> = {
+  "庙": "exalted",
+  "旺": "flourishing",
+  "得": "favorable",
+  "利": "beneficial",
+  "平": "neutral",
+  "陷": "debilitated",
+};
+const MUTAGEN_EN: Record<string, string> = {
+  "禄": "Lu (growth)",
+  "权": "Quan (authority)",
+  "科": "Ke (recognition)",
+  "忌": "Ji (obstacle)",
+};
+
 function buildChartLines(system: string, chart: Record<string, unknown>): string | null {
+  const unknownTime = chart.unknownTime === true;
   if (system === "ziwei") {
     const palaces = Array.isArray(chart.palaces) ? chart.palaces : [];
     if (palaces.length !== 12) return null;
@@ -67,30 +99,66 @@ function buildChartLines(system: string, chart: Record<string, unknown>): string
         const l = localizeStar(String(s));
         return `${l.en} (${l.zh})`;
       }) : [];
+      // Brightness and transformations come from majorStarsDetail
+      // when the calculation provides it; they are never invented.
+      const details = Array.isArray(p.majorStarsDetail) ? p.majorStarsDetail : [];
+      const detailLines = details.map((rawD) => {
+        const d = rawD as Record<string, unknown>;
+        const l = localizeStar(str(d.name));
+        const brightness = str(d.brightness);
+        const mutagen = str(d.mutagen);
+        const b = brightness ? `, brightness ${brightness}${BRIGHTNESS_EN[brightness] ? ` (${BRIGHTNESS_EN[brightness]})` : ""}` : "";
+        const t = mutagen ? `, transformation ${mutagen}${MUTAGEN_EN[mutagen] ? ` (${MUTAGEN_EN[mutagen]})` : ""}` : "";
+        return `${l.en} (${l.zh})${b}${t}`;
+      });
+      const minors = Array.isArray(p.minorStars) ? (p.minorStars as unknown[]).map((s) => localizeStar(String(s)).en) : [];
       const life = p.isLifePalace === true ? " [Life palace]" : "";
-      return `- ${str(p.name)} palace${life}: ${majors.length ? majors.join(", ") : "empty"}`;
+      const majorText = detailLines.length ? detailLines.join("; ") : majors.length ? majors.join(", ") : "empty";
+      const minorText = minors.length ? `; minor stars: ${minors.join(", ")}` : "";
+      return `- ${str(p.name)} palace${life}: ${majorText}${minorText}`;
     });
     return `System: Ziwei (Purple Star), 12 palaces.\nZodiac animal: ${str(chart.zodiac)}. Western sign: ${str(chart.sign)}.\n${lines.join("\n")}`;
   }
   if (system === "western") {
     const planets = Array.isArray(chart.planets) ? chart.planets : [];
     if (!planets.length) return null;
-    const lines = planets.map((raw) => {
-      const p = raw as Record<string, unknown>;
-      const lon = num(p.longitude);
-      return `- ${str(p.name)}: ${str(p.sign)}${lon !== null ? `, ${lon.toFixed(2)} degrees` : ""}${typeof p.house === "number" ? `, house ${p.house}` : ""}`;
-    });
-    return `System: Western tropical.\nSun: ${str(chart.sunSign)}. Rising: ${str(chart.ascendantSign)}. Midheaven: ${str(chart.midheavenSign)}.\n${lines.join("\n")}`;
+    const lines = planets.map((raw) => planetLine(raw as Record<string, unknown>));
+    const header = unknownTime
+      ? `Sun: ${str(chart.sunSign)}. ${UNKNOWN_TIME_NOTE_WESTERN}`
+      : `Sun: ${str(chart.sunSign)}. Rising: ${str(chart.ascendantSign)}. Midheaven: ${str(chart.midheavenSign)}.`;
+    const cusps = Array.isArray(chart.cusps) ? chart.cusps : [];
+    const cuspLines = cusps.length === 12
+      ? `\nHouse cusps (Placidus, degrees): ${cusps.map((c, i) => `house ${i + 1} ${num(c)?.toFixed(2) ?? "?"}`).join(", ")}.`
+      : "";
+    const aspects = Array.isArray(chart.aspects) ? chart.aspects : [];
+    const aspectLines = aspects.length
+      ? `\nAspects:\n${aspects.map((raw) => {
+        const a = raw as Record<string, unknown>;
+        const orb = num(a.orb);
+        return `- ${str(a.planet1)} ${str(a.label)} ${str(a.planet2)}${orb !== null ? `, orb ${orb.toFixed(2)} degrees` : ""}`;
+      }).join("\n")}`
+      : "";
+    return `System: Western tropical.\n${header}\n${lines.join("\n")}${cuspLines}${aspectLines}`;
   }
   if (system === "vedic") {
     const planets = Array.isArray(chart.planets) ? chart.planets : [];
     if (!planets.length) return null;
-    const lines = planets.map((raw) => {
-      const p = raw as Record<string, unknown>;
-      const lon = num(p.longitude);
-      return `- ${str(p.name)}: ${str(p.sign)}${lon !== null ? `, ${lon.toFixed(2)} degrees` : ""}${typeof p.house === "number" ? `, house ${p.house}` : ""}`;
-    });
-    return `System: Vedic (Jyotish), sidereal Lahiri, whole-sign houses.\nSun: ${str(chart.sunSign)}. Moon: ${str(chart.moonSign)}. Rising: ${str(chart.ascendantSign)}.\nMoon nakshatra: ${str(chart.moonNakshatra)}, pada ${str(chart.moonNakshatraPada)}, lord ${str(chart.moonNakshatraLord)}.\nCurrent Vimshottari dasha: ${str(chart.currentDasha)}.\n${lines.join("\n")}`;
+    const lines = planets.map((raw) => planetLine(raw as Record<string, unknown>));
+    const header = unknownTime
+      ? `Sun: ${str(chart.sunSign)}. Moon: ${str(chart.moonSign)}. ${UNKNOWN_TIME_NOTE}`
+      : `Sun: ${str(chart.sunSign)}. Moon: ${str(chart.moonSign)}. Rising: ${str(chart.ascendantSign)}.`;
+    const timeline = Array.isArray(chart.dashaTimeline) ? chart.dashaTimeline : [];
+    const timelineLines = timeline.length
+      ? `\nMahadasha timeline (Vimshottari, dates YYYY-MM-DD):\n${timeline.map((raw) => {
+        const t = raw as Record<string, unknown>;
+        return `- ${str(t.lord)}: ${str(t.start)} to ${str(t.end)}`;
+      }).join("\n")}`
+      : "";
+    const antar = chart.currentAntardasha as Record<string, unknown> | undefined;
+    const antarLine = antar && str(antar.lord)
+      ? `\nCurrent antardasha: ${str(antar.lord)}, ${str(antar.start)} to ${str(antar.end)}.`
+      : "";
+    return `System: Vedic (Jyotish), sidereal Lahiri, whole-sign houses.\n${header}\nMoon nakshatra: ${str(chart.moonNakshatra)}, pada ${str(chart.moonNakshatraPada)}, lord ${str(chart.moonNakshatraLord)}.\nCurrent Vimshottari dasha: ${str(chart.currentDasha)}.${timelineLines}${antarLine}\n${lines.join("\n")}`;
   }
   return null;
 }
@@ -147,6 +215,7 @@ export async function POST(req: NextRequest) {
 Rules you must always follow:
 - Frame everything as reflection and perspective, NEVER as guaranteed prediction. Never claim certainty about the future. Use language like "this may invite you to consider", "a mirror for", "worth sitting with".
 - Weave the chart placements into the seeker's focus area (${category}) and question, without inventing facts about them beyond the chart and question.
+- When a star transformation or brightness, an aspect, a cusp, a retrograde flag, or a dasha date is given, name it as given. Never invent a transformation, brightness, aspect, house placement, or date that is not in the chart positions. When birth time is unknown, never mention houses, Rising, or Midheaven.
 - Keep the reflection 350-550 words. Structure: a short opening that names their focus, one section per key placement group, then a closing reflection with one gentle question for them to sit with.
 - Never moralize, never repeat the question back verbatim.
 - Write the entire reflection in English.

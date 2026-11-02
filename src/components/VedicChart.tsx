@@ -13,9 +13,11 @@ export default function VedicChart({ result }: { result: VedicResult }) {
         <span>
           Moon: <strong className="text-cream">{result.moonSign}</strong>
         </span>
-        <span>
-          Rising: <strong className="text-cream">{result.ascendantSign}</strong>
-        </span>
+        {result.ascendantSign && (
+          <span>
+            Rising: <strong className="text-cream">{result.ascendantSign}</strong>
+          </span>
+        )}
         <span>
           Moon nakshatra: <strong className="text-cream">{result.moonNakshatra}</strong>, pada {result.moonNakshatraPada}, lord {result.moonNakshatraLord}
         </span>
@@ -23,7 +25,7 @@ export default function VedicChart({ result }: { result: VedicResult }) {
           Current Vimshottari dasha ({result.dashaAsOf}): <strong className="text-cream">{result.currentDasha}</strong>
         </span>
         {result.unknownTime && (
-          <span className="text-goldbright">Unknown birth time: calculated at noon, Rising and houses are approximate.</span>
+          <span className="text-goldbright">Unknown birth time: planet positions use noon as a stand-in. Rising and houses are withheld, not estimated.</span>
         )}
       </div>
       <p className="mt-2 text-sm text-cream/80">
@@ -42,7 +44,7 @@ export default function VedicChart({ result }: { result: VedicResult }) {
           <tbody>
             {result.planets.map((p) => (
               <tr key={p.name} className="border-b border-gold/10">
-                <td className="py-2 pr-4 font-semibold capitalize text-cream">{p.name}</td>
+                <td className="py-2 pr-4 font-semibold capitalize text-cream">{p.name}{p.retrograde ? " · retrograde" : ""}</td>
                 <td className="py-2 pr-4">{p.sign}</td>
                 <td className="num py-2 pr-4">{p.longitude.toFixed(2)}°</td>
                 <td className="py-2">{p.house ?? "—"}</td>
@@ -51,6 +53,21 @@ export default function VedicChart({ result }: { result: VedicResult }) {
           </tbody>
         </table>
       </div>
+      <details className="mt-4 scroll-mt-24 rounded-2xl border border-gold/25 bg-panel/70 p-4">
+        <summary className="cursor-pointer text-sm font-semibold text-goldbright">
+          Mahadasha timeline (tap to list)
+        </summary>
+        <ul className="mt-2 space-y-1 text-sm text-cream/85">
+          {result.dashaTimeline.map((t) => (
+            <li key={`${t.lord}-${t.start}`}>
+              {t.lord}: {t.start} to {t.end}
+              {result.currentAntardasha && result.currentAntardasha.start >= t.start && result.currentAntardasha.start < t.end
+                ? ` (current antardasha: ${result.currentAntardasha.lord}, ${result.currentAntardasha.start} to ${result.currentAntardasha.end})`
+                : ""}
+            </li>
+          ))}
+        </ul>
+      </details>
       <p className="mt-4 text-sm text-cream/80">
         Chart only, for reflection. Calculation is free and unsaved; interpretation, when you choose it below, is a separate step.
       </p>

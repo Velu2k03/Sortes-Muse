@@ -192,9 +192,13 @@ export default function ChartsClient() {
       return `Ziwei chart. Life: ${enStars}. Zodiac: ${zodiacEn(r.zodiac)}.`;
     }
     if (r.system === "vedic") {
-      return `Vedic chart. Sun: ${r.sunSign}. Moon: ${r.moonSign}, ${r.moonNakshatra} pada ${r.moonNakshatraPada}. Rising: ${r.ascendantSign}.`;
+      const rising = r.ascendantSign ? ` Rising: ${r.ascendantSign}.` : ` Birth time unknown: Rising and houses withheld.`;
+      return `Vedic chart. Sun: ${r.sunSign}. Moon: ${r.moonSign}, ${r.moonNakshatra} pada ${r.moonNakshatraPada}.${rising}`;
     }
-    return `Western chart. Sun: ${r.sunSign}. Rising: ${r.ascendantSign}. Midheaven: ${r.midheavenSign}.`;
+    const angles = r.ascendantSign && r.midheavenSign
+      ? ` Rising: ${r.ascendantSign}. Midheaven: ${r.midheavenSign}.`
+      : ` Birth time unknown: Rising, Midheaven, and houses withheld.`;
+    return `Western chart. Sun: ${r.sunSign}.${angles}`;
   }
 
   // Server free status for signed-in users, so the button label
@@ -381,7 +385,7 @@ export default function ChartsClient() {
           <ul className="mt-2 list-disc space-y-1 pl-5">
             <li>Gender: Ziwei only, palace placement depends on it.</li>
             <li>Birthplace: all three systems. Western and Vedic need it for Rising and houses; Ziwei needs longitude for its correction.</li>
-            <li>Birth time: clock time at the birthplace. Western converts it with a real timezone database, including DST rules for the birthplace on the birth date. Vedic and Ziwei use longitude only, so a time near a boundary may differ by one division. Unknown time is calculated at noon, Rising and houses approximate.</li>
+            <li>Birth time: clock time at the birthplace. Western converts it with a real timezone database, including DST rules for the birthplace on the birth date. Vedic and Ziwei use longitude only, so a time near a boundary may differ by one division. Unknown time: planet positions use noon as a stand-in, and Rising, Midheaven, and houses are withheld. Ziwei needs a birth hour and cannot be calculated without one.</li>
             <li>Calculation is free and unsaved. Interpretation is separate: 1 credit, first per system free.</li>
           </ul>
         </details>
@@ -633,8 +637,19 @@ export default function ChartsClient() {
             Birth time is clock time at the birthplace. Western converts it to UTC with a timezone database that includes DST rules for the birthplace on the birth date. Vedic converts it to UT by longitude divided by 15 only, with no timezone database and no DST. Ziwei applies a longitude correction only, 4 minutes per degree from the nearest 15 degree meridian, with no equation of time and no DST. A time near a boundary may differ by one division under the longitude-only systems.
           </p>
         </details>
+        {/* M1.2: Ziwei cannot be calculated without a birth hour, so
+            the button stays disabled with the reason inline instead
+            of failing after the click. */}
+        {system === "ziwei" && unknownTime && (
+          <p className="mt-4 rounded-xl border border-gold/25 bg-panel/50 px-4 py-3 text-sm leading-relaxed text-cream/80">
+            Ziwei needs a birth hour: the twelve palaces are placed by
+            the two-hour branch you were born in. Uncheck "I do not
+            know the birth time" and set the hour to calculate a Ziwei
+            chart, or pick Western or Vedic for an unknown-time chart.
+          </p>
+        )}
         <div className="mt-6 flex flex-wrap gap-3">
-          <button type="submit" disabled={loading} className="btn-gold rounded-full px-6 py-3 text-sm font-bold disabled:opacity-50">
+          <button type="submit" disabled={loading || (system === "ziwei" && unknownTime)} className="btn-gold rounded-full px-6 py-3 text-sm font-bold disabled:opacity-50">
             {loading ? "Calculating…" : (<span className="inline-flex items-center gap-2"><Icon name="chart" size={18} />Calculate chart</span>)}
           </button>
         </div>
@@ -815,7 +830,7 @@ export default function ChartsClient() {
               <strong className="text-cream">
                 {displayFree ? "free for your first chart in this system, then 1 credit" : "1 credit"}
               </strong>
-              . The AI receives only chart positions, signs, houses, and stars, plus your focus and question, never your birth date, time, or place.
+              . The AI receives only chart positions, signs, and stars, plus your focus and question, never your birth date, time, or place.
             </p>
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
               <div>

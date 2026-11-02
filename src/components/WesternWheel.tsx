@@ -31,15 +31,19 @@ export default function WesternWheel({ result }: { result: WesternResult }) {
         <span>
           Sun: <strong className="text-cream">{result.sunSign}</strong>
         </span>
-        <span>
-          Rising: <strong className="text-cream">{result.ascendantSign}</strong> ({result.ascendantLongitude.toFixed(2)}°)
-        </span>
-        <span>
-          Midheaven: <strong className="text-cream">{result.midheavenSign}</strong> ({result.midheavenLongitude.toFixed(2)}°)
-        </span>
+        {result.ascendantSign && result.ascendantLongitude !== null && (
+          <span>
+            Rising: <strong className="text-cream">{result.ascendantSign}</strong> ({result.ascendantLongitude.toFixed(2)}°)
+          </span>
+        )}
+        {result.midheavenSign && result.midheavenLongitude !== null && (
+          <span>
+            Midheaven: <strong className="text-cream">{result.midheavenSign}</strong> ({result.midheavenLongitude.toFixed(2)}°)
+          </span>
+        )}
         <span>Aspects found: {result.aspectCount}</span>
         {result.unknownTime && (
-          <span className="text-goldbright">Unknown birth time: calculated at noon, Rising and houses are approximate.</span>
+          <span className="text-goldbright">Unknown birth time: planet positions use noon as a stand-in. Rising, Midheaven, and houses are withheld, not estimated.</span>
         )}
       </div>
       <h3 className="mt-6 font-display text-xl text-goldbright">Planet table: read this first</h3>
@@ -62,7 +66,7 @@ export default function WesternWheel({ result }: { result: WesternResult }) {
               onMouseEnter={() => setSelectedPlanet(p.name)}
               className={`cursor-pointer border-b border-gold/10 ${selectedPlanet === p.name ? "bg-gold/10" : ""}`}
             >
-              <td className="py-2 pr-4 font-semibold text-cream">{p.name}</td>
+              <td className="py-2 pr-4 font-semibold text-cream">{p.name}{p.retrograde ? " · retrograde" : ""}</td>
               <td className="py-2 pr-4">{p.sign}</td>
               <td className="num py-2 pr-4">{p.longitude.toFixed(2)}°</td>
               <td className="py-2">{p.house ?? "—"}</td>
@@ -132,18 +136,31 @@ export default function WesternWheel({ result }: { result: WesternResult }) {
           ))}
         </ul>
       </details>
-      <h3 className="mt-8 scroll-mt-24 font-display text-xl text-goldbright">Wheel overview</h3>
-      <p className="mt-1 text-sm text-cream/80">Visual overview. Clustered planet labels are staggered on the wheel with leader lines; the planet table above is still the exact reading.</p>
-      <motion.div
-        initial={reduce ? { opacity: 1 } : { opacity: 0, scale: 0.97 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: reduce ? 0 : 0.5, ease: "easeOut" }}
-        className="mt-6 overflow-x-auto rounded-2xl border border-gold/25 bg-panel/70 p-4"
-      >
-        <div className="mx-auto w-full overflow-x-auto">
-          <CustomWesternWheel result={result} theme={wheelTheme} />
-        </div>
-      </motion.div>
+      {/* M1.2: the wheel needs Ascendant, Midheaven, and cusps, so
+          without a birth time it is replaced by a plain notice. The
+          planet table above is still the exact reading. */}
+      {result.cusps.length > 0 ? (
+        <>
+          <h3 className="mt-8 scroll-mt-24 font-display text-xl text-goldbright">Wheel overview</h3>
+          <p className="mt-1 text-sm text-cream/80">Visual overview. Clustered planet labels are staggered on the wheel with leader lines; the planet table above is still the exact reading.</p>
+          <motion.div
+            initial={reduce ? { opacity: 1 } : { opacity: 0, scale: 0.97 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: reduce ? 0 : 0.5, ease: "easeOut" }}
+            className="mt-6 overflow-x-auto rounded-2xl border border-gold/25 bg-panel/70 p-4"
+          >
+            <div className="mx-auto w-full overflow-x-auto">
+              <CustomWesternWheel result={result} theme={wheelTheme} />
+            </div>
+          </motion.div>
+        </>
+      ) : (
+        <p className="mt-8 rounded-2xl border border-gold/25 bg-panel/70 p-4 text-sm text-cream/80">
+          No wheel without a birth time: the wheel is drawn around
+          Rising and the house cusps, which are withheld for
+          unknown-time charts. The planet table above is the full chart.
+        </p>
+      )}
       <p className="mt-4 text-sm text-cream/80">
         Chart only, for reflection. Calculation is free and unsaved; interpretation, when you choose it below, is a separate step.
       </p>

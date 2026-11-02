@@ -82,7 +82,25 @@ console.log("western B:", "Sun", westB.sunSign, westB.planets.find((p) => p.name
 const westUnknown = calculateWestern({ date: "2000-06-15", hour: null, latitude: 14.5995, longitude: 120.9842 });
 assert.equal(westUnknown.unknownTime, true, "unknown time must be flagged");
 assert.equal(westUnknown.sunSign, "Gemini", "unknown-time Sun still Gemini at noon");
-console.log("western unknown-time: flagged, Sun", westUnknown.sunSign);
+// M1.2: no noon-derived angles or houses for unknown time.
+assert.equal(westUnknown.ascendantSign, null, "unknown-time Rising must be withheld, not noon-derived");
+assert.equal(westUnknown.ascendantLongitude, null, "unknown-time Rising longitude must be withheld");
+assert.equal(westUnknown.midheavenSign, null, "unknown-time Midheaven must be withheld");
+assert.equal(westUnknown.midheavenLongitude, null, "unknown-time Midheaven longitude must be withheld");
+assert.equal(westUnknown.cusps.length, 0, "unknown-time cusps must be empty");
+assert.ok(westUnknown.planets.every((p) => p.house === null), "unknown-time planet houses must all be null");
+assert.ok(westUnknown.planets.every((p) => typeof p.retrograde === "boolean"), "western planets need a retrograde flag");
+assert.equal(westUnknown.planets.find((p) => p.name === "Sun")?.retrograde, false, "Sun is never retrograde");
+assert.equal(westUnknown.planets.find((p) => p.name === "Moon")?.retrograde, false, "Moon is never retrograde");
+console.log("western unknown-time: flagged, Sun", westUnknown.sunSign, ", angles withheld, cusps empty");
+
+// M1.2: Ziwei refuses an unknown hour instead of laying palaces from
+// the noon double-hour.
+assert.throws(
+  () => calculateZiwei({ date: "2000-06-15", hour: null, gender: "female" }),
+  /birth hour/,
+  "ziwei unknown time must throw asking for a birth hour"
+);
 
 // Ziwei ring geometry: 12 sectors, 30 degrees each, clockwise from the top.
 // 0 degrees is the top of the circle, 90 degrees is the right.
@@ -137,6 +155,28 @@ assert.equal(vedicA.planets.length, 9, "vedic A needs 7 planets plus Rahu and Ke
 assert.equal(vedicA.cusps.length, 12);
 assert.ok(vedicA.currentDasha.length > 0, "vedic A needs a current dasha string");
 const vedicB = calculateVedic({ date: "2000-06-15", hour: 14, minute: 30, latitude: 14.5995, longitude: 120.9842 });
+
+// M1.2: unknown-time Vedic withholds Lagna and houses; dasha dates
+// come from the Moon longitude, and the golden case must reproduce
+// the known timeline (Mars ends early 1992, Saturn current in 2026).
+const vedicUnknown = calculateVedic({ date: "2000-06-15", hour: null, latitude: 14.5995, longitude: 120.9842 });
+assert.equal(vedicUnknown.unknownTime, true, "vedic unknown time must be flagged");
+assert.equal(vedicUnknown.ascendantSign, null, "unknown-time Vedic Rising must be withheld");
+assert.equal(vedicUnknown.cusps.length, 0, "unknown-time Vedic cusps must be empty");
+assert.ok(vedicUnknown.planets.every((p) => p.house === null), "unknown-time Vedic planet houses must all be null");
+assert.ok(vedicUnknown.planets.every((p) => typeof p.retrograde === "boolean"), "vedic planets need a retrograde flag");
+assert.equal(vedicUnknown.planets.find((p) => p.name === "rahu")?.retrograde, true, "Rahu is always retrograde by convention");
+assert.equal(vedicUnknown.planets.find((p) => p.name === "ketu")?.retrograde, true, "Ketu mirrors Rahu");
+const goldenTimeline = vedicA.dashaTimeline;
+assert.ok(goldenTimeline.length >= 9, "dasha timeline needs at least the 9 lords");
+assert.equal(goldenTimeline[0].lord, "Mars", "golden case starts in Mars mahadasha");
+assert.equal(goldenTimeline[0].end.slice(0, 4), "1992", "golden Mars mahadasha must end in 1992");
+assert.equal(goldenTimeline[0].end.slice(5, 7), "01", "golden Mars mahadasha must end in January 1992");
+assert.equal(goldenTimeline[1].lord, "Rahu", "Rahu follows Mars");
+assert.equal(goldenTimeline[2].lord, "Jupiter", "Jupiter follows Rahu");
+assert.equal(goldenTimeline[3].lord, "Saturn", "Saturn follows Jupiter");
+assert.ok(vedicA.currentAntardasha && vedicA.currentAntardasha.lord, "vedic A needs a current antardasha");
+console.log("vedic unknown-time: angles withheld; golden dasha: Mars ends", goldenTimeline[0].end, ", Saturn maha starts", goldenTimeline[3].start);
 assert.equal(vedicB.sunSign, "Gemini");
 assert.equal(vedicB.moonNakshatra, "Anuradha");
 assert.equal(vedicB.moonNakshatraPada, 3);
