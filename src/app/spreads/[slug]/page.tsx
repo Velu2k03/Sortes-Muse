@@ -17,6 +17,7 @@ export async function generateMetadata({
     return {
       title: `${s.name} Tarot Reading`,
       description: s.description,
+      alternates: { canonical: `/spreads/${slug}` },
     };
   } catch {
     return { title: "Reading" };

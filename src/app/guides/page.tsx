@@ -6,6 +6,7 @@ export const metadata = {
   title: "Guides",
   description:
     "Short, substantive guides to tarot, spreads, and birth charts, written for Sortes. Reflection, not prediction.",
+  alternates: { canonical: "/guides" },
 };
 
 export default function GuidesPage() {

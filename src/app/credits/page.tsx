@@ -5,6 +5,7 @@ import Icon from "@/components/Icon";
 export const metadata = {
   title: "Credits",
   description: "Top up your Sortes reading credits. 1 credit = 1 full reading.",
+  alternates: { canonical: "/credits" },
 };
 
 export default function Credits() {

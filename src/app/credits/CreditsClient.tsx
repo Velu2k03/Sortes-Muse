@@ -57,6 +57,12 @@ export default function CreditsPage() {
           free and never uses a credit. Credits never expire.
           {user && <span className="block mt-1 text-mist">Signed in as {user.email}</span>}
         </p>
+        <ul className="mx-auto mt-4 max-w-md space-y-1 text-left text-sm text-cream/75">
+          <li>Free first: your first Quick Insight reading is free.</li>
+          <li>Free first chart: your first interpretation in each chart system (Ziwei, Western, Vedic) is free. Chart calculation alone is always free.</li>
+          <li>Paid after that: 1 credit per full tarot reading or full chart interpretation.</li>
+          <li>No subscription: buy a pack once, use it whenever you like.</li>
+        </ul>
       </div>
 
       <div className="mt-10 space-y-4">
@@ -98,7 +104,7 @@ export default function CreditsPage() {
               onClick={() => setOpen(true)}
               className="btn-gold mt-5 w-full rounded-xl px-4 py-3 font-bold"
             >
-              Buy {p.readings} readings
+              Buy {p.readings} readings · ${p.price.toFixed(2)}
             </button>
           </motion.div>
         ))}
