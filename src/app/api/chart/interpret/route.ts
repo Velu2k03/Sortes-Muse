@@ -1,19 +1,31 @@
 import { NextRequest, NextResponse } from "next/server";
 import { localizeStar } from "@/lib/ziwei-i18n";
+import { getSession } from "@/lib/auth";
+import {
+  getUserById,
+  spendUserCredits,
+  hasUsedFreeInterpretation,
+  markFreeInterpretationUsed,
+} from "@/lib/db";
 
 // Chart interpretation, Phase 2. Reuses the tarot OpenRouter pattern
-// (same model fallback chain, same timeout, same static fallback shape)
-// but is a separate route because its payload is chart positions, not
-// tarot cards and intake. Privacy is enforced by construction: the prompt
-// is built ONLY from the whitelisted position fields below. The client
-// sends the calculation result object, which contains no birth date,
-// time, coordinates, or place name (Western and Vedic results carry no
-// birth data at all; Ziwei results carry a solar date only, which is
-// deliberately NOT copied into the prompt). Any extra keys in the request
-// are ignored. Charging is client-side, via the same wallet the tarot
-// flow uses: first chart per system free (localStorage flag, same pattern
-// as tarot's freeReadingUsed), then 1 credit per full chart reading.
-// This route never charges and never stores anything.
+// (same model fallback chain, same timeout) but is a separate route
+// because its payload is chart positions, not tarot cards and intake.
+// Privacy is enforced by construction: the prompt is built ONLY from
+// the whitelisted position fields below. The client sends the
+// calculation result object, which contains no birth date, time,
+// coordinates, or place name (Western and Vedic results carry no birth
+// data at all; Ziwei results carry a solar date only, which is
+// deliberately NOT copied into the prompt). Any extra keys in the
+// request are ignored.
+//
+// M0.1 credit authority: for signed-in users this route is the
+// enforcement point. First interpretation per system is free, recorded
+// server-side (free_interpretations table); later ones spend 1 credit
+// server-side AFTER a real model generates text, so a failed generation
+// can never cost a credit and no refund path is needed. Guests keep the
+// existing device-local free flags and wallet, because guests have no
+// server account to charge.
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
@@ -83,8 +95,20 @@ function buildChartLines(system: string, chart: Record<string, unknown>): string
   return null;
 }
 
-function staticFallback(system: string, lines: string): string {
-  return `Here is what this ${system} chart is mirroring back to you, in general terms.\n\n${lines}\n\nSit with whichever placement pulls at you most. The chart suggests themes to reflect on; you decide what, if anything, to act on. (This reflection was prepared from the chart positions, without an AI model.)`;
+/**
+ * Free-status check for signed-in users, so the client button label
+ * ("free" vs "1 credit") matches what the server will actually do.
+ * Guests do not call this; they use their device-local flags.
+ */
+export async function GET(req: NextRequest) {
+  const session = await getSession();
+  if (!session) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
+  const system = new URL(req.url).searchParams.get("system");
+  if (system !== "ziwei" && system !== "western" && system !== "vedic") {
+    return NextResponse.json({ error: "system must be ziwei, western, or vedic." }, { status: 400 });
+  }
+  const used = await hasUsedFreeInterpretation(session.userId, system);
+  return NextResponse.json({ free: !used });
 }
 
 export async function POST(req: NextRequest) {
@@ -135,16 +159,31 @@ ${lines}
 
 Write the personalized chart reflection now.`;
 
+  // M0.1: read the session before generation, but spend or mark free
+  // only after a real model succeeds (see below). Guests skip this
+  // block entirely and keep their device-local wallet.
+  const session = await getSession();
+  const serverFree = session ? !(await hasUsedFreeInterpretation(session.userId, system)) : false;
+
   const apiKey = process.env.OPENROUTER_API_KEY;
+  // No key configured: fail honestly instead of serving static text.
+  // No credit is spent and no free use is marked on this path.
   if (!apiKey) {
-    const text = staticFallback(system, lines);
-    return NextResponse.json({ interpretation: isHealth && !text.includes(HEALTH_CLOSE) ? `${text}\n\n${HEALTH_CLOSE}` : text, model: "static-fallback", fallback: true });
+    return NextResponse.json(
+      {
+        error:
+          "AI generation is not configured on this server right now. No credit was spent. Please try again later.",
+        fallback: true,
+      },
+      { status: 503 }
+    );
   }
   const modelList = (
     process.env.OPENROUTER_MODEL ||
     "google/gemini-2.5-flash-preview:free,xiaomi/mimo-v2-flash:free,meta-llama/llama-3.3-70b-instruct:free"
   ).split(",").map((s) => s.trim()).filter(Boolean);
 
+  let generated: { text: string; model: string } | null = null;
   for (const model of modelList) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
@@ -173,12 +212,59 @@ Write the personalized chart reflection now.`;
       const text: string | undefined = data?.choices?.[0]?.message?.content?.trim();
       if (!text) throw new Error("Empty model response");
       clearTimeout(timer);
-      const finalText = isHealth && !text.includes(HEALTH_CLOSE) ? `${text}\n\n${HEALTH_CLOSE}` : text;
-      return NextResponse.json({ interpretation: finalText, model: data?.model ?? model, fallback: false });
+      generated = { text, model: data?.model ?? model };
+      break;
     } catch {
       clearTimeout(timer);
     }
   }
-  const text = staticFallback(system, lines);
-  return NextResponse.json({ interpretation: isHealth && !text.includes(HEALTH_CLOSE) ? `${text}\n\n${HEALTH_CLOSE}` : text, model: "static-fallback", fallback: true });
+
+  // Every model failed: fail honestly. A paying user must never pay
+  // for static text, so no static fallback is served here, no credit
+  // is spent, and no free use is marked on this path.
+  if (!generated) {
+    return NextResponse.json(
+      {
+        error:
+          "The interpretation could not be generated just now. No credit was spent. Please try again in a moment.",
+        fallback: true,
+      },
+      { status: 503 }
+    );
+  }
+
+  const finalText = isHealth && !generated.text.includes(HEALTH_CLOSE)
+    ? `${generated.text}\n\n${HEALTH_CLOSE}`
+    : generated.text;
+
+  // Spend or mark free only after a real generation, so a failed
+  // generation can never cost a credit or consume the free use. If
+  // the spend fails, the text is withheld rather than delivered unpaid.
+  if (session) {
+    if (serverFree) {
+      await markFreeInterpretationUsed(session.userId, system);
+    } else {
+      const ok = await spendUserCredits(session.userId, 1);
+      if (!ok) {
+        return NextResponse.json(
+          { error: "You need 1 credit for this interpretation. No credit was spent." },
+          { status: 402 }
+        );
+      }
+    }
+    const user = await getUserById(session.userId);
+    return NextResponse.json({
+      interpretation: finalText,
+      model: generated.model,
+      fallback: false,
+      free: serverFree,
+      credits: user?.credits ?? 0,
+    });
+  }
+
+  return NextResponse.json({
+    interpretation: finalText,
+    model: generated.model,
+    fallback: false,
+  });
 }

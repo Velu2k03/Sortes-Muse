@@ -24,7 +24,7 @@ type Step = "category" | "form" | "confirm" | "processing";
 export default function IntakeFlow({ slug }: { slug: string }) {
   const router = useRouter();
   const spread = useMemo(() => getSpread(slug), [slug]);
-  const { credits, spend, add, persistReading } = useAuth();
+  const { credits, spend, add, persistReading, user, refresh } = useAuth();
   const [step, setStep] = useState<Step>("category");
   const [categoryKey, setCategoryKey] = useState<string | null>(null);
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -64,11 +64,18 @@ export default function IntakeFlow({ slug }: { slug: string }) {
     setBusy(true);
     setProcessingLine(0);
     setProcessingComplete(false);
-    const ok = await spend(1);
-    if (!ok) {
-      setError("You are out of credits. Please top up to continue.");
-      setBusy(false);
-      return;
+    // M0.1 credit authority: signed-in users no longer spend client-side.
+    // The route spends server-side only after a real model generates
+    // text, so a failed generation can never cost a credit. Guests keep
+    // the device-local wallet and its pre-spend plus catch refund.
+    const signedIn = !!user;
+    if (!signedIn) {
+      const ok = await spend(1);
+      if (!ok) {
+        setError("You are out of credits. Please top up to continue.");
+        setBusy(false);
+        return;
+      }
     }
     trackReadingStarted(`${spread.slug}-personalized`);
     setStep("processing");
@@ -79,6 +86,8 @@ export default function IntakeFlow({ slug }: { slug: string }) {
       2600
     );
 
+    let failMessage =
+      "The reading could not be generated just now. Your credit was not spent. Please try again in a moment.";
     try {
       const cards = drawCards(spread);
 
@@ -113,7 +122,15 @@ export default function IntakeFlow({ slug }: { slug: string }) {
         }),
       });
 
-      if (!res.ok) throw new Error(`Generation failed (${res.status})`);
+      if (!res.ok) {
+        // 402 means the server-side spend found no credit; surface the
+        // server message so the user is told to top up, not to retry.
+        if (res.status === 402) {
+          const d = await res.json().catch(() => null);
+          if (d?.error) failMessage = d.error;
+        }
+        throw new Error(`Generation failed (${res.status})`);
+      }
       const data = await res.json();
       const interpretation: string = data.interpretation;
 
@@ -130,6 +147,9 @@ export default function IntakeFlow({ slug }: { slug: string }) {
       });
       await persistReading(reading);
       setCachedInterpretation(reading.id, interpretation);
+      // Signed-in balance now comes from the server (the route spent
+      // after generation); sync it so the header shows the new balance.
+      if (signedIn) await refresh();
       trackReadingCompleted(`${spread.slug}-personalized`, true);
       clearInterval(lineTimer);
       setProcessingComplete(true);
@@ -138,11 +158,13 @@ export default function IntakeFlow({ slug }: { slug: string }) {
     } catch {
       clearInterval(lineTimer);
       setStep("confirm");
-      setError(
-        "The reading could not be generated just now. Your credit was not spent. Please try again in a moment."
-      );
-      // Refund the credit since nothing was generated.
-      await add(1);
+      setError(failMessage);
+      // Guest refund only: guests pre-spent from the device wallet, so
+      // a failed generation returns it. Signed-in users spent nothing
+      // client-side (the route spends only after success), so no
+      // refund call here, and the balance endpoint no longer accepts
+      // positive client grants at all.
+      if (!signedIn) await add(1);
       setBusy(false);
     }
   };

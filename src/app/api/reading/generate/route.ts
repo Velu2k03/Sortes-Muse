@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getSession } from "@/lib/auth";
+import { getUserById, spendUserCredits } from "@/lib/db";
 import cardsData from "@/data/cards.json";
 import { SENSITIVE_KEYS } from "@/lib/intake";
 
@@ -109,20 +111,6 @@ ${cardLines}
 Write the personalized reading now.`;
 }
 
-/** Rich static fallback: instant, no API call. Used on any failure. */
-function staticFallback(firstName: string, cards: ApiCard[]): string {
-  const parts = cards.map((c) => {
-    const data = cardById(c.cardId);
-    const meaning = data
-      ? c.reversed
-        ? data.meaning.reversed
-        : data.meaning.upright
-      : "";
-    return `**${c.position}: ${c.name} (${c.reversed ? "reversed" : "upright"})**\n${meaning}`;
-  });
-  return `${firstName}, here is what the cards are mirroring back to you.\n\n${parts.join("\n\n")}\n\nSit with whichever card pulls at you most. The cards suggest; you decide. (This reflection was prepared from the traditional card meanings.)`;
-}
-
 export async function POST(req: NextRequest) {
   const ip =
     req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
@@ -160,13 +148,23 @@ export async function POST(req: NextRequest) {
     .map((s) => s.trim())
     .filter(Boolean);
 
-  // No key configured (local dev): fall back instantly.
+  // M0.1 credit authority: the session is read here, but nothing is
+  // spent until a real model has generated text (see below). Guests
+  // (no session) keep the client-side localStorage wallet; the money
+  // boundary is sign-in, because guests have no server account to charge.
+  const session = await getSession();
+
+  // No key configured: fail honestly instead of serving static text as
+  // a reading. No credit is spent on this path.
   if (!apiKey) {
-    return NextResponse.json({
-      interpretation: staticFallback(firstName, cards),
-      model: "static-fallback",
-      fallback: true,
-    });
+    return NextResponse.json(
+      {
+        error:
+          "AI generation is not configured on this server right now. No credit was spent. Please try again later.",
+        fallback: true,
+      },
+      { status: 503 }
+    );
   }
 
   const taglish = detectTaglish(`${intake.story} ${intake.question}`);
@@ -174,6 +172,7 @@ export async function POST(req: NextRequest) {
 
   // Try each model in order; rate-limited or retired free models fail fast
   // and we move to the next one instead of giving up.
+  let generated: { text: string; model: string } | null = null;
   for (const model of modelList) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
@@ -209,22 +208,53 @@ export async function POST(req: NextRequest) {
         data?.choices?.[0]?.message?.content?.trim();
       if (!text) throw new Error("Empty model response");
 
+      generated = { text, model: data?.model ?? model };
       clearTimeout(timer);
-      return NextResponse.json({
-        interpretation: text,
-        model: data?.model ?? model,
-        fallback: false,
-      });
+      break;
     } catch {
       clearTimeout(timer);
       // Fall through to the next model in the chain.
     }
   }
 
-  // Every model failed (slow, rate-limited, or erroring): fall back.
+  // Every model failed (slow, rate-limited, or erroring): fail honestly.
+  // A paying user must never pay for static text, so no static fallback
+  // is served here and no credit is spent on this path.
+  if (!generated) {
+    return NextResponse.json(
+      {
+        error:
+          "The reading could not be generated just now. No credit was spent. Please try again in a moment.",
+        fallback: true,
+      },
+      { status: 503 }
+    );
+  }
+
+  // Spend only after a real generation, so a failed generation can never
+  // cost a credit and no refund path is needed. The spend is atomic
+  // (credits >= 1 checked in the update); if it fails, the text is
+  // withheld rather than delivered unpaid.
+  if (session) {
+    const ok = await spendUserCredits(session.userId, 1);
+    if (!ok) {
+      return NextResponse.json(
+        { error: "You need 1 credit for this reading. No credit was spent." },
+        { status: 402 }
+      );
+    }
+    const user = await getUserById(session.userId);
+    return NextResponse.json({
+      interpretation: generated.text,
+      model: generated.model,
+      fallback: false,
+      credits: user?.credits ?? 0,
+    });
+  }
+
   return NextResponse.json({
-    interpretation: staticFallback(firstName, cards),
-    model: "static-fallback",
-    fallback: true,
+    interpretation: generated.text,
+    model: generated.model,
+    fallback: false,
   });
 }

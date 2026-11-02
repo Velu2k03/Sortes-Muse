@@ -74,6 +74,7 @@ interface LocalDb {
   codes: Record<string, { code_hash: string; expires_at: string; attempts: number }>;
   transactions: DbTransaction[];
   readings: Array<{ id: string; user_id: string; data: unknown; created_at: string }>;
+  freeInterpretations: Array<{ user_id: string; system: string; used_at: string }>;
 }
 
 async function readLocal(): Promise<LocalDb> {
@@ -81,7 +82,7 @@ async function readLocal(): Promise<LocalDb> {
     const raw = await fs.readFile(LOCAL_PATH, "utf8");
     return JSON.parse(raw) as LocalDb;
   } catch {
-    return { users: [], codes: {}, transactions: [], readings: [] };
+    return { users: [], codes: {}, transactions: [], readings: [], freeInterpretations: [] };
   }
 }
 
@@ -128,6 +129,16 @@ export async function ensureSchema(): Promise<void> {
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS winback_sent_at TIMESTAMPTZ`;
   // Added later: password login. IF NOT EXISTS keeps old DBs working.
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash TEXT`;
+  // Added later (M0.1 credit authority): server-side record of each
+  // signed-in user's first free chart interpretation per system, so the
+  // free rule is enforced by the server instead of a device-local flag.
+  await sql`
+    CREATE TABLE IF NOT EXISTS free_interpretations (
+      user_id TEXT NOT NULL REFERENCES users(id),
+      system TEXT NOT NULL,
+      used_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      PRIMARY KEY (user_id, system)
+    )`;
   schemaReady = true;
 }
 
@@ -229,6 +240,32 @@ export async function spendUserCredits(userId: string, n: number): Promise<boole
   u.credits -= n;
   await writeLocal(db);
   return true;
+}
+
+// Free chart interpretations (server-side, signed-in users only).
+// Guests keep the existing device-local flags in src/lib/storage.ts.
+export async function hasUsedFreeInterpretation(userId: string, system: string): Promise<boolean> {
+  await ensureSchema();
+  if (usePostgres) {
+    const { rows } = await sql`SELECT 1 FROM free_interpretations WHERE user_id = ${userId} AND system = ${system} LIMIT 1`;
+    return rows.length > 0;
+  }
+  const db = await readLocal();
+  return (db.freeInterpretations ?? []).some((x) => x.user_id === userId && x.system === system);
+}
+
+export async function markFreeInterpretationUsed(userId: string, system: string): Promise<void> {
+  await ensureSchema();
+  if (usePostgres) {
+    await sql`INSERT INTO free_interpretations (user_id, system) VALUES (${userId}, ${system}) ON CONFLICT DO NOTHING`;
+    return;
+  }
+  const db = await readLocal();
+  const list = db.freeInterpretations ?? (db.freeInterpretations = []);
+  if (!list.some((x) => x.user_id === userId && x.system === system)) {
+    list.push({ user_id: userId, system, used_at: new Date().toISOString() });
+    await writeLocal(db);
+  }
 }
 
 // Auth codes

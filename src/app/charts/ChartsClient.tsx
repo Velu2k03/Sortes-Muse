@@ -42,7 +42,7 @@ const PRESETS: { label: string; latitude: number; longitude: number }[] = [
 ];
 
 export default function ChartsClient() {
-  const { credits, spend, persistReading } = useAuth();
+  const { credits, spend, add, persistReading, user, refresh } = useAuth();
   const [system, setSystem] = useState<ChartSystem>("ziwei");
   const [reducedMotion, setReducedMotion] = useState(false);
   useEffect(() => {
@@ -82,6 +82,9 @@ export default function ChartsClient() {
   const [interpLoading, setInterpLoading] = useState(false);
   const [interpError, setInterpError] = useState("");
   const [interpFree, setInterpFree] = useState(false);
+  // Server free status for signed-in users (null until fetched).
+  // Guests never call the status endpoint; they use device flags.
+  const [serverFree, setServerFree] = useState<boolean | null>(null);
   const [saved, setSaved] = useState(false);
   const [shareBusy, setShareBusy] = useState(false);
   const shareRef = useRef<HTMLDivElement>(null);
@@ -194,18 +197,54 @@ export default function ChartsClient() {
     return `Western chart. Sun: ${r.sunSign}. Rising: ${r.ascendantSign}. Midheaven: ${r.midheavenSign}.`;
   }
 
+  // Server free status for signed-in users, so the button label
+  // matches what the route will actually charge. Refetched whenever
+  // the calculated system changes.
+  useEffect(() => {
+    if (!user || !result) {
+      setServerFree(null);
+      return;
+    }
+    let cancelled = false;
+    fetch(`/api/chart/interpret?system=${result.system}`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (!cancelled && typeof d.free === "boolean") setServerFree(d.free);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [user, result?.system]);
+
+  // Label truth: the server is the authority for signed-in users
+  // (serverFree once fetched, device flag while loading); guests use
+  // their device-local flag.
+  const deviceFree = result
+    ? chartInterpretationCost(chartFreeUsed(result.system as ChartFreeSystem)) === 0
+    : false;
+  const displayFree = user ? (serverFree ?? deviceFree) : deviceFree;
+
   async function onInterpret() {
     if (!result) return;
     setInterpError("");
     setInterpLoading(true);
+    // M0.1 credit authority: signed-in users never spend client-side.
+    // The route spends server-side only after a real model generates
+    // text (or marks the server free use), so a failed generation can
+    // never cost a credit. Guests keep the device-local wallet and its
+    // pre-spend plus catch refund.
+    const signedIn = !!user;
+    const guestFree = chartInterpretationCost(chartFreeUsed(result.system as ChartFreeSystem)) === 0;
+    let guestSpent = false;
     try {
-      const free = chartInterpretationCost(chartFreeUsed(result.system as ChartFreeSystem)) === 0;
-      if (!free) {
+      if (!signedIn && !guestFree) {
         if ((credits ?? 0) < 1) {
           throw new Error("You need 1 credit for this interpretation. The calculation above stays free. Top up from the Credits page.");
         }
         const ok = await spend(1);
         if (!ok) throw new Error("Could not spend 1 credit. Your balance was not changed by this page.");
+        guestSpent = true;
       }
       const res = await fetch("/api/chart/interpret", {
         method: "POST",
@@ -216,9 +255,21 @@ export default function ChartsClient() {
       if (!res.ok) throw new Error(data.error || "Could not interpret this chart.");
       setInterpretation(data.interpretation as string);
       setInterpFallback(Boolean(data.fallback));
-      setInterpFree(free);
-      if (free) markChartFreeUsed(result.system as ChartFreeSystem);
+      // The server is the authority for signed-in free status; guests
+      // keep their device-local flag.
+      const wasFree = signedIn ? Boolean(data.free) : guestFree;
+      setInterpFree(wasFree);
+      if (!signedIn && guestFree) markChartFreeUsed(result.system as ChartFreeSystem);
+      if (signedIn) {
+        // A successful signed-in interpretation consumes the free use
+        // (or was paid), so the label must stop saying free.
+        setServerFree(false);
+        await refresh();
+      }
     } catch (err) {
+      // Guest refund only: guests pre-spent from the device wallet.
+      // Signed-in users spent nothing client-side.
+      if (guestSpent) await add(1);
       setInterpError(err instanceof Error ? err.message : "Could not interpret this chart.");
     } finally {
       setInterpLoading(false);
@@ -762,7 +813,7 @@ export default function ChartsClient() {
             <p className="mt-2 text-sm text-cream/75">
               Calculation was free and unsaved. Interpretation is{" "}
               <strong className="text-cream">
-                {chartFreeUsed(result.system as ChartFreeSystem) ? "1 credit" : "free for your first chart in this system, then 1 credit"}
+                {displayFree ? "free for your first chart in this system, then 1 credit" : "1 credit"}
               </strong>
               . The AI receives only chart positions, signs, houses, and stars, plus your focus and question, never your birth date, time, or place.
             </p>
@@ -796,7 +847,7 @@ export default function ChartsClient() {
               </p>
             )}
             <button type="button" onClick={onInterpret} disabled={interpLoading} className="btn-gold mt-5 rounded-full px-6 py-3 text-sm font-bold disabled:opacity-50">
-              {interpLoading ? "Interpreting…" : chartFreeUsed(result.system as ChartFreeSystem) ? "Get interpretation (1 credit)" : "Get interpretation (free)"}
+              {interpLoading ? "Interpreting…" : displayFree ? "Get interpretation (free)" : "Get interpretation (1 credit)"}
             </button>
             {interpretation && (
               <div className="mt-6">
