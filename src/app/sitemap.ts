@@ -14,6 +14,9 @@ const PAGES = [
   "/spreads",
   "/spreads/quick-insight",
   "/spreads/past-present-future",
+  "/spreads/love-insight",
+  "/spreads/career-path",
+  "/spreads/weekly-outlook",
   "/spreads/celtic-cross",
   "/history",
   "/credits",
@@ -23,6 +26,7 @@ const PAGES = [
   "/guides/how-to-ask-a-tarot-question",
   "/guides/celtic-cross-explained",
   "/guides/tarot-and-birth-charts",
+  "/guides/topic-spreads-love-career-week",
   "/privacy",
   "/terms",
 ];

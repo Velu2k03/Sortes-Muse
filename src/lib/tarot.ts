@@ -35,6 +35,48 @@ export const SPREADS: Spread[] = [
     locked: true,
   },
   {
+    slug: "love-insight",
+    name: "Love Insight",
+    cards: 3,
+    price: 1.99,
+    description:
+      "Three cards for a relationship question. You, the other person, and what connects you.",
+    positions: [
+      { key: "you", label: "You", hint: "Where you stand in this" },
+      { key: "them", label: "Them", hint: "Where the other person stands" },
+      { key: "connection", label: "Connection", hint: "What connects you, or what needs attention" },
+    ],
+    locked: true,
+  },
+  {
+    slug: "career-path",
+    name: "Career Path",
+    cards: 3,
+    price: 1.99,
+    description:
+      "Three cards for a work question. Where you stand, what is in the way, and the next step.",
+    positions: [
+      { key: "current", label: "Current", hint: "Where your work stands now" },
+      { key: "obstacle", label: "Obstacle", hint: "What is in the way" },
+      { key: "next", label: "Next Step", hint: "The step to take next" },
+    ],
+    locked: true,
+  },
+  {
+    slug: "weekly-outlook",
+    name: "Weekly Outlook",
+    cards: 3,
+    price: 1.99,
+    description:
+      "Three cards for the week ahead. A focus, a challenge, and an opportunity.",
+    positions: [
+      { key: "focus", label: "Focus", hint: "What deserves your attention this week" },
+      { key: "challenge", label: "Challenge", hint: "What may test you this week" },
+      { key: "opportunity", label: "Opportunity", hint: "What is open to you this week" },
+    ],
+    locked: true,
+  },
+  {
     slug: "celtic-cross",
     name: "Celtic Cross",
     cards: 10,
