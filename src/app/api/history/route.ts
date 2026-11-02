@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { saveReadingForUser, updateReadingForUser, listReadingsForUser } from "@/lib/db";
+import { saveReadingForUser, updateReadingForUser, listReadingsForUser, deleteReadingForUser } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
@@ -67,6 +67,25 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "Nothing to update." }, { status: 400 });
   }
   const ok = await updateReadingForUser(session.userId, body.id, patch);
+  if (!ok) return NextResponse.json({ error: "Reading not found." }, { status: 404 });
+  return NextResponse.json({ ok: true });
+}
+
+// M2.2: delete a stored reading. Scoped to the owning user, so one
+// user can never delete another user's reading by id.
+export async function DELETE(req: NextRequest) {
+  const session = await getSession();
+  if (!session) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
+  let body: { id?: unknown };
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid request." }, { status: 400 });
+  }
+  if (typeof body.id !== "string" || !body.id) {
+    return NextResponse.json({ error: "Missing reading id." }, { status: 400 });
+  }
+  const ok = await deleteReadingForUser(session.userId, body.id);
   if (!ok) return NextResponse.json({ error: "Reading not found." }, { status: 404 });
   return NextResponse.json({ ok: true });
 }

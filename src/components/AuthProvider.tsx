@@ -14,6 +14,7 @@ import {
   getHistory,
   saveReading,
   updateReading as updateLocalReading,
+  deleteReading as deleteLocalReading,
 } from "@/lib/storage";
 import type { Reading } from "@/lib/types";
 import { getSupabaseBrowser } from "@/lib/supabase-browser";
@@ -39,6 +40,10 @@ interface AuthContextValue {
   // M1.1: patch an existing reading (chosen next step) locally and,
   // when signed in, on the server too. Returns the updated reading.
   updateReading: (id: string, patch: Partial<Reading>) => Promise<Reading | null>;
+  // M2.2: delete a reading locally and, when signed in, on the
+  // server too. True when the reading is gone from every store that
+  // held it; false leaves the entry in place for a retry.
+  deleteReading: (id: string) => Promise<boolean>;
   /** Run after a successful sign-in: merge guest wallet + history. */
   afterSignIn: () => Promise<void>;
 }
@@ -255,9 +260,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [user]
   );
 
+  // M2.2: server delete first for signed-in users, so a failed
+  // server delete never orphans a local delete that the next sync
+  // would resurrect from the server copy. A server 404 means the
+  // copy was never synced (or is already gone), so the local
+  // delete still proceeds; only real failures block it.
+  const deleteReading = useCallback(
+    async (id: string) => {
+      if (user) {
+        try {
+          const res = await fetch("/api/history", {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id }),
+          });
+          if (!res.ok && res.status !== 404) return false;
+        } catch {
+          return false;
+        }
+      }
+      deleteLocalReading(id);
+      return true;
+    },
+    [user]
+  );
+
   return (
     <AuthContext.Provider
-      value={{ user, loading, credits, refresh, signOut, spend, add, persistReading, updateReading, afterSignIn }}
+      value={{ user, loading, credits, refresh, signOut, spend, add, persistReading, updateReading, deleteReading, afterSignIn }}
     >
       {children}
     </AuthContext.Provider>

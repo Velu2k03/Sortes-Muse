@@ -412,6 +412,23 @@ export async function updateReadingForUser(
   return true;
 }
 
+// M2.2: delete a stored reading, scoped to the owning user.
+export async function deleteReadingForUser(userId: string, id: string): Promise<boolean> {
+  await ensureSchema();
+  if (usePostgres) {
+    const { rows } = await sql`DELETE FROM readings
+      WHERE id = ${id} AND user_id = ${userId}
+      RETURNING id`;
+    return rows.length > 0;
+  }
+  const db = await readLocal();
+  const next = db.readings.filter((r) => !(r.id === id && r.user_id === userId));
+  if (next.length === db.readings.length) return false;
+  db.readings = next;
+  await writeLocal(db);
+  return true;
+}
+
 // M2.1: fetch a single reading by id, scoped to the owning user.
 export async function getReadingForUser(userId: string, id: string): Promise<unknown | null> {
   await ensureSchema();

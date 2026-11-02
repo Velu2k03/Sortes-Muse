@@ -22,8 +22,13 @@ import {
  * detail page (M2.1), not to a new reading.
  */
 export default function HistoryPage() {
-  const { user } = useAuth();
+  const { user, deleteReading } = useAuth();
   const [history, setHistory] = useState<Reading[] | null>(null);
+  // M2.2: delete arms on first tap and deletes on the second, so a
+  // stray tap cannot wipe a reading. The row says one-tap delete;
+  // this keeps it one action per entry while guarding the data.
+  const [armedId, setArmedId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   useEffect(() => {
     const local = getHistory();
@@ -197,6 +202,12 @@ export default function HistoryPage() {
             </div>
           )}
 
+          {deleteError && (
+            <p className="mt-6 text-center text-sm text-red-400">
+              {deleteError}
+            </p>
+          )}
+
           {/* M2.2: timeline, grouped by day, newest first. */}
           <div className="mt-10 space-y-8">
             {groupReadingsByDay(history).map((group) => (
@@ -259,7 +270,7 @@ export default function HistoryPage() {
                             <p className="mt-1 text-sm text-cream/70">{r.chartSummary}</p>
                           )}
                         </div>
-                        <div className="flex shrink-0 gap-2">
+                        <div className="flex shrink-0 flex-wrap gap-2">
                           <Link
                             href={`/reading/${r.id}`}
                             className="btn-ghost rounded-xl px-4 py-2.5 text-sm font-semibold"
@@ -277,6 +288,32 @@ export default function HistoryPage() {
                                 Follow-up
                               </Link>
                             )}
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              if (armedId !== r.id) {
+                                setArmedId(r.id);
+                                setDeleteError(null);
+                                return;
+                              }
+                              const ok = await deleteReading(r.id);
+                              if (ok) {
+                                setHistory((h) =>
+                                  h ? h.filter((x) => x.id !== r.id) : h
+                                );
+                                setArmedId(null);
+                              } else {
+                                setDeleteError(
+                                  "Could not delete that reading. Please try again."
+                                );
+                              }
+                            }}
+                            className="rounded-xl border border-red-400/30 px-4 py-2.5 text-sm font-semibold text-red-400"
+                          >
+                            {armedId === r.id
+                              ? "Confirm delete?"
+                              : "Delete"}
+                          </button>
                         </div>
                       </div>
                     </article>

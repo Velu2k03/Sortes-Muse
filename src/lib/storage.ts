@@ -180,6 +180,15 @@ export function updateReading(id: string, patch: Partial<Reading>): Reading | nu
   return updated;
 }
 
+// M2.2: remove a reading from local history. True when one was removed.
+export function deleteReading(id: string): boolean {
+  const h = getHistory();
+  const next = h.filter((r) => r.id !== id);
+  if (next.length === h.length) return false;
+  write(K.history, next);
+  return true;
+}
+
 export function makeReading(partial: Omit<Reading, "id" | "createdAt">): Reading {
   return {
     ...partial,
