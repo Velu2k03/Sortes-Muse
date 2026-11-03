@@ -11,6 +11,7 @@ import TarotFan from "@/components/TarotFan";
 import OrbitImages from "@/components/OrbitImages";
 import Icon from "@/components/Icon";
 import { DarkVeil, MagicBento, ShinyText, StarBorder } from "@/components/ReactBits";
+import { GradientText, Magnet, SpotlightCard } from "@/components/ReactBitsNew";
 
 const fadeUp = {
   initial: { opacity: 0, y: 24 },
@@ -62,9 +63,10 @@ export default function Home() {
           <motion.h1
             initial={false}
             animate={{ opacity: 1, y: 0 }}
-            className="mt-6 font-display text-6xl leading-tight text-cream sm:text-7xl md:text-8xl"
+            className="mt-6 font-display text-6xl leading-tight sm:text-7xl md:text-8xl"
           >
-            Sortes
+            {/* Phase 4: GradientText, hero word only, gold on the dark hero. */}
+            <GradientText animationSpeed={6}>Sortes</GradientText>
           </motion.h1>
           <motion.p
             initial={false}
@@ -95,14 +97,17 @@ export default function Home() {
             animate={{ opacity: 1, y: 0 }}
             className="mt-10 flex w-full max-w-xl flex-col gap-3 sm:flex-row sm:flex-nowrap sm:justify-center"
           >
-            <StarBorder radius="1rem" className="shrink-0" animated>
-              <Link
-                href="/daily"
-                className="btn-gold shrink-0 whitespace-nowrap rounded-2xl px-8 py-4 text-center text-lg font-bold"
-              >
-                <Icon name="sparkle" size={20} className="mr-2 inline-block align-[-3px]" />Draw a Card
-              </Link>
-            </StarBorder>
+            {/* Phase 4: Magnet, hero primary button only, pointer only. */}
+            <Magnet strength={0.2} className="shrink-0">
+              <StarBorder radius="1rem" className="shrink-0" animated>
+                <Link
+                  href="/daily"
+                  className="btn-gold shrink-0 whitespace-nowrap rounded-2xl px-8 py-4 text-center text-lg font-bold"
+                >
+                  <Icon name="sparkle" size={20} className="mr-2 inline-block align-[-3px]" />Draw a Card
+                </Link>
+              </StarBorder>
+            </Magnet>
             {/* Phase 2: one dominant action. Draw a Card stays gold
                 with the animated border. Begin a Reading is now a
                 quiet secondary button, same size, no gold fill and
@@ -167,15 +172,16 @@ export default function Home() {
             { href: "/spreads/weekly-outlook", label: "The week ahead", text: "Focus, challenge, and opportunity.", cost: "1 Oracle" },
             { href: "/spreads/quick-insight", label: "A general question", text: "One card, one clear mirror. First reading free.", cost: "First reading free, then 1 Oracle" },
           ].map((s) => (
-            <Link
+            <SpotlightCard
               key={s.href}
-              href={s.href}
-              className="rounded-3xl border border-gold/25 bg-panel/70 p-6 hover:border-gold/60"
+              className="rounded-3xl border border-gold/25 bg-panel/70 hover:border-gold/60"
             >
-              <p className="font-display text-2xl text-goldbright">{s.label}</p>
-              <p className="mt-2 text-sm leading-relaxed text-cream/75">{s.text}</p>
-              <p className="mt-3 text-xs font-semibold uppercase tracking-[0.2em] text-gold">{s.cost}</p>
-            </Link>
+              <Link href={s.href} className="block p-6">
+                <p className="font-display text-2xl text-goldbright">{s.label}</p>
+                <p className="mt-2 text-sm leading-relaxed text-cream/75">{s.text}</p>
+                <p className="mt-3 text-xs font-semibold uppercase tracking-[0.2em] text-gold">{s.cost}</p>
+              </Link>
+            </SpotlightCard>
           ))}
         </div>
       </section>

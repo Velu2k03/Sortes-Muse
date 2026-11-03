@@ -10,6 +10,7 @@ import PushPrompt from "@/components/PushPrompt";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 import { AuthProvider } from "@/components/AuthProvider";
 import MotionProvider from "@/components/MotionProvider";
+import { PageTransition } from "@/components/ReactBitsNew";
 import { APP_NAME, APP_SHORT, TAGLINE, SITE_URL, CONTACT_EMAIL } from "@/lib/site";
 
 const display = Cormorant_Garamond({
@@ -127,7 +128,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <ServiceWorkerRegister />
           <Starfield />
           <Header />
-          <main id="main-content" tabIndex={-1} className="flex-1 outline-none">{children}</main>
+          <main id="main-content" tabIndex={-1} className="flex-1 outline-none"><PageTransition>{children}</PageTransition></main>
           <Footer />
           <InstallBanner />
           <PushPrompt />
