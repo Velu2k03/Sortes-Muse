@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, type CSSProperties, type ReactNode } from "react";
+import { usePathname } from "next/navigation";
 import { motion, useReducedMotion } from "motion/react";
 
 /**
@@ -151,13 +152,18 @@ export function Magnet({
 
 export function PageTransition({ children }: { children: ReactNode }) {
   const reduce = useReducedMotion();
+  const pathname = usePathname();
   if (reduce) return <>{children}</>;
-  // Short fade and rise on mount. App Router pages mount fresh on
-  // navigation, so this is the page transition: no exit animation
-  // is faked, and no React Bits page-transition component exists
-  // in the free catalogue to install instead.
+  // Codex review on PR 43, correct: a layout component is preserved
+  // across client-side navigation, so without a key this motion.div
+  // does not remount and its initial animation runs only on the
+  // first page load. Keying by pathname remounts it on every route
+  // change, so the short fade and rise actually runs on navigation.
+  // No exit animation is faked, and no React Bits page-transition
+  // component exists in the free catalogue to install instead.
   return (
     <motion.div
+      key={pathname}
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.28, ease: "easeOut" }}
