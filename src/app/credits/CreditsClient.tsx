@@ -10,6 +10,7 @@ import CheckoutModal from "@/components/CheckoutModal";
 import PurchaseConfirmer from "@/components/PurchaseConfirmer";
 import SampleReading from "@/components/SampleReading";
 import Counter from "@/components/Counter";
+import PixelCard from "@/components/PixelCard";
 import { useSearchParams } from "next/navigation";
 
 interface ServerTx {
@@ -254,13 +255,39 @@ export default function CreditsPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.04, duration: 0.4 }}
-              className={
-                p.popular
-                  ? "relative rounded-3xl border border-gold/70 bg-gradient-to-b from-[#e8c55a] via-[#d4af37] to-[#b8962e] p-6 shadow-[0_24px_48px_-24px_rgba(212,175,55,0.55)]"
-                  : "relative rounded-3xl border border-gold/20 bg-panel/60 p-6"
-              }
+              className="relative"
             >
-              {body}
+              {p.popular ? (
+                // PixelCard restored, not removed, 2026-11-04: the
+                // popular card is a React Bits PixelCard again, with
+                // the centered body, 3 points, and Counter price from
+                // the redesign inside it. The gold colour is an inline
+                // background on the PixelCard itself, so it wins over
+                // the card surface in both themes, and the pixel
+                // colours are dark gold plus light gold so they still
+                // show on gold. PixelCard is now fluid, so the card
+                // is full width and grows with its content instead
+                // of clipping at 300x400.
+                <PixelCard
+                  variant="yellow"
+                  colors={["#713f12", "#a16207", "#fef08a"]}
+                  gap={4}
+                  pixelSize={1.8}
+                  speed={20}
+                  glow={0.6}
+                  glowColor="#eab308"
+                  theme={siteTheme}
+                  radius={24}
+                  className="border border-gold/70 shadow-[0_24px_48px_-24px_rgba(212,175,55,0.55)]"
+                  style={{ background: "linear-gradient(180deg,#e8c55a,#d4af37 55%,#b8962e)" }}
+                >
+                  <div className="relative z-10 w-full p-6">{body}</div>
+                </PixelCard>
+              ) : (
+                <div className="relative rounded-3xl border border-gold/20 bg-panel/60 p-6">
+                  {body}
+                </div>
+              )}
             </motion.div>
           );
         })}

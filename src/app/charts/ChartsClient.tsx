@@ -60,8 +60,8 @@ export default function ChartsClient() {
   }, []);
   // Dial numbers bypass the theme tokens (CometDial takes a hard
   // ink colour), so track the document theme the same way the
-  // credits page does for PixelCard. GlideSelect keeps cream
-  // because its surface is dark in both themes.
+  // credits page does for PixelCard. GlideSelect now follows the
+  // theme too, 2026-11-04, instead of staying dark in light mode.
   const [siteTheme, setSiteTheme] = useState<"dark" | "light">("light");
   useEffect(() => {
     const sync = () =>
@@ -471,10 +471,10 @@ export default function ChartsClient() {
               ariaLabel="Chart system"
               size="lg"
               radius={12}
-              accentColor="#d4af37"
-              surfaceColor="#1a1f2e"
-              highlightColor="#3a3120"
-              textColor="#ede6d6"
+              accentColor={siteTheme === "light" ? "#8a6d0a" : "#d4af37"}
+              surfaceColor={siteTheme === "light" ? "#ffffff" : "#1a1f2e"}
+              highlightColor={siteTheme === "light" ? "#f3ead3" : "#3a3120"}
+              textColor={siteTheme === "light" ? "#1c1a15" : "#ede6d6"}
               className="w-full [&>button]:w-full [&>button]:justify-between"
             />
           </div>
@@ -644,10 +644,10 @@ export default function ChartsClient() {
                 ariaLabel="Birthplace"
                 size="lg"
                 radius={12}
-                accentColor="#d4af37"
-                surfaceColor="#1a1f2e"
-                highlightColor="#3a3120"
-                textColor="#ede6d6"
+                accentColor={siteTheme === "light" ? "#8a6d0a" : "#d4af37"}
+                surfaceColor={siteTheme === "light" ? "#ffffff" : "#1a1f2e"}
+                highlightColor={siteTheme === "light" ? "#f3ead3" : "#3a3120"}
+                textColor={siteTheme === "light" ? "#1c1a15" : "#ede6d6"}
                 className="w-full [&>button]:w-full [&>button]:justify-between"
               />
             )}

@@ -33,6 +33,17 @@ export default function DailyPage() {
   const [zoomOpen, setZoomOpen] = useState(false);
   const [pixelActive, setPixelActive] = useState(false);
   const drawTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // HoldButton colours bypass the theme tokens, so track the
+  // document theme, 2026-11-04, instead of staying dark in light mode.
+  const [siteTheme, setSiteTheme] = useState<"dark" | "light">("light");
+  useEffect(() => {
+    const sync = () =>
+      setSiteTheme(document.documentElement.dataset.theme === "light" ? "light" : "dark");
+    sync();
+    const obs = new MutationObserver(sync);
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    return () => obs.disconnect();
+  }, []);
 
   // Pixel reveal: the card mounts showing its back, then pixelates to
   // the face once the reveal section is on screen. Returning the same
@@ -114,9 +125,9 @@ export default function DailyPage() {
                 <HoldButton
                   size="lg"
                   holdTime={1200}
-                  backgroundColor="#1a1f2e"
+                  backgroundColor={siteTheme === "light" ? "#ffffff" : "#1a1f2e"}
                   fillColor="#d4af37"
-                  textColor="#ede6d6"
+                  textColor={siteTheme === "light" ? "#1c1a15" : "#ede6d6"}
                   fillTextColor="#0a0e1a"
                   doneLabel="Casting…"
                   onHold={draw}

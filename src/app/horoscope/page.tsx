@@ -43,8 +43,8 @@ export default function HoroscopePage() {
   const [view, setView] = useState<"daily" | "weekly">("daily");
   // OptionWheel takes hard colours, so it bypasses the theme tokens
   // like the credits Counter and charts dials did. Track the
-  // document theme here. RubberSegment keeps its dark track in
-  // both themes, so it is left alone.
+  // document theme here. RubberSegment now follows the theme too,
+  // 2026-11-04, instead of keeping its dark track in light mode.
   const [siteTheme, setSiteTheme] = useState<"dark" | "light">("light");
   useEffect(() => {
     const sync = () =>
@@ -139,10 +139,11 @@ export default function HoroscopePage() {
           value={view}
           onChange={(v) => { setView(v as "daily" | "weekly"); resetReveal(); }}
           aria-label="Daily or weekly"
-          trackColor="#1a1f2e"
+          trackColor={siteTheme === "light" ? "#ffffff" : "#1a1f2e"}
           thumbColor="#d4af37"
-          textColor="#9ca3af"
+          textColor={siteTheme === "light" ? "#45423c" : "#9ca3af"}
           activeTextColor="#0a0e1a"
+          className={siteTheme === "light" ? "ring-1 ring-gold/25" : ""}
         />
       </div>
       <div className="mt-8 text-center">
