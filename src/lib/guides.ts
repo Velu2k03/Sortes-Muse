@@ -43,7 +43,7 @@ export const GUIDES: Guide[] = [
       {
         heading: "How Sortes uses tarot",
         paragraphs: [
-          "Sortes has three free entry points. The daily card is one free card each day, with no account and no payment. The deck browser lets you read all 78 card meanings at your own pace. The spreads are the paid readings: Quick Insight with one card, topic spreads with three cards, and the Celtic Cross with ten cards. The first full reading is free, and later readings cost one credit each.",
+          "Sortes has three free entry points. The daily card is one free card each day, with no account and no payment. The deck browser lets you read all 78 card meanings at your own pace. The spreads are the paid readings: Quick Insight with one card, topic spreads with three cards, and the Celtic Cross with ten cards. The first full reading is free, and later readings cost one Oracle each.",
         ],
       },
     ],
@@ -129,7 +129,7 @@ export const GUIDES: Guide[] = [
         heading: "Charts map a birth moment",
         paragraphs: [
           "A birth chart starts with a birth date, time, and place, and it calculates positions: planets in signs and houses for Western and Vedic charts, and stars in palaces for Ziwei charts. It is structural: the chart does not change with your question, because it describes the sky at one moment. Charts are the right tool when you want a longer view of patterns, strengths, and timing, rather than advice on one decision.",
-          "Sortes calculates charts for free. Interpretation costs one credit per system, with the first interpretation per system free. Ziwei, Western, and Vedic charts each use different methods, so their language differs, and the same birth moment can be described in three different vocabularies.",
+          "Sortes calculates charts for free. Interpretation costs one Oracle per system, with the first interpretation per system free. Ziwei, Western, and Vedic charts each use different methods, so their language differs, and the same birth moment can be described in three different vocabularies.",
         ],
       },
       {

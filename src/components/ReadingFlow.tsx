@@ -657,7 +657,7 @@ function RevealedScreen({
           </p>
           <p className="mx-auto mt-2 max-w-md text-sm text-cream/75">
             The Celtic Cross lays ten cards across your whole landscape:
-            forces, hopes, and outcome. Get it with 1 credit.
+            forces, hopes, and outcome. Get it with 1 Oracle.
           </p>
           <Link
             href="/spreads/celtic-cross"

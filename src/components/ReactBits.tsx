@@ -181,7 +181,7 @@ export function MagicBento() {
               {spread.description}
             </p>
             <p className="mt-4 font-display text-2xl text-goldbright">
-              {spread.slug === "quick-insight" ? "Free" : "1 credit"}
+              {spread.slug === "quick-insight" ? "Free" : "1 Oracle"}
             </p>
             {spread.slug === "quick-insight" ? (
               <StarBorder
