@@ -156,6 +156,82 @@ export default function HistoryPage() {
             );
           })()}
 
+          {/* Personal Phase 1: repeated questions, computed from the
+              seeker's own saved questions only. Normalizing case and
+              punctuation links the same question across readings, so
+              a thread the user keeps returning to is visible instead
+              of buried in the day timeline. No AI, no invented theme. */}
+          {(() => {
+            const norm = (q: string) =>
+              q
+                .toLowerCase()
+                .replace(/[^\p{L}\p{N}\s]/gu, "")
+                .replace(/\s+/g, " ")
+                .trim();
+            const groups = new Map<string, Reading[]>();
+            for (const r of history) {
+              if (!r.question) continue;
+              const key = norm(r.question);
+              if (!key) continue;
+              const list = groups.get(key) ?? [];
+              list.push(r);
+              groups.set(key, list);
+            }
+            const repeated = [...groups.values()]
+              .filter((list) => list.length > 1)
+              .sort((a, b) => b.length - a.length)
+              .slice(0, 3);
+            if (repeated.length === 0) return null;
+            return (
+              <div className="mt-10 rounded-3xl border border-gold/20 bg-panel/60 p-5 sm:p-6">
+                <p className="text-xs uppercase tracking-[0.25em] text-gold">
+                  Questions you keep returning to
+                </p>
+                <p className="mt-2 text-sm text-cream/75">
+                  The same question, asked more than once. Open the latest
+                  reading to continue it with a follow-up, instead of
+                  starting over.
+                </p>
+                <ul className="mt-4 space-y-2">
+                  {repeated.map((list) => {
+                    const latest = [...list].sort((a, b) =>
+                      b.createdAt.localeCompare(a.createdAt)
+                    )[0];
+                    return (
+                      <li
+                        key={latest.id}
+                        className="flex items-center justify-between gap-3 rounded-xl border border-gold/15 bg-panel/40 px-4 py-3"
+                      >
+                        <span className="min-w-0">
+                          <span className="block truncate text-sm text-cream">
+                            “{latest.question}”
+                          </span>
+                          <span className="num text-xs text-mist">
+                            Asked {list.length} times · latest{" "}
+                            {new Date(latest.createdAt).toLocaleDateString(
+                              undefined,
+                              {
+                                year: "numeric",
+                                month: "short",
+                                day: "numeric",
+                              }
+                            )}
+                          </span>
+                        </span>
+                        <Link
+                          href={`/reading/${latest.id}`}
+                          className="shrink-0 text-sm font-semibold text-goldbright underline"
+                        >
+                          Continue it
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            );
+          })()}
+
           {/* M2.2: readings old enough to revisit, without a note yet. */}
           {history.filter((r) => isRevisitEligible(r)).length > 0 && (
             <div className="mt-10 rounded-3xl border border-gold/20 bg-panel/60 p-5 sm:p-6">
