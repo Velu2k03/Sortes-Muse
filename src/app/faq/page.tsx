@@ -27,7 +27,7 @@ const FAQS = [
   },
   {
     q: "How long is tarot intake data kept?",
-    a: "Raw tarot intake data is never stored on a server. Guest daily cards, Oracle balance, and reading history live in your browser until you create an account, and then they move into your account automatically.",
+    a: "Your story goes to the AI for this reading only and is not saved. Your question, first name, and category are saved in your journal: on this device as a guest, in your account when signed in, until you delete them.",
   },
   {
     q: "How do I sign in?",
@@ -81,7 +81,7 @@ export default function FaqPage() {
         ))}
       </div>
       <p className="mt-10 text-sm text-mist">
-        Still stuck? Contact {CONTACT_EMAIL}, listed in the footer, or read the{" "}
+        Still stuck? Contact {CONTACT_EMAIL}, or read the{" "}
         <Link href="/about" className="text-goldbright underline underline-offset-4">About {APP_NAME}</Link> page.
       </p>
     </div>

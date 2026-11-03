@@ -29,7 +29,7 @@ export default function StatsStrip() {
         <span className="font-display text-2xl text-goldbright">
           {n.toLocaleString()}
         </span>{" "}
-        readings cast in the last 7 days · join the seekers
+        readings cast in the last 7 days
       </p>
     </div>
   );

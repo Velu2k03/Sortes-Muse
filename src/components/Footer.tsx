@@ -21,6 +21,9 @@ export default function Footer() {
             <li><Link href="/daily" className="text-cream/80 hover:text-goldbright">Daily Card</Link></li>
             <li><Link href="/spreads" className="text-cream/80 hover:text-goldbright">Readings</Link></li>
             <li><Link href="/deck" className="text-cream/80 hover:text-goldbright">Card Meanings</Link></li>
+            <li><Link href="/charts" className="text-cream/80 hover:text-goldbright">Charts</Link></li>
+            <li><Link href="/reports" className="text-cream/80 hover:text-goldbright">Reports</Link></li>
+            <li><Link href="/horoscope" className="text-cream/80 hover:text-goldbright">Horoscope</Link></li>
             <li><Link href="/credits" className="text-cream/80 hover:text-goldbright">Oracles</Link></li>
             <li><Link href="/history" className="text-cream/80 hover:text-goldbright">Journal</Link></li>
             <li><Link href="/guides" className="text-cream/80 hover:text-goldbright">Guides</Link></li>

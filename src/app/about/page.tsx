@@ -19,18 +19,18 @@ export default function AboutPage() {
         <section>
           <h2 className="font-display text-3xl text-goldbright">Who runs Sortes</h2>
           <p className="mt-3">
-            {APP_NAME} is run by Resonant Atlas. It is a tarot reading web app,
-            built as a product you use on your own, with no client work and no
-            outreach behind it. Contact is {CONTACT_EMAIL}.
+            {APP_NAME} is run by Resonant Atlas. It is a tarot reading web app.
+            Contact is {CONTACT_EMAIL}.
           </p>
         </section>
         <section>
           <h2 className="font-display text-3xl text-goldbright">What Sortes offers</h2>
           <p className="mt-3">
             A free daily card, a browser for all 78 Rider-Waite card meanings,
-            three spreads (Quick Insight, Past Present Future, and the Celtic
-            Cross), a daily sun-sign reflection, and three birth chart systems
-            (Ziwei, Western, and Vedic). The first full reading and the first
+            six spreads (Quick Insight, Past / Present / Future, Love Insight,
+            Career Path, Weekly Outlook, and the Celtic Cross), a daily
+            sun-sign reflection, and three birth chart systems (Ziwei,
+            Western, and Vedic). Your first Quick Insight reading and the first
             chart interpretation per system are free. Later readings and
             interpretations cost one Oracle each, in packs sold through Lemon
             Squeezy.
@@ -49,9 +49,11 @@ export default function AboutPage() {
           <h2 className="font-display text-3xl text-goldbright">How your data is handled</h2>
           <p className="mt-3">
             Guest daily cards, Oracle balance, and reading history live in your
-            browser until you create an account. Raw tarot intake data is
-            never stored on a server; only the question and the finished
-            reading are saved in your history. For charts, only calculated positions,
+            browser until you create an account. Your story goes to the AI for
+            this reading only and is not saved. Your question, first name,
+            and category are saved in your journal: on this device as a
+            guest, in your account when signed in, until you delete them.
+            For charts, only calculated positions,
             signs, and palaces are stored, never raw birth date, time, or
             place, and raw birth data is never sent to an AI prompt. Full
             details are in the Privacy Policy.
@@ -62,10 +64,10 @@ export default function AboutPage() {
         <Link href="/guides" className="btn-gold">
           Read the guides
         </Link>
-        <Link href="/privacy" className="btn-secondary">
+        <Link href="/privacy" className="btn-ghost">
           Privacy Policy
         </Link>
-        <Link href="/terms" className="btn-secondary">
+        <Link href="/terms" className="btn-ghost">
           Terms of Service
         </Link>
       </div>

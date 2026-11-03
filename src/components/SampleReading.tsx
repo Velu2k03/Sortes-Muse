@@ -37,15 +37,16 @@ export default function SampleReading() {
           className="text-center"
         >
           <p className="text-xs uppercase tracking-[0.35em] text-gold">
-            A taste of the magic
+            Sample reading
           </p>
           <h2 className="mt-4 font-display text-4xl text-goldbright sm:text-5xl">
             See what a personalized reading feels like
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-cream/75">
             Every paid reading is woven around{" "}
-            <em>your</em> story and your exact question, written for you alone.
-            Here is a real example, shared with permission, names changed.
+            <em>your</em> story and your exact question. Below is an example
+            reading, invented to show the format. Your reading would be written
+            around your story and question.
           </p>
         </motion.div>
 
@@ -112,7 +113,7 @@ export default function SampleReading() {
               Get my reading · 1 Oracle
             </Link>
             <p className="mt-3 text-xs text-mist">
-              First full reading is free. No card required.
+              Your first Quick Insight reading is free. No card required.
             </p>
           </div>
         </motion.div>

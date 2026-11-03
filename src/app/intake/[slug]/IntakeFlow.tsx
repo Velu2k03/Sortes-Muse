@@ -275,10 +275,10 @@ export default function IntakeFlow({ slug }: { slug: string }) {
               {category.name}
             </h1>
             <p className="mx-auto mt-3 max-w-md text-center text-sm text-cream/75">
-              Tell your story in your own words. Only your first name is ever
-              shared with the AI; birthdays stay on your device, and your raw
-              answers are never stored on a server. Only the question and the
-              finished reading are saved in your history.
+              Tell your story in your own words. Your story goes to the AI for
+              this reading only and is not saved. Your question, first name,
+              and category are saved in your journal: on this device as a
+              guest, in your account when signed in, until you delete them.
             </p>
 
             {category.key === "health" && (
@@ -438,7 +438,7 @@ export default function IntakeFlow({ slug }: { slug: string }) {
               <ul className="space-y-2 text-xs leading-relaxed text-mist">
                 <li>Only your first name and story essentials are sent to the AI.</li>
                 <li>Birthdays and other sensitive details never leave your device.</li>
-                <li>Your raw answers are never stored on a server.</li>
+                <li>Your story is not saved; your question, first name, and category are saved in your journal until you delete them.</li>
                 <li>Readings are for reflection, never guaranteed predictions.</li>
               </ul>
             </div>

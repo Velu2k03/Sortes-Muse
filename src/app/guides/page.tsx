@@ -18,8 +18,8 @@ export default function GuidesPage() {
       </h1>
       <p className="mt-4 max-w-xl text-cream/75">
         Short guides that explain what Sortes actually does: the deck, how to
-        ask a question, the Celtic Cross, and how tarot differs from a birth
-        chart. Written for Sortes, free to read, no account needed.
+        ask a question, the Celtic Cross, topic spreads, and how tarot differs
+        from a birth chart. Written for Sortes, free to read, no account needed.
       </p>
       <div className="mt-10">
         <GuidesSearch guides={GUIDES} />

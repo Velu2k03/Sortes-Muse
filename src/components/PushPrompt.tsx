@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { dismissPushPrompt, pushPromptDismissed, getDailyStreak } from "@/lib/storage";
+import { dismissPushPrompt, pushPromptDismissed, getDailyStreak, promptShownThisSession, markPromptShownThisSession } from "@/lib/storage";
 
 /**
  * Gentle, easy-to-dismiss prompt for daily-card push reminders.
@@ -26,6 +26,8 @@ export default function PushPrompt() {
     if (!supported || pushPromptDismissed()) return;
     if (Notification.permission !== "default") return;
     const t = setTimeout(() => {
+      if (promptShownThisSession()) return;
+      markPromptShownThisSession();
       setStreak(getDailyStreak());
       setVisible(true);
     }, 45000);
@@ -64,7 +66,7 @@ export default function PushPrompt() {
           <p className="mt-0.5 text-xs leading-relaxed text-mist">
             {streak >= 2
               ? `You have drawn ${streak} days in a row. Get a gentle nudge each morning so the streak never breaks. You can turn this off anytime.`
-              : "Get a gentle nudge each morning when a new card is drawn for you. You can turn this off anytime."}
+              : "Get a gentle nudge each morning to draw your daily card. You can turn this off anytime."}
           </p>
         </div>
         <button

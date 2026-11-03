@@ -103,10 +103,9 @@ export default function HoroscopePage() {
         <p className="mt-3 leading-relaxed text-cream/85">{view === "daily" ? h.reflection : w.reflection}</p>
         <div className="mt-4 flex flex-wrap gap-x-6 gap-y-1 text-sm text-cream/80">
           <span>
-            Lucky colour: <strong className="text-cream">{view === "daily" ? h.luckyColour : w.luckyColour}</strong>
-          </span>
-          <span>
-            Lucky number: <strong className="num text-cream">{view === "daily" ? h.luckyNumber : w.luckyNumber}</strong>
+            Playful pick: <strong className="text-cream">{view === "daily" ? h.luckyColour : w.luckyColour}</strong>
+            {" · "}
+            <strong className="num text-cream">{view === "daily" ? h.luckyNumber : w.luckyNumber}</strong>
           </span>
         </div>
         <p className="mt-4 text-sm text-cream/60">

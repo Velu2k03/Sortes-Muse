@@ -254,3 +254,21 @@ export function pushPromptDismissed(): boolean {
 export function dismissPushPrompt(): void {
   write(K.pushDismissed, true);
 }
+
+// PWA prompts: at most one prompt per session, whichever appears first.
+// Session storage (not local storage) so the rule resets next session.
+const SESSION_PROMPT_KEY = "sortes-prompt-shown-session";
+export function promptShownThisSession(): boolean {
+  try {
+    return typeof window !== "undefined" && window.sessionStorage.getItem(SESSION_PROMPT_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+export function markPromptShownThisSession(): void {
+  try {
+    if (typeof window !== "undefined") window.sessionStorage.setItem(SESSION_PROMPT_KEY, "1");
+  } catch {
+    // session storage unavailable; the per-session rule simply cannot apply.
+  }
+}

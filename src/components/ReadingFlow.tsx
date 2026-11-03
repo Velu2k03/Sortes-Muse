@@ -319,7 +319,7 @@ function GateScreen({
               </button>
             </ClickSpark>
             <p className="mt-3 text-sm text-mist">
-              Free, no card required. One per seeker.
+              Free, no card required. One free Quick Insight per device.
             </p>
           </>
         ) : credits >= 1 ? (

@@ -117,14 +117,14 @@ export default function Home() {
             animate={{ opacity: 1 }}
             className="mt-5 text-sm text-mist"
           >
-            Your first Quick Insight reading is free. No card, no account, no friction.
+            Your first Quick Insight reading is free. No card, no account.
           </motion.p>
           <motion.p
             initial={false}
             animate={{ opacity: 1 }}
             className="mt-3 text-sm text-cream/75"
           >
-            New: birth charts, Ziwei, Western, and Vedic, calculation only and free.{" "}
+            Birth charts, Ziwei, Western, and Vedic, calculation only and free.{" "}
             <Link href="/charts" className="font-semibold text-goldbright underline underline-offset-4">
               Cast a birth chart
             </Link>

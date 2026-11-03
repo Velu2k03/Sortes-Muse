@@ -321,7 +321,7 @@ export default function ReportsClient() {
       <p className="text-center text-xs uppercase tracking-[0.35em] text-gold">Reports</p>
       <h1 className="mt-2 text-center font-display text-5xl text-goldbright">Keep-forever reports</h1>
       <p className="mt-3 text-center text-cream/80">
-        A report is a document you keep, not a reading you rent. 1 Oracle per report, and reports never
+        A report is a document you keep. 1 Oracle per report, and reports never
         expire. There is no free first report: every report costs 1 Oracle.
       </p>
       <p className="mt-2 text-center text-sm text-mist">

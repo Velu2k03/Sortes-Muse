@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { dismissInstallBanner, installBannerDismissed } from "@/lib/storage";
+import { dismissInstallBanner, installBannerDismissed, promptShownThisSession, markPromptShownThisSession } from "@/lib/storage";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -30,11 +30,16 @@ export default function InstallBanner() {
       const isStandalone =
         window.matchMedia("(display-mode: standalone)").matches ||
         (navigator as Navigator & { standalone?: boolean }).standalone === true;
-      if (!isStandalone && isIOS) setShowIOS(true);
+      if (!isStandalone && isIOS && !promptShownThisSession()) {
+        markPromptShownThisSession();
+        setShowIOS(true);
+      }
     }, 12000);
 
     const onPrompt = (e: Event) => {
       e.preventDefault();
+      if (promptShownThisSession()) return;
+      markPromptShownThisSession();
       setDeferred(e as BeforeInstallPromptEvent);
       setVisible(true);
     };

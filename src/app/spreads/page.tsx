@@ -3,7 +3,7 @@ import SpreadsClient from "./SpreadsClient";
 export const metadata = {
   title: "Tarot Readings",
   description:
-    "Choose your tarot spread: Quick Insight, Past Present Future, or the Celtic Cross. Your first full reading is free.",
+    "Choose your tarot spread: Quick Insight, topic spreads, or the Celtic Cross. Your first Quick Insight reading is free.",
   alternates: { canonical: "/spreads" },
 };
 

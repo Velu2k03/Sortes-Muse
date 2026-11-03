@@ -6,7 +6,7 @@ export const metadata = {
   alternates: { canonical: "/privacy" },
 };
 
-const UPDATED = "September 29, 2026";
+const UPDATED = "November 4, 2026";
 
 export default function PrivacyPage() {
   return (
@@ -40,8 +40,8 @@ export default function PrivacyPage() {
             <li>
               <strong>Reading intake:</strong> for personalized readings you
               may share a first name, a category, your story, and one question.
-              <strong> Raw intake form data is automatically deleted after 30
-              days.</strong> The generated reading itself is kept so you can
+              Your story goes to the AI for this reading only and is not
+              saved. The generated reading itself is kept so you can
               revisit it in your journal.
             </li>
             <li>
@@ -95,7 +95,7 @@ export default function PrivacyPage() {
         <section>
           <h2 className="font-display text-2xl text-goldbright">5. Data retention and deletion</h2>
           <ul className="mt-2 list-disc space-y-2 pl-5">
-            <li>Raw intake form data: never stored on a server. Only the question and the finished reading are saved in your history.</li>
+            <li>Tarot intake: your story is not saved. Your question, first name, and category are saved in your journal until you delete them.</li>
             <li>Generated readings: kept until you delete them or your account.</li>
             <li>Purchase records: kept as required for accounting and tax law.</li>
             <li>

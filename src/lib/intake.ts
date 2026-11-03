@@ -23,7 +23,7 @@ export const INTAKE_CATEGORIES: IntakeCategory[] = [
   {
     key: "love",
     name: "Love and Relationships",
-    tagline: "Matters of the heart, held gently.",
+    tagline: "Relationships and connection.",
     fields: [
       { key: "yourName", label: "Your first name", type: "text", placeholder: "Maya", required: true },
       { key: "partnerName", label: "Their first name", type: "text", placeholder: "Alex", required: true },
@@ -86,7 +86,7 @@ export const INTAKE_CATEGORIES: IntakeCategory[] = [
   {
     key: "health",
     name: "Health and Wellness",
-    tagline: "Gentle reflection for body and mind.",
+    tagline: "Body, mind, and habits.",
     fields: [
       { key: "concern", label: "Wellness concern", type: "text", placeholder: "e.g. Sleep, stress, energy", required: true },
       { key: "currentSituation", label: "Current situation", type: "textarea", required: true, placeholder: "How have you been feeling lately?" },
