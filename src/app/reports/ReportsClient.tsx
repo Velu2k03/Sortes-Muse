@@ -6,6 +6,8 @@ import { useAuth } from "@/components/AuthProvider";
 import RubberSegment from "@/components/RubberSegment";
 import SpecularButton from "@/components/SpecularButton";
 import StatusMark from "@/components/StatusMark";
+import SwipeToast from "@/components/SwipeToast";
+import CallChip from "@/components/CallChip";
 import { getReports, saveReport, spendCredit } from "@/lib/storage";
 import type { SavedReport, ReportType } from "@/lib/reports";
 
@@ -225,6 +227,11 @@ export default function ReportsClient() {
   const [year, setYear] = useState(String(new Date().getFullYear() + 1));
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState("");
+  // Phase D: failedCall marks a genuine call failure (not validation
+  // or a balance stop) and drives the persistent retry UI; toastOpen
+  // drives the transient toast on top of it.
+  const [failedCall, setFailedCall] = useState(false);
+  const [toastOpen, setToastOpen] = useState(false);
   const [result, setResult] = useState<SavedReport | null>(null);
   const [saveError, setSaveError] = useState(false);
   const [saved, setSaved] = useState<SavedReport[]>([]);
@@ -271,6 +278,9 @@ export default function ReportsClient() {
     setError("");
     setSaveError(false);
     setResult(null);
+    // Phase D: a new attempt clears the previous failure UI.
+    setFailedCall(false);
+    setToastOpen(false);
     if (!birth.date) {
       setError("Please enter a birth date.");
       return;
@@ -298,13 +308,22 @@ export default function ReportsClient() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(typeof data.error === "string" ? data.error : "The report could not be generated.");
+        // Phase D: every failure message states that no Oracle was
+        // spent (the route spends only after success), but only a
+        // genuine call failure gets the toast and retry UI. A 402 is
+        // a balance stop: the paragraph plus the Top up link guide it.
+        const msg = typeof data.error === "string" ? data.error : "The report could not be generated.";
+        setError(msg.includes("spent") ? msg : `${msg} No Oracle was spent.`);
+        if (res.status !== 402) {
+          setFailedCall(true);
+          setToastOpen(true);
+        }
         return;
       }
       const report = data.report as SavedReport;
       if (!user) {
         if (!spendCredit(1)) {
-          setError("Your device wallet could not cover this report. Please top up and try again.");
+          setError("Your device wallet could not cover this report. Please top up and try again. No Oracle was spent.");
           return;
         }
         window.dispatchEvent(new Event("sortes:credits-changed"));
@@ -314,6 +333,8 @@ export default function ReportsClient() {
       if (user) await refresh();
     } catch {
       setError("The report could not be generated just now. No Oracle was spent. Please try again in a moment.");
+      setFailedCall(true);
+      setToastOpen(true);
     } finally {
       setGenerating(false);
     }
@@ -430,6 +451,32 @@ export default function ReportsClient() {
         </div>
       )}
 
+      {failedCall && (
+        <div className="mt-4 space-y-3">
+          <SwipeToast
+            open={toastOpen}
+            onClose={() => setToastOpen(false)}
+            title="Report failed"
+            actionLabel="Retry"
+            onAction={generate}
+            inline
+            closeButton
+            width={320}
+            background="#1a1f2e"
+            color="#ede6d6"
+            fuseColor="#d4af37"
+          />
+          <button
+            type="button"
+            onClick={generate}
+            disabled={generating}
+            className="w-full rounded-xl border border-gold/40 px-4 py-3 text-sm font-semibold text-goldbright hover:bg-gold/15 disabled:opacity-50"
+          >
+            Try again
+          </button>
+        </div>
+      )}
+
       <SpecularButton
         type="button"
         onClick={generate}
@@ -447,6 +494,19 @@ export default function ReportsClient() {
           <StatusMark status="running" size={20} color="#d4af37" />
           Writing your report…
         </p>
+      )}
+      {(generating || failedCall || result) && (
+        <div className="mt-3 flex justify-center">
+          <CallChip
+            name="report"
+            argument="generate"
+            status={generating ? "running" : failedCall ? "error" : "done"}
+            surfaceColor="#1a1f2e"
+            color="#ede6d6"
+            progressColor="#d4af37"
+            onRetry={generate}
+          />
+        </div>
       )}
 
       {result && (

@@ -11,6 +11,7 @@ import CardModal from "@/components/CardModal";
 import ShareReading from "@/components/ShareReading";
 import TypewriterText from "@/components/TypewriterText";
 import SplitText from "@/components/SplitText";
+import SwipeToast from "@/components/SwipeToast";
 
 /**
  * Reading detail: full cards + interpretation + share + "Ask a follow-up" upsell.
@@ -29,6 +30,115 @@ export default function ReadingDetail({ id }: { id: string }) {
   const [followUpQ, setFollowUpQ] = useState("");
   const [followUpLoading, setFollowUpLoading] = useState(false);
   const [followUpError, setFollowUpError] = useState<string | null>(null);
+  // Phase D: followUpFailed marks a genuine call failure (not a
+  // balance stop) and drives the persistent retry UI; the toast flag
+  // drives the transient toast on top of it.
+  const [followUpFailed, setFollowUpFailed] = useState(false);
+  const [followUpToastOpen, setFollowUpToastOpen] = useState(false);
+
+  // Phase D: extracted from the Ask button so the plain retry
+  // button and the toast action can run the same call.
+  const askFollowUp = async () => {
+    const q = followUpQ.trim();
+    if (!q) return;
+    if (!reading) return;
+    setFollowUpLoading(true);
+    setFollowUpError(null);
+    // Phase D: a new attempt clears the previous failure UI.
+    setFollowUpFailed(false);
+    setFollowUpToastOpen(false);
+
+    const existingCount = (reading.followUps ?? []).length;
+    const isFree = existingCount === 0;
+
+    // Guest pre-spend for non-free follow-ups (M0.1 pattern).
+    let guestPreSpent = false;
+    if (!user && !isFree) {
+      const ok = await spend(1);
+      if (!ok) {
+        setFollowUpError("You need 1 Oracle for this follow-up.");
+        setFollowUpLoading(false);
+        return;
+      }
+      guestPreSpent = true;
+    }
+
+    try {
+      const payload: Record<string, unknown> = { question: q };
+      if (user) {
+        payload.readingId = reading.id;
+      } else {
+        // Guest: send whitelisted reading fields
+        payload.reading = {
+          question: reading.question,
+          interpretation: reading.interpretation,
+          aiGenerated: reading.aiGenerated,
+          cards: reading.cards.map((c) => ({
+            cardId: c.cardId,
+            position: c.position,
+            name: getCard(c.cardId)?.name,
+          })),
+          category: reading.category,
+          firstImpression: reading.firstImpression,
+          nextStep: reading.nextStep,
+          followUps: reading.followUps,
+        };
+      }
+
+      const res = await fetch("/api/reading/follow-up", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        // Refund guest pre-spend on failure
+        if (guestPreSpent) await add(1);
+        // Phase D: every failure message states that no Oracle was
+        // spent (the route spends only after success; guests are
+        // refunded above), but only a genuine call failure gets the
+        // toast and retry UI. A 402 is a balance stop.
+        const msg = data.error || "Something went wrong. Please try again.";
+        setFollowUpError(msg.includes("spent") ? msg : `${msg} No Oracle was spent.`);
+        if (res.status !== 402) {
+          setFollowUpFailed(true);
+          setFollowUpToastOpen(true);
+        }
+        setFollowUpLoading(false);
+        return;
+      }
+
+      // Update local reading with returned followUps.
+      // Do NOT rely on the PATCH path: the follow-up route
+      // already updated the server copy for signed-in users,
+      // and updateReading only PATCHes nextStep anyway.
+      if (data.followUps) {
+        const updated = updateLocalReading(reading.id, {
+          followUps: data.followUps,
+        });
+        if (updated) setReading(updated);
+      }
+
+      // Sync credits display for signed-in users: the
+      // route already spent server-side, so refresh the
+      // balance from the server.
+      if (user && typeof data.credits === "number") {
+        await refresh();
+      }
+
+      setFollowUpQ("");
+    } catch {
+      if (guestPreSpent) await add(1);
+      setFollowUpError(
+        "Could not reach the server. Please try again. No Oracle was spent."
+      );
+      setFollowUpFailed(true);
+      setFollowUpToastOpen(true);
+    } finally {
+      setFollowUpLoading(false);
+    }
+  };
 
   // M2.2: 7-day revisit note state
   const [revisitInput, setRevisitInput] = useState("");
@@ -357,94 +467,7 @@ export default function ReadingDetail({ id }: { id: string }) {
                   <button
                     type="button"
                     disabled={followUpLoading || !followUpQ.trim()}
-                    onClick={async () => {
-                      const q = followUpQ.trim();
-                      if (!q) return;
-                      setFollowUpLoading(true);
-                      setFollowUpError(null);
-
-                      const existingCount = (reading.followUps ?? []).length;
-                      const isFree = existingCount === 0;
-
-                      // Guest pre-spend for non-free follow-ups (M0.1 pattern).
-                      let guestPreSpent = false;
-                      if (!user && !isFree) {
-                        const ok = await spend(1);
-                        if (!ok) {
-                          setFollowUpError("You need 1 Oracle for this follow-up.");
-                          setFollowUpLoading(false);
-                          return;
-                        }
-                        guestPreSpent = true;
-                      }
-
-                      try {
-                        const payload: Record<string, unknown> = { question: q };
-                        if (user) {
-                          payload.readingId = reading.id;
-                        } else {
-                          // Guest: send whitelisted reading fields
-                          payload.reading = {
-                            question: reading.question,
-                            interpretation: reading.interpretation,
-                            aiGenerated: reading.aiGenerated,
-                            cards: reading.cards.map((c) => ({
-                              cardId: c.cardId,
-                              position: c.position,
-                              name: getCard(c.cardId)?.name,
-                            })),
-                            category: reading.category,
-                            firstImpression: reading.firstImpression,
-                            nextStep: reading.nextStep,
-                            followUps: reading.followUps,
-                          };
-                        }
-
-                        const res = await fetch("/api/reading/follow-up", {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify(payload),
-                        });
-                        const data = await res.json();
-
-                        if (!res.ok) {
-                          // Refund guest pre-spend on failure
-                          if (guestPreSpent) await add(1);
-                          setFollowUpError(
-                            data.error || "Something went wrong. Please try again."
-                          );
-                          setFollowUpLoading(false);
-                          return;
-                        }
-
-                        // Update local reading with returned followUps.
-                        // Do NOT rely on the PATCH path: the follow-up route
-                        // already updated the server copy for signed-in users,
-                        // and updateReading only PATCHes nextStep anyway.
-                        if (data.followUps) {
-                          const updated = updateLocalReading(reading.id, {
-                            followUps: data.followUps,
-                          });
-                          if (updated) setReading(updated);
-                        }
-
-                        // Sync credits display for signed-in users: the
-                        // route already spent server-side, so refresh the
-                        // balance from the server.
-                        if (user && typeof data.credits === "number") {
-                          await refresh();
-                        }
-
-                        setFollowUpQ("");
-                      } catch {
-                        if (guestPreSpent) await add(1);
-                        setFollowUpError(
-                          "Could not reach the server. Please try again."
-                        );
-                      } finally {
-                        setFollowUpLoading(false);
-                      }
-                    }}
+                    onClick={askFollowUp}
                     className="btn-gold whitespace-nowrap rounded-xl px-6 py-3 font-bold disabled:opacity-40"
                   >
                     {followUpLoading
@@ -456,6 +479,31 @@ export default function ReadingDetail({ id }: { id: string }) {
                 </div>
                 {followUpError && (
                   <p className="text-sm text-red-400">{followUpError}</p>
+                )}
+                {followUpFailed && (
+                  <div className="space-y-3">
+                    <SwipeToast
+                      open={followUpToastOpen}
+                      onClose={() => setFollowUpToastOpen(false)}
+                      title="Follow-up failed"
+                      actionLabel="Retry"
+                      onAction={askFollowUp}
+                      inline
+                      closeButton
+                      width={320}
+                      background="#1a1f2e"
+                      color="#ede6d6"
+                      fuseColor="#d4af37"
+                    />
+                    <button
+                      type="button"
+                      onClick={askFollowUp}
+                      disabled={followUpLoading}
+                      className="w-full rounded-xl border border-gold/40 px-4 py-3 text-sm font-semibold text-goldbright hover:bg-gold/15 disabled:opacity-50"
+                    >
+                      Try again
+                    </button>
+                  </div>
                 )}
               </div>
             )}

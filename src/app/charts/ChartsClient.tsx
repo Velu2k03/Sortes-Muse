@@ -18,6 +18,7 @@ import { useAuth } from "@/components/AuthProvider";
 import Icon from "@/components/Icon";
 import GlideSelect from "@/components/GlideSelect";
 import SplitText from "@/components/SplitText";
+import SwipeToast from "@/components/SwipeToast";
 import CometDial from "@/components/CometDial";
 import { chartFreeUsed, markChartFreeUsed, makeReading, type ChartFreeSystem } from "@/lib/storage";
 import { chartInterpretationCost } from "@/lib/chart-pricing";
@@ -85,6 +86,11 @@ export default function ChartsClient() {
   const [interpFallback, setInterpFallback] = useState(false);
   const [interpLoading, setInterpLoading] = useState(false);
   const [interpError, setInterpError] = useState("");
+  // Phase D: interpFailed marks a genuine call failure (not a balance
+  // stop) and drives the persistent retry UI; the toast flag drives
+  // the transient toast on top of it.
+  const [interpFailed, setInterpFailed] = useState(false);
+  const [interpToastOpen, setInterpToastOpen] = useState(false);
   const [interpFree, setInterpFree] = useState(false);
   // Server free status for signed-in users (null until fetched).
   // Guests never call the status endpoint; they use device flags.
@@ -237,6 +243,9 @@ export default function ChartsClient() {
     if (!result) return;
     setInterpError("");
     setInterpLoading(true);
+    // Phase D: a new attempt clears the previous failure UI.
+    setInterpFailed(false);
+    setInterpToastOpen(false);
     // M0.1 credit authority: signed-in users never spend client-side.
     // The route spends server-side only after a real model generates
     // text (or marks the server free use), so a failed generation can
@@ -278,7 +287,19 @@ export default function ChartsClient() {
       // Guest refund only: guests pre-spent from the device wallet.
       // Signed-in users spent nothing client-side.
       if (guestSpent) await add(1);
-      setInterpError(err instanceof Error ? err.message : "Could not interpret this chart.");
+      // Phase D: balance stops keep their own message (they already
+      // say the balance was not changed). A genuine call failure gets
+      // the no-charge line plus the toast and retry UI.
+      const message = err instanceof Error ? err.message : "Could not interpret this chart.";
+      const isBalance =
+        message.startsWith("You need 1 Oracle") || message.startsWith("Could not spend");
+      if (isBalance) {
+        setInterpError(message);
+      } else {
+        setInterpError(message.includes("spent") ? message : `${message} No Oracle was spent.`);
+        setInterpFailed(true);
+        setInterpToastOpen(true);
+      }
     } finally {
       setInterpLoading(false);
     }
@@ -911,6 +932,31 @@ export default function ChartsClient() {
               <p role="alert" className="mt-4 rounded-xl border border-red-400/40 bg-red-500/10 px-4 py-3 text-sm alert-error-text">
                 {interpError}
               </p>
+            )}
+            {interpFailed && (
+              <div className="mt-4 space-y-3">
+                <SwipeToast
+                  open={interpToastOpen}
+                  onClose={() => setInterpToastOpen(false)}
+                  title="Interpretation failed"
+                  actionLabel="Retry"
+                  onAction={onInterpret}
+                  inline
+                  closeButton
+                  width={320}
+                  background="#1a1f2e"
+                  color="#ede6d6"
+                  fuseColor="#d4af37"
+                />
+                <button
+                  type="button"
+                  onClick={onInterpret}
+                  disabled={interpLoading}
+                  className="w-full rounded-xl border border-gold/40 px-4 py-3 text-sm font-semibold text-goldbright hover:bg-gold/15 disabled:opacity-50"
+                >
+                  Try again
+                </button>
+              </div>
             )}
             <button type="button" onClick={onInterpret} disabled={interpLoading} className="btn-gold mt-5 rounded-full px-6 py-3 text-sm font-bold disabled:opacity-50">
               {interpLoading ? "Interpreting…" : displayFree ? "Get interpretation (free)" : "Get interpretation (1 Oracle)"}

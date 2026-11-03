@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import ReadingWait, { PROCESSING_LINES } from "@/components/ReadingWait";
 import SlideCommit from "@/components/SlideCommit";
+import SwipeToast from "@/components/SwipeToast";
 import { getSpread, drawCards } from "@/lib/tarot";
 import { getCard } from "@/lib/cards";
 import { suggestQuestionRewrite } from "@/lib/question-rewrite";
@@ -45,6 +46,11 @@ export default function IntakeFlow({ slug }: { slug: string }) {
   const [processingLine, setProcessingLine] = useState(0);
   const [processingComplete, setProcessingComplete] = useState(false);
   const [busy, setBusy] = useState(false);
+  // Phase D: generationFailed marks a genuine call failure (not a
+  // balance or validation stop) and drives the persistent retry UI;
+  // toastOpen drives the transient toast on top of it.
+  const [generationFailed, setGenerationFailed] = useState(false);
+  const [toastOpen, setToastOpen] = useState(false);
 
   const category = categoryKey ? getCategory(categoryKey) : null;
 
@@ -98,6 +104,10 @@ export default function IntakeFlow({ slug }: { slug: string }) {
     setBusy(true);
     setProcessingLine(0);
     setProcessingComplete(false);
+    // Phase D: a new attempt clears the previous failure UI, whatever
+    // path this attempt ends on.
+    setGenerationFailed(false);
+    setToastOpen(false);
     // M0.1 credit authority: signed-in users no longer spend client-side.
     // The route spends server-side only after a real model generates
     // text, so a failed generation can never cost a credit. Guests keep
@@ -122,6 +132,7 @@ export default function IntakeFlow({ slug }: { slug: string }) {
 
     let failMessage =
       "The reading could not be generated just now. Your Oracle was not spent. Please try again in a moment.";
+    let was402 = false;
     try {
       const cards = drawnCards;
       // One word only: the first token of whatever was typed.
@@ -163,6 +174,7 @@ export default function IntakeFlow({ slug }: { slug: string }) {
         // 402 means the server-side spend found no credit; surface the
         // server message so the user is told to top up, not to retry.
         if (res.status === 402) {
+          was402 = true;
           const d = await res.json().catch(() => null);
           if (d?.error) failMessage = d.error;
         }
@@ -205,6 +217,13 @@ export default function IntakeFlow({ slug }: { slug: string }) {
       // seeker can retry without paying again or re-drawing.
       setStep("impression");
       setError(failMessage);
+      // Phase D: only a genuine call failure gets the toast and the
+      // persistent retry UI. A 402 is a balance stop, told to top up,
+      // not to retry the same call.
+      if (!was402) {
+        setGenerationFailed(true);
+        setToastOpen(true);
+      }
       // Guest refund only: guests pre-spent from the device wallet, so
       // a failed generation returns it. Signed-in users spent nothing
       // client-side (the route spends only after success), so no
@@ -216,6 +235,13 @@ export default function IntakeFlow({ slug }: { slug: string }) {
       // error message above is already set, so this only signals it.
       throw err;
     }
+  };
+
+  // Phase D plain retry: the same generation call as SlideCommit. The
+  // rethrow at the end of beginGeneration only signals SlideCommit, so
+  // swallow it here; the failure is already surfaced via setError.
+  const retryGeneration = () => {
+    void beginGeneration().catch(() => {});
   };
 
   return (
@@ -564,6 +590,32 @@ export default function IntakeFlow({ slug }: { slug: string }) {
               <p className="mx-auto mt-4 max-w-md rounded-xl border border-red-400/40 bg-red-500/10 p-3 text-sm alert-error-text">
                 {error}
               </p>
+            )}
+
+            {generationFailed && (
+              <div className="mx-auto mt-4 max-w-md space-y-3">
+                <SwipeToast
+                  open={toastOpen}
+                  onClose={() => setToastOpen(false)}
+                  title="Reading failed"
+                  actionLabel="Retry"
+                  onAction={retryGeneration}
+                  inline
+                  closeButton
+                  width={320}
+                  background="#1a1f2e"
+                  color="#ede6d6"
+                  fuseColor="#d4af37"
+                />
+                <button
+                  type="button"
+                  onClick={retryGeneration}
+                  disabled={busy}
+                  className="w-full rounded-xl border border-gold/40 px-4 py-3 text-sm font-semibold text-goldbright hover:bg-gold/15 disabled:opacity-50"
+                >
+                  Try again
+                </button>
+              </div>
             )}
 
             <div className="mx-auto mt-8 flex max-w-md gap-3">
