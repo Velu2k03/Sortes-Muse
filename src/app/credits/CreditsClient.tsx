@@ -150,12 +150,16 @@ export default function CreditsPage() {
               </ul>
               {/* Audit 4: every pack uses the same solid btn-gold, same
                   padding, weight, and size. */}
+              {/* The button opens the top-up modal, it does not buy
+                  directly, so it carries no price or quantity: the card
+                  already shows both just above it, and repeating them
+                  in the button read as the same text twice. */}
               <button
                 type="button"
                 onClick={() => setOpen(true)}
                 className="btn-gold mt-5 w-full rounded-xl px-4 py-3 font-bold"
               >
-                Buy {p.readings} Oracles · ${p.price.toFixed(2)}
+                Top up Oracles
               </button>
             </>
           );
