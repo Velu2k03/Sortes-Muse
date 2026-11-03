@@ -869,7 +869,13 @@ export default function ChartsClient() {
                 keeps it keyboard accessible with no new component. */}
             <details className="mt-4">
               <summary className="cursor-pointer text-sm font-semibold text-goldbright">
-                Show the full legend
+                {/* Codex review on PR 46, correct: in Chinese Ziwei
+                    mode the heading and intro switch to Chinese, so
+                    this control must too, or Chinese-only users would
+                    not know how to reveal the legend. */}
+                {result.system === "ziwei" && ziweiLang === "zh"
+                  ? "显示完整图例"
+                  : "Show the full legend"}
               </summary>
             <div className="mt-4 grid gap-4 text-sm leading-relaxed text-cream/85 sm:grid-cols-2">
               <div>
