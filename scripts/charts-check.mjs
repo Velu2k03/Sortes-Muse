@@ -589,4 +589,12 @@ console.log("charts-check: all assertions passed");
   assert.ok(notFound.includes('title: "Page not found | Sortes"'), "not-found page must carry its own title, not the home title");
   assert.ok(notFound.includes('href: "/daily"') && notFound.includes('href: "/guides"'), "not-found page must offer real places to go, not only home");
   console.log("phase1: dead URL redirects and not-found places: all source assertions passed");
+  // Phase 2: one dominant hero action, Oracle cash value, trust strip.
+  assert.ok(home.includes("one dominant action"), "home hero must note the single primary action");
+  assert.ok(home.includes("$3.99 for 5 Oracles"), "home hero must state the pack start price in cash terms");
+  assert.ok(!home.includes("$0.80 per Oracle") || home.includes("varies by"), "home must not present a single fixed per-Oracle price as fixed");
+  assert.ok(home.includes("What Sortes will, and will not, do"), "home must carry the trust strip");
+  assert.ok(home.includes("A mirror, not a verdict"), "trust strip must state reflection, not prediction");
+  assert.ok(!home.includes("testimonial") && !home.includes("customers say"), "trust strip must not invent testimonials");
+  console.log("phase2: homepage primary action, Oracle value, trust strip: all source assertions passed");
 }
