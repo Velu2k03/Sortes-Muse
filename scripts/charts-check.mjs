@@ -605,4 +605,12 @@ console.log("charts-check: all assertions passed");
   const deckPage = fs.readFileSync("src/app/deck/page.tsx", "utf8");
   assert.ok(deckPage.includes('htmlFor="deck-search"'), "deck search must have a visible label, not only a placeholder");
   console.log("phase3: skip link, visible search labels, keyboard hints: all source assertions passed");
+  // Phase 4: new React Bits patterns, no new dependencies.
+  const reactBitsNew = fs.readFileSync("src/components/ReactBitsNew.tsx", "utf8");
+  assert.ok(reactBitsNew.includes("SpotlightCard") && reactBitsNew.includes("Magnet") && reactBitsNew.includes("GradientText") && reactBitsNew.includes("PageTransition"), "ReactBitsNew must export SpotlightCard, Magnet, GradientText, and PageTransition");
+  assert.ok(reactBitsNew.includes("prefers-reduced-motion"), "new components must gate on reduced motion");
+  const pkg = fs.readFileSync("package.json", "utf8");
+  assert.ok(!pkg.includes('"ogl"') && !pkg.includes('"three"') && !pkg.includes('"lenis"'), "Phase 4 must not add ogl, three, or lenis to package.json");
+  assert.ok(pkg.includes('"motion": "^14.9.0"'), "Motion must stay at 14.9.0 after Phase 4");
+  console.log("phase4: React Bits expansion, no new dependencies, Motion locked: all source assertions passed");
 }
