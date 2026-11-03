@@ -3,39 +3,40 @@
   inset: 0;
   z-index: 1;
   overflow: hidden;
-  opacity: 0.35;
+  opacity: 0.32;
   pointer-events: none;
   background:
     radial-gradient(
-      ellipse at var(--veil-x, 50%) var(--veil-y, 45%),
-      rgba(244, 208, 63, 0.16),
-      transparent 42%
+      ellipse 70% 60% at var(--veil-x, 50%) var(--veil-y, 45%),
+      rgba(244, 208, 63, 0.14),
+      rgba(212, 175, 55, 0.06) 38%,
+      transparent 68%
     ),
     conic-gradient(
       from 210deg at 50% 50%,
       transparent 0deg,
-      rgba(212, 175, 55, 0.08) 80deg,
+      rgba(212, 175, 55, 0.07) 80deg,
       transparent 150deg,
-      rgba(244, 208, 63, 0.07) 230deg,
+      rgba(244, 208, 63, 0.06) 230deg,
       transparent 300deg
     );
   filter: blur(26px);
   transform: scale(1.05);
-  transition: background-position 180ms ease-out;
+  transition: background-position 240ms ease-out;
 }
 
 .shiny-text {
   display: inline-block;
   color: inherit;
   background-image: linear-gradient(
-    110deg,
+    115deg,
     currentColor 0%,
-    currentColor 43%,
-    color-mix(in srgb, currentColor 90%, white) 50%,
-    currentColor 57%,
+    currentColor 42%,
+    color-mix(in srgb, currentColor 80%, #fff7d6) 50%,
+    currentColor 58%,
     currentColor 100%
   );
-  background-size: 220% 100%;
+  background-size: 240% 100%;
   background-position: 100% 0;
   background-clip: text;
   -webkit-background-clip: text;
@@ -75,13 +76,13 @@
   position: absolute;
   top: 0;
   left: 0;
-  width: 7px;
-  height: 7px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
-  background: #fff1a8;
+  background: #fff6c8;
   box-shadow:
-    0 0 5px 2px rgba(244, 208, 63, 0.9),
-    0 0 13px 4px rgba(212, 175, 55, 0.55);
+    0 0 4px 1px rgba(244, 208, 63, 0.75),
+    0 0 9px 2px rgba(212, 175, 55, 0.4);
   content: "";
   offset-path: inset(0 round var(--star-radius));
   offset-distance: 0%;
@@ -137,18 +138,18 @@
   z-index: 0;
   opacity: 0;
   background: radial-gradient(
-    180px circle at var(--bento-x, -200px) var(--bento-y, -200px),
-    rgba(var(--bento-glow-rgb), 0.1),
-    transparent 70%
+    200px circle at var(--bento-x, -300px) var(--bento-y, -300px),
+    rgba(var(--bento-glow-rgb), 0.08),
+    transparent 72%
   );
 }
 
 .magic-bento__edge::after {
   border: 1px solid transparent;
   background: radial-gradient(
-    140px circle at var(--bento-x, -200px) var(--bento-y, -200px),
-    rgba(var(--bento-glow-rgb), 0.8),
-    transparent 72%
+    150px circle at var(--bento-x, -300px) var(--bento-y, -300px),
+    rgba(var(--bento-glow-rgb), 0.75),
+    transparent 74%
   );
   content: "";
   mask:
@@ -157,32 +158,17 @@
   mask-composite: exclude;
 }
 
-.magic-bento__card::after {
-  position: absolute;
-  top: var(--wave-y, 50%);
-  left: var(--wave-x, 50%);
-  z-index: 0;
-  width: 12px;
-  height: 12px;
-  border: 1px solid rgba(244, 208, 63, 0.45);
-  border-radius: 50%;
-  content: "";
-  opacity: 0;
-  pointer-events: none;
-  transform: translate(-50%, -50%) scale(0.1);
-}
-
 @media (prefers-reduced-motion: no-preference) {
   .dark-veil {
     animation: dark-veil-drift 28s ease-in-out infinite alternate;
   }
 
   .shiny-text {
-    animation: shiny-text-sweep 4.5s ease-in-out infinite;
+    animation: shiny-text-sweep 16s ease-in-out infinite;
   }
 
   .star-border__light::before {
-    animation: star-border-travel 4s linear infinite;
+    animation: star-border-travel 7s linear infinite;
   }
 
   .click-spark__burst i {
@@ -198,10 +184,6 @@
     transition: opacity 180ms ease;
   }
 
-  .magic-bento__card[data-wave="true"]::after {
-    animation: magic-bento-wave 600ms ease-out both;
-  }
-
   @keyframes dark-veil-drift {
     from {
       transform: scale(1.05) translate3d(-1%, 0, 0);
@@ -213,11 +195,11 @@
 
   @keyframes shiny-text-sweep {
     0%,
-    62% {
+    88% {
       background-position: 100% 0;
     }
     100% {
-      background-position: -100% 0;
+      background-position: -140% 0;
     }
   }
 
@@ -237,17 +219,6 @@
       transform: rotate(var(--spark-angle)) translateY(-26px) scale(0.25);
     }
   }
-
-  @keyframes magic-bento-wave {
-    0% {
-      opacity: 0.8;
-      transform: translate(-50%, -50%) scale(0.1);
-    }
-    100% {
-      opacity: 0;
-      transform: translate(-50%, -50%) scale(28);
-    }
-  }
 }
 
 @media (min-width: 640px) {
@@ -265,29 +236,67 @@
 }
 
 html[data-theme="light"] .dark-veil {
-  display: none;
+  display: block;
+  opacity: 0.42;
+  background:
+    radial-gradient(
+      ellipse 72% 58% at var(--veil-x, 50%) var(--veil-y, 45%),
+      rgba(212, 175, 55, 0.15),
+      rgba(244, 208, 63, 0.06) 42%,
+      transparent 72%
+    ),
+    radial-gradient(
+      ellipse 60% 45% at 35% 65%,
+      rgba(244, 208, 63, 0.08),
+      transparent 65%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(253, 249, 238, 0) 0%,
+      rgba(212, 175, 55, 0.06) 60%,
+      rgba(244, 208, 63, 0.04) 100%
+    );
+  filter: blur(24px);
+}
+
+html[data-theme="light"] .shiny-text {
+  background-image: linear-gradient(
+    115deg,
+    currentColor 0%,
+    currentColor 44%,
+    color-mix(in srgb, currentColor 70%, #d4af37) 50%,
+    currentColor 56%,
+    currentColor 100%
+  );
+}
+
+html[data-theme="light"] .star-border-frame::before {
+  box-shadow: inset 0 0 0 1px rgba(124, 94, 0, 0.35);
+}
+
+html[data-theme="light"] .star-border__light::before {
+  background: #7c5e00;
+  box-shadow:
+    0 0 4px 1px rgba(124, 94, 0, 0.7),
+    0 0 8px 2px rgba(124, 94, 0, 0.35);
 }
 
 html[data-theme="light"] .magic-bento__edge {
-  --bento-glow-rgb: 138, 109, 10;
-}
-
-html[data-theme="light"] .magic-bento__card::after {
-  border-color: rgba(138, 109, 10, 0.45);
+  --bento-glow-rgb: 124, 94, 0;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .dark-veil,
   .star-border__light,
   .click-spark__burst,
-  .magic-bento__edge,
-  .magic-bento__card::after {
-    display: none;
+  .magic-bento__edge {
+    display: none !important;
   }
 
   .shiny-text {
-    background-image: none;
-    color: inherit;
-    -webkit-text-fill-color: currentColor;
+    background-image: none !important;
+    color: inherit !important;
+    -webkit-text-fill-color: currentColor !important;
+    animation: none !important;
   }
 }

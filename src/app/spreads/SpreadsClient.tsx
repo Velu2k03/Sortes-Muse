@@ -10,7 +10,6 @@ import { getCard } from "@/lib/cards";
 import CheckoutModal from "@/components/CheckoutModal";
 import { useAuth } from "@/components/AuthProvider";
 import { freeReadingUsed } from "@/lib/storage";
-import { ClickSpark } from "@/components/ReactBits";
 
 /**
  * Spread selection.
@@ -114,14 +113,12 @@ export default function SpreadsPage() {
                   Get Oracles to begin
                 </button>
               ) : (
-                <ClickSpark className="click-spark--block mt-5">
-                  <Link
-                    href={`/spreads/${s.slug}`}
-                    className="btn-gold block rounded-xl px-4 py-3 text-center font-bold"
-                  >
-                    {s.slug === "quick-insight" && !usedFree ? "Begin free reading" : "Begin reading"}
-                  </Link>
-                </ClickSpark>
+                <Link
+                  href={`/spreads/${s.slug}`}
+                  className="btn-gold mt-5 block rounded-xl px-4 py-3 text-center font-bold"
+                >
+                  {s.slug === "quick-insight" && !usedFree ? "Begin free reading" : "Begin reading"}
+                </Link>
               )}
             </div>
           </motion.article>

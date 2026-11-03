@@ -430,15 +430,17 @@ function SpreadLayout({
     return (
       <div className="flex justify-center">
         <DealCard index={0}>
-          <TarotCard
-            cardId={drawn[0].cardId}
-            reversed={drawn[0].reversed}
-            revealed={revealed[0]}
-            onFlip={() => onFlip(0)}
-            size="lg"
-            label={drawn[0].position}
-            celebrate={burst === 0}
-          />
+          <ClickSpark disabled={revealed[0]}>
+            <TarotCard
+              cardId={drawn[0].cardId}
+              reversed={drawn[0].reversed}
+              revealed={revealed[0]}
+              onFlip={() => onFlip(0)}
+              size="lg"
+              label={drawn[0].position}
+              celebrate={burst === 0}
+            />
+          </ClickSpark>
         </DealCard>
       </div>
     );
@@ -449,15 +451,17 @@ function SpreadLayout({
       <div className="flex flex-wrap items-start justify-center gap-4 sm:gap-8">
         {drawn.map((d, i) => (
           <DealCard key={d.positionKey} index={i}>
-            <TarotCard
-              cardId={d.cardId}
-              reversed={d.reversed}
-              revealed={revealed[i]}
-              onFlip={() => onFlip(i)}
-              size="md"
-              label={d.position}
-              celebrate={burst === i}
-            />
+            <ClickSpark disabled={revealed[i]}>
+              <TarotCard
+                cardId={d.cardId}
+                reversed={d.reversed}
+                revealed={revealed[i]}
+                onFlip={() => onFlip(i)}
+                size="md"
+                label={d.position}
+                celebrate={burst === i}
+              />
+            </ClickSpark>
           </DealCard>
         ))}
       </div>
@@ -475,15 +479,17 @@ function SpreadLayout({
     label?: string
   ) => (
     <DealCard key={draw.positionKey} index={index} className="flex justify-center">
-      <TarotCard
-        cardId={draw.cardId}
-        reversed={draw.reversed}
-        revealed={revealed[index]}
-        onFlip={() => onFlip(index)}
-        size="sm"
-        label={label ?? draw.position}
-        celebrate={burst === index}
-      />
+      <ClickSpark disabled={revealed[index]}>
+        <TarotCard
+          cardId={draw.cardId}
+          reversed={draw.reversed}
+          revealed={revealed[index]}
+          onFlip={() => onFlip(index)}
+          size="sm"
+          label={label ?? draw.position}
+          celebrate={burst === index}
+        />
+      </ClickSpark>
     </DealCard>
   );
 
@@ -499,15 +505,17 @@ function SpreadLayout({
             <div className="absolute inset-0 flex items-center justify-center">
               <DealCard index={challenge.index}>
                 <div style={{ transform: "rotate(90deg) scale(0.92)" }}>
-                  <TarotCard
-                    cardId={challenge.draw.cardId}
-                    reversed={challenge.draw.reversed}
-                    revealed={revealed[challenge.index]}
-                    onFlip={() => onFlip(challenge.index)}
-                    size="sm"
-                    label={challenge.draw.position}
-                    celebrate={burst === challenge.index}
-                  />
+                  <ClickSpark disabled={revealed[challenge.index]}>
+                    <TarotCard
+                      cardId={challenge.draw.cardId}
+                      reversed={challenge.draw.reversed}
+                      revealed={revealed[challenge.index]}
+                      onFlip={() => onFlip(challenge.index)}
+                      size="sm"
+                      label={challenge.draw.position}
+                      celebrate={burst === challenge.index}
+                    />
+                  </ClickSpark>
                 </div>
               </DealCard>
             </div>
@@ -523,15 +531,17 @@ function SpreadLayout({
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:hidden">
         {drawn.map((d, i) => (
           <DealCard key={d.positionKey} index={i} className="flex justify-center">
-            <TarotCard
-              cardId={d.cardId}
-              reversed={d.reversed}
-              revealed={revealed[i]}
-              onFlip={() => onFlip(i)}
-              size="sm"
-              label={d.position}
-              celebrate={burst === i}
-            />
+            <ClickSpark disabled={revealed[i]}>
+              <TarotCard
+                cardId={d.cardId}
+                reversed={d.reversed}
+                revealed={revealed[i]}
+                onFlip={() => onFlip(i)}
+                size="sm"
+                label={d.position}
+                celebrate={burst === i}
+              />
+            </ClickSpark>
           </DealCard>
         ))}
       </div>
