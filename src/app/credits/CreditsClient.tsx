@@ -21,6 +21,16 @@ interface ServerTx {
   created_at: string;
 }
 
+// Pack badge artwork: the same Flow images used as the Lemon Squeezy
+// product covers, downscaled to 160px thumbnails in public/packs so the
+// cards stay light on mobile. The pack name sits right beside the image,
+// so the image itself is decorative.
+const PACK_IMAGES: Record<string, string> = {
+  "pack-5": "/packs/first-light.jpg",
+  "pack-12": "/packs/constellation.jpg",
+  "pack-30": "/packs/celestial-treasury.jpg",
+};
+
 export default function CreditsPage() {
   const { credits, user } = useAuth();
   const searchParams = useSearchParams();
@@ -111,9 +121,12 @@ export default function CreditsPage() {
             <>
               <div className="flex items-start justify-between gap-3">
                 <div className="flex min-w-0 items-center gap-3">
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gold/15 text-lg text-goldbright" aria-hidden="true">
-                    ✦
-                  </span>
+                  <img
+                    src={PACK_IMAGES[p.id]}
+                    alt=""
+                    aria-hidden="true"
+                    className="h-9 w-9 shrink-0 rounded-xl border border-gold/30 object-cover"
+                  />
                   <p className="font-display text-xl text-cream">{p.name}</p>
                 </div>
                 {p.popular && (
