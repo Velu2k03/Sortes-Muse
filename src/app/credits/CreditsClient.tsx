@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { CREDIT_PACKS, perReadingPrice } from "@/lib/site";
+import { CREDIT_PACKS, apiPackId, perReadingPrice } from "@/lib/site";
 import { getPurchaseHistory, type Purchase } from "@/lib/storage";
 import { useAuth } from "@/components/AuthProvider";
 import CheckoutModal from "@/components/CheckoutModal";
@@ -45,6 +45,10 @@ export default function CreditsPage() {
   const searchParams = useSearchParams();
   const justPurchased = searchParams.get("purchase") === "success";
   const [open, setOpen] = useState(false);
+  const [modalPack, setModalPack] = useState<string | null>(null);
+  const [directProcessing, setDirectProcessing] = useState<string | null>(null);
+  const [directError, setDirectError] = useState<string | null>(null);
+  const [directFailed, setDirectFailed] = useState<string | null>(null);
   const [reducedMotion, setReducedMotion] = useState(false);
   useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -66,6 +70,47 @@ export default function CreditsPage() {
     obs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
     return () => obs.disconnect();
   }, []);
+  // Direct checkout from a pack card, as approved 2026-11-04: the
+  // card button goes straight to Lemon Squeezy for that pack, no
+  // re-pick in the modal. Signed-in visitors have an email on file,
+  // so they redirect at once. Guests have no email yet and the
+  // checkout API needs one before Lemon Squeezy, so a guest gets
+  // the modal only as the email step, with their pack marked
+  // Selected, not as a second pick. Demo mode (Lemon not
+  // configured) also falls back to the modal, where demo Buy lives.
+  const buyDirect = async (packId: string) => {
+    setDirectError(null);
+    setDirectFailed(null);
+    if (!user) {
+      setModalPack(packId);
+      setOpen(true);
+      return;
+    }
+    setDirectProcessing(packId);
+    try {
+      const enabledRes = await fetch("/api/checkout/lemonsqueezy");
+      const enabledData = await enabledRes.json().catch(() => ({}));
+      if (!enabledData.enabled) {
+        setModalPack(packId);
+        setOpen(true);
+        return;
+      }
+      const res = await fetch("/api/checkout/lemonsqueezy", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ packId: apiPackId(packId) }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error ?? "Checkout failed.");
+      if (!data.url) throw new Error("Checkout failed.");
+      window.location.href = data.url;
+    } catch (err) {
+      setDirectError(err instanceof Error ? err.message : "Checkout failed.");
+      setDirectFailed(packId);
+    } finally {
+      setDirectProcessing(null);
+    }
+  };
   const [localHistory, setLocalHistory] = useState<Purchase[]>([]);
   const [serverTx, setServerTx] = useState<ServerTx[] | null>(null);
 
@@ -100,7 +145,7 @@ export default function CreditsPage() {
           <div className="mt-6 flex items-baseline justify-center gap-2">
             <Counter
               value={credits ?? 0}
-              textColor="#ede6d6"
+              textColor={siteTheme === "light" ? "#1c1a15" : "#ede6d6"}
               fontSize={72}
               fontWeight="bold"
             />
@@ -160,17 +205,23 @@ export default function CreditsPage() {
               </ul>
               {/* Audit 4: every pack uses the same solid btn-gold, same
                   padding, weight, and size. */}
-              {/* The button opens the top-up modal, it does not buy
-                  directly, so it carries no price or quantity: the card
-                  already shows both just above it, and repeating them
-                  in the button read as the same text twice. */}
+              {/* Direct checkout, approved 2026-11-04: this button goes
+                  straight to Lemon Squeezy for this card's pack.
+                  The modal stays for spreads, header, and reading
+                  flows, where no pack was picked yet, and for guests
+                  and demo mode here, where an email step or demo Buy
+                  is still needed. */}
               <button
                 type="button"
-                onClick={() => setOpen(true)}
-                className="btn-gold mt-5 w-full rounded-xl px-4 py-3 font-bold"
+                disabled={directProcessing !== null}
+                onClick={() => void buyDirect(p.id)}
+                className="btn-gold mt-5 w-full rounded-xl px-4 py-3 font-bold disabled:opacity-60"
               >
-                Top up Oracles
+                {directProcessing === p.id ? "…" : "Checkout"}
               </button>
+              {directError && directFailed === p.id && (
+                <p className="mt-2 text-sm alert-error-text">{directError}</p>
+              )}
             </>
           );
           return (
@@ -269,7 +320,7 @@ export default function CreditsPage() {
         <SampleReading />
       </div>
 
-      <CheckoutModal open={open} onClose={() => setOpen(false)} />
+      <CheckoutModal open={open} onClose={() => setOpen(false)} initialPackId={modalPack} />
     </div>
   );
 }

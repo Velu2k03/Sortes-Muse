@@ -58,6 +58,19 @@ export default function ChartsClient() {
     mq.addEventListener("change", sync);
     return () => mq.removeEventListener("change", sync);
   }, []);
+  // Dial numbers bypass the theme tokens (CometDial takes a hard
+  // ink colour), so track the document theme the same way the
+  // credits page does for PixelCard. GlideSelect keeps cream
+  // because its surface is dark in both themes.
+  const [siteTheme, setSiteTheme] = useState<"dark" | "light">("light");
+  useEffect(() => {
+    const sync = () =>
+      setSiteTheme(document.documentElement.dataset.theme === "light" ? "light" : "dark");
+    sync();
+    const obs = new MutationObserver(sync);
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    return () => obs.disconnect();
+  }, []);
   const SYSTEM_ORDER: ChartSystem[] = ["ziwei", "western", "vedic"];
   // Phase F: one plain line per system under the picker, mirroring the
   // reports page blurbs, so a newcomer picks by meaning, not by name.
@@ -536,8 +549,8 @@ export default function ChartsClient() {
                         size={150}
                         unit=""
                         label="Birth hour"
-                        accent="#d4af37"
-                        ink="#ede6d6"
+                        accent={siteTheme === "light" ? "#8a6d0a" : "#d4af37"}
+                        ink={siteTheme === "light" ? "#1c1a15" : "#ede6d6"}
                         onChange={(hour) => {
                           const minutes = time.split(":")[1] ?? "00";
                           setTime(`${String(hour).padStart(2, "0")}:${minutes}`);
@@ -555,8 +568,8 @@ export default function ChartsClient() {
                         size={150}
                         unit=""
                         label="Birth minute"
-                        accent="#d4af37"
-                        ink="#ede6d6"
+                        accent={siteTheme === "light" ? "#8a6d0a" : "#d4af37"}
+                        ink={siteTheme === "light" ? "#1c1a15" : "#ede6d6"}
                         onChange={(minute) => {
                           const hours = time.split(":")[0] ?? "08";
                           setTime(`${hours}:${String(minute).padStart(2, "0")}`);

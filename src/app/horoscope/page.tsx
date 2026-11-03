@@ -41,6 +41,19 @@ export default function HoroscopePage() {
     return () => mq.removeEventListener("change", sync);
   }, []);
   const [view, setView] = useState<"daily" | "weekly">("daily");
+  // OptionWheel takes hard colours, so it bypasses the theme tokens
+  // like the credits Counter and charts dials did. Track the
+  // document theme here. RubberSegment keeps its dark track in
+  // both themes, so it is left alone.
+  const [siteTheme, setSiteTheme] = useState<"dark" | "light">("light");
+  useEffect(() => {
+    const sync = () =>
+      setSiteTheme(document.documentElement.dataset.theme === "light" ? "light" : "dark");
+    sync();
+    const obs = new MutationObserver(sync);
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    return () => obs.disconnect();
+  }, []);
   const [revealed, setRevealed] = useState(false);
   const [revealing, setRevealing] = useState(false);
   const revealTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -104,8 +117,8 @@ export default function HoroscopePage() {
                 items={[...SUN_SIGNS]}
                 defaultSelected={SUN_SIGNS.indexOf(sign)}
                 onChange={(index) => { setSign(SUN_SIGNS[index]); resetReveal(); }}
-                textColor="#9ca3af"
-                activeColor="#f4d03f"
+                textColor={siteTheme === "light" ? "#45423c" : "#9ca3af"}
+                activeColor={siteTheme === "light" ? "#7c5e00" : "#f4d03f"}
               />
             </div>
           )}

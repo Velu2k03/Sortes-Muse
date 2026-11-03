@@ -55,6 +55,28 @@ html[data-theme="light"] /* Numbers: genjutsu paint method, distinct readable nu
   font-variant-numeric: tabular-nums;
 }
 
+/* Header logo, approved 2026-11-04: one full turn to the right
+   (clockwise, 360 degrees) on first load, once, not looping.
+   The header lives in the layout, so in-app navigation does not
+   replay it. A full turn ends where it started, so reduced motion
+   simply shows the logo still, with no animation. */
+.logo-turn-once {
+  animation: logo-turn-right 0.9s ease-out 1;
+}
+@keyframes logo-turn-right {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .logo-turn-once {
+    animation: none;
+  }
+}
+
 .rubber-segment {
   position: relative;
   isolation: isolate;

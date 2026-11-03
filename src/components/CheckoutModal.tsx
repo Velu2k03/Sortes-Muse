@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { CREDIT_PACKS, perReadingPrice } from "@/lib/site";
+import { CREDIT_PACKS, apiPackId, perReadingPrice } from "@/lib/site";
 import { useAuth } from "@/components/AuthProvider";
 import CardBurst from "@/components/CardBurst";
 import { trackPurchaseCompleted } from "@/components/Analytics";
@@ -11,6 +11,12 @@ interface Props {
   open: boolean;
   onClose: () => void;
   reason?: string;
+  // Pack the visitor already picked (credits card direct flow, guests
+  // only: signed-in visitors skip this modal entirely). Shown as
+  // Selected so the guest does not re-pick; the modal is only the
+  // email step, because the checkout API needs an email before Lemon
+  // Squeezy so credits have an account to land on.
+  initialPackId?: string | null;
 }
 
 /**
@@ -20,7 +26,7 @@ interface Props {
  *   grants credits instantly.
  * - Otherwise: clearly-labeled demo checkout so every flow stays testable.
  */
-export default function CheckoutModal({ open, onClose, reason }: Props) {
+export default function CheckoutModal({ open, onClose, reason, initialPackId }: Props) {
   const { add, refresh, user } = useAuth();
   const [processing, setProcessing] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
@@ -94,7 +100,7 @@ export default function CheckoutModal({ open, onClose, reason }: Props) {
       const res = await fetch("/api/checkout/lemonsqueezy", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ packId, email: trimmed || undefined }),
+        body: JSON.stringify({ packId: apiPackId(packId), email: trimmed || undefined }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Checkout failed.");
@@ -175,6 +181,11 @@ export default function CheckoutModal({ open, onClose, reason }: Props) {
                   {p.popular && (
                     <span className="absolute -top-2.5 left-4 rounded-full bg-gold px-3 py-0.5 text-[11px] font-bold uppercase tracking-wider text-ink">
                       Most popular
+                    </span>
+                  )}
+                  {initialPackId === p.id && (
+                    <span className="absolute -top-2.5 right-4 rounded-full bg-goldbright px-3 py-0.5 text-[11px] font-bold uppercase tracking-wider text-ink">
+                      Selected
                     </span>
                   )}
                   <div className="flex items-center justify-between gap-3">

@@ -90,7 +90,7 @@ export default function Header() {
             alt=""
             width={36}
             height={36}
-            className="rounded-lg"
+            className="rounded-lg logo-turn-once"
           />
           <span className="font-display text-xl tracking-wide text-goldbright sm:text-2xl">
             {APP_SHORT}

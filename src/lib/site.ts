@@ -21,3 +21,17 @@ export const CREDIT_PACKS: CreditPack[] = [
 export function perReadingPrice(pack: CreditPack): string {
   return (pack.price / pack.readings).toFixed(2);
 }
+
+// UI pack ids (pack-5, pack-12, pack-30) vs the checkout API ids
+// (pack5, pack12, pack30). The modal used to pass the UI id straight
+// to the API, which only accepts the API ids, so a real checkout
+// always failed with "Invalid pack." Map in one place, use it in
+// both the direct credits checkout and the modal.
+export function apiPackId(uiPackId: string): string {
+  const map: Record<string, string> = {
+    "pack-5": "pack5",
+    "pack-12": "pack12",
+    "pack-30": "pack30",
+  };
+  return map[uiPackId] ?? uiPackId;
+}
