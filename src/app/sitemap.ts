@@ -5,6 +5,13 @@ import { SITE_URL } from "@/lib/site";
 // engines had no page list to discover. Only canonical pages are
 // listed: redirect pages (/card-meanings, /readings, /journal),
 // the account page, and the offline fallback are left out.
+// Phase 1 verification, 2026-11-04: this list was checked against
+// src/app routes and against the live sitemap.xml, and it matches:
+// 27 canonical pages, all 6 spread slugs, all 5 guide slugs, no
+// dead chart subpaths, no daily-card, no three-card, no relationship.
+// Dead typed URLs are handled by redirects in next.config.ts, not
+// by adding non-canonical pages to this list. Intake and reading
+// detail pages are flows, not canonical content, so they stay out.
 const PAGES = [
   "/",
   "/daily",
