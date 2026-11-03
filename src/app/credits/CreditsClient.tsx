@@ -35,9 +35,9 @@ const PACK_IMAGES: Record<string, string> = {
 // name who the tier is for. Kept local like PACK_IMAGES so no pricing
 // file changes.
 const PACK_TAGLINES: Record<string, string> = {
-  "pack-5": "For your first readings",
-  "pack-12": "For regular readings",
-  "pack-30": "For deep exploration",
+  "pack-5": "A quiet place to begin",
+  "pack-12": "A steady rhythm of readings",
+  "pack-30": "Room for every question",
 };
 
 export default function CreditsPage() {
@@ -148,15 +148,15 @@ export default function CreditsPage() {
               <p className="num mt-5 text-5xl font-bold text-cream">
                 ${p.price.toFixed(2)}
               </p>
-              <p className="mt-1 text-sm text-mist">one-time payment</p>
+              <p className="mt-1 text-sm text-mist">Single payment</p>
               <p className="mt-3 text-base text-cream">
                 <span className="font-body text-cream">{p.readings}</span> Oracles · ${perReadingPrice(p)} per Oracle
               </p>
               <ul className="mt-4 space-y-2 text-sm text-cream/85">
-                <li>✓ 1 Oracle = 1 full reading</li>
-                <li>✓ Oracles never expire</li>
-                <li>✓ All 6 spreads, all 3 chart systems</li>
-                <li>✓ One payment, no subscription</li>
+                <li>✓ Tarot readings, birth charts, and reports included</li>
+                <li>✓ Your story is used for one reading only</li>
+                <li>✓ Your readings stay in your history</li>
+                <li>✓ No tarot knowledge needed</li>
               </ul>
               {/* Audit 4: every pack uses the same solid btn-gold, same
                   padding, weight, and size. */}
