@@ -113,6 +113,7 @@ export default function HoroscopePage() {
             </select>
           ) : (
             <div className="h-64">
+              <p className="mb-2 text-xs text-mist">Drag the wheel, or focus it and use arrow keys to choose a sign.</p>
               <OptionWheel
                 items={[...SUN_SIGNS]}
                 defaultSelected={SUN_SIGNS.indexOf(sign)}

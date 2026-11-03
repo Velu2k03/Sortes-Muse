@@ -19,12 +19,15 @@ export default function GuidesSearch({ guides }: { guides: Guide[] }) {
 
   return (
     <div>
+      <label htmlFor="guides-search" className="mb-1.5 block text-sm font-medium text-cream">
+        Search guides
+      </label>
       <input
+        id="guides-search"
         type="search"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder="Search guides, e.g. celtic, love, charts…"
-        aria-label="Search guides"
         className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none"
       />
       <div className="mt-10 space-y-4">
