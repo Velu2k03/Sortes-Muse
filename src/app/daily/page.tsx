@@ -18,6 +18,7 @@ import HoldButton from "@/components/HoldButton";
 import HoloCard from "@/components/HoloCard";
 import PixelTransition from "@/components/PixelTransition";
 import Image from "next/image";
+import Link from "next/link";
 import BlurText from "@/components/BlurText";
 
 type Phase = "idle" | "shuffling" | "revealed";
@@ -259,6 +260,23 @@ export default function DailyPage() {
                   )}
                   .
                 </p>
+                {/* Personal Phase 3: a revealed daily card used to end
+                    here. Give the user one obvious next step now,
+                    not only tomorrow. Links only, no logic change. */}
+                <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
+                  <Link
+                    href="/spreads/quick-insight"
+                    className="btn-gold rounded-xl px-6 py-3 font-bold"
+                  >
+                    Ask a full reading about this
+                  </Link>
+                  <Link
+                    href="/deck"
+                    className="btn-ghost rounded-xl px-6 py-3 font-semibold"
+                  >
+                    Explore all card meanings
+                  </Link>
+                </div>
               </motion.div>
             </motion.div>
           )}

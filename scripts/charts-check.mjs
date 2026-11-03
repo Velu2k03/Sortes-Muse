@@ -646,4 +646,17 @@ console.log("charts-check: all assertions passed");
   assert.ok(chartsClient.includes("Show the full legend"), "chart legend must be progressive disclosure, not a wall before interpretation");
   assert.ok(intake.includes("What happens next: the cards are drawn"), "intake confirm step must state what happens next");
   console.log("personal-phase2: disclosure, numbers, React Bits, chart structure, intake guidance: all source assertions passed");
+  // Personal Phase 3: guided navigation, guide contents, card
+  // padding consistency, GlareHover and AnimatedList samples.
+  const spreadsClient2 = fs.readFileSync("src/app/spreads/SpreadsClient.tsx", "utf8");
+  assert.ok(spreadsClient2.includes("Start here, it is free") && spreadsClient2.includes("GlareHover"), "spreads must offer one guided free start with a glare interaction");
+  const daily = fs.readFileSync("src/app/daily/page.tsx", "utf8");
+  assert.ok(daily.includes("Ask a full reading about this"), "daily reveal must offer a next step instead of ending at tomorrow");
+  const guidePage = fs.readFileSync("src/app/guides/[slug]/page.tsx", "utf8");
+  assert.ok(guidePage.includes("In this guide") && guidePage.includes("scroll-mt-24"), "guide pages must carry a contents list with anchored sections");
+  assert.ok(reactBitsNew.includes("GlareHover") && reactBitsNew.includes("AnimatedList"), "ReactBitsNew must export GlareHover and AnimatedList");
+  const guidesSearch2 = fs.readFileSync("src/components/GuidesSearch.tsx", "utf8");
+  assert.ok(guidesSearch2.includes("AnimatedList"), "guides index must use the animated list");
+  assert.ok(!pkg.includes('"ogl"') && !pkg.includes('"lenis"'), "Phase 3 must not add ogl or lenis");
+  console.log("personal-phase3: guided navigation, guide contents, GlareHover, AnimatedList: all source assertions passed");
 }

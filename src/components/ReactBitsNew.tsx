@@ -16,8 +16,11 @@ import { motion, useReducedMotion } from "motion/react";
  * Purposeful use only, one interaction type per area:
  * - GradientText: hero Sortes word only, gold on the dark hero.
  * - Magnet: hero primary button only, pointer only.
- * - SpotlightCard: What do you seek cards only.
+ * - SpotlightCard: What do you seek cards only, plus journal
+ *   repeated questions in Personal Phase 2.
  * - PageTransition: a short fade and rise on navigation, all pages.
+ * - GlareHover: spreads guided start button only, pointer only.
+ * - AnimatedList: guides index list only, one stagger on mount.
  *
  * Every component is static under prefers-reduced-motion and does
  * nothing special on touch, where there is no pointer to follow.
@@ -146,6 +149,77 @@ export function Magnet({
       className={`inline-block transition-transform duration-200 ease-out ${className}`}
     >
       {children}
+    </div>
+  );
+}
+
+export function GlareHover({
+  children,
+  className = "",
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const onMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (isTouchPointer(event) || isReducedMotion() || !ref.current) return;
+    const bounds = ref.current.getBoundingClientRect();
+    ref.current.style.setProperty("--glare-x", `${((event.clientX - bounds.left) / bounds.width) * 100}%`);
+    ref.current.style.setProperty("--glare-y", `${((event.clientY - bounds.top) / bounds.height) * 100}%`);
+    ref.current.style.setProperty("--glare-opacity", "1");
+  };
+  const onLeave = () => {
+    if (ref.current) ref.current.style.setProperty("--glare-opacity", "0");
+  };
+  return (
+    <div
+      ref={ref}
+      onPointerMove={onMove}
+      onPointerLeave={onLeave}
+      className={`relative inline-block overflow-hidden ${className}`}
+      style={
+        {
+          "--glare-x": "50%",
+          "--glare-y": "50%",
+          "--glare-opacity": "0",
+        } as CSSProperties
+      }
+    >
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 z-10"
+        style={{
+          background: "radial-gradient(180px circle at var(--glare-x) var(--glare-y), rgba(255, 255, 255, 0.35), transparent 70%)",
+          opacity: "var(--glare-opacity)",
+          transition: "opacity 200ms ease-out",
+        }}
+      />
+      <div className="relative">{children}</div>
+    </div>
+  );
+}
+
+export function AnimatedList({
+  children,
+  className = "",
+}: {
+  children: ReactNode[];
+  className?: string;
+}) {
+  const reduce = useReducedMotion();
+  if (reduce) return <div className={className}>{children}</div>;
+  return (
+    <div className={className}>
+      {children.map((child, i) => (
+        <motion.div
+          key={i}
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: i * 0.06, duration: 0.35, ease: "easeOut" }}
+        >
+          {child}
+        </motion.div>
+      ))}
     </div>
   );
 }

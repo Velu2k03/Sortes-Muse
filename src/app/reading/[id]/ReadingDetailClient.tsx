@@ -322,7 +322,7 @@ export default function ReadingDetail({ id }: { id: string }) {
           return (
             <section
               key={d.positionKey}
-              className="rounded-3xl border border-gold/20 bg-panel/60 p-6"
+              className="rounded-3xl border border-gold/20 bg-panel/60 p-6 sm:p-8"
             >
               <p className="text-xs uppercase tracking-[0.25em] text-gold">
                 {i + 1} · {d.position}

@@ -45,9 +45,33 @@ export default async function GuidePage({
       </Link>
       <h1 className="mt-4 font-display text-5xl text-goldbright">{guide.title}</h1>
       <p className="mt-4 max-w-xl text-cream/75">{guide.description}</p>
+      {/* Personal Phase 4: a long guide used to be one wall of
+          sections with no way to jump. This contents list is the
+          guide's own headings, linked, nothing added or removed. */}
+      <nav aria-label="In this guide" className="mt-8 rounded-3xl border border-gold/20 bg-panel/60 p-5">
+        <p className="text-xs uppercase tracking-[0.25em] text-gold">
+          In this guide
+        </p>
+        <ul className="mt-3 space-y-1.5">
+          {guide.sections.map((s) => (
+            <li key={s.heading}>
+              <a
+                href={`#${s.heading.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`}
+                className="text-sm font-semibold text-goldbright underline underline-offset-4"
+              >
+                {s.heading}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </nav>
       <div className="mt-10 space-y-10 text-[15px] leading-relaxed text-cream/85">
         {guide.sections.map((s) => (
-          <section key={s.heading}>
+          <section
+            key={s.heading}
+            id={s.heading.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}
+            className="scroll-mt-24"
+          >
             <h2 className="font-display text-3xl text-goldbright">{s.heading}</h2>
             {s.paragraphs.map((p, i) => (
               <p key={i} className="mt-3">
