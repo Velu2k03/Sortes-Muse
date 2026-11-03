@@ -10,6 +10,7 @@ import TarotCard from "@/components/TarotCard";
 import CardModal from "@/components/CardModal";
 import ShareReading from "@/components/ShareReading";
 import TypewriterText from "@/components/TypewriterText";
+import SplitText from "@/components/SplitText";
 
 /**
  * Reading detail: full cards + interpretation + share + "Ask a follow-up" upsell.
@@ -78,9 +79,7 @@ export default function ReadingDetail({ id }: { id: string }) {
       <p className="text-center text-xs uppercase tracking-[0.35em] text-gold">
         {reading.spreadName} · {date}
       </p>
-      <h1 className="mt-3 text-center font-display text-5xl text-goldbright">
-        Your reading
-      </h1>
+      <SplitText tag="h1" text="Your reading" className="mt-3 text-center font-display text-5xl text-goldbright" />
       {reading.question && (
         <p className="mx-auto mt-4 max-w-xl text-center italic text-cream/80">
           “{reading.question}”

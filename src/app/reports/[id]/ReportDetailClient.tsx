@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
 import { getReport, deleteReport } from "@/lib/storage";
 import type { SavedReport } from "@/lib/reports";
+import SplitText from "@/components/SplitText";
 
 export default function ReportDetailClient() {
   const params = useParams();
@@ -90,7 +91,7 @@ export default function ReportDetailClient() {
       <p className="mt-6 text-xs uppercase tracking-[0.35em] text-gold">
         {report.type === "transit" ? "Transit report" : report.type === "year-ahead" ? "Year-ahead reading" : "Relationship comparison"}
       </p>
-      <h1 className="mt-2 font-display text-5xl text-goldbright">{report.title}</h1>
+      <SplitText tag="h1" text={report.title} className="mt-2 font-display text-5xl text-goldbright" />
       <p className="mt-2 text-sm text-mist">
         Saved {new Date(report.createdAt).toLocaleDateString()} · This report never expires.
       </p>

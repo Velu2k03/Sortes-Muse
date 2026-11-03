@@ -17,6 +17,7 @@ import VedicChart from "@/components/VedicChart";
 import { useAuth } from "@/components/AuthProvider";
 import Icon from "@/components/Icon";
 import GlideSelect from "@/components/GlideSelect";
+import SplitText from "@/components/SplitText";
 import CometDial from "@/components/CometDial";
 import { chartFreeUsed, markChartFreeUsed, makeReading, type ChartFreeSystem } from "@/lib/storage";
 import { chartInterpretationCost } from "@/lib/chart-pricing";
@@ -686,9 +687,15 @@ export default function ChartsClient() {
               <div style={{ fontSize: 18, marginTop: 24, color: "#9ca3af" }}>A reflection, not a prediction. sortes.resonantatlas.com</div>
             </div>
           </div>
-          <h2 className="font-display text-3xl text-goldbright">
-            {result.system === "ziwei" ? "Ziwei chart" : result.system === "vedic" ? "Vedic chart" : "Western chart"}
-          </h2>
+          {/* The key remounts the reveal for each new result, so a
+              recalculation with another system replays it. The
+              offscreen share card above keeps its plain text. */}
+          <SplitText
+            key={result.system}
+            tag="h2"
+            text={result.system === "ziwei" ? "Ziwei chart" : result.system === "vedic" ? "Vedic chart" : "Western chart"}
+            className="font-display text-3xl text-goldbright"
+          />
           <p className="mt-3 rounded-2xl border border-gold/25 bg-panel/70 px-4 py-3 text-sm leading-relaxed text-cream/90">
             <strong className="text-goldbright">Your chart in one line: </strong>
             {chartSummaryText(result, ziweiLang)}

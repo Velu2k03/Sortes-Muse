@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Icon from "@/components/Icon";
+import FadeContent from "@/components/FadeContent";
 
 /**
  * Themed date picker for /charts. It draws the calendar popup in
@@ -175,7 +176,11 @@ export default function ThemedDatePicker({
               <span key={w}>{w}</span>
             ))}
           </div>
-          <div className="mt-1 grid grid-cols-7 gap-1">
+          {/* The key remounts the fade when the month changes, so
+              paging months fades the new grid in. The weekday row
+              above stays static. */}
+          <FadeContent key={`${viewYear}-${viewMonth}`} trigger="mount" effect="fade">
+            <div className="mt-1 grid grid-cols-7 gap-1">
             {cells.map((c) => {
               const v = toValue(c.y, c.m, c.d);
               const selected = v === value;
@@ -204,7 +209,8 @@ export default function ThemedDatePicker({
                 </button>
               );
             })}
-          </div>
+            </div>
+          </FadeContent>
           <div className="mt-3 flex items-center justify-between border-t border-gold/20 pt-3">
             <button
               type="button"
