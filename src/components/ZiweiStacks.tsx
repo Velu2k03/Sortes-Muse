@@ -166,6 +166,7 @@ export default function ZiweiStacks({
               </tbody>
             </table>
           </div>
+          <p className="mt-2 text-xs text-mist">On a narrow screen, scroll the table sideways to see all columns.</p>
           <p className="mt-4 text-xs leading-relaxed text-mist">
             Stacks are computed by the iztro engine from the same natal chart, using its own
             decade ranges and Si Hua table for each layer&apos;s stem. Decades use nominal

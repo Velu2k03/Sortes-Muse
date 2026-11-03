@@ -90,6 +90,7 @@ export default function VedicChart({ result }: { result: VedicResult }) {
             </tbody>
           </table>
         </div>
+        <p className="mt-2 text-xs text-mist">On a narrow screen, scroll the table sideways to see all columns.</p>
       </details>
       <details className="mt-4 scroll-mt-24 rounded-2xl border border-gold/25 bg-panel/70 p-4">
         <summary className="cursor-pointer text-sm font-semibold text-goldbright">
