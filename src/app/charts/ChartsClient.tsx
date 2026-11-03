@@ -16,7 +16,7 @@ import ZiweiStacks from "@/components/ZiweiStacks";
 import VedicChart from "@/components/VedicChart";
 import { useAuth } from "@/components/AuthProvider";
 import Icon from "@/components/Icon";
-import OptionWheel from "@/components/OptionWheel";
+import GlideSelect from "@/components/GlideSelect";
 import CometDial from "@/components/CometDial";
 import { chartFreeUsed, markChartFreeUsed, makeReading, type ChartFreeSystem } from "@/lib/storage";
 import { chartInterpretationCost } from "@/lib/chart-pricing";
@@ -412,16 +412,24 @@ export default function ChartsClient() {
         </div>
       ) : (
         <div className="mx-auto mt-8 max-w-lg">
-          <p className="text-center text-sm text-cream/75">Turn the wheel to choose a system</p>
-          {/* The wheel sizes itself to its parent, so it needs a real
-              height here, otherwise its items are clipped invisible. */}
-          <div className="h-64">
-            <OptionWheel
-              items={["Ziwei", "Western", "Vedic"]}
-              defaultSelected={SYSTEM_ORDER.indexOf(system)}
-              onChange={(index) => selectSystem(SYSTEM_ORDER[index])}
-              textColor="#9ca3af"
-              activeColor="#f4d03f"
+          <p className="text-center text-sm text-cream/75">Choose a system</p>
+          <div className="mt-2">
+            <GlideSelect
+              options={[
+                { value: "ziwei", label: "Ziwei" },
+                { value: "western", label: "Western" },
+                { value: "vedic", label: "Vedic" },
+              ]}
+              value={system}
+              onChange={(v) => selectSystem(v as ChartSystem)}
+              ariaLabel="Chart system"
+              size="lg"
+              radius={12}
+              accentColor="#d4af37"
+              surfaceColor="#1a1f2e"
+              highlightColor="#3a3120"
+              textColor="#ede6d6"
+              className="w-full [&>button]:w-full [&>button]:justify-between"
             />
           </div>
         </div>
@@ -571,26 +579,29 @@ export default function ChartsClient() {
                 <option value="Custom">Custom coordinates</option>
               </select>
             ) : (
-              <div className="h-64">
-                <OptionWheel
-                  items={[...PRESETS.map((p) => p.label), "Custom coordinates"]}
-                  defaultSelected={(() => {
-                    const i = PRESETS.findIndex((p) => p.label === preset);
-                    return i >= 0 ? i : PRESETS.length;
-                  })()}
-                  onChange={(index) => {
-                    const label = index < PRESETS.length ? PRESETS[index].label : "Custom";
-                    const found = PRESETS.find((p) => p.label === label);
-                    setPreset(label);
-                    if (found) {
-                      setLatitude(String(found.latitude));
-                      setLongitude(String(found.longitude));
-                    }
-                  }}
-                  textColor="#9ca3af"
-                  activeColor="#f4d03f"
-                />
-              </div>
+              <GlideSelect
+                options={[
+                  ...PRESETS.map((p) => ({ value: p.label, label: p.label })),
+                  { value: "Custom", label: "Custom coordinates" },
+                ]}
+                value={preset}
+                onChange={(v) => {
+                  const found = PRESETS.find((p) => p.label === v);
+                  setPreset(v);
+                  if (found) {
+                    setLatitude(String(found.latitude));
+                    setLongitude(String(found.longitude));
+                  }
+                }}
+                ariaLabel="Birthplace"
+                size="lg"
+                radius={12}
+                accentColor="#d4af37"
+                surfaceColor="#1a1f2e"
+                highlightColor="#3a3120"
+                textColor="#ede6d6"
+                className="w-full [&>button]:w-full [&>button]:justify-between"
+              />
             )}
           </div>
           <div>
