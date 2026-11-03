@@ -60,7 +60,7 @@ export default function CreditsPage() {
           <p className="num mt-6 text-7xl font-bold text-cream">
             {credits ?? 0}
             <span className="ml-2 align-middle font-body text-lg text-mist">
-              {(credits ?? 0) === 1 ? "reading" : "readings"}
+              {(credits ?? 0) === 1 ? "Oracle" : "Oracles"}
             </span>
           </p>
         ) : (
@@ -72,21 +72,23 @@ export default function CreditsPage() {
               fontWeight="bold"
             />
             <span className="font-body text-lg text-mist">
-              {(credits ?? 0) === 1 ? "reading" : "readings"}
+              {(credits ?? 0) === 1 ? "Oracle" : "Oracles"}
             </span>
           </div>
         )}
         <p className="mx-auto mt-4 max-w-md text-sm text-cream/75">
-          1 credit = 1 full reading, any spread. Your daily card is always
-          free and never uses a credit. Credits never expire.
+          1 Oracle = 1 full reading. Your daily card is always
+          free and never uses an Oracle. Oracles never expire.
           {user && <span className="block mt-1 text-mist">Signed in as {user.email}</span>}
         </p>
         <ul className="mx-auto mt-4 max-w-md space-y-1 text-left text-sm text-cream/75">
           <li>Free first: your first Quick Insight reading is free.</li>
           <li>Free first chart: your first interpretation in each chart system (Ziwei, Western, Vedic) is free. Chart calculation alone is always free.</li>
-          <li>Paid after that: 1 credit per full tarot reading or full chart interpretation.</li>
+          <li>Free first follow-up: your first follow-up per reading is free.</li>
+          <li>Paid after that: 1 Oracle per full tarot reading or full chart interpretation.</li>
           <li>No subscription: buy a pack once, use it whenever you like.</li>
         </ul>
+        <p className="mx-auto mt-4 max-w-md text-sm text-cream/75">An Oracle opens a reading. It is not a prediction, a promise, or a guarantee.</p>
       </div>
 
       <div className="mt-10 space-y-4">
@@ -107,10 +109,10 @@ export default function CreditsPage() {
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="font-display text-3xl text-cream">
-                  {p.readings} readings
+                  {p.name} · {p.readings} Oracles
                 </p>
                 <p className="mt-1 text-sm text-mist">
-                  ${perReadingPrice(p)} per reading
+                  ${perReadingPrice(p)} per Oracle
                 </p>
               </div>
               <p className="num text-4xl font-bold text-goldbright">
@@ -128,7 +130,7 @@ export default function CreditsPage() {
               onClick={() => setOpen(true)}
               className="btn-gold mt-5 w-full rounded-xl px-4 py-3 font-bold"
             >
-              Buy {p.readings} readings · ${p.price.toFixed(2)}
+              Buy {p.readings} Oracles · ${p.price.toFixed(2)}
             </button>
           </motion.div>
         ))}
@@ -152,7 +154,7 @@ export default function CreditsPage() {
                   className="flex items-center justify-between gap-3 rounded-xl border border-gold/15 bg-panel/40 px-4 py-3 text-sm"
                 >
                   <span className="text-cream">
-                    {t.readings} readings · {t.pack_type}
+                    {t.readings} Oracles · {t.pack_type}
                   </span>
                   <span className="shrink-0 text-mist">
                     ${Number(t.amount).toFixed(2)} ·{" "}
@@ -178,7 +180,7 @@ export default function CreditsPage() {
                 className="flex items-center justify-between gap-3 rounded-xl border border-gold/15 bg-panel/40 px-4 py-3 text-sm"
               >
                 <span className="text-cream">
-                  {p.readings} readings · {p.packId}
+                  {p.readings} Oracles · {p.packId}
                 </span>
                 <span className="shrink-0 text-mist">
                   ${p.price.toFixed(2)} · {new Date(p.date).toLocaleDateString()}

@@ -32,7 +32,7 @@ export default function AboutPage() {
             Cross), a daily sun-sign reflection, and three birth chart systems
             (Ziwei, Western, and Vedic). The first full reading and the first
             chart interpretation per system are free. Later readings and
-            interpretations cost one credit each, in packs sold through Lemon
+            interpretations cost one Oracle each, in packs sold through Lemon
             Squeezy.
           </p>
         </section>
@@ -48,7 +48,7 @@ export default function AboutPage() {
         <section>
           <h2 className="font-display text-3xl text-goldbright">How your data is handled</h2>
           <p className="mt-3">
-            Guest daily cards, credit balance, and reading history live in your
+            Guest daily cards, Oracle balance, and reading history live in your
             browser until you create an account. Raw tarot intake data is
             never stored on a server; only the question and the finished
             reading are saved in your history. For charts, only calculated positions,

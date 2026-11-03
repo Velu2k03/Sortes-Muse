@@ -241,7 +241,7 @@ Write the personalized chart reflection now.`;
     return NextResponse.json(
       {
         error:
-          "AI generation is not configured on this server right now. No credit was spent. Please try again later.",
+          "AI generation is not configured on this server right now. No Oracle was spent. Please try again later.",
         fallback: true,
       },
       { status: 503 }
@@ -295,7 +295,7 @@ Write the personalized chart reflection now.`;
     return NextResponse.json(
       {
         error:
-          "The interpretation could not be generated just now. No credit was spent. Please try again in a moment.",
+          "The interpretation could not be generated just now. No Oracle was spent. Please try again in a moment.",
         fallback: true,
       },
       { status: 503 }
@@ -316,7 +316,7 @@ Write the personalized chart reflection now.`;
       const ok = await spendUserCredits(session.userId, 1);
       if (!ok) {
         return NextResponse.json(
-          { error: "You need 1 credit for this interpretation. No credit was spent." },
+          { error: "You need 1 Oracle for this interpretation. No Oracle was spent." },
           { status: 402 }
         );
       }

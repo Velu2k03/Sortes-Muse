@@ -252,7 +252,7 @@ export default function ReadingFlow({ slug, intake = null }: Props) {
       <CheckoutModal
         open={checkoutOpen}
         onClose={() => setCheckoutOpen(false)}
-        reason="This reading uses 1 credit. Top up to continue."
+        reason="This reading uses 1 Oracle. Top up to continue."
       />
     </div>
   );
@@ -330,11 +330,11 @@ function GateScreen({
                 onClick={() => router.push(`/intake/${spread.slug}`)}
                 className="btn-gold w-full rounded-2xl px-8 py-4 text-lg font-bold sm:w-auto"
               >
-                ✦ Personalize and begin · 1 credit
+                ✦ Personalize and begin · 1 Oracle
               </button>
             </ClickSpark>
             <p className="mt-3 text-sm text-mist">
-              You have {credits} {credits === 1 ? "credit" : "credits"}. Tell
+              You have {credits} {credits === 1 ? "Oracle" : "Oracles"}. Tell
               your story, and the reading is woven around it.
             </p>
           </>
@@ -345,10 +345,10 @@ function GateScreen({
               onClick={onTopUp}
               className="btn-gold w-full rounded-2xl px-8 py-4 text-lg font-bold sm:w-auto"
             >
-              ✦ Get credits · 1 credit per reading
+              ✦ Get Oracles · 1 Oracle per reading
             </button>
             <p className="mt-3 text-sm text-mist">
-              You are out of credits. Packs start at $3.99 for 5 readings.
+              You are out of Oracles. Packs start at $3.99 for 5 Oracles.
             </p>
           </>
         )}

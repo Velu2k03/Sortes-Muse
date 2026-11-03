@@ -321,7 +321,7 @@ export default function ReadingDetail({ id }: { id: string }) {
                     className="rounded-2xl border border-gold/20 bg-panel/50 p-4"
                   >
                     <p className="text-xs uppercase tracking-[0.2em] text-gold">
-                      Follow-up {i + 1}{fu.free ? " (free)" : " (1 credit)"}
+                      Follow-up {i + 1}{fu.free ? " (free)" : " (1 Oracle)"}
                     </p>
                     <p className="mt-1 text-sm italic text-cream/80">
                       &ldquo;{fu.question}&rdquo;
@@ -372,7 +372,7 @@ export default function ReadingDetail({ id }: { id: string }) {
                       if (!user && !isFree) {
                         const ok = await spend(1);
                         if (!ok) {
-                          setFollowUpError("You need 1 credit for this follow-up.");
+                          setFollowUpError("You need 1 Oracle for this follow-up.");
                           setFollowUpLoading(false);
                           return;
                         }
@@ -452,7 +452,7 @@ export default function ReadingDetail({ id }: { id: string }) {
                       ? "Thinking..."
                       : (reading.followUps ?? []).length === 0
                         ? "Ask a follow-up \u00b7 free"
-                        : "Ask a follow-up \u00b7 1 credit"}
+                        : "Ask a follow-up \u00b7 1 Oracle"}
                   </button>
                 </div>
                 {followUpError && (
@@ -476,7 +476,7 @@ export default function ReadingDetail({ id }: { id: string }) {
               href="/spreads/quick-insight"
               className="btn-gold rounded-xl px-8 py-3 font-bold"
             >
-              Ask a follow-up &middot; 1 credit
+              Ask a follow-up &middot; 1 Oracle
             </Link>
           </>
         )}

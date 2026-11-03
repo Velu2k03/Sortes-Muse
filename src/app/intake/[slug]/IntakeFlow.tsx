@@ -78,7 +78,7 @@ export default function IntakeFlow({ slug }: { slug: string }) {
   const beginDraw = () => {
     if (!category) return;
     if ((credits ?? 0) < 1) {
-      setError("You are out of credits. Please top up to continue.");
+      setError("You are out of Oracles. Please top up to continue.");
       return;
     }
     setError(null);
@@ -91,7 +91,7 @@ export default function IntakeFlow({ slug }: { slug: string }) {
     // Guard against double-clicks: one tap, one credit.
     if (busy) return;
     if ((credits ?? 0) < 1) {
-      setError("You are out of credits. Please top up to continue.");
+      setError("You are out of Oracles. Please top up to continue.");
       return;
     }
     setBusy(true);
@@ -105,7 +105,7 @@ export default function IntakeFlow({ slug }: { slug: string }) {
     if (!signedIn) {
       const ok = await spend(1);
       if (!ok) {
-        setError("You are out of credits. Please top up to continue.");
+        setError("You are out of Oracles. Please top up to continue.");
         setBusy(false);
         return;
       }
@@ -120,7 +120,7 @@ export default function IntakeFlow({ slug }: { slug: string }) {
     );
 
     let failMessage =
-      "The reading could not be generated just now. Your credit was not spent. Please try again in a moment.";
+      "The reading could not be generated just now. Your Oracle was not spent. Please try again in a moment.";
     try {
       const cards = drawnCards;
       // One word only: the first token of whatever was typed.
@@ -431,7 +431,7 @@ export default function IntakeFlow({ slug }: { slug: string }) {
                 </div>
                 <div>
                   <dt className="text-xs uppercase tracking-[0.2em] text-mist">Cost</dt>
-                  <dd className="mt-1 text-cream">1 credit · personalized AI interpretation</dd>
+                  <dd className="mt-1 text-cream">1 Oracle · personalized AI interpretation</dd>
                 </div>
               </dl>
               <div className="rule-gold my-6" />

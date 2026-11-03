@@ -95,8 +95,8 @@ export default function Header() {
           <Link
             href="/credits"
             className="flex items-center gap-1.5 rounded-full border border-gold/40 bg-gold/10 px-3 py-1.5 text-sm font-semibold text-goldbright"
-            aria-label={`Credit balance: ${credits ?? 0} readings`}
-            title="Your reading credits"
+            aria-label={`Oracle balance: ${credits ?? 0} Oracles`}
+            title="Your Oracles"
           >
             <Icon name="coin" size={18} />
             <span className="num">
@@ -160,7 +160,7 @@ export default function Header() {
             onClick={() => setOpen(false)}
             className="btn-gold mt-2 block rounded-xl px-3 py-2.5 text-center text-base font-bold"
           >
-            Top up credits
+            Top up Oracles
           </Link>
           <Link
             href="/account"

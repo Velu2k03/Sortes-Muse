@@ -4,7 +4,7 @@ import { APP_NAME, CONTACT_EMAIL } from "@/lib/site";
 export const metadata = {
   title: "Frequently asked questions",
   description:
-    "Sortes answers: what is free, how credits work, whether readings are predictions, how birth data is handled, and how sign-in works.",
+    "Sortes answers: what is free, how Oracles work, whether readings are predictions, how birth data is handled, and how sign-in works.",
   alternates: { canonical: "/faq" },
 };
 
@@ -14,8 +14,8 @@ const FAQS = [
     a: "The daily card is free every day, the deck browser with all 78 card meanings is free forever, chart calculation is free, and your first Quick Insight reading and your first chart interpretation per system are free. No account and no payment are needed for the free parts.",
   },
   {
-    q: "How do credits work?",
-    a: "One credit buys one full reading, any spread, or one chart interpretation after the first free one per system. Credits never expire. Packs are sold on the credits page: 5 readings, 12 readings, and 30 readings. The daily card never uses a credit.",
+    q: "How do Oracles work?",
+    a: "One Oracle opens one full reading, any spread, or one chart interpretation after the first free one per system. Oracles never expire. Packs are sold on the Oracles page: 5 Oracles, 12 Oracles, and 30 Oracles. The daily card never uses an Oracle.",
   },
   {
     q: "Are readings predictions?",
@@ -27,15 +27,15 @@ const FAQS = [
   },
   {
     q: "How long is tarot intake data kept?",
-    a: "Raw tarot intake data is never stored on a server. Guest daily cards, credit balance, and reading history live in your browser until you create an account, and then they move into your account automatically.",
+    a: "Raw tarot intake data is never stored on a server. Guest daily cards, Oracle balance, and reading history live in your browser until you create an account, and then they move into your account automatically.",
   },
   {
     q: "How do I sign in?",
-    a: "On the account page, use the email code tab. In production, Sortes sends an 8 digit code through Supabase, or a magic link you can click instead. After you sign in, your guest credits and journal move into your account, and you stay signed in for 30 days.",
+    a: "On the account page, use the email code tab. In production, Sortes sends an 8 digit code through Supabase, or a magic link you can click instead. After you sign in, your guest Oracles and journal move into your account, and you stay signed in for 30 days.",
   },
   {
-    q: "What if I bought credits with a different email?",
-    a: "Sign in with that email and the credits merge into that account. If you signed in with a different email by mistake, sign out and sign in again with the email you used at checkout.",
+    q: "What if I bought Oracles with a different email?",
+    a: "Sign in with that email and the Oracles merge into that account. If you signed in with a different email by mistake, sign out and sign in again with the email you used at checkout.",
   },
   {
     q: "What is the difference between a tarot spread and a birth chart?",

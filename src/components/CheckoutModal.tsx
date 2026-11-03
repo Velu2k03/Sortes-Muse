@@ -85,7 +85,7 @@ export default function CheckoutModal({ open, onClose, reason }: Props) {
     // Guests must give an email: the webhook delivers credits to that
     // address, and it becomes their account on sign-in.
     if (!user && !trimmed) {
-      setError("Please enter your email so your credits reach your account.");
+      setError("Please enter your email so your Oracles reach your account.");
       return;
     }
     setProcessing(packId);
@@ -126,7 +126,7 @@ export default function CheckoutModal({ open, onClose, reason }: Props) {
           onClick={onClose}
           role="dialog"
           aria-modal="true"
-          aria-label="Top up credits"
+          aria-label="Top up Oracles"
         >
           <motion.div
             className="w-full max-w-lg rounded-t-3xl border border-gold/30 bg-navydeep p-6 sm:rounded-3xl sm:p-8"
@@ -137,13 +137,13 @@ export default function CheckoutModal({ open, onClose, reason }: Props) {
             onClick={(e) => e.stopPropagation()}
           >
             <h2 className="text-center font-display text-3xl text-goldbright">
-              Top up credits
+              Top up Oracles
             </h2>
             {reason && (
               <p className="mt-2 text-center text-sm text-cream/75">{reason}</p>
             )}
             <p className="mt-2 text-center text-xs text-mist">
-              1 credit = 1 full reading, any spread. Credits never expire.
+              1 Oracle = 1 full reading. Oracles never expire.
             </p>
 
             {realCheckout && !user && (
@@ -180,10 +180,10 @@ export default function CheckoutModal({ open, onClose, reason }: Props) {
                   <div className="flex items-center justify-between gap-3">
                     <div>
                       <p className="font-display text-xl text-cream">
-                        {p.readings} readings
+                        {p.name} · {p.readings} Oracles
                       </p>
                       <p className="text-xs text-mist">
-                        ${perReadingPrice(p)} per reading
+                        ${perReadingPrice(p)} per Oracle
                       </p>
                     </div>
                     <div className="flex items-center gap-3">
@@ -222,13 +222,13 @@ export default function CheckoutModal({ open, onClose, reason }: Props) {
 
             {realCheckout ? (
               <p className="mt-5 rounded-xl bg-gold/10 p-3 text-center text-xs text-mist">
-                Secure checkout by Lemon Squeezy. Your credits appear
+                Secure checkout by Lemon Squeezy. Your Oracles appear
                 instantly after payment, and your account is created
                 automatically from your email.
               </p>
             ) : (
               <p className="mt-5 rounded-xl bg-violet/10 p-3 text-center text-xs text-mist">
-                Demo checkout: credits are added instantly for testing. Secure
+                Demo checkout: Oracles are added instantly for testing. Secure
                 Lemon Squeezy payments arrive before launch; your price and packs
                 stay the same.
               </p>

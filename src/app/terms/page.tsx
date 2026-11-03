@@ -21,7 +21,7 @@ export default function TermsPage() {
           <p className="mt-2">
             {APP_SHORT} provides digital tarot readings, card meaning
             reference, and personalized AI-generated interpretations, sold
-            pay-per-reading via credit packs. There are no subscriptions.
+            pay-per-reading via Oracle packs. There are no subscriptions.
           </p>
         </section>
 
@@ -44,17 +44,17 @@ export default function TermsPage() {
         </section>
 
         <section>
-          <h2 className="font-display text-2xl text-goldbright">3. Credits and payments</h2>
+          <h2 className="font-display text-2xl text-goldbright">3. Oracles and payments</h2>
           <ul className="mt-2 list-disc space-y-2 pl-5">
-            <li>1 credit pays for 1 full reading of any spread.</li>
-            <li>Credits never expire and are non-transferable.</li>
+            <li>1 Oracle pays for 1 full reading of any spread.</li>
+            <li>Oracles never expire and are non-transferable.</li>
             <li>
               Payments are processed securely by Lemon Squeezy. We never see
               or store your card details.
             </li>
             <li>
-              Refunds: unused credit packs may be refunded within 14 days of
-              purchase by emailing {CONTACT_EMAIL}. Credits already spent on
+              Refunds: unused Oracle packs may be refunded within 14 days of
+              purchase by emailing {CONTACT_EMAIL}. Oracles already spent on
               readings are non-refundable.
             </li>
           </ul>

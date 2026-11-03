@@ -220,7 +220,7 @@ export default function AccountPage() {
             Sign in to sync everything
           </p>
           <p className="mt-2 text-sm leading-relaxed text-cream/75">
-            Your guest credits and journal move into your account
+            Your guest Oracles and journal move into your account
             automatically, then follow you across devices. You stay signed
             in for 30 days.
           </p>
@@ -311,7 +311,7 @@ export default function AccountPage() {
               </button>
               {pwMode === "signin" && (
                 <p className="text-center text-xs text-mist">
-                  Bought credits with a different email? They merge in when
+                  Bought Oracles with a different email? They merge in when
                   you sign in with that address.
                 </p>
               )}
@@ -417,7 +417,7 @@ export default function AccountPage() {
               </div>
               <div className="text-right">
                 <p className="text-xs uppercase tracking-[0.2em] text-mist">
-                  Credit balance
+                  Oracle balance
                 </p>
                 <p className="mt-1 font-display text-3xl text-goldbright">
                   {credits ?? 0}
@@ -430,7 +430,7 @@ export default function AccountPage() {
                 href="/credits"
                 className="btn-gold rounded-xl px-6 py-3 font-bold"
               >
-                Top up credits
+                Top up Oracles
               </Link>
               <button
                 type="button"

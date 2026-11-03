@@ -201,7 +201,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         error:
-          "AI generation is not configured on this server right now. No credit was spent. Please try again later.",
+          "AI generation is not configured on this server right now. No Oracle was spent. Please try again later.",
         fallback: true,
       },
       { status: 503 }
@@ -294,7 +294,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         error:
-          "The reading could not be generated just now. No credit was spent. Please try again in a moment.",
+          "The reading could not be generated just now. No Oracle was spent. Please try again in a moment.",
         fallback: true,
       },
       { status: 503 }
@@ -316,7 +316,7 @@ export async function POST(req: NextRequest) {
     const ok = await spendUserCredits(session.userId, 1);
     if (!ok) {
       return NextResponse.json(
-        { error: "You need 1 credit for this reading. No credit was spent." },
+        { error: "You need 1 Oracle for this reading. No Oracle was spent." },
         { status: 402 }
       );
     }

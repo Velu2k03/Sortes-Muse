@@ -41,7 +41,7 @@ export default function PurchaseConfirmer() {
       <div className="mb-8 rounded-3xl border border-gold/50 bg-gold/10 p-6 text-center">
         <p className="font-display text-3xl text-goldbright">✦ Payment received</p>
         <p className="mt-2 text-sm text-cream/85">
-          Your credits are in your balance ({credits}). Cast the lots whenever
+          Your Oracles are in your balance ({credits}). Cast the lots whenever
           you are ready.
         </p>
         <Link
@@ -60,7 +60,7 @@ export default function PurchaseConfirmer() {
         <>
           <p className="font-display text-2xl text-cream">Almost there</p>
           <p className="mt-2 text-sm text-cream/75">
-            Your payment went through; the credits can take a minute to land.
+            Your payment went through; the Oracles can take a minute to land.
             {user ? (
               <> They will appear in your balance shortly.</>
             ) : (
@@ -78,7 +78,7 @@ export default function PurchaseConfirmer() {
         <>
           <p className="font-display text-2xl text-goldbright">Confirming your purchase…</p>
           <p className="mt-2 text-sm text-mist">
-            Your credits are being added. This usually takes a few seconds.
+            Your Oracles are being added. This usually takes a few seconds.
           </p>
         </>
       )}

@@ -38,8 +38,8 @@ export default function SpreadsPage() {
         </h1>
         <p className="mx-auto mt-4 max-w-xl text-cream/75">
           {usedFree
-            ? "Each reading uses 1 credit, any spread. Credits never expire."
-            : "Your first Quick Insight reading is free, no card required. Other spreads need 1 credit, which is why they show Get credits to begin until you have one. After your free Quick Insight, every reading, any spread, is 1 credit."}
+            ? "Each reading uses 1 Oracle, any spread. Oracles never expire."
+            : "Your first Quick Insight reading is free, no card required. Other spreads need 1 Oracle, which is why they show Get Oracles to begin until you have one. After your free Quick Insight, every reading, any spread, is 1 Oracle."}
         </p>
       </div>
 
@@ -87,7 +87,7 @@ export default function SpreadsPage() {
               <div className="flex items-baseline justify-between gap-3">
                 <h2 className="font-display text-3xl text-cream">{s.name}</h2>
                 <p className="shrink-0 whitespace-nowrap font-display text-xl text-goldbright">
-                  {s.slug === "quick-insight" && !usedFree ? "Free" : "1 credit"}
+                  {s.slug === "quick-insight" && !usedFree ? "Free" : "1 Oracle"}
                 </p>
               </div>
               <p className="mt-1 text-xs uppercase tracking-[0.2em] text-mist">
@@ -111,7 +111,7 @@ export default function SpreadsPage() {
                   onClick={() => setCheckoutOpen(true)}
                   className="btn-gold mt-5 rounded-xl px-4 py-3 text-center font-bold"
                 >
-                  Get credits to begin
+                  Get Oracles to begin
                 </button>
               ) : (
                 <ClickSpark className="click-spark--block mt-5">
@@ -130,12 +130,12 @@ export default function SpreadsPage() {
       </div>
 
       <div className="mx-auto mt-12 max-w-2xl rounded-2xl border border-gold/20 bg-panel/50 p-6 text-center">
-        <p className="font-display text-2xl text-goldbright">How credits work</p>
+        <p className="font-display text-2xl text-goldbright">How Oracles work</p>
         <p className="mt-2 text-sm leading-relaxed text-cream/75">
-          You pay only for credit packs, never per reading, never twice.
-          One credit pays for one full reading of any spread, with an AI
+          You pay only for Oracle packs, never per reading, never twice.
+          One Oracle pays for one full reading of any spread, with an AI
           interpretation for your question. Your daily card is always free
-          and never uses a credit. Credits never expire. No subscriptions.
+          and never uses an Oracle. Oracles never expire. No subscriptions.
           The one free reading is Quick Insight only.
         </p>
         <button
@@ -143,7 +143,7 @@ export default function SpreadsPage() {
           onClick={() => setCheckoutOpen(true)}
           className="btn-ghost mt-4 rounded-xl px-6 py-2.5 text-sm font-semibold"
         >
-          View credit packs
+          View Oracle packs
         </button>
       </div>
 

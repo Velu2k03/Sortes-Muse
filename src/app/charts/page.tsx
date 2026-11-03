@@ -2,7 +2,7 @@ import ChartsClient from "./ChartsClient";
 
 export const metadata = {
   title: "Birth Charts",
-  description: "Calculate a Ziwei, Western, or Vedic birth chart. Calculation is free and unsaved; interpretation is 1 credit, first chart per system free.",
+  description: "Calculate a Ziwei, Western, or Vedic birth chart. Calculation is free and unsaved; interpretation is 1 Oracle, first chart per system free.",
   alternates: { canonical: "/charts" },
 };
 

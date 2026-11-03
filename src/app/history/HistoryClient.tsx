@@ -250,7 +250,7 @@ export default function HistoryPage() {
                         </div>
                         <div className="min-w-0 flex-1">
                           <p className="text-xs uppercase tracking-[0.2em] text-mist">
-                            {r.free ? "Free reading" : "1 credit"}
+                            {r.free ? "Free reading" : "1 Oracle"}
                             {r.aiGenerated ? " · Personalized" : ""}
                             {(r.followUps?.length ?? 0) > 0 &&
                               ` · ${r.followUps?.length} follow-up${

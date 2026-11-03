@@ -31,7 +31,7 @@ export default function PrivacyPage() {
           <ul className="mt-2 list-disc space-y-2 pl-5">
             <li>
               <strong>Account data:</strong> if you create an account, your
-              email address and credit balance.
+              email address and Oracle balance.
             </li>
             <li>
               <strong>Purchase data:</strong> for every transaction we store
@@ -45,7 +45,7 @@ export default function PrivacyPage() {
               revisit it in your journal.
             </li>
             <li>
-              <strong>On-device data:</strong> for guests, daily cards, credit
+              <strong>On-device data:</strong> for guests, daily cards, Oracle
               balance, and reading history are stored in your browser&apos;s
               local storage and never leave your device until you create an
               account.

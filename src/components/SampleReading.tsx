@@ -109,7 +109,7 @@ export default function SampleReading() {
               href="/spreads/past-present-future"
               className="btn-gold mt-4 inline-block rounded-2xl px-8 py-3.5 font-bold"
             >
-              Get my reading · 1 credit
+              Get my reading · 1 Oracle
             </Link>
             <p className="mt-3 text-xs text-mist">
               First full reading is free. No card required.

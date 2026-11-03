@@ -247,10 +247,10 @@ export default function ChartsClient() {
     try {
       if (!signedIn && !guestFree) {
         if ((credits ?? 0) < 1) {
-          throw new Error("You need 1 credit for this interpretation. The calculation above stays free. Top up from the Credits page.");
+          throw new Error("You need 1 Oracle for this interpretation. The calculation above stays free. Top up from the Oracles page.");
         }
         const ok = await spend(1);
-        if (!ok) throw new Error("Could not spend 1 credit. Your balance was not changed by this page.");
+        if (!ok) throw new Error("Could not spend 1 Oracle. Your balance was not changed by this page.");
         guestSpent = true;
       }
       const res = await fetch("/api/chart/interpret", {
@@ -369,7 +369,7 @@ export default function ChartsClient() {
         <h1 className="mt-3 font-display text-5xl text-goldbright sm:text-6xl">Cast a birth chart</h1>
         <p className="mx-auto mt-4 max-w-xl text-cream/75">
           Ziwei, Western, and Vedic charts. Calculation is free.
-          Interpretation is 1 credit, first per system free.
+          Interpretation is 1 Oracle, first per system free.
         </p>
         <p className="mx-auto mt-2 max-w-xl text-sm text-cream/80">
           Birth data is used in memory only for this calculation. It is not
@@ -389,7 +389,7 @@ export default function ChartsClient() {
             <li>Gender: Ziwei only, palace placement depends on it.</li>
             <li>Birthplace: all three systems. Western and Vedic need it for Rising and houses; Ziwei needs longitude for its correction.</li>
             <li>Birth time: clock time at the birthplace. Western converts it with a real timezone database, including DST rules for the birthplace on the birth date. Vedic and Ziwei use longitude only, so a time near a boundary may differ by one division. Unknown time: planet positions use noon as a stand-in, and Rising, Midheaven, and houses are withheld. Ziwei needs a birth hour and cannot be calculated without one.</li>
-            <li>Calculation is free and unsaved. Interpretation is separate: 1 credit, first per system free.</li>
+            <li>Calculation is free and unsaved. Interpretation is separate: 1 Oracle, first per system free.</li>
           </ul>
         </details>
       </div>
@@ -848,7 +848,7 @@ export default function ChartsClient() {
                 <><strong className="text-goldbright">下一步：</strong>{ZIWEI_LEGEND_ZH.nextStep}</>
               ) : (
                 <><strong className="text-goldbright">Next step: </strong>
-                read your interpretation, save it, or share it. Calculation is free; interpretation is 1 credit, first per system free.</>
+                read your interpretation, save it, or share it. Calculation is free; interpretation is 1 Oracle, first per system free.</>
               )}
             </p>
           </section>
@@ -861,7 +861,7 @@ export default function ChartsClient() {
             <p className="mt-2 text-sm text-cream/75">
               Calculation was free and unsaved. Interpretation is{" "}
               <strong className="text-cream">
-                {displayFree ? "free for your first chart in this system, then 1 credit" : "1 credit"}
+                {displayFree ? "free for your first chart in this system, then 1 Oracle" : "1 Oracle"}
               </strong>
               . The AI receives only chart positions, signs, and stars, plus your focus and question, never your birth date, time, or place.
             </p>
@@ -895,12 +895,12 @@ export default function ChartsClient() {
               </p>
             )}
             <button type="button" onClick={onInterpret} disabled={interpLoading} className="btn-gold mt-5 rounded-full px-6 py-3 text-sm font-bold disabled:opacity-50">
-              {interpLoading ? "Interpreting…" : displayFree ? "Get interpretation (free)" : "Get interpretation (1 credit)"}
+              {interpLoading ? "Interpreting…" : displayFree ? "Get interpretation (free)" : "Get interpretation (1 Oracle)"}
             </button>
             {interpretation && (
               <div className="mt-6">
                 <p className="text-xs uppercase tracking-widest text-gold">
-                  {interpFree ? "Free interpretation" : "1 credit interpretation"}
+                  {interpFree ? "Free interpretation" : "1 Oracle interpretation"}
                   {interpFallback ? " · Prepared from chart positions" : " · Personalized"}
                 </p>
                 <p className="mt-3 whitespace-pre-wrap leading-relaxed text-cream/90">{interpretation}</p>

@@ -259,7 +259,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         error:
-          "AI generation is not configured on this server right now. No credit was spent. Please try again later.",
+          "AI generation is not configured on this server right now. No Oracle was spent. Please try again later.",
         fallback: true,
       },
       { status: 503 }
@@ -340,7 +340,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         error:
-          "The follow-up could not be generated just now. No credit was spent. Please try again in a moment.",
+          "The follow-up could not be generated just now. No Oracle was spent. Please try again in a moment.",
         fallback: true,
       },
       { status: 503 }
@@ -372,7 +372,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json(
           {
             error:
-              "You need 1 credit for this follow-up. No credit was spent.",
+              "You need 1 Oracle for this follow-up. No Oracle was spent.",
           },
           { status: 402 }
         );
