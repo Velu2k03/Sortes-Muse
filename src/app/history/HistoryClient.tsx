@@ -1,5 +1,6 @@
 "use client";
 import Icon from "@/components/Icon";
+import { SpotlightCard } from "@/components/ReactBitsNew";
 
 import Link from "next/link";
 import Image from "next/image";
@@ -101,7 +102,7 @@ export default function HistoryPage() {
               year: "numeric",
             });
             return (
-              <div className="mt-10 rounded-3xl border border-gold/20 bg-panel/60 p-5 sm:p-6">
+              <div className="num mt-10 rounded-3xl border border-gold/20 bg-panel/60 p-5 sm:p-6">
                 <p className="text-xs uppercase tracking-[0.25em] text-gold">
                   This month in your journal · {monthLabel}
                 </p>
@@ -187,7 +188,7 @@ export default function HistoryPage() {
               .slice(0, 3);
             if (repeated.length === 0) return null;
             return (
-              <div className="mt-10 rounded-3xl border border-gold/20 bg-panel/60 p-5 sm:p-6">
+              <SpotlightCard className="mt-10 rounded-3xl border border-gold/20 bg-panel/60 p-5 sm:p-6">
                 <p className="text-xs uppercase tracking-[0.25em] text-gold">
                   Questions you keep returning to
                 </p>
@@ -232,7 +233,7 @@ export default function HistoryPage() {
                     );
                   })}
                 </ul>
-              </div>
+              </SpotlightCard>
             );
           })()}
 

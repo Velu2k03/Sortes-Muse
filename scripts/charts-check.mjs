@@ -635,4 +635,15 @@ console.log("charts-check: all assertions passed");
   const chartsClient = fs.readFileSync("src/app/charts/ChartsClient.tsx", "utf8");
   assert.ok(chartsClient.includes('href="#chart-interpretation"') && chartsClient.includes('id="chart-interpretation"'), "charts result must offer a jump to the plain-words interpretation");
   console.log("personal-phase1: structured reflection, at-a-glance facts, repeated questions, chart jump: all source assertions passed");
+  // Personal Phase 2: progressive disclosure, number containers,
+  // React Bits integration, chart plain-words structure, intake guidance.
+  const chartRoute = fs.readFileSync("src/app/api/chart/interpret/route.ts", "utf8");
+  assert.ok(chartRoute.includes("what they may be overlooking"), "chart prompt must ask what the seeker may be overlooking");
+  assert.ok(chartRoute.includes("one practical step they could take"), "chart prompt must ask for one practical step");
+  assert.ok(readingDetail.includes("Traditional meaning, if you want it"), "reading card sections must disclose traditional meanings behind one tap, not hide them");
+  assert.ok(readingDetail.includes("FadeContent"), "reading at-a-glance must use the reduced-motion-gated reveal");
+  assert.ok(historyClient.includes("SpotlightCard"), "journal repeated questions must use the spotlight interaction");
+  assert.ok(chartsClient.includes("Show the full legend"), "chart legend must be progressive disclosure, not a wall before interpretation");
+  assert.ok(intake.includes("What happens next: the cards are drawn"), "intake confirm step must state what happens next");
+  console.log("personal-phase2: disclosure, numbers, React Bits, chart structure, intake guidance: all source assertions passed");
 }
