@@ -579,6 +579,9 @@ export default function IntakeFlow({ slug }: { slug: string }) {
               ))}
             </div>
 
+            <p className="mt-4 text-xs text-mist">
+              Reversed cards are shown upside down.
+            </p>
             <div className="mx-auto mt-6 max-w-md">
               <label
                 htmlFor="intake-impression"

@@ -613,4 +613,11 @@ console.log("charts-check: all assertions passed");
   assert.ok(!pkg.includes('"ogl"') && !pkg.includes('"three"') && !pkg.includes('"lenis"'), "Phase 4 must not add ogl, three, or lenis to package.json");
   assert.ok(pkg.includes('"motion": "^14.9.0"'), "Motion must stay at 14.9.0 after Phase 4");
   console.log("phase4: React Bits expansion, no new dependencies, Motion locked: all source assertions passed");
+  // Phase 5: spreads discoverability, reading hint, no data changes.
+  const spreadsClient = fs.readFileSync("src/app/spreads/SpreadsClient.tsx", "utf8");
+  assert.ok(spreadsClient.includes("View spread detail"), "locked spread cards must link to their detail page");
+  assert.ok(spreadsClient.includes("Get Oracles to begin"), "locked spread cards must still offer Oracles first");
+  const intake = fs.readFileSync("src/app/intake/[slug]/IntakeFlow.tsx", "utf8");
+  assert.ok(intake.includes("Reversed cards are shown upside down"), "impression step must explain the reversed visual cue");
+  console.log("phase5: spreads discoverability, reversed hint: all source assertions passed");
 }
