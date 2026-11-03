@@ -15,7 +15,7 @@ export function DarkVeil() {
 
     const motionPreference = window.matchMedia("(prefers-reduced-motion: reduce)");
     const onPointerMove = (event: globalThis.PointerEvent) => {
-      if (event.pointerType === "touch") return;
+      if (motionPreference.matches || event.pointerType === "touch") return;
       const bounds = hero.getBoundingClientRect();
       hero.style.setProperty("--veil-x", `${((event.clientX - bounds.left) / bounds.width) * 100}%`);
       hero.style.setProperty("--veil-y", `${((event.clientY - bounds.top) / bounds.height) * 100}%`);
@@ -23,6 +23,8 @@ export function DarkVeil() {
     const syncMotion = () => {
       if (motionPreference.matches) {
         hero.removeEventListener("pointermove", onPointerMove);
+        hero.style.removeProperty("--veil-x");
+        hero.style.removeProperty("--veil-y");
       } else {
         hero.addEventListener("pointermove", onPointerMove, { passive: true });
       }
@@ -54,9 +56,11 @@ interface Burst {
 export function ClickSpark({
   children,
   className = "",
+  disabled = false,
 }: {
   children: ReactNode;
   className?: string;
+  disabled?: boolean;
 }) {
   const [bursts, setBursts] = useState<Burst[]>([]);
   const timers = useRef(new Set<ReturnType<typeof setTimeout>>());
@@ -69,7 +73,10 @@ export function ClickSpark({
   );
 
   const spark = (event: React.MouseEvent<HTMLSpanElement>) => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (disabled) return;
+    if (typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      return;
+    }
     const bounds = event.currentTarget.getBoundingClientRect();
     const burst = {
       id: Date.now() + Math.random(),
@@ -110,45 +117,62 @@ export function StarBorder({
   children,
   radius = "1rem",
   className = "",
+  animated = false,
 }: {
   children: ReactNode;
   radius?: string;
   className?: string;
+  animated?: boolean;
 }) {
   return (
     <span
-      className={`star-border-frame ${className}`}
+      className={`star-border-frame ${animated ? "star-border-frame--animated" : "star-border-frame--static"} ${className}`}
       style={{ "--star-radius": radius } as CSSProperties}
     >
       {children}
-      <span className="star-border__light" aria-hidden="true" />
+      {animated && <span className="star-border__light" aria-hidden="true" />}
     </span>
   );
 }
 
+function isReducedMotion(): boolean {
+  if (typeof window === "undefined") return false;
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
 function updateBentoPosition(event: PointerEvent<HTMLElement>) {
-  if (event.pointerType === "touch") return;
+  if (isReducedMotion() || event.pointerType === "touch") return;
   const bounds = event.currentTarget.getBoundingClientRect();
   event.currentTarget.style.setProperty("--bento-x", `${event.clientX - bounds.left}px`);
   event.currentTarget.style.setProperty("--bento-y", `${event.clientY - bounds.top}px`);
 }
 
-function startBentoWave(event: React.MouseEvent<HTMLElement>) {
-  const card = event.currentTarget;
-  const bounds = card.getBoundingClientRect();
-  const x = event.detail === 0 ? bounds.width / 2 : event.clientX - bounds.left;
-  const y = event.detail === 0 ? bounds.height / 2 : event.clientY - bounds.top;
-  card.style.setProperty("--wave-x", `${x}px`);
-  card.style.setProperty("--wave-y", `${y}px`);
-  card.dataset.wave = "true";
-  window.setTimeout(() => {
-    delete card.dataset.wave;
-  }, 650);
-}
-
 export function MagicBento() {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const motionPreference = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const syncMotion = () => {
+      if (motionPreference.matches && containerRef.current) {
+        const cards = containerRef.current.querySelectorAll<HTMLElement>(".magic-bento__card");
+        cards.forEach((card) => {
+          card.style.removeProperty("--bento-x");
+          card.style.removeProperty("--bento-y");
+        });
+      }
+    };
+    syncMotion();
+    motionPreference.addEventListener("change", syncMotion);
+    return () => {
+      motionPreference.removeEventListener("change", syncMotion);
+    };
+  }, []);
+
   return (
-    <div className="magic-bento mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-6">
+    <div
+      ref={containerRef}
+      className="magic-bento mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-6"
+    >
       {SPREADS.map((spread) => (
         <article
           key={spread.slug}
@@ -164,7 +188,6 @@ export function MagicBento() {
             event.currentTarget.style.removeProperty("--bento-x");
             event.currentTarget.style.removeProperty("--bento-y");
           }}
-          onClick={startBentoWave}
         >
           <span className="magic-bento__edge" aria-hidden="true" />
           {spread.slug === "quick-insight" && (
@@ -188,14 +211,12 @@ export function MagicBento() {
                 radius="0.75rem"
                 className="star-border-frame--block mt-5"
               >
-                <ClickSpark className="click-spark--block">
-                  <Link
-                    href={`/spreads/${spread.slug}`}
-                    className="btn-gold block rounded-xl px-4 py-3 text-center font-semibold"
-                  >
-                    Start free reading
-                  </Link>
-                </ClickSpark>
+                <Link
+                  href={`/spreads/${spread.slug}`}
+                  className="btn-gold block rounded-xl px-4 py-3 text-center font-semibold"
+                >
+                  Start free reading
+                </Link>
               </StarBorder>
             ) : (
               <Link

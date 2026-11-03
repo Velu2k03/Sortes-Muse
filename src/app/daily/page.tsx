@@ -92,7 +92,7 @@ export default function DailyPage() {
               className="flex flex-col items-center"
             >
               <TarotCard cardId={null} size="lg" disabled />
-              <StarBorder radius="1rem" className="mt-8">
+              <StarBorder radius="1rem" className="mt-8" animated>
                 <ClickSpark>
                   <button
                     type="button"

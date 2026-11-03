@@ -95,7 +95,7 @@ export default function Home() {
             animate={{ opacity: 1, y: 0 }}
             className="mt-10 flex w-full max-w-xl flex-col gap-3 sm:flex-row sm:flex-nowrap sm:justify-center"
           >
-            <StarBorder radius="1rem" className="shrink-0">
+            <StarBorder radius="1rem" className="shrink-0" animated>
               <Link
                 href="/daily"
                 className="btn-gold shrink-0 whitespace-nowrap rounded-2xl px-8 py-4 text-center text-lg font-bold"
