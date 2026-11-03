@@ -9,13 +9,15 @@ import {
   type DailyCardState,
 } from "@/lib/storage";
 import { getCard, orientationKeywords, orientationMeaning } from "@/lib/cards";
-import { drawSingle } from "@/lib/tarot";
+import { drawSingle, CARD_BACK } from "@/lib/tarot";
 import TarotCard from "@/components/TarotCard";
 import CardModal from "@/components/CardModal";
 import { trackDailyCardDrawn } from "@/components/Analytics";
 import { StarBorder } from "@/components/ReactBits";
 import HoldButton from "@/components/HoldButton";
 import HoloCard from "@/components/HoloCard";
+import PixelTransition from "@/components/PixelTransition";
+import Image from "next/image";
 import BlurText from "@/components/BlurText";
 
 type Phase = "idle" | "shuffling" | "revealed";
@@ -29,7 +31,21 @@ export default function DailyPage() {
   const [daily, setDaily] = useState<DailyCardState | null>(null);
   const [streak, setStreak] = useState(0);
   const [zoomOpen, setZoomOpen] = useState(false);
+  const [pixelActive, setPixelActive] = useState(false);
   const drawTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Pixel reveal: the card mounts showing its back, then pixelates to
+  // the face once the reveal section is on screen. Returning the same
+  // day replays the same moment. Reduced motion resolves instantly
+  // inside PixelTransition, so the face is never stuck behind pixels.
+  useEffect(() => {
+    if (phase !== "revealed") {
+      setPixelActive(false);
+      return;
+    }
+    const t = setTimeout(() => setPixelActive(true), 60);
+    return () => clearTimeout(t);
+  }, [phase]);
 
   useEffect(() => {
     const existing = getDailyCard();
@@ -146,27 +162,52 @@ export default function DailyPage() {
               animate={{ opacity: 1 }}
               className="flex w-full flex-col items-center"
             >
-              {/* No flip: the card shows face up at once, reversed
-                  cards simply sit upside down. Tapping the card
-                  enlarges it, and the holo is gold, never rainbow,
-                  the same gold preset the card detail already uses. */}
-              <button
-                type="button"
-                onClick={() => setZoomOpen(true)}
-                aria-label={`Enlarge ${card.name}`}
-                className="cursor-pointer rounded-[22px] focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
-              >
-                <span className={daily.reversed ? "block rotate-180" : "block"}>
-                  <HoloCard
-                    image={card.image}
-                    alt={card.name}
-                    preset="gold"
-                    foilColor="#d4af37"
-                    width={220}
-                    radius={22}
-                  />
-                </span>
-              </button>
+              {/* Pixel face reveal: the card mounts on its back and
+                  resolves to the face in gold pixels. Reversed cards
+                  rotate only the face, the way a physical draw falls.
+                  Tapping the card still enlarges it, and the holo is
+                  gold, never rainbow, the same gold preset the card
+                  detail already uses. The wrapper is focusable by the
+                  component's design, but carries no button role, so
+                  the enlarge button inside stays the one control. */}
+              <PixelTransition
+                firstContent={
+                  <span className="relative block h-full w-full overflow-hidden rounded-[22px] border border-gold/40 shadow-[0_8px_30px_rgba(0,0,0,0.6)]">
+                    <Image
+                      src={CARD_BACK}
+                      alt=""
+                      fill
+                      sizes="220px"
+                      className="object-cover"
+                      draggable={false}
+                    />
+                  </span>
+                }
+                secondContent={
+                  <button
+                    type="button"
+                    onClick={() => setZoomOpen(true)}
+                    aria-label={`Enlarge ${card.name}`}
+                    className="block h-full w-full cursor-pointer rounded-[22px] focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+                  >
+                    <span className={daily.reversed ? "block rotate-180" : "block"}>
+                      <HoloCard
+                        image={card.image}
+                        alt={card.name}
+                        preset="gold"
+                        foilColor="#d4af37"
+                        width={220}
+                        radius={22}
+                      />
+                    </span>
+                  </button>
+                }
+                active={pixelActive}
+                once
+                pixelColor="#d4af37"
+                aspectRatio="167.6%"
+                style={{ width: 220, borderRadius: 22 }}
+              />
               <p className="mt-3 text-xs text-mist">
                 {daily.reversed ? "Reversed" : "Upright"} · Tap the card to enlarge it.
               </p>
