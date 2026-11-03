@@ -119,7 +119,7 @@ export function buildTransitData(birth: BirthInput, targetDate: string): Transit
     latitude: birth.latitude,
     longitude: birth.longitude,
   });
-  const moon = vedic.planets.find((p) => p.name === "Moon");
+  const moon = vedic.planets.find((p) => p.name === "moon");
   if (!moon) throw new Error("Vedic calculation returned no Moon");
   const gochara = computeGochara(
     moon.longitude,
@@ -200,7 +200,7 @@ export function buildYearAheadData(birth: BirthInput, year: number): YearAheadRe
     latitude: birth.latitude,
     longitude: birth.longitude,
   });
-  const moon = vedic.planets.find((p) => p.name === "Moon");
+  const moon = vedic.planets.find((p) => p.name === "moon");
   if (!moon) throw new Error("Vedic calculation returned no Moon");
   const dasha = computeDashaTimeline(moon.longitude, birth.date, `${year}-01-01`);
   let ziwei: ZiweiStacks | null = null;

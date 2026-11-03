@@ -1,0 +1,488 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useAuth } from "@/components/AuthProvider";
+import { getReports, saveReport, spendCredit } from "@/lib/storage";
+import type { SavedReport, ReportType } from "@/lib/reports";
+
+const inputClass =
+  "w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none";
+const labelClass = "mb-1.5 block text-sm font-medium text-cream";
+
+const PRESETS: { label: string; latitude: number; longitude: number }[] = [
+  { label: "Manila, Philippines", latitude: 14.5995, longitude: 120.9842 },
+  { label: "Singapore", latitude: 1.3521, longitude: 103.8198 },
+  { label: "Kuala Lumpur, Malaysia", latitude: 3.139, longitude: 101.6869 },
+  { label: "Jakarta, Indonesia", latitude: -6.2088, longitude: 106.8456 },
+  { label: "Bangkok, Thailand", latitude: 13.7563, longitude: 100.5018 },
+  { label: "Hong Kong", latitude: 22.3193, longitude: 114.1694 },
+  { label: "Tokyo, Japan", latitude: 35.6762, longitude: 139.6503 },
+  { label: "London, UK", latitude: 51.5074, longitude: -0.1278 },
+  { label: "New York, USA", latitude: 40.7128, longitude: -74.006 },
+  { label: "Los Angeles, USA", latitude: 34.0522, longitude: -118.2437 },
+  { label: "Sydney, Australia", latitude: -33.8688, longitude: 151.2093 },
+];
+
+interface BirthFormState {
+  date: string;
+  unknownTime: boolean;
+  hour: string;
+  minute: string;
+  preset: string;
+  latitude: string;
+  longitude: string;
+  gender: "" | "male" | "female";
+}
+
+function emptyBirth(): BirthFormState {
+  return {
+    date: "",
+    unknownTime: false,
+    hour: "8",
+    minute: "0",
+    preset: PRESETS[0].label,
+    latitude: String(PRESETS[0].latitude),
+    longitude: String(PRESETS[0].longitude),
+    gender: "",
+  };
+}
+
+function birthPayload(b: BirthFormState) {
+  return {
+    date: b.date,
+    hour: b.unknownTime ? null : Number(b.hour),
+    minute: Number(b.minute),
+    latitude: Number(b.latitude),
+    longitude: Number(b.longitude),
+    gender: b.gender === "" ? null : b.gender,
+  };
+}
+
+function BirthForm({
+  title,
+  value,
+  onChange,
+  genderRequired,
+}: {
+  title: string;
+  value: BirthFormState;
+  onChange: (next: BirthFormState) => void;
+  genderRequired: boolean;
+}) {
+  const set = (patch: Partial<BirthFormState>) => onChange({ ...value, ...patch });
+  const prefix = title.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+  return (
+    <div className="rounded-3xl border border-gold/25 bg-panel/70 p-6">
+      <p className="font-display text-2xl text-goldbright">{title}</p>
+      <div className="mt-4 space-y-4">
+        <div>
+          <label htmlFor={`${prefix}-date`} className={labelClass}>
+            Birth date
+          </label>
+          <input
+            id={`${prefix}-date`}
+            type="date"
+            required
+            className={inputClass}
+            value={value.date}
+            onChange={(e) => set({ date: e.target.value })}
+          />
+        </div>
+        <label className="flex items-center gap-2 text-sm text-cream">
+          <input
+            type="checkbox"
+            checked={value.unknownTime}
+            onChange={(e) => set({ unknownTime: e.target.checked })}
+          />
+          Birth time unknown
+        </label>
+        {!value.unknownTime && (
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label htmlFor={`${prefix}-hour`} className={labelClass}>
+                Hour (0-23)
+              </label>
+              <input
+                id={`${prefix}-hour`}
+                type="number"
+                min={0}
+                max={23}
+                required
+                className={inputClass}
+                value={value.hour}
+                onChange={(e) => set({ hour: e.target.value })}
+              />
+            </div>
+            <div>
+              <label htmlFor={`${prefix}-minute`} className={labelClass}>
+                Minute
+              </label>
+              <input
+                id={`${prefix}-minute`}
+                type="number"
+                min={0}
+                max={59}
+                className={inputClass}
+                value={value.minute}
+                onChange={(e) => set({ minute: e.target.value })}
+              />
+            </div>
+          </div>
+        )}
+        <div>
+          <label htmlFor={`${prefix}-preset`} className={labelClass}>
+            Birth city
+          </label>
+          <select
+            id={`${prefix}-preset`}
+            className={inputClass}
+            value={value.preset}
+            onChange={(e) => {
+              const found = PRESETS.find((p) => p.label === e.target.value);
+              set({
+                preset: e.target.value,
+                latitude: found ? String(found.latitude) : value.latitude,
+                longitude: found ? String(found.longitude) : value.longitude,
+              });
+            }}
+          >
+            {PRESETS.map((p) => (
+              <option key={p.label} value={p.label}>
+                {p.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label htmlFor={`${prefix}-lat`} className={labelClass}>
+              Latitude
+            </label>
+            <input
+              id={`${prefix}-lat`}
+              type="number"
+              step="any"
+              required
+              className={inputClass}
+              value={value.latitude}
+              onChange={(e) => set({ latitude: e.target.value, preset: "" })}
+            />
+          </div>
+          <div>
+            <label htmlFor={`${prefix}-lon`} className={labelClass}>
+              Longitude
+            </label>
+            <input
+              id={`${prefix}-lon`}
+              type="number"
+              step="any"
+              required
+              className={inputClass}
+              value={value.longitude}
+              onChange={(e) => set({ longitude: e.target.value, preset: "" })}
+            />
+          </div>
+        </div>
+        <div>
+          <label htmlFor={`${prefix}-gender`} className={labelClass}>
+            Gender{genderRequired ? " (required for a year-ahead reading)" : ""}
+          </label>
+          <select
+            id={`${prefix}-gender`}
+            className={inputClass}
+            value={value.gender}
+            onChange={(e) => set({ gender: e.target.value as BirthFormState["gender"] })}
+          >
+            <option value="">Prefer not to say</option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const TYPE_BLURBS: Record<ReportType, string> = {
+  transit:
+    "One chosen date, read against your natal chart: Western transits plus Vedic Gochara for that day.",
+  "year-ahead":
+    "Twelve monthly themes for one calendar year, plus the longer dasha and Ziwei period layers.",
+  comparison:
+    "Two charts side by side, read through their cross-aspects. Dynamics only, never a verdict.",
+};
+
+export default function ReportsClient() {
+  const { user, credits, loading, refresh } = useAuth();
+  const [type, setType] = useState<ReportType>("transit");
+  const [birth, setBirth] = useState<BirthFormState>(emptyBirth);
+  const [birthB, setBirthB] = useState<BirthFormState>(emptyBirth);
+  const [targetDate, setTargetDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [year, setYear] = useState(String(new Date().getFullYear() + 1));
+  const [generating, setGenerating] = useState(false);
+  const [error, setError] = useState("");
+  const [result, setResult] = useState<SavedReport | null>(null);
+  const [saveError, setSaveError] = useState(false);
+  const [saved, setSaved] = useState<SavedReport[]>([]);
+
+  const loadSaved = async () => {
+    if (user) {
+      const res = await fetch("/api/reports").catch(() => null);
+      if (res && res.ok) {
+        const data = await res.json();
+        setSaved(Array.isArray(data.reports) ? data.reports : []);
+      }
+    } else {
+      setSaved(getReports());
+    }
+  };
+
+  useEffect(() => {
+    if (!loading) void loadSaved();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, user]);
+
+  const outOfOracles = !loading && credits !== null && credits < 1;
+
+  async function saveGenerated(report: SavedReport) {
+    if (user) {
+      const res = await fetch("/api/reports", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ report }),
+      }).catch(() => null);
+      if (!res || !res.ok) {
+        setSaveError(true);
+        return;
+      }
+      setSaveError(false);
+      await loadSaved();
+    } else {
+      saveReport(report);
+      setSaved(getReports());
+    }
+  }
+
+  async function generate() {
+    setError("");
+    setSaveError(false);
+    setResult(null);
+    if (!birth.date) {
+      setError("Please enter a birth date.");
+      return;
+    }
+    if (type === "year-ahead" && birth.gender === "") {
+      setError("A year-ahead reading needs a gender for its Ziwei annual layer.");
+      return;
+    }
+    if (type === "comparison" && !birthB.date) {
+      setError("Please enter a birth date for the second chart.");
+      return;
+    }
+    setGenerating(true);
+    try {
+      const body: Record<string, unknown> =
+        type === "transit"
+          ? { type, birth: birthPayload(birth), targetDate }
+          : type === "year-ahead"
+            ? { type, birth: birthPayload(birth), year: Number(year) }
+            : { type, birthA: birthPayload(birth), birthB: birthPayload(birthB) };
+      const res = await fetch("/api/reports/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(typeof data.error === "string" ? data.error : "The report could not be generated.");
+        return;
+      }
+      const report = data.report as SavedReport;
+      if (!user) {
+        if (!spendCredit(1)) {
+          setError("Your device wallet could not cover this report. Please top up and try again.");
+          return;
+        }
+        window.dispatchEvent(new Event("sortes:credits-changed"));
+      }
+      setResult(report);
+      await saveGenerated(report);
+      if (user) await refresh();
+    } catch {
+      setError("The report could not be generated just now. No Oracle was spent. Please try again in a moment.");
+    } finally {
+      setGenerating(false);
+    }
+  }
+
+  return (
+    <div className="mx-auto max-w-3xl px-4 py-10">
+      <p className="text-center text-xs uppercase tracking-[0.35em] text-gold">Reports</p>
+      <h1 className="mt-2 text-center font-display text-5xl text-goldbright">Keep-forever reports</h1>
+      <p className="mt-3 text-center text-cream/80">
+        A report is a document you keep, not a reading you rent. 1 Oracle per report, and reports never
+        expire. There is no free first report: every report costs 1 Oracle.
+      </p>
+      <p className="mt-2 text-center text-sm text-mist">
+        Your birth details are used only to calculate this report. They are never stored, and they are
+        never sent to the AI. A saved report holds positions and interpretation only.
+      </p>
+
+      {!loading && credits !== null && (
+        <p className="mt-4 text-center text-sm text-cream">
+          Your balance: <strong className="text-goldbright">{credits} {credits === 1 ? "Oracle" : "Oracles"}</strong>
+          {user ? null : " (device wallet; sign in to keep reports on your account)"}
+        </p>
+      )}
+
+      <div className="mt-8 flex flex-wrap justify-center gap-2" role="tablist" aria-label="Report type">
+        {(Object.keys(TYPE_BLURBS) as ReportType[]).map((t) => (
+          <button
+            key={t}
+            type="button"
+            role="tab"
+            aria-selected={type === t}
+            onClick={() => {
+              setType(t);
+              setResult(null);
+              setError("");
+            }}
+            className={`rounded-full px-4 py-2 text-sm font-semibold ${
+              type === t ? "btn-gold" : "btn-ghost"
+            }`}
+          >
+            {t === "transit" ? "Transit report" : t === "year-ahead" ? "Year-ahead reading" : "Relationship comparison"}
+          </button>
+        ))}
+      </div>
+      <p className="mt-3 text-center text-sm text-cream/75">{TYPE_BLURBS[type]}</p>
+      {type === "comparison" && (
+        <p className="mt-2 text-center text-sm text-mist">
+          This comparison is opt-in and mutual: you enter both charts. It describes dynamics only, never
+          a verdict on compatibility, and never predicts whether a relationship will last.
+        </p>
+      )}
+
+      <div className="mt-6 space-y-6">
+        <BirthForm
+          title={type === "comparison" ? "First chart" : "Your birth details"}
+          value={birth}
+          onChange={setBirth}
+          genderRequired={type === "year-ahead"}
+        />
+        {type === "comparison" && (
+          <BirthForm title="Second chart" value={birthB} onChange={setBirthB} genderRequired={false} />
+        )}
+        {type === "transit" && (
+          <div>
+            <label htmlFor="report-target-date" className={labelClass}>
+              Date for the transit report
+            </label>
+            <input
+              id="report-target-date"
+              type="date"
+              required
+              className={inputClass}
+              value={targetDate}
+              onChange={(e) => setTargetDate(e.target.value)}
+            />
+          </div>
+        )}
+        {type === "year-ahead" && (
+          <div>
+            <label htmlFor="report-year" className={labelClass}>
+              Year for the year-ahead reading
+            </label>
+            <input
+              id="report-year"
+              type="number"
+              min={1900}
+              max={2200}
+              required
+              className={inputClass}
+              value={year}
+              onChange={(e) => setYear(e.target.value)}
+            />
+          </div>
+        )}
+      </div>
+
+      {outOfOracles && (
+        <div className="mt-6 rounded-2xl border border-gold/25 bg-panel/70 p-4 text-center text-sm text-cream">
+          You are out of Oracles. Reports cost 1 Oracle each.{" "}
+          <Link href="/credits" className="font-semibold text-goldbright underline">
+            Top up Oracles
+          </Link>
+        </div>
+      )}
+      {error && (
+        <div className="mt-6 rounded-2xl border border-red-400/40 bg-panel/70 p-4 text-center text-sm text-red-200">
+          {error}{" "}
+          {error.includes("1 Oracle") && (
+            <Link href="/credits" className="font-semibold underline">
+              Top up Oracles
+            </Link>
+          )}
+        </div>
+      )}
+
+      <button
+        type="button"
+        onClick={generate}
+        disabled={generating || outOfOracles}
+        className="btn-gold mt-6 w-full rounded-xl px-4 py-3 font-bold disabled:opacity-50"
+      >
+        {generating ? "Generating…" : "Generate report · 1 Oracle"}
+      </button>
+
+      {result && (
+        <div className="mt-8 rounded-3xl border border-gold/25 bg-panel/70 p-6">
+          <p className="text-xs uppercase tracking-[0.35em] text-gold">Your report</p>
+          <h2 className="mt-1 font-display text-3xl text-goldbright">{result.title}</h2>
+          {saveError ? (
+            <div className="mt-3 rounded-xl border border-red-400/40 p-3 text-sm text-red-200">
+              The report was generated, but saving it failed. Your Oracle was spent only once; retry the
+              save without another charge.{" "}
+              <button type="button" onClick={() => saveGenerated(result)} className="font-semibold underline">
+                Retry save
+              </button>
+            </div>
+          ) : (
+            <p className="mt-2 text-sm text-mist">
+              Saved. Open it any time from your reports below, or{" "}
+              <Link href={`/reports/${result.id}`} className="font-semibold text-goldbright underline">
+                view the full report
+              </Link>
+              .
+            </p>
+          )}
+          <p className="mt-4 whitespace-pre-wrap leading-relaxed text-cream/90">{result.interpretation}</p>
+        </div>
+      )}
+
+      <div className="mt-12">
+        <h2 className="font-display text-3xl text-goldbright">Your saved reports</h2>
+        {saved.length === 0 ? (
+          <p className="mt-2 text-sm text-mist">
+            No saved reports yet. Generate one above and it stays here, on your account when signed in, or
+            on this device as a guest.
+          </p>
+        ) : (
+          <ul className="mt-4 space-y-3">
+            {saved.map((r) => (
+              <li key={r.id} className="rounded-2xl border border-gold/25 bg-panel/70 p-4">
+                <Link href={`/reports/${r.id}`} className="font-display text-xl text-cream hover:text-goldbright">
+                  {r.title}
+                </Link>
+                <p className="text-xs text-mist">
+                  {new Date(r.createdAt).toLocaleDateString()} · {r.type === "transit" ? "Transit report" : r.type === "year-ahead" ? "Year-ahead reading" : "Relationship comparison"}
+                </p>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  );
+}

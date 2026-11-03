@@ -10,6 +10,7 @@ const PAGES = [
   "/daily",
   "/deck",
   "/charts",
+  "/reports",
   "/horoscope",
   "/spreads",
   "/spreads/quick-insight",
