@@ -17,12 +17,12 @@ const NAV: { href: string; label: string; icon: IconName; desc: string }[] = [
   { href: "/", label: "Home", icon: "home", desc: "Start here: daily card, spreads, and charts" },
   { href: "/deck", label: "Deck", icon: "deck", desc: "All 78 cards, upright and reversed" },
   { href: "/daily", label: "Daily Card", icon: "sparkle", desc: "Your free card of the day" },
-  { href: "/spreads", label: "Readings", icon: "journal", desc: "Tarot spreads for a question" },
+  { href: "/spreads", label: "Readings", icon: "search", desc: "Tarot spreads for a question" },
   { href: "/charts", label: "Charts", icon: "chart", desc: "Birth charts: Western, Vedic, Ziwei" },
-  { href: "/reports", label: "Reports", icon: "iconoirBook", desc: "Keep-forever reports, 1 Oracle each" },
-  { href: "/horoscope", label: "Horoscope", icon: "star", desc: "Daily and weekly reflections, free" },
+  { href: "/reports", label: "Reports", icon: "briefcase", desc: "Keep-forever reports, 1 Oracle each" },
+  { href: "/horoscope", label: "Horoscope", icon: "globe", desc: "Daily and weekly reflections, free" },
   { href: "/guides", label: "Guides", icon: "iconoirBook", desc: "How tarot and charts work" },
-  { href: "/history", label: "Journal", icon: "journal", desc: "Your past readings and notes" },
+  { href: "/history", label: "Journal", icon: "lock", desc: "Your past readings and notes" },
 ];
 
 // Footer-only sections, listed in the mobile menu (a vertical list has
