@@ -1,0 +1,71 @@
+import { NextRequest, NextResponse } from "next/server";
+import { calculateZiweiStacks } from "@/lib/charts";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+// M3.3: Ziwei palace activation stacks for one year. Calculation
+// only, like /api/chart/calculate: free, unsaved, no credits, no
+// session. The client sends the birth inputs from the chart it
+// already calculated in-memory; nothing is stored here and nothing
+// is sent to AI. Birth data itself is never required beyond the
+// inputs the natal chart already needed, and it stays in-memory.
+export async function POST(req: NextRequest) {
+  let body: {
+    date?: unknown;
+    hour?: unknown;
+    minute?: unknown;
+    gender?: unknown;
+    longitude?: unknown;
+    year?: unknown;
+    today?: unknown;
+  };
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
+  }
+  if (typeof body.date !== "string" || !body.date) {
+    return NextResponse.json({ error: "date must be a YYYY-MM-DD string." }, { status: 400 });
+  }
+  if (typeof body.hour !== "number" || !Number.isInteger(body.hour) || body.hour < 0 || body.hour > 23) {
+    return NextResponse.json(
+      { error: "Ziwei needs a birth hour: the twelve palaces are placed by the two-hour branch you were born in, so a chart from an unknown hour would be a guess." },
+      { status: 400 }
+    );
+  }
+  if (body.minute !== undefined && (typeof body.minute !== "number" || !Number.isInteger(body.minute) || body.minute < 0 || body.minute > 59)) {
+    return NextResponse.json({ error: "minute must be an integer from 0 to 59." }, { status: 400 });
+  }
+  if (body.gender !== "male" && body.gender !== "female") {
+    return NextResponse.json({ error: "gender must be male or female." }, { status: 400 });
+  }
+  if (body.longitude !== undefined && (typeof body.longitude !== "number" || !Number.isFinite(body.longitude))) {
+    return NextResponse.json({ error: "longitude must be a finite number." }, { status: 400 });
+  }
+  if (typeof body.year !== "number" || !Number.isInteger(body.year)) {
+    return NextResponse.json({ error: "year must be an integer." }, { status: 400 });
+  }
+  if (body.today !== undefined && (typeof body.today !== "string" || !body.today)) {
+    return NextResponse.json({ error: "today must be a YYYY-MM-DD string." }, { status: 400 });
+  }
+  try {
+    const result = calculateZiweiStacks(
+      {
+        date: body.date,
+        hour: body.hour,
+        minute: typeof body.minute === "number" ? body.minute : 0,
+        gender: body.gender,
+        longitude: typeof body.longitude === "number" ? body.longitude : undefined,
+      },
+      body.year,
+      typeof body.today === "string" ? body.today : undefined
+    );
+    return NextResponse.json(result);
+  } catch (e) {
+    return NextResponse.json(
+      { error: e instanceof Error ? e.message : "Palace stacks calculation failed." },
+      { status: 400 }
+    );
+  }
+}

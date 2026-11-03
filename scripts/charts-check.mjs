@@ -4,7 +4,7 @@
 // Privacy: test birth data below is used only in-memory for this check;
 // nothing here is stored, sent to AI, or written to a database.
 import assert from "node:assert";
-import { calculateZiwei, calculateWestern, computeTransits, timeIndexForHour, applyLongitudeCorrection } from "../src/lib/charts.ts";
+import { calculateZiwei, calculateZiweiStacks, calculateWestern, computeTransits, timeIndexForHour, applyLongitudeCorrection } from "../src/lib/charts.ts";
 import { calculateVedic, navamsaSign, dasamsaSign, computePanchanga, computeGochara } from "../src/lib/vedic.ts";
 import { SQUARE_CELLS, squareCellForPalaceIndex } from "../src/lib/ziwei-square.ts";
 import { dailyHoroscope } from "../src/lib/daily.ts";
@@ -55,6 +55,37 @@ assert.equal(formatChineseDateEn(ziweiA.chineseDate), "Ji-Si, Ding-Chou, Bing-Yi
 assert.equal(formatTimeLabelEn(ziweiA.timeLabel), "Chen hour (07:00-09:00)");
 assert.equal(formatTimeLabelEn(ziweiB.timeLabel), "Wei hour (13:00-15:00)");
 console.log("ziwei EN life A:", ziweiAEnLife?.join(", "), "| EN life B:", ziweiBEnLife?.join(", "));
+
+// M3.3: palace activation stacks on the golden Ziwei case
+// (1990-01-01, hour 8, female, Manila). For 2026 the decade must be
+// the 34-43 / 2022-2031 decade on Home (田宅, index 10, stem 丙),
+// and the annual palace must be the palace with branch 午, Children
+// (子女, index 4), also stem 丙. Both layers therefore share the 丙
+// Si Hua set in Lu, Quan, Ke, Ji order: 天同, 天机, 文昌, 廉贞.
+const stacksA = calculateZiweiStacks({ date: "1990-01-01", hour: 8, gender: "female", longitude: 120.9842 }, 2026, "2026-11-03");
+assert.equal(stacksA.year, 2026, "stacks must echo the year");
+assert.equal(stacksA.decade.palaceNameZh, "田宅", "2026 decade palace must be Home");
+assert.equal(stacksA.decade.index, 10, "2026 decade index must be 10");
+assert.deepEqual(stacksA.decade.ageRange, [34, 43], "2026 decade ages must be 34-43");
+assert.deepEqual(stacksA.decade.yearRange, [2022, 2031], "2026 decade years must be 2022-2031");
+assert.equal(stacksA.decade.heavenlyStem, "丙", "2026 decade stem must be 丙");
+assert.deepEqual(stacksA.decade.mutagen, ["天同", "天机", "文昌", "廉贞"], "丙 stem Si Hua must be 天同, 天机, 文昌, 廉贞");
+assert.equal(stacksA.annual.palaceNameZh, "子女", "2026 annual palace must be Children");
+assert.equal(stacksA.annual.index, 4, "2026 annual index must be 4");
+assert.equal(stacksA.annual.heavenlyStem, "丙", "2026 annual stem must be 丙");
+assert.deepEqual(stacksA.annual.mutagen, ["天同", "天机", "文昌", "廉贞"], "2026 annual Si Hua must match the decade stem set");
+assert.equal(stacksA.stacks.length, 12, "stacks need all 12 palaces");
+assert.equal(stacksA.stacks.filter((s) => s.decadeActive).length, 1, "exactly one palace is the decade palace");
+assert.equal(stacksA.stacks.find((s) => s.decadeActive).index, 10, "the decade palace row must be index 10");
+assert.equal(stacksA.stacks.filter((s) => s.annualActive).length, 1, "exactly one palace is the annual palace");
+assert.equal(stacksA.stacks.find((s) => s.annualActive).index, 4, "the annual palace row must be index 4");
+assert.ok(stacksA.stacks.every((s) => s.decadeStars.every((n) => n.startsWith("运"))), "decade stars must all be decade (运) stars");
+assert.ok(stacksA.stacks.every((s) => s.annualStars.every((n) => n.startsWith("流") || n === "年解")), "annual stars must all be annual (流) stars or the annual Jie star");
+assert.ok(stacksA.daily.palaceNameZh && stacksA.daily.mutagen.length === 4, "daily rhythm needs a palace and a 4-star Si Hua set");
+assert.equal(stacksA.dailyDate, "2026-11-3", "daily date must echo the requested day, unpadded as iztro takes it");
+assert.throws(() => calculateZiweiStacks({ date: "1990-01-01", hour: 8, gender: "female", longitude: 120.9842 }, 1800), /No decade covers/, "a year outside the decade range must be refused");
+assert.throws(() => calculateZiweiStacks({ date: "1990-01-01", hour: null, gender: "female", longitude: 120.9842 }, 2026), /birth hour/, "stacks without a birth hour must be refused like the natal chart");
+console.log("stacks 2026: decade", stacksA.decade.palaceNameZh, stacksA.decade.ageRange.join("-"), "| annual", stacksA.annual.palaceNameZh, "| daily rhythm", stacksA.daily.palaceNameZh);
 
 // timeIndex mapping: 8:00 -> 辰 (index 4), 14:30 -> 未 (index 7), unknown -> noon index 6
 assert.equal(timeIndexForHour(8), 4);

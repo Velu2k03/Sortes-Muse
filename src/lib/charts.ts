@@ -8,16 +8,54 @@
 import { createRequire } from "node:module";
 
 const require = createRequire(import.meta.url);
-const astro = (require("iztro") as { astro: unknown }).astro as {
-  bySolar: (solar: string, timeIndex: number, gender: string) => {
-    lunarDate: string;
-    chineseDate: string;
-    zodiac: string;
-    sign: string;
-    time: string;
-    earthlyBranchOfSoulPalace: string;
-    palaces: unknown[];
+// M3.3: the astrolabe type grows with the period APIs iztro
+// actually exposes: horoscope(date) for decade/year/month/day/hour
+// layers, and decadalList() for every decade with age and year
+// ranges. Period palaceNames are a rotation of the natal ring:
+// position j of a period's arrays maps to natal ring index
+// (period.index + j - 1) mod 12, verified against iztro's own
+// palace lookup (FunctionalHoroscope.palace) and against two
+// anchors (decade 2026 palaceNames start at Fortune, annual 2026
+// at Wealth, matching their indices 10 and 4).
+interface IztroPeriod {
+  index: number;
+  name: string;
+  heavenlyStem: string;
+  earthlyBranch: string;
+  palaceNames: string[];
+  mutagen: string[];
+  stars: Array<Array<{ name: string }>>;
+}
+interface IztroDecade {
+  index: number;
+  name: string;
+  palaceName: string;
+  ageRange: [number, number];
+  yearRange: [number, number];
+  heavenlyStem: string;
+  earthlyBranch: string;
+  palaceNames: string[];
+  mutagen: string[];
+  stars: Array<Array<{ name: string }>>;
+}
+interface IztroAstrolabe {
+  lunarDate: string;
+  chineseDate: string;
+  zodiac: string;
+  sign: string;
+  time: string;
+  earthlyBranchOfSoulPalace: string;
+  palaces: unknown[];
+  horoscope: (date: string) => {
+    decadal: IztroPeriod;
+    yearly: IztroPeriod;
+    daily: IztroPeriod;
+    age: { nominalAge: number };
   };
+  decadalList: () => IztroDecade[];
+}
+const astro = (require("iztro") as { astro: unknown }).astro as {
+  bySolar: (solar: string, timeIndex: number, gender: string) => IztroAstrolabe;
 };
 const circular = require("circular-natal-horoscope-js") as {
   Origin: new (opts: Record<string, unknown>) => unknown;
@@ -151,13 +189,22 @@ export interface ZiweiResult {
   palaces: ZiweiPalace[];
 }
 
-export function calculateZiwei(input: {
+// M3.3: shared natal-chart builder. Extracted from calculateZiwei
+// without changing its behaviour, so the stacks function builds
+// exactly the same chart the chart page shows.
+function buildZiweiAstrolabe(input: {
   date: string;
   hour: number | null;
   minute?: number;
   gender: ChartGender;
   longitude?: number;
-}): ZiweiResult {
+}): {
+  astrolabe: IztroAstrolabe;
+  effDate: string;
+  effHour: number;
+  effMinute: number;
+  correction: number;
+} {
   // M1.2: Ziwei cannot be calculated without a birth hour. The twelve
   // palaces are placed by the two-hour branch, so a noon double-hour
   // layout would be a guess presented as a chart. Refuse honestly.
@@ -172,7 +219,7 @@ export function calculateZiwei(input: {
   let effHour = input.hour;
   let effMinute = input.minute ?? 0;
   let correction = 0;
-  if (input.hour !== null && typeof input.longitude === "number" && Number.isFinite(input.longitude)) {
+  if (typeof input.longitude === "number" && Number.isFinite(input.longitude)) {
     const c = applyLongitudeCorrection(input.date, input.hour, input.minute ?? 0, input.longitude);
     effDate = c.date;
     effHour = c.hour;
@@ -183,8 +230,42 @@ export function calculateZiwei(input: {
   const timeIndex = timeIndexForHour(effHour, effMinute);
   const genderName = input.gender === "female" ? "女" : "男";
   const solar = `${y}-${m}-${d}`;
-  const astrolabe = astro.bySolar(solar, timeIndex, genderName);
+  return { astrolabe: astro.bySolar(solar, timeIndex, genderName), effDate, effHour, effMinute, correction };
+}
+
+function mapZiweiPalaces(astrolabe: IztroAstrolabe): ZiweiPalace[] {
   const soulBranch = astrolabe.earthlyBranchOfSoulPalace;
+  return (astrolabe.palaces as unknown[]).map((raw) => {
+    const p = raw as {
+      index: number;
+      name: string;
+      heavenlyStem: string;
+      earthlyBranch: string;
+      majorStars: { name: string; brightness: string; mutagen: string }[];
+      minorStars: { name: string }[];
+    };
+    return {
+      index: p.index,
+      name: PALACE_EN[p.name] ?? p.name,
+      chineseName: p.name,
+      heavenlyStem: p.heavenlyStem,
+      earthlyBranch: p.earthlyBranch,
+      majorStars: p.majorStars.map((s) => s.name),
+      majorStarsDetail: p.majorStars.map((s) => ({ name: s.name, brightness: s.brightness, mutagen: s.mutagen })),
+      minorStars: p.minorStars.map((s) => s.name),
+      isLifePalace: p.earthlyBranch === soulBranch,
+    };
+  });
+}
+
+export function calculateZiwei(input: {
+  date: string;
+  hour: number | null;
+  minute?: number;
+  gender: ChartGender;
+  longitude?: number;
+}): ZiweiResult {
+  const { astrolabe, effDate, effHour, effMinute, correction } = buildZiweiAstrolabe(input);
   return {
     system: "ziwei",
     solarDate: effDate,
@@ -196,27 +277,123 @@ export function calculateZiwei(input: {
     sign: astrolabe.sign,
     timeLabel: astrolabe.time,
     unknownTime: input.hour === null,
-    palaces: (astrolabe.palaces as unknown[]).map((raw) => {
-      const p = raw as {
-        index: number;
-        name: string;
-        heavenlyStem: string;
-        earthlyBranch: string;
-        majorStars: { name: string; brightness: string; mutagen: string }[];
-        minorStars: { name: string }[];
-      };
-      return {
-        index: p.index,
-        name: PALACE_EN[p.name] ?? p.name,
-        chineseName: p.name,
-        heavenlyStem: p.heavenlyStem,
-        earthlyBranch: p.earthlyBranch,
-        majorStars: p.majorStars.map((s) => s.name),
-        majorStarsDetail: p.majorStars.map((s) => ({ name: s.name, brightness: s.brightness, mutagen: s.mutagen })),
-        minorStars: p.minorStars.map((s) => s.name),
-        isLifePalace: p.earthlyBranch === soulBranch,
-      };
-    }),
+    palaces: mapZiweiPalaces(astrolabe),
+  };
+}
+
+// M3.3: palace activation stacks. For one year, three layers over
+// the same twelve natal palaces: the natal stars, the decade
+// (Da Xian) layer, and the annual (Liu Nian) layer. The decade
+// comes from iztro's decadalList (age and year ranges included);
+// the annual layer comes from iztro's horoscope at June 1 of the
+// year, the same representative date iztro's own yearlyList uses
+// (June is safely inside that lunar year). The daily (Liu Ri)
+// layer is included ONLY as rhythm: the palace and Si Hua of the
+// day, with no interpretation, because a layer that changes daily
+// is not a personal reading. Si Hua for every layer comes from
+// iztro's own mutagen table for the layer's stem, in Lu, Quan,
+// Ke, Ji order; Sortes never hand-rolls Si Hua and never mixes
+// tables. Period stars are iztro's layer stars: 运 for the decade,
+// 流 for the year (plus 年解, the annual Jie star), 日 for the day.
+// A year outside the chart's decade range is refused
+// instead of showing a stack from the wrong decade.
+export interface ZiweiStackRow {
+  index: number;
+  name: string;
+  chineseName: string;
+  natalMajorStars: string[];
+  decadeStars: string[];
+  annualStars: string[];
+  decadeActive: boolean;
+  annualActive: boolean;
+}
+
+export interface ZiweiPeriodLayer {
+  palaceName: string;
+  palaceNameZh: string;
+  index: number;
+  heavenlyStem: string;
+  earthlyBranch: string;
+  // Si Hua stars for the layer's stem, in Lu, Quan, Ke, Ji order.
+  mutagen: string[];
+}
+
+export interface ZiweiStacks {
+  year: number;
+  coveredYears: [number, number];
+  decade: ZiweiPeriodLayer & { ageRange: [number, number]; yearRange: [number, number] };
+  annual: ZiweiPeriodLayer;
+  // Rhythm only: the daily palace for the requested day, no reading.
+  daily: ZiweiPeriodLayer;
+  dailyDate: string;
+  stacks: ZiweiStackRow[];
+}
+
+export function calculateZiweiStacks(
+  input: {
+    date: string;
+    hour: number | null;
+    minute?: number;
+    gender: ChartGender;
+    longitude?: number;
+  },
+  year: number,
+  todayISO?: string
+): ZiweiStacks {
+  if (!Number.isInteger(year)) throw new Error("year must be an integer");
+  const { astrolabe } = buildZiweiAstrolabe(input);
+  const decades = astrolabe.decadalList();
+  const decade = decades.find((d) => year >= d.yearRange[0] && year <= d.yearRange[1]);
+  if (!decade) {
+    throw new Error(
+      `No decade covers ${year}: this chart's decades run ${decades[0].yearRange[0]} to ${decades[decades.length - 1].yearRange[1]}.`
+    );
+  }
+  // June 1 of the year, unpadded as iztro's yearlyList passes it.
+  const mid = astrolabe.horoscope(`${year}-6-1`);
+  if (mid.decadal.index !== decade.index) {
+    throw new Error("Decade mismatch inside the engine: refusing to show a stack from the wrong decade.");
+  }
+  const dailyDate = todayISO ? (() => { const p = parseDate(todayISO); return `${p.y}-${p.m}-${p.d}`; })() : (() => { const n = new Date(); return `${n.getUTCFullYear()}-${n.getUTCMonth() + 1}-${n.getUTCDate()}`; })();
+  const daily = astrolabe.horoscope(dailyDate).daily;
+  const natal = mapZiweiPalaces(astrolabe);
+  const layer = (zh: string, index: number, stem: string, branch: string, mutagen: string[]): ZiweiPeriodLayer => ({
+    palaceName: PALACE_EN[zh] ?? zh,
+    palaceNameZh: zh,
+    index,
+    heavenlyStem: stem,
+    earthlyBranch: branch,
+    mutagen,
+  });
+  const natalNameAt = (index: number): string => natal.find((p) => p.index === index)?.chineseName ?? "";
+  // Period position j maps to natal ring index (period.index + j - 1)
+  // mod 12, so natal index n reads period position (n - index + 1)
+  // mod 12. Verified against iztro's palace lookup.
+  const starsAt = (period: IztroPeriod, natalIndex: number): string[] => {
+    const j = (((natalIndex - period.index + 1) % 12) + 12) % 12;
+    return (period.stars[j] ?? []).map((s) => s.name);
+  };
+  return {
+    year,
+    coveredYears: [decades[0].yearRange[0], decades[decades.length - 1].yearRange[1]],
+    decade: {
+      ...layer(decade.palaceName, decade.index, decade.heavenlyStem, decade.earthlyBranch, decade.mutagen),
+      ageRange: decade.ageRange,
+      yearRange: decade.yearRange,
+    },
+    annual: layer(natalNameAt(mid.yearly.index), mid.yearly.index, mid.yearly.heavenlyStem, mid.yearly.earthlyBranch, mid.yearly.mutagen),
+    daily: layer(natalNameAt(daily.index), daily.index, daily.heavenlyStem, daily.earthlyBranch, daily.mutagen),
+    dailyDate,
+    stacks: natal.map((p) => ({
+      index: p.index,
+      name: p.name,
+      chineseName: p.chineseName,
+      natalMajorStars: p.majorStars,
+      decadeStars: starsAt(mid.decadal, p.index),
+      annualStars: starsAt(mid.yearly, p.index),
+      decadeActive: p.index === decade.index,
+      annualActive: p.index === mid.yearly.index,
+    })),
   };
 }
 

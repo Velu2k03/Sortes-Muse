@@ -12,6 +12,7 @@ import ZiweiChartBoard, { type ZiweiView } from "@/components/ZiweiChartBoard";
 import WesternWheel from "@/components/WesternWheel";
 import WesternTransits from "@/components/WesternTransits";
 import VedicTransits from "@/components/VedicTransits";
+import ZiweiStacks from "@/components/ZiweiStacks";
 import VedicChart from "@/components/VedicChart";
 import { useAuth } from "@/components/AuthProvider";
 import Icon from "@/components/Icon";
@@ -763,6 +764,19 @@ export default function ChartsClient() {
               moonLongitude={result.planets.find((p) => p.name === "moon")?.longitude ?? 0}
               planets={result.planets}
               unknownTime={result.unknownTime}
+            />
+          )}
+          {/* M3.3: palace activation stacks, Ziwei charts only. The
+              birth inputs come from the form that calculated this
+              chart; Ziwei results always carry a known birth hour,
+              since unknown hours are refused. Nothing new is stored. */}
+          {result.system === "ziwei" && !unknownTime && (
+            <ZiweiStacks
+              date={date}
+              hour={Number(time.split(":")[0])}
+              minute={Number(time.split(":")[1] ?? 0)}
+              gender={gender}
+              longitude={Number(longitude)}
             />
           )}
 

@@ -57,6 +57,7 @@ export default function MethodologyPage() {
           <li>An unknown birth hour is refused outright, because the twelve palaces are placed by the two-hour branch. A noon double-hour layout would be a guess presented as a chart.</li>
           <li>Late-night Zi hours, leap months, and the lunar year boundary follow the iztro engine&apos;s own rules. Sortes does not override them.</li>
           <li>Si Hua transformations follow the iztro engine&apos;s table. Sources disagree on at least one row (the Ren Ke row), so Sortes reports what its engine computes and does not mix tables.</li>
+          <li>Palace activation stacks, for one chosen year, layer three things over the same twelve natal palaces: the natal major stars, the decade (Da Xian) layer, and the annual (Liu Nian) layer. The decade comes from iztro&apos;s decade list with its age and year ranges (nominal ages); the annual layer comes from iztro&apos;s horoscope at June 1 of the year, the same representative date iztro&apos;s own yearly list uses. A year outside the chart&apos;s decade range is refused rather than stacked from the wrong decade. The daily (Liu Ri) layer is shown only as rhythm, the palace and Si Hua of the day with no interpretation attached, because a layer that changes daily is not a personal reading.</li>
         </ul>
       </section>
 
