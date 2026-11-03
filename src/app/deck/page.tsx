@@ -71,12 +71,15 @@ export default function DeckPage() {
       </div>
 
       <div className="mt-8 flex flex-col items-center gap-4">
+        <label htmlFor="deck-search" className="mb-1.5 block text-sm font-medium text-cream">
+          Search cards
+        </label>
         <input
+          id="deck-search"
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search cards, e.g. moon, strength…"
-          aria-label="Search cards"
           className="w-full max-w-md rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none"
         />
         {/* Validator fix: these are filter toggles, not tabs, and
@@ -140,6 +143,7 @@ export default function DeckPage() {
         <div className="mt-8">
           <p className="text-center text-sm text-cream/75">
             Drag the helix to spin it, tap a card to read its story.
+            Prefer a list? Use List above for keyboard browsing.
           </p>
           <div
             className="h-[560px]"

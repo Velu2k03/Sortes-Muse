@@ -597,4 +597,12 @@ console.log("charts-check: all assertions passed");
   assert.ok(home.includes("A mirror, not a verdict"), "trust strip must state reflection, not prediction");
   assert.ok(!home.includes("testimonial") && !home.includes("customers say"), "trust strip must not invent testimonials");
   console.log("phase2: homepage primary action, Oracle value, trust strip: all source assertions passed");
+  // Phase 3: skip link, visible search labels, keyboard hints.
+  const layout = fs.readFileSync("src/app/layout.tsx", "utf8");
+  assert.ok(layout.includes('href="#main-content"') && layout.includes('id="main-content"'), "layout must carry a skip link to the main content");
+  const guidesSearch = fs.readFileSync("src/components/GuidesSearch.tsx", "utf8");
+  assert.ok(guidesSearch.includes('htmlFor="guides-search"'), "guides search must have a visible label, not only a placeholder");
+  const deckPage = fs.readFileSync("src/app/deck/page.tsx", "utf8");
+  assert.ok(deckPage.includes('htmlFor="deck-search"'), "deck search must have a visible label, not only a placeholder");
+  console.log("phase3: skip link, visible search labels, keyboard hints: all source assertions passed");
 }

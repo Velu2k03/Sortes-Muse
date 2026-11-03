@@ -118,12 +118,16 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             }),
           }}
         />
+        {/* Phase 3: skip link, first in tab order, visible on focus. */}
+        <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-xl focus:bg-gold focus:px-4 focus:py-2 focus:font-bold focus:text-ink">
+          Skip to main content
+        </a>
         <MotionProvider>
         <AuthProvider>
           <ServiceWorkerRegister />
           <Starfield />
           <Header />
-          <main className="flex-1">{children}</main>
+          <main id="main-content" tabIndex={-1} className="flex-1 outline-none">{children}</main>
           <Footer />
           <InstallBanner />
           <PushPrompt />
