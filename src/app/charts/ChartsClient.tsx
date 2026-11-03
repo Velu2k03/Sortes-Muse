@@ -720,6 +720,16 @@ export default function ChartsClient() {
       {result && (
         <AnimatedContent trigger="mount" wipe="up" blur={8} distance={40} duration={0.8} stagger={0}>
         <section ref={resultRef} className="magic-glow relative mt-10 scroll-mt-24 rounded-3xl border border-gold/25 bg-panel/40 p-4 sm:p-6" aria-live="polite">
+          {/* Personal Phase 1: the chart visual comes first, but the
+              plain-words interpretation must not be hidden below it.
+              This jump link is the guided next step for anyone who
+              does not want to read degrees themselves. */}
+          <p className="mb-4 text-center text-sm text-cream/80">
+            You do not need to read the degrees yourself.{" "}
+            <a href="#chart-interpretation" className="font-semibold text-goldbright underline">
+              Skip to the plain-words interpretation
+            </a>
+          </p>
           {showBurst && <CardBurst count={24} distance={110} />}
           {/* Share card, result level: Audit 3 found the legend
               promising "share it as an image" with no Share button
@@ -919,8 +929,13 @@ export default function ChartsClient() {
             </p>
           </section>
 
-          <section className="mt-10 scroll-mt-24 rounded-3xl border border-gold/25 bg-panel/70 p-6" aria-label="Chart interpretation">
+          <section id="chart-interpretation" className="mt-10 scroll-mt-24 rounded-3xl border border-gold/25 bg-panel/70 p-6" aria-label="Chart interpretation">
             <h3 className="font-display text-2xl text-goldbright">{result.system === "ziwei" && ziweiLang === "zh" ? "解读" : "Interpretation"}</h3>
+            <p className="mt-2 text-sm leading-relaxed text-cream/75">
+              In plain words, for your focus and question. The numbers and
+              placements stay in the chart above for reference; you are
+              not expected to interpret them yourself.
+            </p>
             {result.system === "ziwei" && ziweiLang === "zh" && (
               <p className="mt-2 text-sm text-cream/80">解读由 AI 用英文生成，基于上方星盘位置；图表标签已为中文。</p>
             )}

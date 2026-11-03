@@ -6,6 +6,7 @@ import { getReading, updateReading as updateLocalReading } from "@/lib/storage";
 import type { Reading, FollowUp } from "@/lib/types";
 import { useAuth } from "@/components/AuthProvider";
 import { getCard, orientationKeywords, orientationMeaning } from "@/lib/cards";
+import { computeSpreadFacts } from "@/lib/spread-facts";
 import TarotCard from "@/components/TarotCard";
 import CardModal from "@/components/CardModal";
 import ShareReading from "@/components/ShareReading";
@@ -215,6 +216,82 @@ export default function ReadingDetail({ id }: { id: string }) {
         </p>
       )}
 
+      {/* Personal Phase 1: at a glance, computed from this draw only.
+          No AI, no invented story: dominant suit and tension pair are
+          deterministic facts about the cards drawn, shown here so the
+          reading starts from your question and your cards, not from
+          generic card meanings. */}
+      {(() => {
+        // Codex review on PR 45, correct: chart readings are stored
+        // with cards [] and a chartSummary, so this tarot-specific
+        // card would report 0 cards and a story that was never used.
+        // It renders for tarot readings only.
+        if (reading.chartSummary || reading.cards.length === 0) return null;
+        const facts = computeSpreadFacts(
+          reading.cards.map((d) => {
+            const c = getCard(d.cardId);
+            return {
+              cardId: d.cardId,
+              name: c.name,
+              reversed: d.reversed,
+              position: d.position,
+              arcana: c.arcana,
+              suit: c.suit,
+              number: c.number,
+            };
+          })
+        );
+        return (
+          <section className="mx-auto mt-8 max-w-3xl rounded-3xl border border-gold/25 bg-panel/60 p-6 text-left sm:p-8">
+            <p className="text-xs uppercase tracking-[0.25em] text-gold">
+              About this reading, at a glance
+            </p>
+            <dl className="mt-3 space-y-2 text-sm leading-relaxed text-cream/85">
+              {reading.category && (
+                <div className="flex gap-2">
+                  <dt className="shrink-0 font-semibold text-cream">Area:</dt>
+                  <dd>{reading.category}</dd>
+                </div>
+              )}
+              <div className="flex gap-2">
+                <dt className="shrink-0 font-semibold text-cream">Cards drawn:</dt>
+                <dd className="num">
+                  {reading.cards.length} ·{" "}
+                  {facts.reversalCount > 0
+                    ? `${facts.reversalCount} reversed`
+                    : "none reversed"}
+                </dd>
+              </div>
+              {facts.dominantSuit && facts.dominantElement && facts.dominantCount >= 2 && (
+                <div className="flex gap-2">
+                  <dt className="shrink-0 font-semibold text-cream">Strongest thread:</dt>
+                  <dd>
+                    {facts.dominantSuit} ({facts.dominantElement}),{" "}
+                    <span className="num">{facts.dominantCount}</span> of{" "}
+                    <span className="num">{reading.cards.length}</span> cards.
+                    Read this as the flavour running through your question,
+                    not a verdict on it.
+                  </dd>
+                </div>
+              )}
+              {facts.tensionPair && (
+                <div className="flex gap-2">
+                  <dt className="shrink-0 font-semibold text-cream">Tension to sit with:</dt>
+                  <dd>
+                    {facts.tensionPair.a} ({facts.tensionPair.aElement}) pulls
+                    against {facts.tensionPair.b} ({facts.tensionPair.bElement}).
+                  </dd>
+                </div>
+              )}
+            </dl>
+            <p className="mt-3 text-xs text-mist">
+              These lines come from the cards drawn for your question. Your
+              story was used for this reading only and is not saved here.
+            </p>
+          </section>
+        );
+      })()}
+
       <div className="mt-8 flex flex-wrap justify-center gap-4">
         {reading.cards.map((d) => (
           <TarotCard
@@ -276,6 +353,12 @@ export default function ReadingDetail({ id }: { id: string }) {
           <section className="rounded-3xl border border-gold/30 bg-navydeep/70 p-6 sm:p-8">
             <p className="text-xs uppercase tracking-[0.25em] text-gold">
               Personalized interpretation
+            </p>
+            <p className="mt-2 text-sm leading-relaxed text-cream/75">
+              Written for your question above. The closing part answers, in
+              order: what stands out, the tension or opportunity, what you
+              may be overlooking, and one practical step. Read it as
+              reflection, not a prediction.
             </p>
             <TypewriterText
               text={reading.interpretation}

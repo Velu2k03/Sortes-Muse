@@ -620,4 +620,19 @@ console.log("charts-check: all assertions passed");
   const intake = fs.readFileSync("src/app/intake/[slug]/IntakeFlow.tsx", "utf8");
   assert.ok(intake.includes("Reversed cards are shown upside down"), "impression step must explain the reversed visual cue");
   console.log("phase5: spreads discoverability, reversed hint: all source assertions passed");
+  // Personal Phase 1: structured reflection, at-a-glance facts,
+  // repeated questions, plain-words chart jump. No pricing, credit,
+  // auth, spread, or calculation changes.
+  const generateRoute = fs.readFileSync("src/app/api/reading/generate/route.ts", "utf8");
+  assert.ok(generateRoute.includes("What stands out for your question"), "generation prompt must ask what stands out for the seeker's question");
+  assert.ok(generateRoute.includes("what you may be overlooking"), "generation prompt must ask what the seeker may be overlooking");
+  assert.ok(generateRoute.includes("one practical step you could take"), "generation prompt must ask for one practical step");
+  assert.ok(!generateRoute.includes("guaranteed prediction") || generateRoute.includes("NEVER as guaranteed prediction"), "generation prompt must keep the reflection, not prediction, guardrail");
+  const readingDetail = fs.readFileSync("src/app/reading/[id]/ReadingDetailClient.tsx", "utf8");
+  assert.ok(readingDetail.includes("About this reading, at a glance") && readingDetail.includes("computeSpreadFacts"), "reading detail must show computed at-a-glance facts from the draw");
+  const historyClient = fs.readFileSync("src/app/history/HistoryClient.tsx", "utf8");
+  assert.ok(historyClient.includes("Questions you keep returning to"), "journal must surface repeated questions");
+  const chartsClient = fs.readFileSync("src/app/charts/ChartsClient.tsx", "utf8");
+  assert.ok(chartsClient.includes('href="#chart-interpretation"') && chartsClient.includes('id="chart-interpretation"'), "charts result must offer a jump to the plain-words interpretation");
+  console.log("personal-phase1: structured reflection, at-a-glance facts, repeated questions, chart jump: all source assertions passed");
 }
