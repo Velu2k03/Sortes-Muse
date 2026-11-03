@@ -122,12 +122,12 @@ export default function CreditsPage() {
                   </span>
                 )}
               </div>
-              <p className="num mt-5 text-5xl font-bold text-goldbright">
+              <p className="num mt-5 text-5xl font-bold text-cream">
                 ${p.price.toFixed(2)}
               </p>
               <p className="mt-1 text-sm text-mist">one-time payment</p>
               <p className="mt-3 text-base text-cream">
-                <span className="font-body text-goldbright">{p.readings}</span> Oracles · ${perReadingPrice(p)} per Oracle
+                <span className="font-body text-cream">{p.readings}</span> Oracles · ${perReadingPrice(p)} per Oracle
               </p>
               <ul className="mt-4 space-y-2 text-sm text-cream/85">
                 <li>✓ 1 Oracle = 1 full reading</li>
