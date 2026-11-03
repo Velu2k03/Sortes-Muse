@@ -6,7 +6,7 @@ import { dailyHoroscope, weeklyHoroscope, SUN_SIGNS, type SunSign } from "@/lib/
 import Icon from "@/components/Icon";
 import ThemedDatePicker from "@/components/ThemedDatePicker";
 import OptionWheel from "@/components/OptionWheel";
-import BlurText from "@/components/BlurText";
+import TextType from "@/components/TextType";
 import FadeContent from "@/components/FadeContent";
 import RubberSegment from "@/components/RubberSegment";
 import { ClickSpark, StarBorder } from "@/components/ReactBits";
@@ -19,7 +19,7 @@ import { ClickSpark, StarBorder } from "@/components/ReactBits";
 // and uncharged, and it does not ask for any birth data.
 //
 // Phase A reveal: the user picks a sign and a date, taps Reveal, and the
-// result appears with a BlurText sign line and a FadeContent body.
+// result appears with a TextType sign line and a FadeContent body.
 // Phase B adds a short unveiling beat (1200ms, wait-and-reward pacing
 // Velu allowed 2026-11-04). The beat is presentation only: the text is
 // local and already computed, and the status line says unveiling, never
@@ -162,13 +162,18 @@ export default function HoroscopePage() {
               {signLine}
             </p>
           ) : (
-            <BlurText
+            <TextType
               text={signLine}
-              trigger="load"
-              animateBy="words"
-              delay={120}
-              stepDuration={0.35}
               className="text-xs uppercase tracking-[0.25em] text-gold"
+              deletingSpeed={35}
+              pauseDuration={2200}
+              typeEffect="fade"
+              cursorStyle="bar"
+              cursorCharacter="●"
+              cursorBlinkDuration={0.55}
+              mistakes={0.55}
+              variableSpeed={{ min: 40, max: 170 }}
+              loop={false}
             />
           )}
           {reducedMotion ? (
