@@ -421,7 +421,10 @@ console.log("charts-check: all assertions passed");
   // Audit 4 supersedes the Audit 3 btn-secondary note: all Buy buttons
   // are now the same solid btn-gold, popular distinguished by badge only.
   assert.ok(!credits.includes("btn-secondary"), "Audit 4: credits Buy buttons must no longer use btn-secondary");
-  assert.ok(credits.includes('className="btn-gold mt-5 w-full rounded-xl px-4 py-3 font-bold"'), "all credits Buy buttons must be solid btn-gold, equal size and weight");
+  // Direct checkout added disabled:opacity-60 to the same solid button,
+  // so accept that suffix. The button is still solid btn-gold, same size
+  // and weight, in all three pack cards.
+  assert.ok(credits.includes('className="btn-gold mt-5 w-full rounded-xl px-4 py-3 font-bold disabled:opacity-60"'), "all credits Buy buttons must be solid btn-gold, equal size and weight");
   assert.ok(credits.includes("Most popular") || credits.includes("MOST POPULAR") || credits.includes("Most Popular"), "popular pack must still carry its badge distinction");
   const css = fs.readFileSync("src/app/globals.css", "utf8");
   assert.ok(css.includes(".btn-secondary"), "btn-secondary must be defined in globals.css");
@@ -577,4 +580,13 @@ console.log("charts-check: all assertions passed");
   const creditsClient = fs.readFileSync("src/app/credits/CreditsClient.tsx", "utf8");
   assert.ok(!creditsClient.includes("<h1"), "credits client must not duplicate the server H1");
   console.log("batch14: lightsite JSON-LD and credits server H1: all source assertions passed");
+  // Phase 1: dead typed URLs must redirect, not 404.
+  const config = fs.readFileSync("next.config.ts", "utf8");
+  for (const slug of ["/daily-card", "/charts/western", "/charts/vedic", "/charts/ziwei", "/spreads/three-card", "/spreads/relationship", "/guides/how-tarot-works", "/guides/how-to-read-a-spread", "/intake"]) {
+    assert.ok(config.includes(`source: "${slug}"`), `next.config must redirect dead slug ${slug}`);
+  }
+  const notFound = fs.readFileSync("src/app/not-found.tsx", "utf8");
+  assert.ok(notFound.includes('title: "Page not found | Sortes"'), "not-found page must carry its own title, not the home title");
+  assert.ok(notFound.includes('href: "/daily"') && notFound.includes('href: "/guides"'), "not-found page must offer real places to go, not only home");
+  console.log("phase1: dead URL redirects and not-found places: all source assertions passed");
 }
