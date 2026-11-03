@@ -20,8 +20,8 @@
    so overriding those variables under [data-theme="light"] flips every
    page that already uses bg-ink, bg-panel, text-cream, text-mist,
    border-gold, and so on, without rewriting every class and without
-   touching chart math, pricing, or privacy. Default stays dark gold:
-   layout sets data-theme="dark" unless localStorage says "light".
+   touching chart math, pricing, or privacy. Default is light:
+   layout sets data-theme="light" unless localStorage says "dark".
    Light tokens, checked for AA on their own backgrounds (normal text
    needs 4.5:1): paper #fdf9ee with ink text #1c1a15 is about 15:1;
    dark gold #8a6d0a on paper is about 5.6:1; darker goldbright #7c5e00

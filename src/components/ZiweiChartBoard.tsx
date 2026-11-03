@@ -94,7 +94,7 @@ export default function ZiweiChartBoard({ result, lang = "en", view = "ring", sh
   const t = LABELS[lang];
   const en = lang === "en";
   const glosses = showGlosses ?? lang === "zh";
-  const [ringTheme, setRingTheme] = useState<"dark" | "light">("dark");
+  const [ringTheme, setRingTheme] = useState<"dark" | "light">("light");
   useEffect(() => {
     const sync = () => setRingTheme(document.documentElement.dataset.theme === "light" ? "light" : "dark");
     sync();

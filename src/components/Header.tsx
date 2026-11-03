@@ -49,18 +49,18 @@ export default function Header() {
     return false;
   };
   const [open, setOpen] = useState(false);
-  // Light theme, Expansion 1: default dark gold, persisted in
+  // Theme default is light, persisted in
   // localStorage under sortes-theme, layout's inline script already
-  // set data-theme before paint so there is no dark flash. The toggle
+  // set data-theme before paint so there is no light flash. The toggle
   // here only flips the stored value and the attribute, and tells the
   // theme-aware Western wheel to re-render via a window event.
-  const [theme, setTheme] = useState<"dark" | "light">("dark");
+  const [theme, setTheme] = useState<"dark" | "light">("light");
   useEffect(() => {
     try {
       const saved = localStorage.getItem("sortes-theme");
       if (saved === "light" || saved === "dark") queueMicrotask(() => setTheme(saved));
     } catch {
-      // Private mode or blocked storage: stay dark, do not crash.
+      // Private mode or blocked storage: stay light, do not crash.
     }
   }, []);
   const toggleTheme = () => {

@@ -57,7 +57,7 @@ export default function CreditsPage() {
   // CSS variables), so track the document theme the same way theme.js
   // sets it. The popular card renders gold pixels on a dark surface in
   // dark mode and dark-gold pixels on a light surface in light mode.
-  const [siteTheme, setSiteTheme] = useState<"dark" | "light">("dark");
+  const [siteTheme, setSiteTheme] = useState<"dark" | "light">("light");
   useEffect(() => {
     const sync = () =>
       setSiteTheme(document.documentElement.dataset.theme === "light" ? "light" : "dark");
