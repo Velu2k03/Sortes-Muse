@@ -10,6 +10,7 @@ import CheckoutModal from "@/components/CheckoutModal";
 import PurchaseConfirmer from "@/components/PurchaseConfirmer";
 import SampleReading from "@/components/SampleReading";
 import Counter from "@/components/Counter";
+import PixelCard from "@/components/PixelCard";
 import { useSearchParams } from "next/navigation";
 
 interface ServerTx {
@@ -32,6 +33,19 @@ export default function CreditsPage() {
     sync();
     mq.addEventListener("change", sync);
     return () => mq.removeEventListener("change", sync);
+  }, []);
+  // PixelCard needs an explicit theme (its canvas does not read the
+  // CSS variables), so track the document theme the same way theme.js
+  // sets it. The popular card renders gold pixels on a dark surface in
+  // dark mode and dark-gold pixels on a light surface in light mode.
+  const [siteTheme, setSiteTheme] = useState<"dark" | "light">("dark");
+  useEffect(() => {
+    const sync = () =>
+      setSiteTheme(document.documentElement.dataset.theme === "light" ? "light" : "dark");
+    sync();
+    const obs = new MutationObserver(sync);
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    return () => obs.disconnect();
   }, []);
   const [localHistory, setLocalHistory] = useState<Purchase[]>([]);
   const [serverTx, setServerTx] = useState<ServerTx[] | null>(null);
@@ -92,48 +106,74 @@ export default function CreditsPage() {
       </div>
 
       <div className="mt-10 space-y-4">
-        {CREDIT_PACKS.map((p, i) => (
-          <motion.div
-            key={p.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.04, duration: 0.4 }}
-            className="relative rounded-3xl border border-gold/20 bg-panel/60 p-6"
-          >
-            {/* Audit 5: the popular card carries no extra gold tint, so the badge is truly the only distinction between packs. */}
-            {p.popular && (
-              <span className="absolute -top-3 left-6 rounded-full bg-gold px-4 py-1 text-xs font-bold uppercase tracking-wider text-ink">
-                Most popular
-              </span>
-            )}
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <p className="font-display text-3xl text-cream">
-                  {p.name} · <span className="font-body text-goldbright">{p.readings}</span> Oracles
-                </p>
-                <p className="mt-1 text-sm text-mist">
-                  ${perReadingPrice(p)} per Oracle
-                </p>
+        {CREDIT_PACKS.map((p, i) => {
+          const body = (
+            <>
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-3">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gold/15 text-lg text-goldbright" aria-hidden="true">
+                    ✦
+                  </span>
+                  <p className="font-display text-xl text-cream">{p.name}</p>
+                </div>
+                {p.popular && (
+                  <span className="shrink-0 whitespace-nowrap pt-1 text-xs font-bold text-goldbright">
+                    Most popular
+                  </span>
+                )}
               </div>
-              <p className="num text-4xl font-bold text-goldbright">
+              <p className="num mt-5 text-5xl font-bold text-goldbright">
                 ${p.price.toFixed(2)}
               </p>
-            </div>
-            {/* Audit 4: every pack uses the same solid btn-gold, same
-                padding, weight, and size. The popular pack is
-                distinguished only by its MOST POPULAR badge above,
-                not by being the only solid button; the old
-                old secondary fill read dimmer than btn-gold in dark
-                mode even though its text contrast passed. */}
-            <button
-              type="button"
-              onClick={() => setOpen(true)}
-              className="btn-gold mt-5 w-full rounded-xl px-4 py-3 font-bold"
+              <p className="mt-1 text-sm text-mist">one-time payment</p>
+              <p className="mt-3 text-base text-cream">
+                <span className="font-body text-goldbright">{p.readings}</span> Oracles · ${perReadingPrice(p)} per Oracle
+              </p>
+              <ul className="mt-4 space-y-2 text-sm text-cream/85">
+                <li>✓ 1 Oracle = 1 full reading</li>
+                <li>✓ Oracles never expire</li>
+                <li>✓ Any spread, any chart system</li>
+                <li>✓ No subscription, pay once</li>
+              </ul>
+              {/* Audit 4: every pack uses the same solid btn-gold, same
+                  padding, weight, and size. */}
+              <button
+                type="button"
+                onClick={() => setOpen(true)}
+                className="btn-gold mt-5 w-full rounded-xl px-4 py-3 font-bold"
+              >
+                Buy {p.readings} Oracles · ${p.price.toFixed(2)}
+              </button>
+            </>
+          );
+          return (
+            <motion.div
+              key={p.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.04, duration: 0.4 }}
+              className={p.popular ? "relative" : "relative rounded-3xl border border-gold/20 bg-panel/60 p-6"}
             >
-              Buy {p.readings} Oracles · ${p.price.toFixed(2)}
-            </button>
-          </motion.div>
-        ))}
+              {p.popular ? (
+                <PixelCard
+                  variant="yellow"
+                  gap={4}
+                  pixelSize={1.8}
+                  speed={20}
+                  glow={0.6}
+                  glowColor="#eab308"
+                  theme={siteTheme}
+                  radius={24}
+                  className="border border-gold/70"
+                >
+                  <div className="relative z-10 p-6">{body}</div>
+                </PixelCard>
+              ) : (
+                body
+              )}
+            </motion.div>
+          );
+        })}
       </div>
 
       <div className="mt-10 rounded-2xl border border-gold/20 bg-panel/50 p-6">
