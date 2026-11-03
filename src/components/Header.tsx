@@ -2,26 +2,52 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import CountUp from "@/components/CountUp";
 import Icon, { type IconName } from "@/components/Icon";
 import { APP_SHORT } from "@/lib/site";
 
-const NAV: { href: string; label: string; icon: IconName }[] = [
-  { href: "/", label: "Home", icon: "home" },
-  { href: "/deck", label: "Deck", icon: "deck" },
-  { href: "/daily", label: "Daily Card", icon: "sparkle" },
-  { href: "/spreads", label: "Readings", icon: "journal" },
-  { href: "/charts", label: "Charts", icon: "chart" },
-  { href: "/reports", label: "Reports", icon: "iconoirBook" },
-  { href: "/horoscope", label: "Horoscope", icon: "star" },
-  { href: "/guides", label: "Guides", icon: "iconoirBook" },
-  { href: "/history", label: "Journal", icon: "journal" },
+// Phase F: every nav entry carries a one-line plain description. The
+// desktop bar shows the label with the description as a hover title;
+// the mobile menu shows the description under the label, so a
+// first-time user never has to guess what a section does.
+const NAV: { href: string; label: string; icon: IconName; desc: string }[] = [
+  { href: "/", label: "Home", icon: "home", desc: "Start here: daily card, spreads, and charts" },
+  { href: "/deck", label: "Deck", icon: "deck", desc: "All 78 cards, upright and reversed" },
+  { href: "/daily", label: "Daily Card", icon: "sparkle", desc: "Your free card of the day" },
+  { href: "/spreads", label: "Readings", icon: "journal", desc: "Tarot spreads for a question" },
+  { href: "/charts", label: "Charts", icon: "chart", desc: "Birth charts: Western, Vedic, Ziwei" },
+  { href: "/reports", label: "Reports", icon: "iconoirBook", desc: "Keep-forever reports, 1 Oracle each" },
+  { href: "/horoscope", label: "Horoscope", icon: "star", desc: "Daily and weekly reflections, free" },
+  { href: "/guides", label: "Guides", icon: "iconoirBook", desc: "How tarot and charts work" },
+  { href: "/history", label: "Journal", icon: "journal", desc: "Your past readings and notes" },
+];
+
+// Footer-only sections, listed in the mobile menu (a vertical list has
+// room; the desktop bar stays at nine items so it does not wrap).
+const MOBILE_NAV: { href: string; label: string; icon: IconName; desc: string }[] = [
+  ...NAV,
+  { href: "/birth-card", label: "Birth Card", icon: "calendar", desc: "One Major Arcana card from your birth date" },
+  { href: "/faq", label: "FAQ", icon: "info", desc: "Common questions, answered" },
 ];
 
 export default function Header() {
   const { credits, user, loading } = useAuth();
+  const pathname = usePathname();
+  // Phase F: the current section is marked, on desktop and mobile, so
+  // a user always knows where they are. Deep pages highlight their
+  // parent section: a reading detail highlights Journal, an intake or
+  // spread flow highlights Readings, a report detail highlights Reports.
+  const isActive = (href: string) => {
+    if (pathname === href) return true;
+    if (href === "/spreads" && (pathname.startsWith("/spreads/") || pathname.startsWith("/intake/"))) return true;
+    if (href === "/history" && pathname.startsWith("/reading/")) return true;
+    if (href === "/reports" && pathname.startsWith("/reports/")) return true;
+    if (href === "/guides" && pathname.startsWith("/guides/")) return true;
+    return false;
+  };
   const [open, setOpen] = useState(false);
   // Light theme, Expansion 1: default dark gold, persisted in
   // localStorage under sortes-theme, layout's inline script already
@@ -71,16 +97,25 @@ export default function Header() {
           </span>
         </Link>
 
-        <nav className="hidden items-center gap-5 lg:flex" aria-label="Primary">
-          {NAV.map((n) => (
-            <Link
-              key={n.href}
-              href={n.href}
-              className="text-sm text-cream/80 transition hover:text-goldbright"
-            >
-              {n.label}
-            </Link>
-          ))}
+        <nav className="hidden items-center gap-4 lg:flex" aria-label="Primary">
+          {NAV.map((n) => {
+            const active = isActive(n.href);
+            return (
+              <Link
+                key={n.href}
+                href={n.href}
+                title={n.desc}
+                aria-current={active ? "page" : undefined}
+                className={
+                  active
+                    ? "text-sm font-semibold text-goldbright"
+                    : "text-sm text-cream/80 transition hover:text-goldbright"
+                }
+              >
+                {n.label}
+              </Link>
+            );
+          })}
         </nav>
 
         <div className="flex shrink-0 items-center gap-3">
@@ -95,7 +130,7 @@ export default function Header() {
           </button>
           <Link
             href="/credits"
-            className="flex items-center gap-1.5 rounded-full border border-gold/40 bg-gold/10 px-3 py-1.5 text-sm font-semibold text-goldbright"
+            className="flex items-center gap-1 rounded-full border border-gold/40 bg-gold/10 px-2.5 py-1.5 text-sm font-semibold text-goldbright"
             aria-label={`Oracle balance: ${credits ?? 0} Oracles`}
             title="Your Oracles"
           >
@@ -103,6 +138,7 @@ export default function Header() {
             <span className="num">
               <CountUp value={credits ?? 0} />
             </span>
+            <span>Oracles</span>
           </Link>
           <Link
             href="/credits"
@@ -145,17 +181,30 @@ export default function Header() {
           className="border-t border-gold/15 bg-ink/95 px-4 py-3 lg:hidden"
           aria-label="Mobile"
         >
-          {NAV.map((n) => (
-            <Link
-              key={n.href}
-              href={n.href}
-              onClick={() => setOpen(false)}
-              className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-base text-cream/90 hover:bg-gold/10"
-            >
-              <Icon name={n.icon} size={20} />
-              {n.label}
-            </Link>
-          ))}
+          {MOBILE_NAV.map((n) => {
+            const active = isActive(n.href);
+            return (
+              <Link
+                key={n.href}
+                href={n.href}
+                onClick={() => setOpen(false)}
+                aria-current={active ? "page" : undefined}
+                className="flex items-start gap-3 rounded-lg px-3 py-2.5 hover:bg-gold/10"
+              >
+                <span className="mt-0.5 shrink-0">
+                  <Icon name={n.icon} size={20} />
+                </span>
+                <span>
+                  <span
+                    className={`block text-base ${active ? "font-semibold text-goldbright" : "text-cream/90"}`}
+                  >
+                    {n.label}
+                  </span>
+                  <span className="block text-xs text-mist">{n.desc}</span>
+                </span>
+              </Link>
+            );
+          })}
           <Link
             href="/credits"
             onClick={() => setOpen(false)}

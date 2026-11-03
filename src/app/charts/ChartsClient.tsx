@@ -58,6 +58,13 @@ export default function ChartsClient() {
     return () => mq.removeEventListener("change", sync);
   }, []);
   const SYSTEM_ORDER: ChartSystem[] = ["ziwei", "western", "vedic"];
+  // Phase F: one plain line per system under the picker, mirroring the
+  // reports page blurbs, so a newcomer picks by meaning, not by name.
+  const SYSTEM_BLURBS: Record<ChartSystem, string> = {
+    western: "Tropical zodiac, the familiar Sun-sign system, with Placidus houses.",
+    vedic: "Sidereal zodiac, Moon-centered, with whole-sign houses and dasha periods.",
+    ziwei: "Chinese Purple Star astrology: palaces, stars, and life periods.",
+  };
   const formRef = useRef<HTMLFormElement | null>(null);
   const selectSystem = (s: ChartSystem) => {
     setSystem(s);
@@ -417,7 +424,9 @@ export default function ChartsClient() {
       </div>
 
       {reducedMotion ? (
-        <div className="mx-auto mt-8 flex max-w-lg flex-wrap gap-3">
+        <>
+          <p className="mx-auto mt-8 max-w-lg text-center text-sm text-cream/75">Choose a system</p>
+          <div className="mx-auto mt-2 flex max-w-lg flex-wrap gap-3">
           {SYSTEM_ORDER.map((s) => (
             <button
               key={s}
@@ -431,7 +440,8 @@ export default function ChartsClient() {
               {s === "ziwei" ? "Ziwei" : s === "vedic" ? "Vedic" : "Western"}
             </button>
           ))}
-        </div>
+          </div>
+        </>
       ) : (
         <div className="mx-auto mt-8 max-w-lg">
           <p className="text-center text-sm text-cream/75">Choose a system</p>
@@ -456,6 +466,8 @@ export default function ChartsClient() {
           </div>
         </div>
       )}
+
+      <p className="mx-auto mt-3 max-w-lg text-center text-sm text-cream/75">{SYSTEM_BLURBS[system]}</p>
 
       <form ref={formRef} onSubmit={onSubmit} className="mx-auto mt-8 max-w-xl rounded-3xl border border-gold/25 bg-panel/70 p-6">
         {/* Audit 6: Use example lives at the top of the form, not only

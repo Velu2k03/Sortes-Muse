@@ -18,6 +18,7 @@ import {
 } from "@/lib/storage";
 import { useAuth } from "@/components/AuthProvider";
 import TarotCard from "@/components/TarotCard";
+import Breadcrumbs from "@/components/Breadcrumbs";
 import CardModal from "@/components/CardModal";
 import Image from "next/image";
 import CheckoutModal from "@/components/CheckoutModal";
@@ -162,6 +163,14 @@ export default function ReadingFlow({ slug, intake = null }: Props) {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+      {/* Phase F: the flow sits under Readings, so the way back is visible. */}
+      <Breadcrumbs
+        trail={[
+          { href: "/", label: "Home" },
+          { href: "/spreads", label: "Readings" },
+          { label: getSpread(slug).name },
+        ]}
+      />
       <AnimatePresence mode="wait">
         {phase === "gate" && (
           <GateScreen

@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import ReadingWait, { PROCESSING_LINES } from "@/components/ReadingWait";
 import SlideCommit from "@/components/SlideCommit";
 import SwipeToast from "@/components/SwipeToast";
+import Breadcrumbs from "@/components/Breadcrumbs";
 import { getSpread, drawCards } from "@/lib/tarot";
 import { getCard } from "@/lib/cards";
 import { suggestQuestionRewrite } from "@/lib/question-rewrite";
@@ -246,6 +247,14 @@ export default function IntakeFlow({ slug }: { slug: string }) {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6">
+      {/* Phase F: the flow sits under Readings, so the way back is visible. */}
+      <Breadcrumbs
+        trail={[
+          { href: "/", label: "Home" },
+          { href: "/spreads", label: "Readings" },
+          { label: spread.name },
+        ]}
+      />
       {/* The impression step is part of the reading phase in the dots. */}
       <StepDots step={step === "impression" ? "processing" : step} />
 

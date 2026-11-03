@@ -12,6 +12,7 @@ import ShareReading from "@/components/ShareReading";
 import TypewriterText from "@/components/TypewriterText";
 import SplitText from "@/components/SplitText";
 import SwipeToast from "@/components/SwipeToast";
+import Breadcrumbs from "@/components/Breadcrumbs";
 
 /**
  * Reading detail: full cards + interpretation + share + "Ask a follow-up" upsell.
@@ -186,6 +187,14 @@ export default function ReadingDetail({ id }: { id: string }) {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6">
+      {/* Phase F: a saved reading lives in the Journal; this is the way back. */}
+      <Breadcrumbs
+        trail={[
+          { href: "/", label: "Home" },
+          { href: "/history", label: "Journal" },
+          { label: reading.spreadName },
+        ]}
+      />
       <p className="text-center text-xs uppercase tracking-[0.35em] text-gold">
         {reading.spreadName} · {date}
       </p>
