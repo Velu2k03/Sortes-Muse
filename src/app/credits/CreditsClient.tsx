@@ -109,7 +109,7 @@ export default function CreditsPage() {
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="font-display text-3xl text-cream">
-                  {p.name} · <span className="font-body font-bold text-goldbright">{p.readings}</span> Oracles
+                  {p.name} · <span className="font-body text-goldbright">{p.readings}</span> Oracles
                 </p>
                 <p className="mt-1 text-sm text-mist">
                   ${perReadingPrice(p)} per Oracle
