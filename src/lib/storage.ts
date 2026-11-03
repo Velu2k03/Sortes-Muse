@@ -1,4 +1,5 @@
 import type { Reading } from "./types";
+import type { SavedReport } from "./reports";
 
 const K = {
   credits: "sortes-credits",
@@ -10,6 +11,7 @@ const K = {
   pushDismissed: "sortes-push-dismissed",
   purchases: "sortes-purchases",
   dailyStreak: "sortes-daily-streak",
+  reports: "sortes-reports",
 } as const;
 
 function read<T>(key: string, fallback: T): T {
@@ -198,6 +200,33 @@ export function makeReading(partial: Omit<Reading, "id" | "createdAt">): Reading
         : `${Date.now()}-${Math.random().toString(36).slice(2)}`,
     createdAt: new Date().toISOString(),
   };
+}
+
+// M4.1: keep-forever reports, guest device-local mirror of the server
+// reports table. Same shape as a saved report; birth inputs are never
+// stored here, only positions, aspects, and the interpretation.
+const MAX_REPORTS = 100;
+
+export function getReports(): SavedReport[] {
+  return read<SavedReport[]>(K.reports, []);
+}
+
+export function saveReport(r: SavedReport): void {
+  const list = getReports();
+  list.unshift(r);
+  write(K.reports, list.slice(0, MAX_REPORTS));
+}
+
+export function getReport(id: string): SavedReport | null {
+  return getReports().find((r) => r.id === id) ?? null;
+}
+
+export function deleteReport(id: string): boolean {
+  const list = getReports();
+  const next = list.filter((r) => r.id !== id);
+  if (next.length === list.length) return false;
+  write(K.reports, next);
+  return true;
 }
 
 // AI cache: re-opening history never triggers a second API call
