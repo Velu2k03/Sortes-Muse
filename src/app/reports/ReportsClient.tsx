@@ -3,6 +3,9 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/components/AuthProvider";
+import RubberSegment from "@/components/RubberSegment";
+import SpecularButton from "@/components/SpecularButton";
+import StatusMark from "@/components/StatusMark";
 import { getReports, saveReport, spendCredit } from "@/lib/storage";
 import type { SavedReport, ReportType } from "@/lib/reports";
 
@@ -336,25 +339,25 @@ export default function ReportsClient() {
         </p>
       )}
 
-      <div className="mt-8 flex flex-wrap justify-center gap-2" role="tablist" aria-label="Report type">
-        {(Object.keys(TYPE_BLURBS) as ReportType[]).map((t) => (
-          <button
-            key={t}
-            type="button"
-            role="tab"
-            aria-selected={type === t}
-            onClick={() => {
-              setType(t);
-              setResult(null);
-              setError("");
-            }}
-            className={`rounded-full px-4 py-2 text-sm font-semibold ${
-              type === t ? "btn-gold" : "btn-ghost"
-            }`}
-          >
-            {t === "transit" ? "Transit report" : t === "year-ahead" ? "Year-ahead reading" : "Relationship comparison"}
-          </button>
-        ))}
+      <div className="mt-8 flex justify-center">
+        <RubberSegment
+          items={[
+            { value: "transit", label: "Transit report" },
+            { value: "year-ahead", label: "Year-ahead reading" },
+            { value: "comparison", label: "Relationship comparison" },
+          ]}
+          value={type}
+          onChange={(v) => {
+            setType(v as ReportType);
+            setResult(null);
+            setError("");
+          }}
+          aria-label="Report type"
+          trackColor="#1a1f2e"
+          thumbColor="#d4af37"
+          textColor="#9ca3af"
+          activeTextColor="#0a0e1a"
+        />
       </div>
       <p className="mt-3 text-center text-sm text-cream/75">{TYPE_BLURBS[type]}</p>
       {type === "comparison" && (
@@ -427,14 +430,24 @@ export default function ReportsClient() {
         </div>
       )}
 
-      <button
+      <SpecularButton
         type="button"
         onClick={generate}
         disabled={generating || outOfOracles}
-        className="btn-gold mt-6 w-full rounded-xl px-4 py-3 font-bold disabled:opacity-50"
+        className="mt-6 w-full"
+        baseColor="#1a1f2e"
+        lineColor="#d4af37"
+        textColor="#ede6d6"
+        tint="#d4af37"
       >
         {generating ? "Generating…" : "Generate report · 1 Oracle"}
-      </button>
+      </SpecularButton>
+      {generating && (
+        <p className="mt-3 flex items-center justify-center gap-2 text-sm text-cream/75">
+          <StatusMark status="running" size={20} color="#d4af37" />
+          Writing your report…
+        </p>
+      )}
 
       {result && (
         <div className="mt-8 rounded-3xl border border-gold/25 bg-panel/70 p-6">

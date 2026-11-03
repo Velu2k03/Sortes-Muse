@@ -449,7 +449,7 @@ export default function ReadingDetail({ id }: { id: string }) {
                     className="btn-gold whitespace-nowrap rounded-xl px-6 py-3 font-bold disabled:opacity-40"
                   >
                     {followUpLoading
-                      ? "Thinking..."
+                      ? "Writing your follow-up…"
                       : (reading.followUps ?? []).length === 0
                         ? "Ask a follow-up \u00b7 free"
                         : "Ask a follow-up \u00b7 1 Oracle"}

@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import ReadingWait, { PROCESSING_LINES } from "@/components/ReadingWait";
+import SlideCommit from "@/components/SlideCommit";
 import { getSpread, drawCards } from "@/lib/tarot";
 import { getCard } from "@/lib/cards";
 import { suggestQuestionRewrite } from "@/lib/question-rewrite";
@@ -198,7 +199,7 @@ export default function IntakeFlow({ slug }: { slug: string }) {
       setProcessingComplete(true);
       await new Promise((resolve) => window.setTimeout(resolve, 500));
       router.push(`/reading/${reading.id}`);
-    } catch {
+    } catch (err) {
       clearInterval(lineTimer);
       // Back to the impression step: the cards stay drawn, so the
       // seeker can retry without paying again or re-drawing.
@@ -211,6 +212,9 @@ export default function IntakeFlow({ slug }: { slug: string }) {
       // positive client grants at all.
       if (!signedIn) await add(1);
       setBusy(false);
+      // SlideCommit needs the rejection to show its error state; the
+      // error message above is already set, so this only signals it.
+      throw err;
     }
   };
 
@@ -570,14 +574,20 @@ export default function IntakeFlow({ slug }: { slug: string }) {
               >
                 Back
               </button>
-              <button
-                type="button"
-                onClick={beginGeneration}
-                disabled={busy}
-                className="btn-gold flex-1 rounded-xl px-6 py-3.5 text-lg font-bold disabled:cursor-wait disabled:opacity-60"
-              >
-                {busy ? "✦ Casting…" : "✦ Reveal my reading"}
-              </button>
+              <div className="flex-1">
+                <SlideCommit
+                  label="✦ Reveal my reading"
+                  doneLabel="Reading ready"
+                  errorLabel="Try again"
+                  onConfirm={beginGeneration}
+                  disabled={busy}
+                  width={250}
+                  trackColor="#1a1f2e"
+                  handleColor="#d4af37"
+                  successColor="#d4af37"
+                  dangerColor="#e57373"
+                />
+              </div>
             </div>
           </motion.div>
         )}

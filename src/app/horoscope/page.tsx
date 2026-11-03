@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { dailyHoroscope, weeklyHoroscope, SUN_SIGNS, type SunSign } from "@/lib/daily";
 import Icon from "@/components/Icon";
@@ -8,6 +8,7 @@ import ThemedDatePicker from "@/components/ThemedDatePicker";
 import OptionWheel from "@/components/OptionWheel";
 import BlurText from "@/components/BlurText";
 import FadeContent from "@/components/FadeContent";
+import RubberSegment from "@/components/RubberSegment";
 import { ClickSpark, StarBorder } from "@/components/ReactBits";
 
 // Daily sun-sign horoscope. Text is written in-house for Sortes, dated,
@@ -17,11 +18,13 @@ import { ClickSpark, StarBorder } from "@/components/ReactBits";
 // and its text is generic sun-sign copy. This page is free, unsaved,
 // and uncharged, and it does not ask for any birth data.
 //
-// Phase A reveal: the reflection is local and instant, so there is no
-// loading state and no fake processing. The user picks a sign and a date,
-// taps Reveal, and the result appears with a short BlurText sign line and
-// a FadeContent body. Under reduced motion the same content renders
-// statically. Changing the sign, date, or view resets to unrevealed.
+// Phase A reveal: the user picks a sign and a date, taps Reveal, and the
+// result appears with a BlurText sign line and a FadeContent body.
+// Phase B adds a short unveiling beat (1200ms, wait-and-reward pacing
+// Velu allowed 2026-11-04). The beat is presentation only: the text is
+// local and already computed, and the status line says unveiling, never
+// calculating. Under reduced motion the reveal is instant. Changing the
+// sign, date, or view resets to unrevealed.
 const MODULE_TODAY = new Date();
 const MODULE_TODAY_KEY = `${MODULE_TODAY.getFullYear()}-${String(MODULE_TODAY.getMonth() + 1).padStart(2, "0")}-${String(MODULE_TODAY.getDate()).padStart(2, "0")}`;
 
@@ -39,6 +42,30 @@ export default function HoroscopePage() {
   }, []);
   const [view, setView] = useState<"daily" | "weekly">("daily");
   const [revealed, setRevealed] = useState(false);
+  const [revealing, setRevealing] = useState(false);
+  const revealTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (revealTimer.current) clearTimeout(revealTimer.current);
+    },
+    [],
+  );
+  const resetReveal = () => {
+    if (revealTimer.current) clearTimeout(revealTimer.current);
+    setRevealed(false);
+    setRevealing(false);
+  };
+  const handleReveal = () => {
+    if (reducedMotion) {
+      setRevealed(true);
+      return;
+    }
+    setRevealing(true);
+    revealTimer.current = setTimeout(() => {
+      setRevealing(false);
+      setRevealed(true);
+    }, 1200);
+  };
   const h = dailyHoroscope(sign, date || todayKey);
   const w = weeklyHoroscope(sign, date || todayKey);
   const signLine = view === "daily" ? `${h.sign} · ${h.date}` : `${w.sign} · Week starting ${w.weekStart}`;
@@ -62,7 +89,7 @@ export default function HoroscopePage() {
             <select
               id="horoscope-sign"
               value={sign}
-              onChange={(e) => { setSign(e.target.value as SunSign); setRevealed(false); }}
+              onChange={(e) => { setSign(e.target.value as SunSign); resetReveal(); }}
               className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream focus:border-gold/60 focus:outline-none"
             >
               {SUN_SIGNS.map((s) => (
@@ -76,7 +103,7 @@ export default function HoroscopePage() {
               <OptionWheel
                 items={[...SUN_SIGNS]}
                 defaultSelected={SUN_SIGNS.indexOf(sign)}
-                onChange={(index) => { setSign(SUN_SIGNS[index]); setRevealed(false); }}
+                onChange={(index) => { setSign(SUN_SIGNS[index]); resetReveal(); }}
                 textColor="#9ca3af"
                 activeColor="#f4d03f"
               />
@@ -87,32 +114,31 @@ export default function HoroscopePage() {
           <label htmlFor="horoscope-date" className="mb-1.5 block text-sm font-medium text-cream">
             Date
           </label>
-          <ThemedDatePicker id="horoscope-date" value={date} onChange={(d) => { setDate(d); setRevealed(false); }} />
+          <ThemedDatePicker id="horoscope-date" value={date} onChange={(d) => { setDate(d); resetReveal(); }} />
         </div>
       </div>
-      <div
-        className="rubber-segment mt-8 mx-auto flex w-full max-w-xs justify-center gap-1 rounded-xl border border-gold/25 bg-panel/70 p-1"
-        data-active={view}
-      >
-        {(["daily", "weekly"] as const).map((v) => (
-          <button
-            key={v}
-            type="button"
-            onClick={() => { setView(v); setRevealed(false); }}
-            aria-pressed={view === v}
-            className={`rubber-segment__button relative z-10 flex-1 rounded-lg px-4 py-2 text-sm font-semibold transition ${view === v ? "text-goldbright" : "text-mist hover:text-cream"}`}
-          >
-            {v === "daily" ? "Daily" : "Weekly"}
-          </button>
-        ))}
+      <div className="mt-8 flex justify-center">
+        <RubberSegment
+          items={[
+            { value: "daily", label: "Daily" },
+            { value: "weekly", label: "Weekly" },
+          ]}
+          value={view}
+          onChange={(v) => { setView(v as "daily" | "weekly"); resetReveal(); }}
+          aria-label="Daily or weekly"
+          trackColor="#1a1f2e"
+          thumbColor="#d4af37"
+          textColor="#9ca3af"
+          activeTextColor="#0a0e1a"
+        />
       </div>
       <div className="mt-8 text-center">
-        {!revealed && (
+        {!revealed && !revealing && (
           <StarBorder radius="1rem">
             <ClickSpark>
               <button
                 type="button"
-                onClick={() => setRevealed(true)}
+                onClick={handleReveal}
                 className="btn-gold rounded-2xl px-8 py-3.5 text-lg font-bold"
               >
                 {view === "daily" ? "Reveal Today's Horoscope" : "Reveal This Week's Horoscope"}
@@ -121,7 +147,11 @@ export default function HoroscopePage() {
           </StarBorder>
         )}
       </div>
-      {!revealed ? (
+      {revealing ? (
+        <p className="mt-6 animate-pulse text-center text-sm text-gold">
+          Unveiling your reflection…
+        </p>
+      ) : !revealed ? (
         <p className="mt-6 text-center text-sm text-cream/60">
           Choose your sign and date, then reveal your reflection. Nothing is charged, and nothing is saved.
         </p>
