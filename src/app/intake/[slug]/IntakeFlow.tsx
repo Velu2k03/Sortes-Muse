@@ -481,6 +481,11 @@ export default function IntakeFlow({ slug }: { slug: string }) {
                 <li>Your story is not saved; your question, first name, and category are saved in your journal until you delete them.</li>
                 <li>Readings are for reflection, never guaranteed predictions.</li>
               </ul>
+              <p className="mt-4 text-sm leading-relaxed text-cream/85">
+                What happens next: the cards are drawn, you give one word
+                for your first impression, then the reading is written for
+                your question.
+              </p>
             </div>
 
             {questionSuggestion && !suggestionDismissed && (

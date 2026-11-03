@@ -719,7 +719,7 @@ export default function ChartsClient() {
 
       {result && (
         <AnimatedContent trigger="mount" wipe="up" blur={8} distance={40} duration={0.8} stagger={0}>
-        <section ref={resultRef} className="magic-glow relative mt-10 scroll-mt-24 rounded-3xl border border-gold/25 bg-panel/40 p-4 sm:p-6" aria-live="polite">
+        <section ref={resultRef} className="num magic-glow relative mt-10 scroll-mt-24 rounded-3xl border border-gold/25 bg-panel/40 p-4 sm:p-6" aria-live="polite">
           {/* Personal Phase 1: the chart visual comes first, but the
               plain-words interpretation must not be hidden below it.
               This jump link is the guided next step for anyone who
@@ -863,6 +863,20 @@ export default function ChartsClient() {
                 ? ZIWEI_LEGEND_ZH.intro
                 : "Free legend. Start here if a word is new, then read your interpretation below."}
             </p>
+            {/* Personal Phase 2: the legend list is secondary detail.
+                It stays available behind one tap, instead of filling
+                the result before the interpretation. Native details
+                keeps it keyboard accessible with no new component. */}
+            <details className="mt-4">
+              <summary className="cursor-pointer text-sm font-semibold text-goldbright">
+                {/* Codex review on PR 46, correct: in Chinese Ziwei
+                    mode the heading and intro switch to Chinese, so
+                    this control must too, or Chinese-only users would
+                    not know how to reveal the legend. */}
+                {result.system === "ziwei" && ziweiLang === "zh"
+                  ? "显示完整图例"
+                  : "Show the full legend"}
+              </summary>
             <div className="mt-4 grid gap-4 text-sm leading-relaxed text-cream/85 sm:grid-cols-2">
               <div>
                 <p className="font-semibold text-cream">Western, in plain words</p>
@@ -919,6 +933,7 @@ export default function ChartsClient() {
                 </p>
               </div>
             </div>
+            </details>
             <p className="mt-4 text-sm text-cream/75">
               {result.system === "ziwei" && ziweiLang === "zh" ? (
                 <><strong className="text-goldbright">下一步：</strong>{ZIWEI_LEGEND_ZH.nextStep}</>

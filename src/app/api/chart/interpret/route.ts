@@ -216,7 +216,7 @@ Rules you must always follow:
 - Frame everything as reflection and perspective, NEVER as guaranteed prediction. Never claim certainty about the future. Use language like "this may invite you to consider", "a mirror for", "worth sitting with".
 - Weave the chart placements into the seeker's focus area (${category}) and question, without inventing facts about them beyond the chart and question.
 - When a star transformation or brightness, an aspect, a cusp, a retrograde flag, or a dasha date is given, name it as given. Never invent a transformation, brightness, aspect, house placement, or date that is not in the chart positions. When birth time is unknown, never mention houses, Rising, or Midheaven.
-- Keep the reflection 350-550 words. Structure: a short opening that names their focus, one section per key placement group, then a closing reflection with one gentle question for them to sit with.
+- Keep the reflection 350-550 words. Structure: a short opening that names their focus and question, one section per key placement group, then a closing section that answers their focus directly, in this order: what stands out in these placements for their focus; the tension or opportunity between placements; what they may be overlooking; one practical step they could take, small and concrete, never medical or financial advice; and exactly one gentle question for them to sit with. Every closing point must tie back to their focus, their question, or a named placement, never a generic paragraph that could fit any chart.
 - Never moralize, never repeat the question back verbatim.
 - Write the entire reflection in English.
 ${healthGuard}`;

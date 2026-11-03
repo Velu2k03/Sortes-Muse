@@ -14,6 +14,7 @@ import TypewriterText from "@/components/TypewriterText";
 import SplitText from "@/components/SplitText";
 import SwipeToast from "@/components/SwipeToast";
 import Breadcrumbs from "@/components/Breadcrumbs";
+import FadeContent from "@/components/FadeContent";
 
 /**
  * Reading detail: full cards + interpretation + share + "Ask a follow-up" upsell.
@@ -196,7 +197,7 @@ export default function ReadingDetail({ id }: { id: string }) {
           { label: reading.spreadName },
         ]}
       />
-      <p className="text-center text-xs uppercase tracking-[0.35em] text-gold">
+      <p className="num text-center text-xs uppercase tracking-[0.35em] text-gold">
         {reading.spreadName} · {date}
       </p>
       <SplitText tag="h1" text="Your reading" className="mt-3 text-center font-display text-5xl text-goldbright" />
@@ -242,6 +243,7 @@ export default function ReadingDetail({ id }: { id: string }) {
           })
         );
         return (
+          <FadeContent trigger="scroll">
           <section className="mx-auto mt-8 max-w-3xl rounded-3xl border border-gold/25 bg-panel/60 p-6 text-left sm:p-8">
             <p className="text-xs uppercase tracking-[0.25em] text-gold">
               About this reading, at a glance
@@ -289,6 +291,7 @@ export default function ReadingDetail({ id }: { id: string }) {
               story was used for this reading only and is not saved here.
             </p>
           </section>
+          </FadeContent>
         );
       })()}
 
@@ -340,11 +343,20 @@ export default function ReadingDetail({ id }: { id: string }) {
                   </span>
                 ))}
               </div>
-              <p className="mt-3 leading-relaxed text-cream/90">
-                {reading.aiGenerated && reading.interpretation
-                  ? null
-                  : orientationMeaning(card, d.reversed)}
-              </p>
+              {reading.aiGenerated && reading.interpretation ? (
+                <details className="mt-3 rounded-xl border border-gold/20 bg-panel/40 px-4 py-3">
+                  <summary className="cursor-pointer text-sm font-semibold text-goldbright">
+                    Traditional meaning, if you want it
+                  </summary>
+                  <p className="mt-2 leading-relaxed text-cream/90">
+                    {orientationMeaning(card, d.reversed)}
+                  </p>
+                </details>
+              ) : (
+                <p className="mt-3 leading-relaxed text-cream/90">
+                  {orientationMeaning(card, d.reversed)}
+                </p>
+              )}
             </section>
           );
         })}
