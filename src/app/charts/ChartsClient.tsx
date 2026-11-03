@@ -18,6 +18,7 @@ import { useAuth } from "@/components/AuthProvider";
 import Icon from "@/components/Icon";
 import GlideSelect from "@/components/GlideSelect";
 import SplitText from "@/components/SplitText";
+import AnimatedContent from "@/components/AnimatedContent";
 import SwipeToast from "@/components/SwipeToast";
 import CometDial from "@/components/CometDial";
 import { chartFreeUsed, markChartFreeUsed, makeReading, type ChartFreeSystem } from "@/lib/storage";
@@ -704,6 +705,7 @@ export default function ChartsClient() {
       </form>
 
       {result && (
+        <AnimatedContent trigger="mount" wipe="up" blur={8} distance={40} duration={0.8} stagger={0}>
         <section ref={resultRef} className="magic-glow relative mt-10 scroll-mt-24 rounded-3xl border border-gold/25 bg-panel/40 p-4 sm:p-6" aria-live="polite">
           {showBurst && <CardBurst count={24} distance={110} />}
           {/* Share card, result level: Audit 3 found the legend
@@ -994,6 +996,7 @@ export default function ChartsClient() {
             )}
           </section>
         </section>
+        </AnimatedContent>
       )}
     </div>
   );

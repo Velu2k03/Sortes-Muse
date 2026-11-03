@@ -7,6 +7,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { getReport, deleteReport } from "@/lib/storage";
 import type { SavedReport } from "@/lib/reports";
 import SplitText from "@/components/SplitText";
+import AnimatedContent from "@/components/AnimatedContent";
 
 export default function ReportDetailClient() {
   const params = useParams();
@@ -92,6 +93,7 @@ export default function ReportDetailClient() {
         {report.type === "transit" ? "Transit report" : report.type === "year-ahead" ? "Year-ahead reading" : "Relationship comparison"}
       </p>
       <SplitText tag="h1" text={report.title} className="mt-2 font-display text-5xl text-goldbright" />
+      <AnimatedContent trigger="mount" wipe="up" blur={8} distance={40} duration={0.8} stagger={0.08}>
       <p className="mt-2 text-sm text-mist">
         Saved {new Date(report.createdAt).toLocaleDateString()} · This report never expires.
       </p>
@@ -274,6 +276,7 @@ export default function ReportDetailClient() {
           </>
         )}
       </div>
+      </AnimatedContent>
 
       <div className="mt-12 border-t border-gold/20 pt-6">
         {deleteError && (

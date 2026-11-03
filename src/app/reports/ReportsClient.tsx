@@ -8,6 +8,8 @@ import SpecularButton from "@/components/SpecularButton";
 import StatusMark from "@/components/StatusMark";
 import SwipeToast from "@/components/SwipeToast";
 import CallChip from "@/components/CallChip";
+import AnimatedContent from "@/components/AnimatedContent";
+import Counter from "@/components/Counter";
 import { getReports, saveReport, spendCredit } from "@/lib/storage";
 import type { SavedReport, ReportType } from "@/lib/reports";
 
@@ -355,7 +357,7 @@ export default function ReportsClient() {
 
       {!loading && credits !== null && (
         <p className="mt-4 text-center text-sm text-cream">
-          Your balance: <strong className="text-goldbright">{credits} {credits === 1 ? "Oracle" : "Oracles"}</strong>
+          Your balance: <strong className="text-goldbright"><Counter value={credits} fontSize={14} /> {credits === 1 ? "Oracle" : "Oracles"}</strong>
           {user ? null : " (device wallet; sign in to keep reports on your account)"}
         </p>
       )}
@@ -510,6 +512,7 @@ export default function ReportsClient() {
       )}
 
       {result && (
+        <AnimatedContent trigger="mount" wipe="up" blur={8} distance={40} duration={0.8} stagger={0.08}>
         <div className="mt-8 rounded-3xl border border-gold/25 bg-panel/70 p-6">
           <p className="text-xs uppercase tracking-[0.35em] text-gold">Your report</p>
           <h2 className="mt-1 font-display text-3xl text-goldbright">{result.title}</h2>
@@ -532,6 +535,7 @@ export default function ReportsClient() {
           )}
           <p className="mt-4 whitespace-pre-wrap leading-relaxed text-cream/90">{result.interpretation}</p>
         </div>
+        </AnimatedContent>
       )}
 
       <div className="mt-12">
