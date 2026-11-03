@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import ReadingWait, { PROCESSING_LINES } from "@/components/ReadingWait";
+import TarotCard from "@/components/TarotCard";
 import SlideCommit from "@/components/SlideCommit";
 import SwipeToast from "@/components/SwipeToast";
 import Breadcrumbs from "@/components/Breadcrumbs";
@@ -554,28 +555,29 @@ export default function IntakeFlow({ slug }: { slug: string }) {
               First, what do you see?
             </h1>
             <p className="mx-auto mt-3 max-w-md text-sm text-cream/75">
-              Before the reading is written, give one word for your first
-              reaction to these cards. It is optional, and it travels
-              with the reading.
+              One word, if you like. It travels with the reading.
             </p>
 
-            <ul className="mx-auto mt-8 max-w-md space-y-2 text-left">
+            {/* Cards, not names only, approved 2026-11-04: the
+                impression step used to list card names as text, so
+                "what do you see" had nothing to see, and a reversed
+                card had no visual cue. Now the drawn faces show,
+                reversed cards rotate 180 degrees via TarotCard,
+                and the position is the card label. Smaller cards
+                for larger spreads so the row fits at 390px. */}
+            <div className="mx-auto mt-8 flex max-w-2xl flex-wrap items-start justify-center gap-4 sm:gap-6">
               {drawnCards.map((d) => (
-                <li
+                <TarotCard
                   key={d.positionKey}
-                  className="rounded-2xl border border-gold/25 bg-panel/60 px-4 py-3 text-sm text-cream"
-                >
-                  <span className="text-xs uppercase tracking-[0.2em] text-mist">
-                    {d.position} ·{" "}
-                  </span>
-                  {getCard(d.cardId).name}
-                  <span className="text-mist">
-                    {" "}
-                    · {d.reversed ? "reversed" : "upright"}
-                  </span>
-                </li>
+                  cardId={d.cardId}
+                  reversed={d.reversed}
+                  revealed
+                  disabled
+                  size={drawnCards.length > 3 ? "sm" : "md"}
+                  label={d.position}
+                />
               ))}
-            </ul>
+            </div>
 
             <div className="mx-auto mt-6 max-w-md">
               <label

@@ -13,7 +13,7 @@ import type { WesternResult } from "@/lib/charts";
 // unchanged; the planet table below remains the exact primary.
 export default function WesternWheel({ result }: { result: WesternResult }) {
   const [selectedPlanet, setSelectedPlanet] = useState<string | null>(null);
-  const [wheelTheme, setWheelTheme] = useState<"dark" | "light">("dark");
+  const [wheelTheme, setWheelTheme] = useState<"dark" | "light">("light");
   const reduce = useReducedMotion();
   useEffect(() => {
     const sync = () => {

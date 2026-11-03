@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { CREDIT_PACKS, perReadingPrice } from "@/lib/site";
+import { CREDIT_PACKS, apiPackId, perReadingPrice } from "@/lib/site";
 import { getPurchaseHistory, type Purchase } from "@/lib/storage";
 import { useAuth } from "@/components/AuthProvider";
 import CheckoutModal from "@/components/CheckoutModal";
@@ -45,6 +45,10 @@ export default function CreditsPage() {
   const searchParams = useSearchParams();
   const justPurchased = searchParams.get("purchase") === "success";
   const [open, setOpen] = useState(false);
+  const [modalPack, setModalPack] = useState<string | null>(null);
+  const [directProcessing, setDirectProcessing] = useState<string | null>(null);
+  const [directError, setDirectError] = useState<string | null>(null);
+  const [directFailed, setDirectFailed] = useState<string | null>(null);
   const [reducedMotion, setReducedMotion] = useState(false);
   useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -53,11 +57,11 @@ export default function CreditsPage() {
     mq.addEventListener("change", sync);
     return () => mq.removeEventListener("change", sync);
   }, []);
-  // PixelCard needs an explicit theme (its canvas does not read the
-  // CSS variables), so track the document theme the same way theme.js
-  // sets it. The popular card renders gold pixels on a dark surface in
-  // dark mode and dark-gold pixels on a light surface in light mode.
-  const [siteTheme, setSiteTheme] = useState<"dark" | "light">("dark");
+  // Counter numbers take a hard colour, not a theme token, so
+  // track the document theme the same way theme.js sets it, and
+  // pass a dark colour in light mode and a light colour in dark
+  // mode. See the light numbers fix, 2026-11-04.
+  const [siteTheme, setSiteTheme] = useState<"dark" | "light">("light");
   useEffect(() => {
     const sync = () =>
       setSiteTheme(document.documentElement.dataset.theme === "light" ? "light" : "dark");
@@ -66,6 +70,47 @@ export default function CreditsPage() {
     obs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
     return () => obs.disconnect();
   }, []);
+  // Direct checkout from a pack card, as approved 2026-11-04: the
+  // card button goes straight to Lemon Squeezy for that pack, no
+  // re-pick in the modal. Signed-in visitors have an email on file,
+  // so they redirect at once. Guests have no email yet and the
+  // checkout API needs one before Lemon Squeezy, so a guest gets
+  // the modal only as the email step, with their pack marked
+  // Selected, not as a second pick. Demo mode (Lemon not
+  // configured) also falls back to the modal, where demo Buy lives.
+  const buyDirect = async (packId: string) => {
+    setDirectError(null);
+    setDirectFailed(null);
+    if (!user) {
+      setModalPack(packId);
+      setOpen(true);
+      return;
+    }
+    setDirectProcessing(packId);
+    try {
+      const enabledRes = await fetch("/api/checkout/lemonsqueezy");
+      const enabledData = await enabledRes.json().catch(() => ({}));
+      if (!enabledData.enabled) {
+        setModalPack(packId);
+        setOpen(true);
+        return;
+      }
+      const res = await fetch("/api/checkout/lemonsqueezy", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ packId: apiPackId(packId) }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error ?? "Checkout failed.");
+      if (!data.url) throw new Error("Checkout failed.");
+      window.location.href = data.url;
+    } catch (err) {
+      setDirectError(err instanceof Error ? err.message : "Checkout failed.");
+      setDirectFailed(packId);
+    } finally {
+      setDirectProcessing(null);
+    }
+  };
   const [localHistory, setLocalHistory] = useState<Purchase[]>([]);
   const [serverTx, setServerTx] = useState<ServerTx[] | null>(null);
 
@@ -100,7 +145,7 @@ export default function CreditsPage() {
           <div className="mt-6 flex items-baseline justify-center gap-2">
             <Counter
               value={credits ?? 0}
-              textColor="#ede6d6"
+              textColor={siteTheme === "light" ? "#1c1a15" : "#ede6d6"}
               fontSize={72}
               fontWeight="bold"
             />
@@ -126,52 +171,83 @@ export default function CreditsPage() {
 
       <div className="mt-10 space-y-4">
         {CREDIT_PACKS.map((p, i) => {
+          // Centered cards, approved 2026-11-04: every card is
+          // centered, like the React Bits showcase cards, not left
+          // aligned. The popular card is the colored one, a gold
+          // card with dark text in both themes, so it stands out
+          // against the panel cards. On a gold card the theme
+          // tokens would be wrong, so text colours are dark here.
+          const colored = !!p.popular;
+          const nameClass = colored ? "text-[#14100a]" : "text-cream";
+          const mistClass = colored ? "text-[#14100a]/70" : "text-mist";
+          const bodyClass = colored ? "text-[#14100a]/85" : "text-cream/85";
+          const priceColor = colored
+            ? "#14100a"
+            : siteTheme === "light"
+              ? "#7c5e00"
+              : "#f4d03f";
           const body = (
-            <>
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex min-w-0 items-center gap-3">
-                  <img
-                    src={PACK_IMAGES[p.id]}
-                    alt=""
-                    aria-hidden="true"
-                    className="h-9 w-9 shrink-0 rounded-xl border border-gold/30 object-cover"
-                  />
-                  <p className="font-display text-xl text-cream">{p.name}</p>
-                </div>
-                {p.popular && (
-                  <span className="shrink-0 whitespace-nowrap pt-1 text-xs font-bold text-goldbright">
-                    Most popular
-                  </span>
-                )}
+            <div className="text-center">
+              <img
+                src={PACK_IMAGES[p.id]}
+                alt=""
+                aria-hidden="true"
+                className="mx-auto h-12 w-12 rounded-xl border border-gold/30 object-cover"
+              />
+              <p className={`mt-3 font-display text-2xl ${nameClass}`}>{p.name}</p>
+              {p.popular && (
+                <span className="mt-2 inline-block rounded-full bg-[#14100a] px-3 py-1 text-xs font-bold text-[#f4d03f]">
+                  Most popular
+                </span>
+              )}
+              <p className={`mt-2 text-sm ${mistClass}`}>{PACK_TAGLINES[p.id]}</p>
+              {/* Stylish number: React Bits Counter, rolling digits
+                  in the display serif, not plain Inter. Reduced
+                  motion shows the final price at once, see Counter. */}
+              <div className="mt-5 flex justify-center">
+                <Counter
+                  value={p.price}
+                  decimals={2}
+                  prefix="$"
+                  fontSize={56}
+                  fontWeight="bold"
+                  textColor={priceColor}
+                  className="font-display"
+                />
               </div>
-              <p className="mt-1 text-sm text-mist">{PACK_TAGLINES[p.id]}</p>
-              <p className="num mt-5 text-5xl font-bold text-cream">
-                ${p.price.toFixed(2)}
+              <p className={`mt-1 text-sm ${mistClass}`}>Single payment</p>
+              <p className={`mt-3 text-base ${nameClass}`}>
+                <span className="font-display text-xl">{p.readings}</span> Oracles · ${perReadingPrice(p)} per Oracle
               </p>
-              <p className="mt-1 text-sm text-mist">Single payment</p>
-              <p className="mt-3 text-base text-cream">
-                <span className="font-body text-cream">{p.readings}</span> Oracles · ${perReadingPrice(p)} per Oracle
-              </p>
-              <ul className="mt-4 space-y-2 text-sm text-cream/85">
+              {/* 3 points only, approved 2026-11-04. Dropped point:
+                  "No tarot knowledge needed", the least specific
+                  of the four. Kept: included products, one-reading
+                  story use, history. */}
+              <ul className={`mx-auto mt-4 max-w-xs space-y-2 text-sm ${bodyClass}`}>
                 <li>✓ Tarot readings, birth charts, and reports included</li>
                 <li>✓ Your story is used for one reading only</li>
                 <li>✓ Your readings stay in your history</li>
-                <li>✓ No tarot knowledge needed</li>
               </ul>
               {/* Audit 4: every pack uses the same solid btn-gold, same
                   padding, weight, and size. */}
-              {/* The button opens the top-up modal, it does not buy
-                  directly, so it carries no price or quantity: the card
-                  already shows both just above it, and repeating them
-                  in the button read as the same text twice. */}
+              {/* Direct checkout, approved 2026-11-04: this button goes
+                  straight to Lemon Squeezy for this card's pack.
+                  The modal stays for spreads, header, and reading
+                  flows, where no pack was picked yet, and for guests
+                  and demo mode here, where an email step or demo Buy
+                  is still needed. */}
               <button
                 type="button"
-                onClick={() => setOpen(true)}
-                className="btn-gold mt-5 w-full rounded-xl px-4 py-3 font-bold"
+                disabled={directProcessing !== null}
+                onClick={() => void buyDirect(p.id)}
+                className="btn-gold mt-5 w-full rounded-xl px-4 py-3 font-bold disabled:opacity-60"
               >
-                Top up Oracles
+                {directProcessing === p.id ? "…" : "Checkout"}
               </button>
-            </>
+              {directError && directFailed === p.id && (
+                <p className="mt-2 text-sm alert-error-text">{directError}</p>
+              )}
+            </div>
           );
           return (
             <motion.div
@@ -179,11 +255,22 @@ export default function CreditsPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.04, duration: 0.4 }}
-              className={p.popular ? "relative" : "relative rounded-3xl border border-gold/20 bg-panel/60 p-6"}
+              className="relative"
             >
               {p.popular ? (
+                // PixelCard restored, not removed, 2026-11-04: the
+                // popular card is a React Bits PixelCard again, with
+                // the centered body, 3 points, and Counter price from
+                // the redesign inside it. The gold colour is an inline
+                // background on the PixelCard itself, so it wins over
+                // the card surface in both themes, and the pixel
+                // colours are dark gold plus light gold so they still
+                // show on gold. PixelCard is now fluid, so the card
+                // is full width and grows with its content instead
+                // of clipping at 300x400.
                 <PixelCard
                   variant="yellow"
+                  colors={["#713f12", "#a16207", "#fef08a"]}
                   gap={4}
                   pixelSize={1.8}
                   speed={20}
@@ -191,12 +278,15 @@ export default function CreditsPage() {
                   glowColor="#eab308"
                   theme={siteTheme}
                   radius={24}
-                  className="border border-gold/70"
+                  className="border border-gold/70 shadow-[0_24px_48px_-24px_rgba(212,175,55,0.55)]"
+                  style={{ background: "linear-gradient(180deg,#e8c55a,#d4af37 55%,#b8962e)" }}
                 >
-                  <div className="relative z-10 p-6">{body}</div>
+                  <div className="relative z-10 w-full p-6">{body}</div>
                 </PixelCard>
               ) : (
-                body
+                <div className="relative rounded-3xl border border-gold/20 bg-panel/60 p-6">
+                  {body}
+                </div>
               )}
             </motion.div>
           );
@@ -269,7 +359,7 @@ export default function CreditsPage() {
         <SampleReading />
       </div>
 
-      <CheckoutModal open={open} onClose={() => setOpen(false)} />
+      <CheckoutModal open={open} onClose={() => setOpen(false)} initialPackId={modalPack} />
     </div>
   );
 }

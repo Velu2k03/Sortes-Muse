@@ -223,6 +223,17 @@ const TYPE_BLURBS: Record<ReportType, string> = {
 export default function ReportsClient() {
   const { user, credits, loading, refresh } = useAuth();
   const [type, setType] = useState<ReportType>("transit");
+  // Segment and button colours bypass the theme tokens, so track the
+  // document theme the same way the credits page does, 2026-11-04.
+  const [siteTheme, setSiteTheme] = useState<"dark" | "light">("light");
+  useEffect(() => {
+    const sync = () =>
+      setSiteTheme(document.documentElement.dataset.theme === "light" ? "light" : "dark");
+    sync();
+    const obs = new MutationObserver(sync);
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    return () => obs.disconnect();
+  }, []);
   const [birth, setBirth] = useState<BirthFormState>(emptyBirth);
   const [birthB, setBirthB] = useState<BirthFormState>(emptyBirth);
   const [targetDate, setTargetDate] = useState(() => new Date().toISOString().slice(0, 10));
@@ -376,10 +387,11 @@ export default function ReportsClient() {
             setError("");
           }}
           aria-label="Report type"
-          trackColor="#1a1f2e"
+          trackColor={siteTheme === "light" ? "#ffffff" : "#1a1f2e"}
           thumbColor="#d4af37"
-          textColor="#9ca3af"
+          textColor={siteTheme === "light" ? "#45423c" : "#9ca3af"}
           activeTextColor="#0a0e1a"
+          className={siteTheme === "light" ? "ring-1 ring-gold/25" : ""}
         />
       </div>
       <p className="mt-3 text-center text-sm text-cream/75">{TYPE_BLURBS[type]}</p>
@@ -484,9 +496,9 @@ export default function ReportsClient() {
         onClick={generate}
         disabled={generating || outOfOracles}
         className="mt-6 w-full"
-        baseColor="#1a1f2e"
-        lineColor="#d4af37"
-        textColor="#ede6d6"
+        baseColor={siteTheme === "light" ? "#ffffff" : "#1a1f2e"}
+        lineColor={siteTheme === "light" ? "#8a6d0a" : "#d4af37"}
+        textColor={siteTheme === "light" ? "#1c1a15" : "#ede6d6"}
         tint="#d4af37"
       >
         {generating ? "Generating…" : "Generate report · 1 Oracle"}
