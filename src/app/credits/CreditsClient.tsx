@@ -31,6 +31,15 @@ const PACK_IMAGES: Record<string, string> = {
   "pack-30": "/packs/celestial-treasury.jpg",
 };
 
+// Positioning line under each pack name, the way premium pricing cards
+// name who the tier is for. Kept local like PACK_IMAGES so no pricing
+// file changes.
+const PACK_TAGLINES: Record<string, string> = {
+  "pack-5": "For your first readings",
+  "pack-12": "For regular readings",
+  "pack-30": "For deep exploration",
+};
+
 export default function CreditsPage() {
   const { credits, user } = useAuth();
   const searchParams = useSearchParams();
@@ -135,6 +144,7 @@ export default function CreditsPage() {
                   </span>
                 )}
               </div>
+              <p className="mt-1 text-sm text-mist">{PACK_TAGLINES[p.id]}</p>
               <p className="num mt-5 text-5xl font-bold text-cream">
                 ${p.price.toFixed(2)}
               </p>
@@ -145,8 +155,8 @@ export default function CreditsPage() {
               <ul className="mt-4 space-y-2 text-sm text-cream/85">
                 <li>✓ 1 Oracle = 1 full reading</li>
                 <li>✓ Oracles never expire</li>
-                <li>✓ Any spread, any chart system</li>
-                <li>✓ No subscription, pay once</li>
+                <li>✓ All 6 spreads, all 3 chart systems</li>
+                <li>✓ One payment, no subscription</li>
               </ul>
               {/* Audit 4: every pack uses the same solid btn-gold, same
                   padding, weight, and size. */}
