@@ -103,14 +103,17 @@ export default function Home() {
                 <Icon name="sparkle" size={20} className="mr-2 inline-block align-[-3px]" />Draw a Card
               </Link>
             </StarBorder>
-            <StarBorder radius="1rem" className="shrink-0">
-              <Link
-                href="/spreads"
-                className="btn-gold shrink-0 whitespace-nowrap rounded-2xl px-8 py-4 text-center text-lg font-semibold"
-              >
-                Begin a Reading <Icon name="arrowRight" size={20} className="ml-2 inline-block align-[-3px]" />
-              </Link>
-            </StarBorder>
+            {/* Phase 2: one dominant action. Draw a Card stays gold
+                with the animated border. Begin a Reading is now a
+                quiet secondary button, same size, no gold fill and
+                no StarBorder, so the first view has one clear
+                primary action instead of two equally strong ones. */}
+            <Link
+              href="/spreads"
+              className="btn-ghost shrink-0 whitespace-nowrap rounded-2xl px-8 py-4 text-center text-lg font-semibold"
+            >
+              Begin a Reading <Icon name="arrowRight" size={20} className="ml-2 inline-block align-[-3px]" />
+            </Link>
           </motion.div>
           <motion.p
             initial={false}
@@ -118,6 +121,24 @@ export default function Home() {
             className="mt-5 text-sm text-mist"
           >
             Your first Quick Insight reading is free. No card, no account.
+          </motion.p>
+          {/* Phase 2: Oracle value in plain cash terms, without a
+              fixed per-Oracle price, because that price varies by
+              pack ($0.80 at 5 for $3.99, $0.67 at 12 for $7.99,
+              $0.50 at 30 for $14.99). After the free first reading,
+              every reading is 1 Oracle, packs start at $3.99, and
+              Oracles never expire. No subscription is mentioned
+              because there is none to sell. */}
+          <motion.p
+            initial={false}
+            animate={{ opacity: 1 }}
+            className="mt-3 text-sm text-cream/75"
+          >
+            After that, a reading is 1 Oracle. Oracle packs start at{" "}
+            <Link href="/credits" className="font-semibold text-goldbright underline underline-offset-4">
+              $3.99 for 5 Oracles
+            </Link>
+            , and Oracles never expire. No subscription.
           </motion.p>
           <motion.p
             initial={false}
@@ -141,10 +162,10 @@ export default function Home() {
         </h2>
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {[
-            { href: "/spreads/love-insight", label: "Love", text: "You, them, and the connection." },
-            { href: "/spreads/career-path", label: "Career", text: "Current, obstacle, and next step." },
-            { href: "/spreads/weekly-outlook", label: "The week ahead", text: "Focus, challenge, and opportunity." },
-            { href: "/spreads/quick-insight", label: "A general question", text: "One card, one clear mirror. First reading free." },
+            { href: "/spreads/love-insight", label: "Love", text: "You, them, and the connection.", cost: "1 Oracle" },
+            { href: "/spreads/career-path", label: "Career", text: "Current, obstacle, and next step.", cost: "1 Oracle" },
+            { href: "/spreads/weekly-outlook", label: "The week ahead", text: "Focus, challenge, and opportunity.", cost: "1 Oracle" },
+            { href: "/spreads/quick-insight", label: "A general question", text: "One card, one clear mirror. First reading free.", cost: "First reading free, then 1 Oracle" },
           ].map((s) => (
             <Link
               key={s.href}
@@ -153,6 +174,7 @@ export default function Home() {
             >
               <p className="font-display text-2xl text-goldbright">{s.label}</p>
               <p className="mt-2 text-sm leading-relaxed text-cream/75">{s.text}</p>
+              <p className="mt-3 text-xs font-semibold uppercase tracking-[0.2em] text-gold">{s.cost}</p>
             </Link>
           ))}
         </div>
@@ -232,6 +254,50 @@ export default function Home() {
 
       {/* SAMPLE READING TEASER */}
       <SampleReading />
+
+      {/* TRUST STRIP, Phase 2: no invented proof, no counts,
+          no outcomes. Only claims already stated in
+          Sortes copy: reflection not prediction, story used for
+          one reading only, Oracles never expire, no subscription. */}
+      <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
+        <motion.div {...fadeUp}>
+          <h2 className="text-center font-display text-3xl text-goldbright sm:text-4xl">
+            What Sortes will, and will not, do
+          </h2>
+          <div className="mt-8 grid gap-4 sm:grid-cols-3">
+            <div className="rounded-2xl border border-gold/20 bg-panel/60 p-6">
+              <p className="font-display text-2xl text-gold">A mirror, not a verdict</p>
+              <p className="mt-2 text-sm leading-relaxed text-cream/80">
+                Readings are for reflection and perspective, never
+                guaranteed predictions about what will happen.
+              </p>
+            </div>
+            <div className="rounded-2xl border border-gold/20 bg-panel/60 p-6">
+              <p className="font-display text-2xl text-gold">Your story stays with one reading</p>
+              <p className="mt-2 text-sm leading-relaxed text-cream/80">
+                The story you tell is used for that one reading only.
+                Readings are saved to your journal, so you can return
+                to them, and your daily card is always free.
+              </p>
+            </div>
+            <div className="rounded-2xl border border-gold/20 bg-panel/60 p-6">
+              <p className="font-display text-2xl text-gold">Pay once, use when you like</p>
+              <p className="mt-2 text-sm leading-relaxed text-cream/80">
+                Oracles never expire, and there is no subscription.
+                A reading is 1 Oracle, and packs start at $3.99 for
+                5 Oracles.
+              </p>
+            </div>
+          </div>
+          <p className="mt-6 text-center text-sm text-cream/60">
+            The full wording is in{" "}
+            <Link href="/faq" className="font-semibold text-goldbright underline underline-offset-4">FAQ</Link>
+            {" "}and{" "}
+            <Link href="/privacy" className="font-semibold text-goldbright underline underline-offset-4">Privacy</Link>
+            .
+          </p>
+        </motion.div>
+      </section>
 
       {/* DAILY CARD TEASER */}
       <section className="mx-auto max-w-4xl px-4 py-16 text-center sm:px-6">
