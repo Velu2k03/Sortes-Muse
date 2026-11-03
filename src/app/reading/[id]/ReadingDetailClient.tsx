@@ -222,6 +222,11 @@ export default function ReadingDetail({ id }: { id: string }) {
           reading starts from your question and your cards, not from
           generic card meanings. */}
       {(() => {
+        // Codex review on PR 45, correct: chart readings are stored
+        // with cards [] and a chartSummary, so this tarot-specific
+        // card would report 0 cards and a story that was never used.
+        // It renders for tarot readings only.
+        if (reading.chartSummary || reading.cards.length === 0) return null;
         const facts = computeSpreadFacts(
           reading.cards.map((d) => {
             const c = getCard(d.cardId);

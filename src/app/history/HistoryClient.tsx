@@ -170,7 +170,11 @@ export default function HistoryPage() {
                 .trim();
             const groups = new Map<string, Reading[]>();
             for (const r of history) {
-              if (!r.question) continue;
+              // Codex review on PR 45, correct: chart readings cannot
+              // take threaded follow-ups, so a repeated-question group
+              // must never select a chart as its latest entry and
+              // promise a follow-up that does not exist there.
+              if (!r.question || r.chartSummary) continue;
               const key = norm(r.question);
               if (!key) continue;
               const list = groups.get(key) ?? [];
