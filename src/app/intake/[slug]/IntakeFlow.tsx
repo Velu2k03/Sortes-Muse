@@ -408,8 +408,7 @@ export default function IntakeFlow({ slug }: { slug: string }) {
               <dl className="space-y-4 text-sm">
                 <div>
                   <dt className="text-xs uppercase tracking-[0.2em] text-mist">Spread</dt>
-                  <dd className="mt-1 font-display text-xl text-cream">{spread.name}</dd>
-                  <dd className="text-lg font-bold text-goldbright">{spread.cards} {spread.cards === 1 ? "card" : "cards"}</dd>
+                  <dd className="mt-1 font-display text-xl text-cream">{spread.name} · <span className="font-body font-bold text-goldbright">{spread.cards}</span> {spread.cards === 1 ? "card" : "cards"}</dd>
                 </div>
                 <div>
                   <dt className="text-xs uppercase tracking-[0.2em] text-mist">Area</dt>

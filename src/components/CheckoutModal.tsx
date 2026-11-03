@@ -180,10 +180,7 @@ export default function CheckoutModal({ open, onClose, reason }: Props) {
                   <div className="flex items-center justify-between gap-3">
                     <div>
                       <p className="font-display text-xl text-cream">
-                        {p.name}
-                      </p>
-                      <p className="mt-0.5 text-lg font-bold text-goldbright">
-                        {p.readings} Oracles
+                        {p.name} · <span className="font-body font-bold text-goldbright">{p.readings}</span> Oracles
                       </p>
                       <p className="text-xs text-mist">
                         ${perReadingPrice(p)} per Oracle

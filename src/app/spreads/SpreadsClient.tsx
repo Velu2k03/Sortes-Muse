@@ -86,8 +86,8 @@ export default function SpreadsPage() {
             <div className="flex flex-1 flex-col p-6">
               <div className="flex items-baseline justify-between gap-3">
                 <h2 className="font-display text-3xl text-cream">{s.name}</h2>
-                <p className="shrink-0 whitespace-nowrap text-xl font-bold text-goldbright">
-                  {s.slug === "quick-insight" && !usedFree ? "Free" : "1 Oracle"}
+                <p className="shrink-0 whitespace-nowrap font-display text-xl text-goldbright">
+                  {s.slug === "quick-insight" && !usedFree ? "Free" : (<><span className="font-body font-bold">1</span> Oracle</>)}
                 </p>
               </div>
               <p className="mt-1 text-xs uppercase tracking-[0.2em] text-mist">
