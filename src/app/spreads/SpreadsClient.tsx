@@ -105,13 +105,27 @@ export default function SpreadsPage() {
                 ))}
               </ul>
               {locked ? (
-                <button
-                  type="button"
-                  onClick={() => setCheckoutOpen(true)}
-                  className="btn-gold mt-5 rounded-xl px-4 py-3 text-center font-bold"
-                >
-                  Get Oracles to begin
-                </button>
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setCheckoutOpen(true)}
+                    className="btn-gold mt-5 rounded-xl px-4 py-3 text-center font-bold"
+                  >
+                    Get Oracles to begin
+                  </button>
+                  {/* Phase 5: locked cards used to offer only the
+                      checkout button, so a spread detail page was
+                      not discoverable from the index. This link
+                      goes to the spread detail, which still gates
+                      the reading itself, so nothing about the gate,
+                      cost, or spread data changes. */}
+                  <Link
+                    href={`/spreads/${s.slug}`}
+                    className="mt-3 block text-center text-sm font-semibold text-goldbright underline underline-offset-4"
+                  >
+                    View spread detail
+                  </Link>
+                </>
               ) : (
                 <Link
                   href={`/spreads/${s.slug}`}
