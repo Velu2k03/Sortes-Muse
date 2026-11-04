@@ -64,6 +64,21 @@ export default function InstallBanner() {
     hide();
   };
 
+  // WCAG 2.4.11 focus not obscured (minimum): a fixed bottom banner
+  // can entirely cover a focused element near the foot of the page.
+  // While the banner is shown, reserve its height as body padding so
+  // content can scroll fully above it; the banner then overlays
+  // padding, never content. Padding is restored on dismiss/unmount.
+  const bannerShown = visible || showIOS;
+  useEffect(() => {
+    if (!bannerShown) return;
+    const prev = document.body.style.paddingBottom;
+    document.body.style.paddingBottom = "190px";
+    return () => {
+      document.body.style.paddingBottom = prev;
+    };
+  }, [bannerShown]);
+
   if (!visible && !showIOS) return null;
 
   return (

@@ -670,4 +670,10 @@ console.log("charts-check: all assertions passed");
   assert.ok(faqList.includes("Expand all") && faqList.includes("Collapse all") && faqList.includes("Jump to a question"), "FAQ must offer expand all, collapse all, and anchor links");
   assert.ok(spreadsClient2.includes("Readings are for reflection and perspective only"), "spreads index must carry the reflection disclaimer");
   console.log("personal-phase4: guide costs, FAQ controls, spread disclaimer: all source assertions passed");
+
+  // Deep UX Batch D (review fixes): InstallBanner must not obscure
+  // focused content at the foot of the page.
+  const installBannerD = fs.readFileSync("src/components/InstallBanner.tsx", "utf8");
+  assert.ok(installBannerD.includes('document.body.style.paddingBottom = "190px"'), "InstallBanner must reserve body padding while shown so focused content scrolls above it");
+  console.log("deep-ux-batch-d: InstallBanner focus-obscured fix: all source assertions passed");
 }
