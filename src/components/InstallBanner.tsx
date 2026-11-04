@@ -88,7 +88,12 @@ export default function InstallBanner() {
       const active = document.activeElement as HTMLElement | null;
       if (active && active !== document.body && h > 0) {
         const rect = active.getBoundingClientRect();
-        const bannerTop = window.innerHeight - h;
+        // Codex fresh review on PR 53, correct: at sm widths and
+        // above the banner sits 24px above the viewport bottom
+        // (bottom-6), so innerHeight minus height is 24px below
+        // the real banner top and a control in that strip stays
+        // covered. Use the rendered top edge instead.
+        const bannerTop = bannerRef.current?.getBoundingClientRect().top ?? window.innerHeight - h;
         if (rect.bottom > bannerTop && rect.top < window.innerHeight) {
           window.scrollBy(0, rect.bottom - bannerTop + 16);
         }
