@@ -43,10 +43,8 @@ export default function SampleReading() {
             See what a personalized reading feels like
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-cream/75">
-            Every paid reading is woven around{" "}
-            <em>your</em> story and your exact question. Below is an example
-            reading, invented to show the format. Your reading would be written
-            around your story and question.
+            An invented example, showing the format. Yours is written around
+            your story and question.
           </p>
         </motion.div>
 
@@ -102,10 +100,6 @@ export default function SampleReading() {
           </div>
 
           <div className="border-t border-gold/15 px-6 py-6 text-center sm:px-10">
-            <p className="text-sm text-cream/75">
-              Yours would be written around <em>your</em> story, your names,
-              your exact question.
-            </p>
             <Link
               href="/spreads/past-present-future"
               className="btn-gold mt-4 inline-block rounded-2xl px-8 py-3.5 font-bold"

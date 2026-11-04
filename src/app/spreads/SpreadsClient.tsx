@@ -39,14 +39,12 @@ export default function SpreadsPage() {
         <p className="mx-auto mt-4 max-w-xl text-cream/75">
           {usedFree
             ? "Each reading uses 1 Oracle, any spread. Oracles never expire."
-            : "Your first Quick Insight reading is free, no card required. Other spreads need 1 Oracle, which is why they show Get Oracles to begin until you have one. After your free Quick Insight, every reading, any spread, is 1 Oracle."}
+            : "First Quick Insight free. After that, 1 Oracle per reading, any spread."}
         </p>
         {/* Personal Phase 4, Decision 16: reflection disclaimer on
             the spread pages themselves, not only on FAQ. */}
         <p className="mx-auto mt-3 max-w-xl text-xs italic text-mist">
-          Readings are for reflection and perspective only, never
-          guaranteed predictions, and never a replacement for
-          professional advice.
+          For reflection, not prediction.
         </p>
       </div>
 
@@ -59,8 +57,7 @@ export default function SpreadsPage() {
             Start here, it is free
           </p>
           <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-cream/75">
-            Your first Quick Insight reading costs no Oracle and asks one
-            question. After that, every reading, any spread, is 1 Oracle.
+            One question. No Oracle, no card, no account.
           </p>
           <GlareHover className="mt-4 rounded-xl">
             <Link
@@ -172,13 +169,13 @@ export default function SpreadsPage() {
       </div>
 
       <div className="mx-auto mt-12 max-w-2xl rounded-2xl border border-gold/20 bg-panel/50 p-6 text-center">
-        <p className="font-display text-2xl text-goldbright">How Oracles work</p>
+        <p className="font-display text-2xl text-goldbright">Oracles</p>
         <p className="mt-2 text-sm leading-relaxed text-cream/75">
-          You pay only for Oracle packs, never per reading, never twice.
-          One Oracle pays for one full reading of any spread, with an AI
-          interpretation for your question. Your daily card is always free
-          and never uses an Oracle. Oracles never expire. No subscriptions.
-          The one free reading is Quick Insight only.
+          1 Oracle per reading. First Quick Insight free. Oracles never
+          expire, no subscription.{" "}
+          <Link href="/faq#what-are-the-five-oracle-rules" className="font-semibold text-goldbright underline underline-offset-4">
+            See all five Oracle rules
+          </Link>
         </p>
         <button
           type="button"

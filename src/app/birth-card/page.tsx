@@ -36,10 +36,9 @@ export default function BirthCardPage() {
         <p className="text-xs uppercase tracking-[0.35em] text-gold">Calculator</p>
         <h1 className="mt-3 font-display text-5xl text-goldbright sm:text-6xl">Your birth card</h1>
         <p className="mx-auto mt-4 max-w-xl text-cream/75">
-          One Major Arcana card from your birth date, calculated here in your
-          browser. The date is never stored, never sent to a server, and never
-          sent to AI. A reflection tool, not a prediction. This is a playful
-          numerology mapping, not astrology and not a chart.
+          One Major Arcana card from your birth date, calculated in your
+          browser. Nothing is stored or sent anywhere. A reflection tool,
+          not a prediction.
         </p>
       </div>
       <div className="mx-auto mt-8 rounded-3xl border border-gold/25 bg-panel/70 p-6">
@@ -48,9 +47,8 @@ export default function BirthCardPage() {
         </label>
         <ThemedDatePicker id="birth-card-date" value={date} onChange={setDate} />
         <p className="mt-3 text-sm text-cream/70">
-          Method: add all digits of the date, then keep adding the digits of
-          the result until the total is 22 or less. 1 is The Magician through
-          21 is The World, and 22 is The Fool. Pick a date and your card
+          Method: keep adding the digits of your birth date until the total
+          is 22 or less (22 is The Fool). Pick a date and your card
           appears below, no button needed.
         </p>
       </div>
@@ -74,9 +72,6 @@ export default function BirthCardPage() {
           </div>
         </article>
       )}
-      <p className="mt-8 text-center text-sm text-mist">
-        General reflection only. For a personal reading, draw a card or cast a birth chart.
-      </p>
     </div>
   );
 }

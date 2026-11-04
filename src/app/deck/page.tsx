@@ -142,8 +142,7 @@ export default function DeckPage() {
       {view === "spiral" && !reducedMotion ? (
         <div className="mt-8">
           <p className="text-center text-sm text-cream/75">
-            Drag the helix to spin it, tap a card to read its story.
-            Prefer a list? Use List above for keyboard browsing.
+            Drag to spin, tap a card. List above for keyboard browsing.
           </p>
           <div
             className="h-[560px]"

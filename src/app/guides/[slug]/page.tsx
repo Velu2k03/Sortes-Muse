@@ -118,9 +118,7 @@ export default async function GuidePage({
         ))}
       </div>
       <p className="mt-12 text-sm text-mist">
-        Readings in Sortes are for reflection and perspective only. They are
-        never guaranteed predictions, and they never replace professional
-        advice.
+        For reflection, not prediction.
       </p>
       <div className="mt-4 flex flex-wrap gap-3">
         <Link href="/spreads" className="btn-gold">

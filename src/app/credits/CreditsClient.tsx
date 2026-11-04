@@ -169,6 +169,11 @@ export default function CreditsPage() {
         <p className="mx-auto mt-4 max-w-md text-sm text-cream/75">An Oracle opens a reading. It is not a prediction, a promise, or a guarantee.</p>
       </div>
 
+      <p className="mx-auto mt-8 max-w-md text-center text-sm text-cream/75">
+        Every pack includes tarot readings, birth charts, and reports.
+        Your story is used for one reading only; readings stay in your history.
+      </p>
+
       <div className="mt-10 space-y-4">
         {CREDIT_PACKS.map((p, i) => {
           // Centered cards, approved 2026-11-04: every card is
@@ -223,11 +228,7 @@ export default function CreditsPage() {
                   "No tarot knowledge needed", the least specific
                   of the four. Kept: included products, one-reading
                   story use, history. */}
-              <ul className={`mx-auto mt-4 max-w-xs space-y-2 text-sm ${bodyClass}`}>
-                <li>✓ Tarot readings, birth charts, and reports included</li>
-                <li>✓ Your story is used for one reading only</li>
-                <li>✓ Your readings stay in your history</li>
-              </ul>
+
               {/* Audit 4: every pack uses the same solid btn-gold, same
                   padding, weight, and size. */}
               {/* Direct checkout, approved 2026-11-04: this button goes

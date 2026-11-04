@@ -69,10 +69,6 @@ export default function FaqPage() {
       <h1 className="mt-3 font-display text-5xl text-goldbright">
         Frequently asked questions
       </h1>
-      <p className="mt-4 max-w-xl text-cream/75">
-        Short answers to the questions Sortes users actually ask. For more
-        detail, read the guides, the privacy policy, and the terms.
-      </p>
       <FaqList faqs={FAQS} />
       <p className="mt-10 text-sm text-mist">
         Still stuck? Contact {CONTACT_EMAIL}, or read the{" "}

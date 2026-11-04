@@ -358,12 +358,10 @@ export default function ReportsClient() {
       <p className="text-center text-xs uppercase tracking-[0.35em] text-gold">Reports</p>
       <h1 className="mt-2 text-center font-display text-5xl text-goldbright">Keep-forever reports</h1>
       <p className="mt-3 text-center text-cream/80">
-        A report is a document you keep. 1 Oracle per report, and reports never
-        expire. There is no free first report: every report costs 1 Oracle.
+        1 Oracle per report. No free first report. Reports never expire.
       </p>
       <p className="mt-2 text-center text-sm text-mist">
-        Your birth details are used only to calculate this report. They are never stored, and they are
-        never sent to the AI. A saved report holds positions and interpretation only.
+        Birth details are used only for this report, never stored, never sent to AI.
       </p>
 
       {!loading && credits !== null && (
@@ -397,8 +395,7 @@ export default function ReportsClient() {
       <p className="mt-3 text-center text-sm text-cream/75">{TYPE_BLURBS[type]}</p>
       {type === "comparison" && (
         <p className="mt-2 text-center text-sm text-mist">
-          This comparison is opt-in and mutual: you enter both charts. It describes dynamics only, never
-          a verdict on compatibility, and never predicts whether a relationship will last.
+          You enter both charts. Dynamics only, never a verdict, never a prediction about whether a relationship will last.
         </p>
       )}
 
@@ -554,8 +551,7 @@ export default function ReportsClient() {
         <h2 className="font-display text-3xl text-goldbright">Your saved reports</h2>
         {saved.length === 0 ? (
           <p className="mt-2 text-sm text-mist">
-            No saved reports yet. Generate one above and it stays here, on your account when signed in, or
-            on this device as a guest.
+            No saved reports yet.
           </p>
         ) : (
           <ul className="mt-4 space-y-3">

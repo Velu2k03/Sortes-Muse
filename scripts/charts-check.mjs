@@ -394,7 +394,7 @@ console.log("charts-check: all assertions passed");
   const charts = fs.readFileSync("src/app/charts/ChartsClient.tsx", "utf8");
   assert.ok(charts.includes('setShowGlosses(lang === "zh")'), "glosses must default off in English and on in Chinese");
   assert.ok(charts.includes("Show Chinese glosses"), "glosses toggle label must exist");
-  assert.ok(charts.includes("<details") && charts.includes("Before you calculate, please note"), "timezone disclosure must be collapsible, not a long block above Calculate");
+  assert.ok(charts.includes("<details") && charts.includes("How your inputs are used"), "timezone disclosure must live in one collapsed block, not as two long blocks");
   // M0.2: the old blanket "no timezone database, no DST" wording was
   // false for Western (its library converts with a real timezone
   // database including DST). The disclosure must now state the
@@ -520,8 +520,8 @@ console.log("charts-check: all assertions passed");
   const auth = fs.readFileSync("src/lib/auth.ts", "utf8");
   assert.ok(auth.includes('padStart(6, "0")'), "code length preview must match auth.ts: 6 digits");
   const charts = fs.readFileSync("src/app/charts/ChartsClient.tsx", "utf8");
-  assert.ok(charts.includes("How each system uses your inputs (tap for details)"), "long charts intro must be collapsed behind a details summary");
-  assert.ok(charts.includes("Before you calculate, please note"), "timezone disclosure must stay reachable, only its position/collapse state may change");
+  assert.ok(charts.includes("How your inputs are used"), "long charts intro must be collapsed behind a details summary");
+  assert.ok(charts.includes("timezone database that includes DST rules"), "per-system timezone truth must stay reachable inside the one collapsed block");
   const useExampleIdx = charts.indexOf("Use example: 1990-01-01, 08:00, Manila");
   const birthDateIdx = charts.indexOf('id="chart-date"');
   assert.ok(useExampleIdx > 0 && useExampleIdx < birthDateIdx, "Use example must sit at the top of the form, before the first field, so it is visible without scrolling");
@@ -558,7 +558,7 @@ console.log("charts-check: all assertions passed");
   assert.ok(!flow.includes("Unlock"), "reading flow must not use Unlock wording");
   const spreads = fs.readFileSync("src/app/spreads/SpreadsClient.tsx", "utf8");
   assert.ok(!spreads.includes("unlocks"), "spreads credit note must not use unlocks wording");
-  assert.ok(charts.includes("Birth data is used in memory only"), "charts privacy must stay, in one short line");
+  assert.ok(charts.includes("AI gets chart") && charts.includes("never birth data"), "charts privacy must stay, in one short line (storage wording is PR 50's disclosed version)");
   console.log("batch10: slop trim, short copy, privacy kept: all source assertions passed");
   // Batch 11: validator fixes, plus the fan. No ReactDrops code copied.
   const deck = fs.readFileSync("src/app/deck/page.tsx", "utf8");
@@ -593,8 +593,8 @@ console.log("charts-check: all assertions passed");
   assert.ok(home.includes("one dominant action"), "home hero must note the single primary action");
   assert.ok(home.includes("$3.99 for 5 Oracles"), "home hero must state the pack start price in cash terms");
   assert.ok(!home.includes("$0.80 per Oracle") || home.includes("varies by"), "home must not present a single fixed per-Oracle price as fixed");
-  assert.ok(home.includes("What Sortes will, and will not, do"), "home must carry the trust strip");
-  assert.ok(home.includes("A mirror, not a verdict"), "trust strip must state reflection, not prediction");
+  assert.ok(home.includes("For reflection, not prediction."), "home must still state reflection, not prediction, in one short line");
+  assert.ok(!home.includes("What Sortes will, and will not, do"), "Batch E simplification: the repeating trust strip is removed, its claims live once in hero, spreads, credits, and footer");
   assert.ok(!home.includes("testimonial") && !home.includes("customers say"), "trust strip must not invent testimonials");
   console.log("phase2: homepage primary action, Oracle value, trust strip: all source assertions passed");
   // Phase 3: skip link, visible search labels, keyboard hints.
@@ -644,7 +644,7 @@ console.log("charts-check: all assertions passed");
   assert.ok(readingDetail.includes("FadeContent"), "reading at-a-glance must use the reduced-motion-gated reveal");
   assert.ok(historyClient.includes("SpotlightCard"), "journal repeated questions must use the spotlight interaction");
   assert.ok(chartsClient.includes("Show the full legend"), "chart legend must be progressive disclosure, not a wall before interpretation");
-  assert.ok(intake.includes("What happens next: the cards are drawn"), "intake confirm step must state what happens next");
+  assert.ok(intake.includes("What happens next: cards are drawn"), "intake confirm step must state what happens next");
   console.log("personal-phase2: disclosure, numbers, React Bits, chart structure, intake guidance: all source assertions passed");
   // Personal Phase 3: guided navigation, guide contents, card
   // padding consistency, GlareHover and AnimatedList samples.
@@ -668,6 +668,24 @@ console.log("charts-check: all assertions passed");
   assert.ok(faqPage.includes("FaqList"), "FAQ must use the expandable list component");
   const faqList = fs.readFileSync("src/components/FaqList.tsx", "utf8");
   assert.ok(faqList.includes("Expand all") && faqList.includes("Collapse all") && faqList.includes("Jump to a question"), "FAQ must offer expand all, collapse all, and anchor links");
-  assert.ok(spreadsClient2.includes("Readings are for reflection and perspective only"), "spreads index must carry the reflection disclaimer");
+  assert.ok(spreadsClient2.includes("For reflection, not prediction."), "spreads index must carry the reflection disclaimer, in one short line");
   console.log("personal-phase4: guide costs, FAQ controls, spread disclaimer: all source assertions passed");
+}
+
+// Batch E (PR 54): global content simplification, show don't explain.
+{
+  const homeE = fs.readFileSync("src/app/page.tsx", "utf8");
+  assert.ok(!homeE.includes("What Sortes will, and will not, do"), "Batch E: home trust strip removed");
+  assert.ok(homeE.includes("For reflection, not prediction."), "Batch E: home keeps one short reflection line");
+  const spreadsE = fs.readFileSync("src/app/spreads/SpreadsClient.tsx", "utf8");
+  assert.ok(spreadsE.includes("First Quick Insight free. After that, 1 Oracle per reading, any spread."), "Batch E: spreads intro shortened");
+  assert.ok(spreadsE.includes("See all five Oracle rules"), "Batch E: spreads bottom section links to the full rules");
+  assert.ok(!spreadsE.includes("You pay only for Oracle packs, never per reading, never twice."), "Batch E: spreads long Oracle paragraph removed");
+  const chartsE = fs.readFileSync("src/app/charts/ChartsClient.tsx", "utf8");
+  assert.ok(!chartsE.includes("Before you calculate, please note"), "Batch E: duplicate charts timezone block removed");
+  assert.ok(chartsE.includes("How your inputs are used"), "Batch E: one collapsed charts inputs block remains");
+  const creditsE = fs.readFileSync("src/app/credits/CreditsClient.tsx", "utf8");
+  assert.ok(creditsE.includes("Every pack includes tarot readings, birth charts, and reports."), "Batch E: pack inclusions stated once above the grid");
+  assert.ok(!creditsE.includes("Tarot readings, birth charts, and reports included"), "Batch E: identical pack bullets removed from cards");
+  console.log("deep-ux-batch-e: global simplification: all source assertions passed");
 }
