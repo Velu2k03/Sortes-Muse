@@ -163,11 +163,11 @@ export default function ReadingFlow({ slug, intake = null }: Props) {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
-      {/* Phase F: the flow sits under Readings, so the way back is visible. */}
+      {/* Phase F: the flow sits under Spreads, so the way back is visible. */}
       <Breadcrumbs
         trail={[
           { href: "/", label: "Home" },
-          { href: "/spreads", label: "Readings" },
+          { href: "/spreads", label: "Spreads" },
           { label: getSpread(slug).name },
         ]}
       />
