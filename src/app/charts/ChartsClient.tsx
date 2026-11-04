@@ -718,7 +718,7 @@ export default function ChartsClient() {
       </form>
 
       {result && (
-        <AnimatedContent trigger="mount" wipe="up" blur={8} distance={40} duration={0.8} stagger={0}>
+        <AnimatedContent trigger="mount" wipe="up" blur={10} distance={60} duration={0.8} scale={0.98} threshold={0.2} stagger={0}>
         <section ref={resultRef} className="num magic-glow relative mt-10 scroll-mt-24 rounded-3xl border border-gold/25 bg-panel/40 p-4 sm:p-6" aria-live="polite">
           {/* Personal Phase 1: the chart visual comes first, but the
               plain-words interpretation must not be hidden below it.

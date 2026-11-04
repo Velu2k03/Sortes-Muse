@@ -524,7 +524,7 @@ export default function ReportsClient() {
       )}
 
       {result && (
-        <AnimatedContent trigger="mount" wipe="up" blur={8} distance={40} duration={0.8} stagger={0.08}>
+        <AnimatedContent trigger="mount" wipe="up" blur={10} distance={60} duration={0.8} scale={0.98} threshold={0.2} stagger={0.08}>
         <div className="mt-8 rounded-3xl border border-gold/25 bg-panel/70 p-6">
           <p className="text-xs uppercase tracking-[0.35em] text-gold">Your report</p>
           <h2 className="mt-1 font-display text-3xl text-goldbright">{result.title}</h2>

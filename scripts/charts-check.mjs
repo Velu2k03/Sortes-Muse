@@ -641,7 +641,9 @@ console.log("charts-check: all assertions passed");
   assert.ok(chartRoute.includes("what they may be overlooking"), "chart prompt must ask what the seeker may be overlooking");
   assert.ok(chartRoute.includes("one practical step they could take"), "chart prompt must ask for one practical step");
   assert.ok(readingDetail.includes("Traditional meaning, if you want it"), "reading card sections must disclose traditional meanings behind one tap, not hide them");
-  assert.ok(readingDetail.includes("FadeContent"), "reading at-a-glance must use the reduced-motion-gated reveal");
+  // Deep UX Batch A, doc item 7: FadeContent was replaced by the
+  // rise AnimatedContent, which is also reduced-motion gated.
+  assert.ok(readingDetail.includes("AnimatedContent"), "reading at-a-glance must use the reduced-motion-gated reveal");
   assert.ok(historyClient.includes("SpotlightCard"), "journal repeated questions must use the spotlight interaction");
   assert.ok(chartsClient.includes("Show the full legend"), "chart legend must be progressive disclosure, not a wall before interpretation");
   assert.ok(intake.includes("What happens next: the cards are drawn"), "intake confirm step must state what happens next");
@@ -670,4 +672,14 @@ console.log("charts-check: all assertions passed");
   assert.ok(faqList.includes("Expand all") && faqList.includes("Collapse all") && faqList.includes("Jump to a question"), "FAQ must offer expand all, collapse all, and anchor links");
   assert.ok(spreadsClient2.includes("Readings are for reflection and perspective only"), "spreads index must carry the reflection disclaimer");
   console.log("personal-phase4: guide costs, FAQ controls, spread disclaimer: all source assertions passed");
+  // Deep UX Batch A: doc colours, Rise config, FadeContent
+  // replaced, PixelCard credits to doc spec.
+  const glide = fs.readFileSync("src/components/GlideSelect.tsx", "utf8");
+  assert.ok(glide.includes("accentColor = '#d4af37'") && glide.includes("surfaceColor = '#1a1f2e'"), "GlideSelect defaults must be Sortes colours, not demo zinc");
+  const spiral = fs.readFileSync("src/components/InfiniteSpiral.tsx", "utf8");
+  assert.ok(spiral.includes("border-gold/25 bg-panel/70") && !spiral.includes("bg-white/10"), "deck spiral must use Sortes tokens, not demo white");
+  assert.ok(!fs.readFileSync("src/app/reading/[id]/ReadingDetailClient.tsx", "utf8").includes("FadeContent"), "FadeContent must be replaced, not left in reading detail");
+  const credits = fs.readFileSync("src/app/credits/CreditsClient.tsx", "utf8");
+  assert.ok(credits.includes('shape="diamond"') && credits.includes("gap={6}") && credits.includes("pixelSize={2}") && credits.includes("speed={35}") && credits.includes("opacity={0.35}") && credits.includes("fade={0.7}"), "credits PixelCard must match the doc spec");
+  console.log("deep-ux-batch-a: Sortes colours, Rise config, FadeContent replaced, PixelCard spec: all source assertions passed");
 }
