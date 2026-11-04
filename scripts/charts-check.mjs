@@ -670,4 +670,17 @@ console.log("charts-check: all assertions passed");
   assert.ok(faqList.includes("Expand all") && faqList.includes("Collapse all") && faqList.includes("Jump to a question"), "FAQ must offer expand all, collapse all, and anchor links");
   assert.ok(spreadsClient2.includes("Readings are for reflection and perspective only"), "spreads index must carry the reflection disclaimer");
   console.log("personal-phase4: guide costs, FAQ controls, spread disclaimer: all source assertions passed");
+  // Deep UX Batch A2: daily reveal and typing, Orb, charts cache,
+  // single Oracle rules entry.
+  const dailyPage = fs.readFileSync("src/app/daily/page.tsx", "utf8");
+  assert.ok(!dailyPage.includes('from "@/components/PixelTransition"') && dailyPage.includes("rotateY") && dailyPage.includes("typingSpeed={75}") && dailyPage.includes("variableSpeed={{ min: 40, max: 170 }}") && dailyPage.includes("loop={false}"), "daily must use a flip reveal and the doc typing effect, loop off");
+  const reactBitsNew2 = fs.readFileSync("src/components/ReactBitsNew.tsx", "utf8");
+  assert.ok(reactBitsNew2.includes("export function Orb"), "ReactBitsNew must export Orb");
+  const homePage = fs.readFileSync("src/app/page.tsx", "utf8");
+  assert.ok(homePage.includes("<Orb />"), "home hero must use Orb");
+  const chartsClient2 = fs.readFileSync("src/app/charts/ChartsClient.tsx", "utf8");
+  assert.ok(chartsClient2.includes("systemCache") && chartsClient2.includes("sortes-birth-details"), "charts must cache per-system results and remember birth details");
+  const faqPage2 = fs.readFileSync("src/app/faq/page.tsx", "utf8");
+  assert.ok(faqPage2.includes("What are the five Oracle rules?"), "FAQ must state all five Oracle rules in one place");
+  console.log("deep-ux-batch-a2: daily reveal and typing, Orb, charts cache, Oracle rules: all source assertions passed");
 }

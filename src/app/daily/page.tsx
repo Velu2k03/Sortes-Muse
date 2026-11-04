@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
   getDailyCard,
   setDailyCard,
@@ -16,10 +16,9 @@ import { trackDailyCardDrawn } from "@/components/Analytics";
 import { StarBorder } from "@/components/ReactBits";
 import HoldButton from "@/components/HoldButton";
 import HoloCard from "@/components/HoloCard";
-import PixelTransition from "@/components/PixelTransition";
 import Image from "next/image";
 import Link from "next/link";
-import BlurText from "@/components/BlurText";
+import TextType from "@/components/TextType";
 
 type Phase = "idle" | "shuffling" | "revealed";
 
@@ -32,7 +31,6 @@ export default function DailyPage() {
   const [daily, setDaily] = useState<DailyCardState | null>(null);
   const [streak, setStreak] = useState(0);
   const [zoomOpen, setZoomOpen] = useState(false);
-  const [pixelActive, setPixelActive] = useState(false);
   const drawTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   // HoldButton colours bypass the theme tokens, so track the
   // document theme, 2026-11-04, instead of staying dark in light mode.
@@ -46,18 +44,6 @@ export default function DailyPage() {
     return () => obs.disconnect();
   }, []);
 
-  // Pixel reveal: the card mounts showing its back, then pixelates to
-  // the face once the reveal section is on screen. Returning the same
-  // day replays the same moment. Reduced motion resolves instantly
-  // inside PixelTransition, so the face is never stuck behind pixels.
-  useEffect(() => {
-    if (phase !== "revealed") {
-      setPixelActive(false);
-      return;
-    }
-    const t = setTimeout(() => setPixelActive(true), 60);
-    return () => clearTimeout(t);
-  }, [phase]);
 
   useEffect(() => {
     const existing = getDailyCard();
@@ -72,6 +58,8 @@ export default function DailyPage() {
       if (drawTimer.current) clearTimeout(drawTimer.current);
     };
   }, []);
+
+  const reduceMotion = useReducedMotion();
 
   const draw = () => {
     setPhase("shuffling");
@@ -174,52 +162,34 @@ export default function DailyPage() {
               animate={{ opacity: 1 }}
               className="flex w-full flex-col items-center"
             >
-              {/* Pixel face reveal: the card mounts on its back and
-                  resolves to the face in gold pixels. Reversed cards
-                  rotate only the face, the way a physical draw falls.
-                  Tapping the card still enlarges it, and the holo is
-                  gold, never rainbow, the same gold preset the card
-                  detail already uses. The wrapper is focusable by the
-                  component's design, but carries no button role, so
-                  the enlarge button inside stays the one control. */}
-              <PixelTransition
-                firstContent={
-                  <span className="relative block h-full w-full overflow-hidden rounded-[22px] border border-gold/40 shadow-[0_8px_30px_rgba(0,0,0,0.6)]">
-                    <Image
-                      src={CARD_BACK}
-                      alt=""
-                      fill
-                      sizes="220px"
-                      className="object-cover"
-                      draggable={false}
+              {/* Deep UX Batch A2, doc item 10: PixelTransition is
+                  replaced on the daily reveal only with a Motion
+                  flip reveal, card back to face, gold only. Reduced
+                  motion renders the face statically. */}
+              <motion.div
+                style={{ perspective: 800, width: 220 }}
+                initial={reduceMotion ? false : { opacity: 0, rotateY: -90, scale: 0.98 }}
+                animate={{ opacity: 1, rotateY: 0, scale: 1 }}
+                transition={{ duration: 0.8, ease: "easeOut" }}
+              >
+                <button
+                  type="button"
+                  onClick={() => setZoomOpen(true)}
+                  aria-label={`Enlarge ${card.name}`}
+                  className="block h-full w-full cursor-pointer rounded-[22px] focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+                >
+                  <span className={daily.reversed ? "block rotate-180" : "block"}>
+                    <HoloCard
+                      image={card.image}
+                      alt={card.name}
+                      preset="gold"
+                      foilColor="#d4af37"
+                      width={220}
+                      radius={22}
                     />
                   </span>
-                }
-                secondContent={
-                  <button
-                    type="button"
-                    onClick={() => setZoomOpen(true)}
-                    aria-label={`Enlarge ${card.name}`}
-                    className="block h-full w-full cursor-pointer rounded-[22px] focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
-                  >
-                    <span className={daily.reversed ? "block rotate-180" : "block"}>
-                      <HoloCard
-                        image={card.image}
-                        alt={card.name}
-                        preset="gold"
-                        foilColor="#d4af37"
-                        width={220}
-                        radius={22}
-                      />
-                    </span>
-                  </button>
-                }
-                active={pixelActive}
-                once
-                pixelColor="#d4af37"
-                aspectRatio="167.6%"
-                style={{ width: 220, borderRadius: 22 }}
-              />
+                </button>
+              </motion.div>
               <p className="mt-3 text-xs text-mist">
                 {daily.reversed ? "Reversed" : "Upright"} · Tap the card to enlarge it.
               </p>
@@ -245,11 +215,27 @@ export default function DailyPage() {
                     </span>
                   ))}
                 </div>
-                <BlurText
+                {/* Deep UX Batch A2, doc item 6: human typing effect,
+                    loop off so the meaning stays once typed. Demo
+                    prefix "We build" is not used; the meaning itself
+                    is the text. Cursor colour is currentColor so it
+                    stays visible in light mode, where pure white
+                    would vanish on a light panel. */}
+                <TextType
                   text={orientationMeaning(card, daily.reversed)}
-                  animateBy="words"
-                  direction="top"
-                  delay={600}
+                  typingSpeed={75}
+                  deletingSpeed={35}
+                  pauseDuration={2200}
+                  mistakes={0.3}
+                  typeEffect="fade"
+                  cursorBlinkDuration={0.55}
+                  variableSpeed={{ min: 40, max: 170 }}
+                  cursorGlide
+                  cursorStyle="bar"
+                  cursorCharacter="_"
+                  showCursor
+                  loop={false}
+                  initialDelay={600}
                   className="mx-auto mt-5 max-w-lg leading-relaxed text-cream/90"
                 />
                 <p className="mt-6 text-xs italic text-mist">

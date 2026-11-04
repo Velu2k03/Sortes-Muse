@@ -21,6 +21,9 @@ import { motion, useReducedMotion } from "motion/react";
  * - PageTransition: a short fade and rise on navigation, all pages.
  * - GlareHover: spreads guided start button only, pointer only.
  * - AnimatedList: guides index list only, one stagger on mount.
+ * - Orb: home hero background only, gold orbs in app colours, slow
+ *   rotation, hover intensity from pointer position, static under
+ *   reduced motion. Local implementation, no ogl dependency.
  *
  * Every component is static under prefers-reduced-motion and does
  * nothing special on touch, where there is no pointer to follow.
@@ -220,6 +223,59 @@ export function AnimatedList({
           {child}
         </motion.div>
       ))}
+    </div>
+  );
+}
+
+export function Orb({
+  className = "",
+}: {
+  className?: string;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const reduce = useReducedMotion();
+  const onMove = (event: React.PointerEvent) => {
+    if (reduce || isTouchPointer(event) || !ref.current) return;
+    const rect = ref.current.getBoundingClientRect();
+    const x = (event.clientX - rect.left) / rect.width - 0.5;
+    const y = (event.clientY - rect.top) / rect.height - 0.5;
+    ref.current.style.setProperty("--orb-x", `${x * 30}px`);
+    ref.current.style.setProperty("--orb-y", `${y * 30}px`);
+  };
+  if (reduce) {
+    return (
+      <div aria-hidden="true" className={`pointer-events-none absolute inset-0 overflow-hidden ${className}`}>
+        <div className="absolute left-1/4 top-1/4 h-72 w-72 rounded-full opacity-25 blur-3xl" style={{ background: "radial-gradient(circle, rgba(212,175,55,0.5) 0%, transparent 70%)" }} />
+      </div>
+    );
+  }
+  return (
+    <div
+      ref={ref}
+      aria-hidden="true"
+      onPointerMove={onMove}
+      className={`pointer-events-none absolute inset-0 overflow-hidden ${className}`}
+    >
+      <motion.div
+        className="absolute left-1/4 top-1/4 h-72 w-72 rounded-full opacity-25 blur-3xl"
+        style={{
+          background: "radial-gradient(circle, rgba(212,175,55,0.55) 0%, transparent 70%)",
+          x: "var(--orb-x, 0px)",
+          y: "var(--orb-y, 0px)",
+        }}
+        animate={{ rotate: 360, scale: [1, 1.15, 1] }}
+        transition={{ rotate: { duration: 40, repeat: Infinity, ease: "linear" }, scale: { duration: 12, repeat: Infinity, ease: "easeInOut" } }}
+      />
+      <motion.div
+        className="absolute right-1/4 top-1/2 h-56 w-56 rounded-full opacity-20 blur-3xl"
+        style={{
+          background: "radial-gradient(circle, rgba(244,208,63,0.5) 0%, transparent 70%)",
+          x: "var(--orb-x, 0px)",
+          y: "var(--orb-y, 0px)",
+        }}
+        animate={{ rotate: -360, scale: [1, 1.1, 1] }}
+        transition={{ rotate: { duration: 55, repeat: Infinity, ease: "linear" }, scale: { duration: 15, repeat: Infinity, ease: "easeInOut" } }}
+      />
     </div>
   );
 }

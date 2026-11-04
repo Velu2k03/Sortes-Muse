@@ -80,12 +80,25 @@ export default function ChartsClient() {
     ziwei: "Chinese Purple Star astrology: palaces, stars, and life periods.",
   };
   const formRef = useRef<HTMLFormElement | null>(null);
+  // Deep UX Batch A2: per-system cache. Switching system used to
+  // wipe the result, interpretation, and saved state, so comparing
+  // systems meant re-entering everything. The cache keeps one
+  // snapshot per system and restores it on switch.
+  const systemCache = useRef<Record<string, { result: ChartResult | null; interpretation: string; interpError: string; saved: boolean }>>({});
   const selectSystem = (s: ChartSystem) => {
+    const cached = systemCache.current[s];
     setSystem(s);
-    setResult(null);
-    setInterpretation("");
-    setInterpError("");
-    setSaved(false);
+    if (cached) {
+      setResult(cached.result);
+      setInterpretation(cached.interpretation);
+      setInterpError(cached.interpError);
+      setSaved(cached.saved);
+    } else {
+      setResult(null);
+      setInterpretation("");
+      setInterpError("");
+      setSaved(false);
+    }
     // Picking a system brings the form up into view, so the fields
     // for the new system are right there instead of leaving the
     // user staring at the wheel.
@@ -129,6 +142,11 @@ export default function ChartsClient() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState<ChartResult | null>(null);
+  // Cache writer lives here, after result and saved are declared,
+  // so TypeScript does not flag use before assignment.
+  useEffect(() => {
+    systemCache.current[system] = { result, interpretation, interpError, saved };
+  }, [system, result, interpretation, interpError, saved]);
   const [showBurst, setShowBurst] = useState(false);
   const resultRef = useRef<HTMLElement | null>(null);
   // Auto-scroll to the result after Calculate: it used to appear below
@@ -164,6 +182,23 @@ export default function ChartsClient() {
       if (saved === "en" || saved === "zh") setZiweiLang(saved);
       else window.localStorage.setItem("sortes-ziwei-lang", "en");
     });
+  }, []);
+  // Deep UX Batch A2: restore remembered birth details once, only
+  // when the form is still blank, so a deliberate clear is respected.
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem("sortes-birth-details");
+      if (!raw) return;
+      const saved = JSON.parse(raw) as { date?: string; time?: string; unknownTime?: boolean; gender?: "male" | "female"; preset?: string; latitude?: string; longitude?: string };
+      if (saved.date) setDate(saved.date);
+      if (saved.time) setTime(saved.time);
+      if (typeof saved.unknownTime === "boolean") setUnknownTime(saved.unknownTime);
+      if (saved.gender) setGender(saved.gender);
+      if (saved.preset) setPreset(saved.preset);
+      if (saved.latitude) setLatitude(saved.latitude);
+      if (saved.longitude) setLongitude(saved.longitude);
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   // Glosses toggle: default off in English, on in Chinese. Reset on
   // language change, so English mode is actually English in detail
@@ -398,6 +433,14 @@ export default function ChartsClient() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Could not calculate this chart.");
       setResult(data.result as ChartResult);
+      // Deep UX Batch A2: remember birth details on this device so
+      // a return visit does not start from a blank form. Raw birth
+      // data stays on device in localStorage, it is not sent anywhere
+      // except the calculate call the user already makes.
+      try {
+        window.localStorage.setItem("sortes-birth-details", JSON.stringify({ date, time, unknownTime, gender, preset, latitude, longitude }));
+      } catch {}
+      // A clear control lives in the form reset path, not here.
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not calculate this chart.");
     } finally {
