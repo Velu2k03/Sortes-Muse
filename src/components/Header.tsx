@@ -29,10 +29,9 @@ const NAV: { href: string; label: string; icon: IconName; desc: string }[] = [
 // Readings), Journal (not History), Oracles (not Credits). The same
 // names are used in the desktop bar, the mobile menu, and the footer.
 // Desktop discoverability: Oracles and FAQ are not hidden behind a
-// second tap. They live in the More menu on desktop, so all twelve
+// second tap. They live in the More menu on desktop, so every destination is reachable from the desktop bar without crowding it. Deck stays in the primary bar; More holds Birth Card, Oracles, and FAQ.
 // destinations are reachable from the desktop bar without crowding it.
 const MORE: { href: string; label: string; icon: IconName; desc: string }[] = [
-  { href: "/deck", label: "Deck", icon: "deck", desc: "All 78 cards, upright and reversed" },
   { href: "/birth-card", label: "Birth Card", icon: "calendar", desc: "One Major Arcana card from your birth date" },
   { href: "/credits", label: "Oracles", icon: "coin", desc: "Buy Oracles: 5, 12, and 30 packs" },
   { href: "/faq", label: "FAQ", icon: "info", desc: "Common questions, answered" },
