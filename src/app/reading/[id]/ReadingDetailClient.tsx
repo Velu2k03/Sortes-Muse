@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { getReading, updateReading as updateLocalReading } from "@/lib/storage";
+import { getReading, saveReading, updateReading as updateLocalReading } from "@/lib/storage";
 import type { Reading, FollowUp } from "@/lib/types";
 import { useAuth } from "@/components/AuthProvider";
 import { getCard, orientationKeywords, orientationMeaning } from "@/lib/cards";
@@ -168,6 +168,13 @@ export default function ReadingDetail({ id }: { id: string }) {
       .then((d) => {
         if (cancelled) return;
         const found = (d.readings ?? []).find((r: { id: string }) => r.id === id);
+        // Codex fresh review on PR 51, correct: opening the reading
+        // is not enough. Save and revisit-note controls call
+        // updateReading, which returns early when the reading is
+        // absent from local storage, so edits on this new-device
+        // path were silently lost. Hydrate the server copy locally
+        // so those updates work and PATCH the server copy too.
+        if (found && !getReading(id)) saveReading(found as Reading);
         setReading((found as Reading) ?? null);
       })
       .catch(() => {
