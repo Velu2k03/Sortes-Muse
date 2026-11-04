@@ -178,7 +178,10 @@ export default function SpreadsPage() {
           One Oracle pays for one full reading of any spread, with an AI
           interpretation for your question. Your daily card is always free
           and never uses an Oracle. Oracles never expire. No subscriptions.
-          The one free reading is Quick Insight only.
+          The one free reading is Quick Insight only.{" "}
+          <Link href="/faq#what-are-the-five-oracle-rules" className="font-semibold text-goldbright underline underline-offset-4">
+            See all five Oracle rules
+          </Link>
         </p>
         <button
           type="button"

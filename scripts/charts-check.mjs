@@ -558,7 +558,9 @@ console.log("charts-check: all assertions passed");
   assert.ok(!flow.includes("Unlock"), "reading flow must not use Unlock wording");
   const spreads = fs.readFileSync("src/app/spreads/SpreadsClient.tsx", "utf8");
   assert.ok(!spreads.includes("unlocks"), "spreads credit note must not use unlocks wording");
-  assert.ok(charts.includes("Birth data is used in memory only"), "charts privacy must stay, in one short line");
+  // Codex P2 fix supersedes the old in-memory-only line: birth
+  // details are now honestly disclosed as remembered on device.
+  assert.ok(charts.includes("remembered on this device"), "charts privacy must stay, disclosing on-device retention");
   console.log("batch10: slop trim, short copy, privacy kept: all source assertions passed");
   // Batch 11: validator fixes, plus the fan. No ReactDrops code copied.
   const deck = fs.readFileSync("src/app/deck/page.tsx", "utf8");
@@ -682,4 +684,17 @@ console.log("charts-check: all assertions passed");
   const credits = fs.readFileSync("src/app/credits/CreditsClient.tsx", "utf8");
   assert.ok(credits.includes('shape="diamond"') && credits.includes("gap={6}") && credits.includes("pixelSize={2}") && credits.includes("speed={35}") && credits.includes("opacity={0.35}") && credits.includes("fade={0.7}"), "credits PixelCard must match the doc spec");
   console.log("deep-ux-batch-a: Sortes colours, Rise config, FadeContent replaced, PixelCard spec: all source assertions passed");
+  // Deep UX Batch A2: daily reveal and typing, Orb, charts cache,
+  // single Oracle rules entry.
+  const dailyPage = fs.readFileSync("src/app/daily/page.tsx", "utf8");
+  assert.ok(!dailyPage.includes('from "@/components/PixelTransition"') && dailyPage.includes("rotateY") && dailyPage.includes("typingSpeed={75}") && dailyPage.includes("variableSpeed={{ min: 40, max: 170 }}") && dailyPage.includes("loop={false}"), "daily must use a flip reveal and the doc typing effect, loop off");
+  const reactBitsNew2 = fs.readFileSync("src/components/ReactBitsNew.tsx", "utf8");
+  assert.ok(reactBitsNew2.includes("export function Orb"), "ReactBitsNew must export Orb");
+  const homePage = fs.readFileSync("src/app/page.tsx", "utf8");
+  assert.ok(homePage.includes("<Orb />"), "home hero must use Orb");
+  const chartsClient2 = fs.readFileSync("src/app/charts/ChartsClient.tsx", "utf8");
+  assert.ok(chartsClient2.includes("systemCache") && chartsClient2.includes("sortes-birth-details"), "charts must cache per-system results and remember birth details");
+  const faqPage2 = fs.readFileSync("src/app/faq/page.tsx", "utf8");
+  assert.ok(faqPage2.includes("What are the five Oracle rules?"), "FAQ must state all five Oracle rules in one place");
+  console.log("deep-ux-batch-a2: daily reveal and typing, Orb, charts cache, Oracle rules: all source assertions passed");
 }
