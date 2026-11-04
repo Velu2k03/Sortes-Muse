@@ -324,7 +324,11 @@ export default function HistoryPage() {
               </select>
             </div>
           </div>
-          {filteredHistory.length === 0 && (
+          {/* Codex re-review, correct: with a blank search this
+              message asked users to clear a search they never made,
+              on an empty or still-loading journal. Only show it
+              when a real search filters everything out. */}
+          {filteredHistory.length === 0 && search.trim() !== "" && (
             <p className="mt-8 text-center text-sm text-mist">No readings match that search. Try a different word, or clear the search.</p>
           )}
 

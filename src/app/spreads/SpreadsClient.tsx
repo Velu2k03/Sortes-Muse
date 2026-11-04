@@ -85,7 +85,10 @@ export default function SpreadsPage() {
           { label: "My career", slug: "career-path" },
           { label: "My week", slug: "weekly-outlook" },
           { label: "A deep dive", slug: "celtic-cross" },
-          { label: "Free first reading", slug: "quick-insight" },
+          // Codex re-review, correct: once the free reading is
+          // used, Quick Insight costs 1 Oracle, so the picker
+          // must stop advertising it as free.
+          { label: usedFree ? "Quick Insight" : "Free first reading", slug: "quick-insight" },
         ].map((o) => (
           <button
             key={o.slug}

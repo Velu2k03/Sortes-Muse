@@ -793,3 +793,18 @@ console.log("charts-check: all assertions passed");
   assert.ok(creditsF.includes('minHeight: "0px"'), "popular credits card must not keep the 400px PixelCard minimum height");
   console.log("deep-ux-batch-f: credits density: all source assertions passed");
 }
+
+// Codex re-review follow-ups (post-merge, 2026-11-04): fixes for the
+// new findings Codex posted on the PR 50 to 53 fix commits.
+{
+  const chartsRR = fs.readFileSync("src/app/charts/ChartsClient.tsx", "utf8");
+  assert.ok(chartsRR.includes("requestSystem === systemRef.current"), "pending chart calculations must be discarded when the system changes mid-request");
+  assert.ok(chartsRR.includes("setInterpFailed(cached.interpFailed)"), "cached systems must restore their retry flags with the interpretation");
+  const historyRR = fs.readFileSync("src/app/history/HistoryClient.tsx", "utf8");
+  assert.ok(historyRR.includes('search.trim() !== ""'), "journal no-match message must require an active search");
+  const spreadsRR = fs.readFileSync("src/app/spreads/SpreadsClient.tsx", "utf8");
+  assert.ok(spreadsRR.includes('usedFree ? "Quick Insight"'), "spreads picker must stop advertising a used free reading as free");
+  const bannerRR = fs.readFileSync("src/components/InstallBanner.tsx", "utf8");
+  assert.ok(bannerRR.includes("rect.left < bannerRect.right"), "InstallBanner focus nudge must check full rectangle overlap, not only vertical");
+  console.log("codex re-review follow-ups: all source assertions passed");
+}

@@ -136,7 +136,18 @@ export default function ChartsClient() {
   // back and silently undo that clear. The epoch is bumped on every
   // clear, and the continuation only lands when it is unchanged.
   const birthSaveEpochRef = useRef(0);
-  const systemCache = useRef<Record<string, { result: ChartResult | null; interpretation: string; interpError: string; saved: boolean; fingerprint: string; interpFree: boolean; interpFallback: boolean }>>({});
+  // Tracks the latest selected system for the pending-calculation
+  // guard in onSubmit: a ref, not the submit-time closure, so a
+  // switch made while the request is in flight is visible.
+  const systemRef = useRef(system);
+  useEffect(() => {
+    systemRef.current = system;
+  }, [system]);
+  // Codex re-review, correct: the retry flags are per-system state
+  // too. Without them in the snapshot, switching from a failed
+  // system to a cached successful one left a stale Retry action
+  // that could spend an Oracle on an already-successful chart.
+  const systemCache = useRef<Record<string, { result: ChartResult | null; interpretation: string; interpError: string; saved: boolean; fingerprint: string; interpFree: boolean; interpFallback: boolean; interpFailed: boolean; interpToastOpen: boolean }>>({});
   const selectSystem = (s: ChartSystem) => {
     const cached = systemCache.current[s];
     setSystem(s);
@@ -151,12 +162,16 @@ export default function ChartsClient() {
       // over from the system just switched away from.
       setInterpFree(cached.interpFree);
       setInterpFallback(cached.interpFallback);
+      setInterpFailed(cached.interpFailed);
+      setInterpToastOpen(cached.interpToastOpen);
       calcFingerprintRef.current = cached.fingerprint;
     } else {
       setResult(null);
       setInterpretation("");
       setInterpError("");
       setSaved(false);
+      setInterpFailed(false);
+      setInterpToastOpen(false);
     }
     // Picking a system brings the form up into view, so the fields
     // for the new system are right there instead of leaving the
@@ -173,8 +188,8 @@ export default function ChartsClient() {
   // so TypeScript does not flag use before assignment.
   useEffect(() => {
     if (inputFingerprint !== calcFingerprintRef.current) return;
-    systemCache.current[system] = { result, interpretation, interpError, saved, fingerprint: inputFingerprint, interpFree, interpFallback };
-  }, [system, result, interpretation, interpError, saved, inputFingerprint, interpFree, interpFallback]);
+    systemCache.current[system] = { result, interpretation, interpError, saved, fingerprint: inputFingerprint, interpFree, interpFallback, interpFailed, interpToastOpen };
+  }, [system, result, interpretation, interpError, saved, inputFingerprint, interpFree, interpFallback, interpFailed, interpToastOpen]);
   const [showBurst, setShowBurst] = useState(false);
   const resultRef = useRef<HTMLElement | null>(null);
   // Auto-scroll to the result after Calculate: it used to appear below
@@ -444,6 +459,11 @@ export default function ChartsClient() {
     }
     setLoading(true);
     const saveEpoch = birthSaveEpochRef.current;
+    // Codex re-review, correct: if the user switches systems while
+    // this calculation is pending, the response belongs to the old
+    // system. Landing it under the new system would show a Ziwei
+    // result as Western and cache it under Western.
+    const requestSystem = system;
     try {
       const res = await fetch("/api/chart/calculate", {
         method: "POST",
@@ -463,8 +483,9 @@ export default function ChartsClient() {
       if (!res.ok) throw new Error(data.error || "Could not calculate this chart.");
       // A clear made while this request was in flight wins: landing
       // the old result and details would undo it, so skip the landing
-      // and leave the cleared form alone.
-      if (saveEpoch === birthSaveEpochRef.current) {
+      // and leave the cleared form alone. Same for a system switch:
+      // a response for another system is discarded, not landed.
+      if (saveEpoch === birthSaveEpochRef.current && requestSystem === systemRef.current) {
         calcFingerprintRef.current = inputFingerprint;
         setResult(data.result as ChartResult);
         // Deep UX Batch A2: remember birth details on this device so

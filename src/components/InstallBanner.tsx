@@ -93,8 +93,19 @@ export default function InstallBanner() {
         // (bottom-6), so innerHeight minus height is 24px below
         // the real banner top and a control in that strip stays
         // covered. Use the rendered top edge instead.
-        const bannerTop = bannerRef.current?.getBoundingClientRect().top ?? window.innerHeight - h;
-        if (rect.bottom > bannerTop && rect.top < window.innerHeight) {
+        // Codex re-review, correct: the banner is bottom-right on
+        // desktop, so a footer link left of it is not obscured even
+        // when it sits above the banner's top edge. Only scroll
+        // when the control actually overlaps the banner rectangle.
+        const bannerRect = bannerRef.current?.getBoundingClientRect();
+        const bannerTop = bannerRect?.top ?? window.innerHeight - h;
+        const overlapsBanner =
+          bannerRect !== undefined &&
+          rect.bottom > bannerRect.top &&
+          rect.top < bannerRect.bottom &&
+          rect.right > bannerRect.left &&
+          rect.left < bannerRect.right;
+        if (overlapsBanner) {
           window.scrollBy(0, rect.bottom - bannerTop + 16);
         }
       }
