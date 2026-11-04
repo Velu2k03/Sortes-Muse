@@ -173,7 +173,7 @@ export default function SpreadsPage() {
                   <button
                     type="button"
                     onClick={() => setCheckoutOpen(true)}
-                    className="btn-gold mt-5 rounded-xl px-4 py-3 text-center font-bold"
+                    className="btn-ghost mt-5 rounded-xl border border-gold/30 px-4 py-3 text-center font-semibold"
                   >
                     Get Oracles to begin
                   </button>
@@ -193,7 +193,7 @@ export default function SpreadsPage() {
               ) : (
                 <Link
                   href={`/spreads/${s.slug}`}
-                  className="btn-gold mt-5 block rounded-xl px-4 py-3 text-center font-bold"
+                  className="btn-ghost mt-5 block rounded-xl border border-gold/30 px-4 py-3 text-center font-semibold"
                 >
                   {s.slug === "quick-insight" && !usedFree ? "Begin free reading" : "Begin reading"}
                 </Link>
