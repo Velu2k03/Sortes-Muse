@@ -674,6 +674,6 @@ console.log("charts-check: all assertions passed");
   // Deep UX Batch D (review fixes): InstallBanner must not obscure
   // focused content at the foot of the page.
   const installBannerD = fs.readFileSync("src/components/InstallBanner.tsx", "utf8");
-  assert.ok(installBannerD.includes('document.body.style.paddingBottom = "190px"'), "InstallBanner must reserve body padding while shown so focused content scrolls above it");
+  assert.ok(installBannerD.includes("ResizeObserver") && installBannerD.includes("document.body.style.paddingBottom"), "InstallBanner must reserve its measured height as body padding while shown so focused content scrolls above it");
   console.log("deep-ux-batch-d: InstallBanner focus-obscured fix: all source assertions passed");
 }

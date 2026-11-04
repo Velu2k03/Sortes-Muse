@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { dismissInstallBanner, installBannerDismissed, promptShownThisSession, markPromptShownThisSession } from "@/lib/storage";
 
@@ -19,6 +19,7 @@ export default function InstallBanner() {
   const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(null);
   const [showIOS, setShowIOS] = useState(false);
   const [visible, setVisible] = useState(false);
+  const bannerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (installBannerDismissed()) return;
@@ -69,12 +70,24 @@ export default function InstallBanner() {
   // While the banner is shown, reserve its height as body padding so
   // content can scroll fully above it; the banner then overlays
   // padding, never content. Padding is restored on dismiss/unmount.
+  // Codex fresh review on PR 53, correct: a fixed 190px reserve
+  // fails when zoom or large text wraps the banner taller, so the
+  // reserve tracks the rendered height via ResizeObserver, plus a
+  // 24px gap so the last line never sits flush under the banner.
   const bannerShown = visible || showIOS;
   useEffect(() => {
     if (!bannerShown) return;
     const prev = document.body.style.paddingBottom;
-    document.body.style.paddingBottom = "190px";
+    const apply = () => {
+      const h = bannerRef.current?.offsetHeight ?? 0;
+      if (h > 0) document.body.style.paddingBottom = `${h + 24}px`;
+    };
+    apply();
+    const el = bannerRef.current;
+    const ro = typeof ResizeObserver !== "undefined" && el ? new ResizeObserver(apply) : null;
+    if (el && ro) ro.observe(el);
     return () => {
+      ro?.disconnect();
       document.body.style.paddingBottom = prev;
     };
   }, [bannerShown]);
@@ -83,6 +96,7 @@ export default function InstallBanner() {
 
   return (
     <div
+      ref={bannerRef}
       className="fixed inset-x-3 bottom-3 z-50 mx-auto max-w-md rounded-2xl border border-gold/40 bg-navydeep/95 p-4 shadow-2xl backdrop-blur-md sm:inset-x-auto sm:bottom-6 sm:right-6"
       role="dialog"
       aria-label="Install Sortes"
