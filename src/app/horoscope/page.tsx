@@ -227,6 +227,9 @@ export default function HoroscopePage() {
             and open Today&apos;s transits to this chart under the wheel. That view uses real
             planetary positions matched to your natal planets; this page does not.
           </p>
+          <Link href="/spreads/quick-insight" className="btn-gold mt-4 inline-block rounded-xl px-6 py-3 font-bold">
+            Ask a personal reading about this
+          </Link>
         </article>
       )}
     </div>

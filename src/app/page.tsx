@@ -9,6 +9,7 @@ import StatsStrip from "@/components/StatsStrip";
 import SampleReading from "@/components/SampleReading";
 import TarotFan from "@/components/TarotFan";
 import OrbitImages from "@/components/OrbitImages";
+import ReturnLoop from "@/components/ReturnLoop";
 import Icon from "@/components/Icon";
 import { MagicBento, ShinyText, StarBorder } from "@/components/ReactBits";
 import { GradientText, Magnet, Orb, SpotlightCard } from "@/components/ReactBitsNew";
@@ -306,6 +307,10 @@ export default function Home() {
         </motion.div>
       </section>
 
+      {/* Deep UX Batch B: return loop, daily quote, today's card,
+          and journal preview, on home itself, before the seek cards. */}
+      <ReturnLoop />
+
       {/* DAILY CARD TEASER */}
       <section className="mx-auto max-w-4xl px-4 py-16 text-center sm:px-6">
         <motion.div {...fadeUp}>
@@ -325,14 +330,12 @@ export default function Home() {
           <div className="mt-8">
             <TarotFan cards={MAJORS.slice(0, 5)} />
           </div>
-          <StarBorder radius="1rem" className="mt-8">
-            <Link
-              href="/daily"
-              className="btn-gold inline-block rounded-2xl px-8 py-3.5 font-bold"
-            >
-              Draw today&apos;s card
-            </Link>
-          </StarBorder>
+          <Link
+            href="/daily"
+            className="btn-ghost mt-8 inline-block rounded-2xl px-8 py-3.5 font-semibold"
+          >
+            Draw today&apos;s card
+          </Link>
         </motion.div>
       </section>
     </div>

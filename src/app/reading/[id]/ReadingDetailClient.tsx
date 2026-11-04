@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { getReading, updateReading as updateLocalReading } from "@/lib/storage";
+import { getReading, saveReading, updateReading as updateLocalReading } from "@/lib/storage";
 import type { Reading, FollowUp } from "@/lib/types";
 import { useAuth } from "@/components/AuthProvider";
 import { getCard, orientationKeywords, orientationMeaning } from "@/lib/cards";
@@ -148,9 +148,42 @@ export default function ReadingDetail({ id }: { id: string }) {
   const [revisitSaved, setRevisitSaved] = useState(false);
   const [revisitSaving, setRevisitSaving] = useState(false);
 
+  // Codex fresh review on PR 51, correct: ReturnLoop can now link a
+  // server-only reading, but this page read local storage only and
+  // showed "Reading not found" on a new device. Fall back to the
+  // server history (full reading objects) when no local copy exists.
   useEffect(() => {
-    queueMicrotask(() => setReading(getReading(id) ?? null));
-  }, [id]);
+    const local = getReading(id);
+    if (local) {
+      setReading(local);
+      return;
+    }
+    if (!user) {
+      setReading(null);
+      return;
+    }
+    let cancelled = false;
+    fetch("/api/history")
+      .then((r) => r.json())
+      .then((d) => {
+        if (cancelled) return;
+        const found = (d.readings ?? []).find((r: { id: string }) => r.id === id);
+        // Codex fresh review on PR 51, correct: opening the reading
+        // is not enough. Save and revisit-note controls call
+        // updateReading, which returns early when the reading is
+        // absent from local storage, so edits on this new-device
+        // path were silently lost. Hydrate the server copy locally
+        // so those updates work and PATCH the server copy too.
+        if (found && !getReading(id)) saveReading(found as Reading);
+        setReading((found as Reading) ?? null);
+      })
+      .catch(() => {
+        if (!cancelled) setReading(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [id, user]);
 
   // Prefill the step input from the saved step once the reading loads,
   // so clearing the field actually clears it instead of falling back.
@@ -382,6 +415,13 @@ export default function ReadingDetail({ id }: { id: string }) {
           </section>
         )}
       </div>
+
+      <p className="mx-auto mt-10 max-w-3xl text-center text-sm text-mist">
+        Want the astrology side of this question?{" "}
+        <Link href="/charts" className="font-semibold text-goldbright underline underline-offset-4">
+          Cast a birth chart for it
+        </Link>
+      </p>
 
       <div className="mx-auto mt-10 max-w-3xl rounded-3xl border border-gold/25 bg-panel/60 p-6 text-left sm:p-8">
         <p className="text-xs uppercase tracking-[0.25em] text-gold">
