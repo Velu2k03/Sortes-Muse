@@ -14,7 +14,7 @@ import TypewriterText from "@/components/TypewriterText";
 import SplitText from "@/components/SplitText";
 import SwipeToast from "@/components/SwipeToast";
 import Breadcrumbs from "@/components/Breadcrumbs";
-import FadeContent from "@/components/FadeContent";
+import AnimatedContent from "@/components/AnimatedContent";
 
 /**
  * Reading detail: full cards + interpretation + share + "Ask a follow-up" upsell.
@@ -276,7 +276,7 @@ export default function ReadingDetail({ id }: { id: string }) {
           })
         );
         return (
-          <FadeContent trigger="scroll">
+          <AnimatedContent trigger="scroll" wipe="up" blur={10} distance={60} duration={0.8} scale={0.98} threshold={0.2}>
           <section className="mx-auto mt-8 max-w-3xl rounded-3xl border border-gold/25 bg-panel/60 p-6 text-left sm:p-8">
             <p className="text-xs uppercase tracking-[0.25em] text-gold">
               About this reading, at a glance
@@ -324,7 +324,7 @@ export default function ReadingDetail({ id }: { id: string }) {
               story was used for this reading only and is not saved here.
             </p>
           </section>
-          </FadeContent>
+          </AnimatedContent>
         );
       })()}
 

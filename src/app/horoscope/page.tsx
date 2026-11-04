@@ -7,7 +7,7 @@ import Icon from "@/components/Icon";
 import ThemedDatePicker from "@/components/ThemedDatePicker";
 import OptionWheel from "@/components/OptionWheel";
 import TextType from "@/components/TextType";
-import FadeContent from "@/components/FadeContent";
+import AnimatedContent from "@/components/AnimatedContent";
 import RubberSegment from "@/components/RubberSegment";
 import { ClickSpark, StarBorder } from "@/components/ReactBits";
 
@@ -19,7 +19,7 @@ import { ClickSpark, StarBorder } from "@/components/ReactBits";
 // and uncharged, and it does not ask for any birth data.
 //
 // Phase A reveal: the user picks a sign and a date, taps Reveal, and the
-// result appears with a TextType sign line and a FadeContent body.
+// result appears with a TextType sign line and a rise animation body.
 // Phase B adds a short unveiling beat (1200ms, wait-and-reward pacing
 // Velu allowed 2026-11-04). The beat is presentation only: the text is
 // local and already computed, and the status line says unveiling, never
@@ -204,7 +204,7 @@ export default function HoroscopePage() {
               </div>
             </>
           ) : (
-            <FadeContent trigger="mount" effect="fade" stagger={0.08}>
+            <AnimatedContent trigger="mount" wipe="up" blur={10} distance={60} duration={0.8} scale={0.98} threshold={0.2} stagger={0.08}>
               <p className="mt-3 text-lg leading-relaxed text-cream">{view === "daily" ? h.theme : w.theme}</p>
               <p className="mt-3 leading-relaxed text-cream/85">{view === "daily" ? h.reflection : w.reflection}</p>
               <div className="mt-4 flex flex-wrap gap-x-6 gap-y-1 text-sm text-cream/80">
@@ -214,7 +214,7 @@ export default function HoroscopePage() {
                   <strong className="num text-cream">{view === "daily" ? h.luckyNumber : w.luckyNumber}</strong>
                 </span>
               </div>
-            </FadeContent>
+            </AnimatedContent>
           )}
           <p className="mt-4 text-sm text-cream/60">
             General sun-sign reflection only. For a personal reading, draw a card or cast a birth chart.

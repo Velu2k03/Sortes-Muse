@@ -11,8 +11,8 @@ import TarotFan from "@/components/TarotFan";
 import OrbitImages from "@/components/OrbitImages";
 import ReturnLoop from "@/components/ReturnLoop";
 import Icon from "@/components/Icon";
-import { DarkVeil, MagicBento, ShinyText, StarBorder } from "@/components/ReactBits";
-import { GradientText, Magnet, SpotlightCard } from "@/components/ReactBitsNew";
+import { MagicBento, ShinyText, StarBorder } from "@/components/ReactBits";
+import { GradientText, Magnet, Orb, SpotlightCard } from "@/components/ReactBitsNew";
 
 const fadeUp = {
   initial: { opacity: 0, y: 24 },
@@ -36,7 +36,8 @@ export default function Home() {
             className="object-cover opacity-70"
           />
           <div className="absolute inset-0 bg-gradient-to-b from-ink/60 via-ink/75 to-ink" />
-          <DarkVeil />
+          {/* Deep UX Batch A2, doc item 11: Orb hero background, app gold only. */}
+          <Orb />
           {/* Ambient drifting glows */}
           <div
             className="nebula absolute -left-32 top-1/4 h-[28rem] w-[28rem] rounded-full opacity-25 blur-3xl"
