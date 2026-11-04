@@ -497,8 +497,10 @@ export default function IntakeFlow({ slug }: { slug: string }) {
                 What happens next: the cards are drawn, you give one word
                 for your first impression, then the reading is written for
                 your question. Nothing has been charged yet: the Oracle
-                is spent only when the reading is written, after your
-                impression, not at the draw.
+                is spent when you confirm generation, after your
+                impression, not at the draw. If generation fails, a
+                guest Oracle is returned; a signed-in Oracle is spent
+                only after a reading is written.
               </p>
             </div>
 
