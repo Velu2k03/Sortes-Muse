@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { getReading, updateReading as updateLocalReading } from "@/lib/storage";
+import { getReading, saveReading, updateReading as updateLocalReading } from "@/lib/storage";
 import type { Reading, FollowUp } from "@/lib/types";
 import { useAuth } from "@/components/AuthProvider";
 import { getCard, orientationKeywords, orientationMeaning } from "@/lib/cards";
@@ -14,7 +14,7 @@ import TypewriterText from "@/components/TypewriterText";
 import SplitText from "@/components/SplitText";
 import SwipeToast from "@/components/SwipeToast";
 import Breadcrumbs from "@/components/Breadcrumbs";
-import FadeContent from "@/components/FadeContent";
+import AnimatedContent from "@/components/AnimatedContent";
 
 /**
  * Reading detail: full cards + interpretation + share + "Ask a follow-up" upsell.
@@ -148,9 +148,42 @@ export default function ReadingDetail({ id }: { id: string }) {
   const [revisitSaved, setRevisitSaved] = useState(false);
   const [revisitSaving, setRevisitSaving] = useState(false);
 
+  // Codex fresh review on PR 51, correct: ReturnLoop can now link a
+  // server-only reading, but this page read local storage only and
+  // showed "Reading not found" on a new device. Fall back to the
+  // server history (full reading objects) when no local copy exists.
   useEffect(() => {
-    queueMicrotask(() => setReading(getReading(id) ?? null));
-  }, [id]);
+    const local = getReading(id);
+    if (local) {
+      setReading(local);
+      return;
+    }
+    if (!user) {
+      setReading(null);
+      return;
+    }
+    let cancelled = false;
+    fetch("/api/history")
+      .then((r) => r.json())
+      .then((d) => {
+        if (cancelled) return;
+        const found = (d.readings ?? []).find((r: { id: string }) => r.id === id);
+        // Codex fresh review on PR 51, correct: opening the reading
+        // is not enough. Save and revisit-note controls call
+        // updateReading, which returns early when the reading is
+        // absent from local storage, so edits on this new-device
+        // path were silently lost. Hydrate the server copy locally
+        // so those updates work and PATCH the server copy too.
+        if (found && !getReading(id)) saveReading(found as Reading);
+        setReading((found as Reading) ?? null);
+      })
+      .catch(() => {
+        if (!cancelled) setReading(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [id, user]);
 
   // Prefill the step input from the saved step once the reading loads,
   // so clearing the field actually clears it instead of falling back.
@@ -243,7 +276,7 @@ export default function ReadingDetail({ id }: { id: string }) {
           })
         );
         return (
-          <FadeContent trigger="scroll">
+          <AnimatedContent trigger="scroll" wipe="up" blur={10} distance={60} duration={0.8} scale={0.98} threshold={0.2}>
           <section className="mx-auto mt-8 max-w-3xl rounded-3xl border border-gold/25 bg-panel/60 p-6 text-left sm:p-8">
             <p className="text-xs uppercase tracking-[0.25em] text-gold">
               About this reading, at a glance
@@ -291,7 +324,7 @@ export default function ReadingDetail({ id }: { id: string }) {
               story was used for this reading only and is not saved here.
             </p>
           </section>
-          </FadeContent>
+          </AnimatedContent>
         );
       })()}
 
@@ -382,6 +415,16 @@ export default function ReadingDetail({ id }: { id: string }) {
           </section>
         )}
       </div>
+
+      <p className="mx-auto mt-10 max-w-3xl text-center text-sm text-mist">
+        Want the astrology side of this question?{" "}
+        <Link href="/charts" className="font-semibold text-goldbright underline underline-offset-4">
+          Cast a birth chart for it
+        </Link>
+      </p>
+      <p className="mx-auto mt-4 max-w-3xl text-center text-sm text-mist">
+        Your story is not shown here on purpose: it was used for this reading only and is not saved.
+      </p>
 
       <div className="mx-auto mt-10 max-w-3xl rounded-3xl border border-gold/25 bg-panel/60 p-6 text-left sm:p-8">
         <p className="text-xs uppercase tracking-[0.25em] text-gold">

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Icon from "@/components/Icon";
-import FadeContent from "@/components/FadeContent";
+import AnimatedContent from "@/components/AnimatedContent";
 
 /**
  * Themed date picker for /charts. It draws the calendar popup in
@@ -155,7 +155,7 @@ export default function ThemedDatePicker({
               type="button"
               onClick={() => shiftMonth(-1)}
               aria-label="Previous month"
-              className="rounded-full border border-gold/40 p-2 text-goldbright hover:bg-gold/15"
+              className="rounded-full border border-gold/40 p-3 text-goldbright hover:bg-gold/15"
             >
               <Icon name="chevronLeft" size={18} />
             </button>
@@ -166,7 +166,7 @@ export default function ThemedDatePicker({
               type="button"
               onClick={() => shiftMonth(1)}
               aria-label="Next month"
-              className="rounded-full border border-gold/40 p-2 text-goldbright hover:bg-gold/15"
+              className="rounded-full border border-gold/40 p-3 text-goldbright hover:bg-gold/15"
             >
               <Icon name="chevronRight" size={18} />
             </button>
@@ -179,7 +179,7 @@ export default function ThemedDatePicker({
           {/* The key remounts the fade when the month changes, so
               paging months fades the new grid in. The weekday row
               above stays static. */}
-          <FadeContent key={`${viewYear}-${viewMonth}`} trigger="mount" effect="fade">
+          <AnimatedContent key={`${viewYear}-${viewMonth}`} trigger="mount" wipe="up" blur={10} distance={60} duration={0.8} scale={0.98} threshold={0.2}>
             <div className="mt-1 grid grid-cols-7 gap-1">
             {cells.map((c) => {
               const v = toValue(c.y, c.m, c.d);
@@ -210,7 +210,7 @@ export default function ThemedDatePicker({
               );
             })}
             </div>
-          </FadeContent>
+          </AnimatedContent>
           <div className="mt-3 flex items-center justify-between border-t border-gold/20 pt-3">
             <button
               type="button"

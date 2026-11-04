@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useEffect } from "react";
 import { getCard, suitLabel } from "@/lib/cards";
 import HoloCard from "@/components/HoloCard";
-import FadeContent from "@/components/FadeContent";
+import AnimatedContent from "@/components/AnimatedContent";
 
 interface Props {
   cardId: string | null;
@@ -53,7 +53,7 @@ export default function CardModal({ cardId, onClose }: Props) {
             >
               ×
             </button>
-            <FadeContent trigger="mount" effect="fade" blur duration={0.7} stagger={0.08}>
+            <AnimatedContent trigger="mount" wipe="up" blur={10} distance={60} duration={0.8} scale={0.98} threshold={0.2} stagger={0.08}>
             <div className="flex flex-col gap-6 sm:flex-row">
               <div className="mx-auto shrink-0 sm:mx-0">
                 {/* One card only, so one WebGL context. Gold preset and
@@ -139,7 +139,7 @@ export default function CardModal({ cardId, onClose }: Props) {
                 future.
               </p>
             </div>
-            </FadeContent>
+            </AnimatedContent>
           </motion.div>
         </motion.div>
       )}

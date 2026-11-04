@@ -17,7 +17,7 @@ const NAV: { href: string; label: string; icon: IconName; desc: string }[] = [
   { href: "/", label: "Home", icon: "home", desc: "Start here: daily card, spreads, and charts" },
   { href: "/deck", label: "Deck", icon: "deck", desc: "All 78 cards, upright and reversed" },
   { href: "/daily", label: "Daily Card", icon: "sparkle", desc: "Your free card of the day" },
-  { href: "/spreads", label: "Readings", icon: "search", desc: "Tarot spreads for a question" },
+  { href: "/spreads", label: "Spreads", icon: "search", desc: "Tarot spreads for a question" },
   { href: "/charts", label: "Charts", icon: "chart", desc: "Birth charts: Western, Vedic, Ziwei" },
   { href: "/reports", label: "Reports", icon: "briefcase", desc: "Keep-forever reports, 1 Oracle each" },
   { href: "/horoscope", label: "Horoscope", icon: "globe", desc: "Daily and weekly reflections, free" },
@@ -25,12 +25,40 @@ const NAV: { href: string; label: string; icon: IconName; desc: string }[] = [
   { href: "/history", label: "Journal", icon: "lock", desc: "Your past readings and notes" },
 ];
 
-// Footer-only sections, listed in the mobile menu (a vertical list has
-// room; the desktop bar stays at nine items so it does not wrap).
-const MOBILE_NAV: { href: string; label: string; icon: IconName; desc: string }[] = [
-  ...NAV,
+// Unified names, decided in the post-report review: Spreads (not
+// Readings), Journal (not History), Oracles (not Credits). The same
+// names are used in the desktop bar, the mobile menu, and the footer.
+// Desktop discoverability: Oracles and FAQ are not hidden behind a
+// second tap. They live in the More menu on desktop, so every destination is reachable from the desktop bar without crowding it. Deck stays in the primary bar; More holds Birth Card, Oracles, and FAQ.
+// destinations are reachable from the desktop bar without crowding it.
+const MORE: { href: string; label: string; icon: IconName; desc: string }[] = [
   { href: "/birth-card", label: "Birth Card", icon: "calendar", desc: "One Major Arcana card from your birth date" },
+  { href: "/credits", label: "Oracles", icon: "coin", desc: "Buy Oracles: 5, 12, and 30 packs" },
   { href: "/faq", label: "FAQ", icon: "info", desc: "Common questions, answered" },
+];
+// Deep UX Batch B: the mobile menu is grouped by job, so a user
+// finds a section by what they want to do, not by guessing a label.
+const MOBILE_GROUPS: { heading: string; items: { href: string; label: string; icon: IconName; desc: string }[] }[] = [
+  { heading: "Reflect", items: [
+    { href: "/", label: "Home", icon: "home", desc: "Start here: daily card, spreads, and charts" },
+    { href: "/daily", label: "Daily Card", icon: "sparkle", desc: "Your free card of the day" },
+    { href: "/spreads", label: "Spreads", icon: "search", desc: "Tarot spreads for a question" },
+  ]},
+  { heading: "Understand", items: [
+    { href: "/charts", label: "Charts", icon: "chart", desc: "Birth charts: Western, Vedic, Ziwei" },
+    { href: "/reports", label: "Reports", icon: "briefcase", desc: "Keep-forever reports, 1 Oracle each" },
+    { href: "/horoscope", label: "Horoscope", icon: "globe", desc: "Daily and weekly reflections, free" },
+  ]},
+  { heading: "Explore", items: [
+    { href: "/deck", label: "Deck", icon: "deck", desc: "All 78 cards, upright and reversed" },
+    { href: "/guides", label: "Guides", icon: "iconoirBook", desc: "How tarot and charts work" },
+    { href: "/birth-card", label: "Birth Card", icon: "calendar", desc: "One Major Arcana card from your birth date" },
+  ]},
+  { heading: "Keep", items: [
+    { href: "/history", label: "Journal", icon: "lock", desc: "Your past readings and notes" },
+    { href: "/credits", label: "Oracles", icon: "coin", desc: "Buy Oracles: 5, 12, and 30 packs" },
+    { href: "/faq", label: "FAQ", icon: "info", desc: "Common questions, answered" },
+  ]},
 ];
 
 export default function Header() {
@@ -39,7 +67,7 @@ export default function Header() {
   // Phase F: the current section is marked, on desktop and mobile, so
   // a user always knows where they are. Deep pages highlight their
   // parent section: a reading detail highlights Journal, an intake or
-  // spread flow highlights Readings, a report detail highlights Reports.
+  // spread flow highlights Spreads, a report detail highlights Reports.
   const isActive = (href: string) => {
     if (pathname === href) return true;
     if (href === "/spreads" && (pathname.startsWith("/spreads/") || pathname.startsWith("/intake/"))) return true;
@@ -49,6 +77,7 @@ export default function Header() {
     return false;
   };
   const [open, setOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   // Theme default is light, persisted in
   // localStorage under sortes-theme, layout's inline script already
   // set data-theme before paint so there is no light flash. The toggle
@@ -80,7 +109,7 @@ export default function Header() {
     <header className="sticky top-0 z-40 border-b border-gold/15 bg-ink/85 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
         {/* Header crowding fix: desktop nav only at lg and up, so the
-            7-item nav plus credit pill, Top up, and Sign in do not
+            nav plus credit pill, Top up, and Sign in do not
             collide or wrap at tablet widths (768-1024px). Below lg the
             hamburger menu carries all nav items. Logo is smaller at
             small widths to keep it clear of the first nav item. */}
@@ -116,6 +145,38 @@ export default function Header() {
               </Link>
             );
           })}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setMoreOpen((v) => !v)}
+              onKeyDown={(e) => { if (e.key === "Escape") setMoreOpen(false); }}
+              aria-expanded={moreOpen}
+              aria-haspopup="true"
+              className="text-sm text-cream/80 transition hover:text-goldbright"
+            >
+              More
+            </button>
+            {moreOpen && (
+              <div className="absolute right-0 top-full z-50 mt-2 w-64 rounded-2xl border border-gold/25 bg-navydeep p-2 shadow-2xl">
+                {MORE.map((n) => {
+                  const active = isActive(n.href);
+                  return (
+                    <Link
+                      key={n.href}
+                      href={n.href}
+                      onClick={() => setMoreOpen(false)}
+                      title={n.desc}
+                      aria-current={active ? "page" : undefined}
+                      className={`block rounded-xl px-3 py-2.5 hover:bg-gold/10 ${active ? "font-semibold text-goldbright" : "text-cream/90"}`}
+                    >
+                      <span className="block text-sm">{n.label}</span>
+                      <span className="block text-xs text-mist">{n.desc}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </nav>
 
         <div className="flex shrink-0 items-center gap-3">
@@ -124,7 +185,7 @@ export default function Header() {
             onClick={toggleTheme}
             aria-label={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
             title={theme === "dark" ? "Light theme" : "Dark theme"}
-            className="rounded-lg p-2 text-cream/80 transition hover:text-goldbright"
+            className="rounded-lg p-3 text-cream/80 transition hover:text-goldbright"
           >
             <Icon name={theme === "dark" ? "sun" : "moon"} size={20} />
           </button>
@@ -152,7 +213,7 @@ export default function Header() {
                 href="/account"
                 title={user.email}
                 aria-label={`Account: ${user.email}`}
-                className="hidden h-8 w-8 items-center justify-center rounded-full border border-gold/50 bg-gold/15 font-display text-sm font-bold text-goldbright transition hover:border-goldbright lg:flex"
+                className="hidden h-11 w-11 items-center justify-center rounded-full border border-gold/50 bg-gold/15 font-display text-sm font-bold text-goldbright transition hover:border-goldbright lg:flex"
               >
                 {initial}
               </Link>
@@ -166,7 +227,7 @@ export default function Header() {
             ))}
           <button
             type="button"
-            className="rounded-lg p-2 text-cream/80 lg:hidden"
+            className="rounded-lg p-3 text-cream/80 lg:hidden"
             onClick={() => setOpen((v) => !v)}
             aria-label="Toggle menu"
             aria-expanded={open}
@@ -178,33 +239,38 @@ export default function Header() {
 
       {open && (
         <nav
-          className="border-t border-gold/15 bg-ink/95 px-4 py-3 lg:hidden"
+          className="max-h-[calc(100dvh-4rem)] overflow-y-auto border-t border-gold/15 bg-ink/95 px-4 py-3 lg:hidden"
           aria-label="Mobile"
         >
-          {MOBILE_NAV.map((n) => {
-            const active = isActive(n.href);
-            return (
-              <Link
-                key={n.href}
-                href={n.href}
-                onClick={() => setOpen(false)}
-                aria-current={active ? "page" : undefined}
-                className="flex items-start gap-3 rounded-lg px-3 py-2.5 hover:bg-gold/10"
-              >
-                <span className="mt-0.5 shrink-0">
-                  <Icon name={n.icon} size={20} />
-                </span>
-                <span>
-                  <span
-                    className={`block text-base ${active ? "font-semibold text-goldbright" : "text-cream/90"}`}
+          {MOBILE_GROUPS.map((g) => (
+            <div key={g.heading}>
+              <p className="px-3 pb-1 pt-3 text-xs uppercase tracking-[0.2em] text-gold">{g.heading}</p>
+              {g.items.map((n) => {
+                const active = isActive(n.href);
+                return (
+                  <Link
+                    key={n.href}
+                    href={n.href}
+                    onClick={() => setOpen(false)}
+                    aria-current={active ? "page" : undefined}
+                    className="flex items-start gap-3 rounded-lg px-3 py-2.5 hover:bg-gold/10"
                   >
-                    {n.label}
-                  </span>
-                  <span className="block text-xs text-mist">{n.desc}</span>
-                </span>
-              </Link>
-            );
-          })}
+                    <span className="mt-0.5 shrink-0">
+                      <Icon name={n.icon} size={20} />
+                    </span>
+                    <span>
+                      <span
+                        className={`block text-base ${active ? "font-semibold text-goldbright" : "text-cream/90"}`}
+                      >
+                        {n.label}
+                      </span>
+                      <span className="block text-xs text-mist">{n.desc}</span>
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
           <Link
             href="/credits"
             onClick={() => setOpen(false)}

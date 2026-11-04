@@ -395,6 +395,17 @@ export default function ReportsClient() {
         />
       </div>
       <p className="mt-3 text-center text-sm text-cream/75">{TYPE_BLURBS[type]}</p>
+      <details className="mx-auto mt-4 max-w-xl rounded-2xl border border-gold/20 bg-panel/60 p-4 text-left">
+        <summary className="cursor-pointer font-semibold text-goldbright">See a sample report layout, before you spend an Oracle</summary>
+        <p className="mt-2 text-sm text-cream/80">
+          This is the layout, not a personal report. Your generated report fills the same sections with your own positions.
+        </p>
+        <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-cream/80">
+          <li>Transit report: interpretation, Western transits on your date, Vedic Gochara.</li>
+          <li>Year-ahead reading: interpretation, monthly themes, Dasha outlook, Ziwei annual layer.</li>
+          <li>Relationship comparison: interpretation, the two charts, cross-aspects.</li>
+        </ul>
+      </details>
       {type === "comparison" && (
         <p className="mt-2 text-center text-sm text-mist">
           This comparison is opt-in and mutual: you enter both charts. It describes dynamics only, never
@@ -524,7 +535,7 @@ export default function ReportsClient() {
       )}
 
       {result && (
-        <AnimatedContent trigger="mount" wipe="up" blur={8} distance={40} duration={0.8} stagger={0.08}>
+        <AnimatedContent trigger="mount" wipe="up" blur={10} distance={60} duration={0.8} scale={0.98} threshold={0.2} stagger={0.08}>
         <div className="mt-8 rounded-3xl border border-gold/25 bg-panel/70 p-6">
           <p className="text-xs uppercase tracking-[0.35em] text-gold">Your report</p>
           <h2 className="mt-1 font-display text-3xl text-goldbright">{result.title}</h2>
