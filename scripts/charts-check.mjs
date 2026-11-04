@@ -677,7 +677,9 @@ console.log("charts-check: all assertions passed");
   const header = fs.readFileSync("src/components/Header.tsx", "utf8");
   assert.ok(header.includes("MOBILE_GROUPS") && header.includes("Reflect") && header.includes("Understand") && header.includes("Explore") && header.includes("Keep"), "mobile menu must be grouped by job");
   const footer = fs.readFileSync("src/components/Footer.tsx", "utf8");
-  assert.ok(footer.includes(">Deck<") && footer.includes(">Credits<") && footer.includes(">History<"), "footer labels must match routes");
+  // Unified names (review fix): Spreads, Journal, Oracles everywhere,
+  // replacing the old footer-only Credits/History labels.
+  assert.ok(footer.includes(">Deck<") && footer.includes(">Oracles<") && footer.includes(">Journal<") && footer.includes(">Spreads<"), "footer labels must use the unified names");
   const homeBatchB = fs.readFileSync("src/app/page.tsx", "utf8");
   assert.ok(homeBatchB.includes("<ReturnLoop />"), "home must show the return loop");
   const historyClientB = fs.readFileSync("src/app/history/HistoryClient.tsx", "utf8");
