@@ -8,6 +8,7 @@ import { motion } from "framer-motion";
 import { SPREADS, CARD_BACK } from "@/lib/tarot";
 import { getCard } from "@/lib/cards";
 import CheckoutModal from "@/components/CheckoutModal";
+import { GlareHover } from "@/components/ReactBitsNew";
 import { useAuth } from "@/components/AuthProvider";
 import { freeReadingUsed } from "@/lib/storage";
 
@@ -41,6 +42,29 @@ export default function SpreadsPage() {
             : "Your first Quick Insight reading is free, no card required. Other spreads need 1 Oracle, which is why they show Get Oracles to begin until you have one. After your free Quick Insight, every reading, any spread, is 1 Oracle."}
         </p>
       </div>
+
+      {/* Personal Phase 3: first-time guidance. The grid alone gives
+          six equal choices; a new user needs one obvious start. This
+          banner is a link only, it changes no gate, cost, or spread. */}
+      {!usedFree && (
+        <div className="mx-auto mt-8 max-w-2xl rounded-3xl border border-gold/25 bg-panel/60 p-6 text-center">
+          <p className="font-display text-2xl text-goldbright">
+            Start here, it is free
+          </p>
+          <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-cream/75">
+            Your first Quick Insight reading costs no Oracle and asks one
+            question. After that, every reading, any spread, is 1 Oracle.
+          </p>
+          <GlareHover className="mt-4 rounded-xl">
+            <Link
+              href="/spreads/quick-insight"
+              className="btn-gold inline-block rounded-xl px-8 py-3 font-bold"
+            >
+              Begin my free reading
+            </Link>
+          </GlareHover>
+        </div>
+      )}
 
       <div className="mt-10 grid gap-6 md:grid-cols-3">
         {SPREADS.map((s, i) => {

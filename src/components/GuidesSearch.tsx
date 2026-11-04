@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import type { Guide } from "@/lib/guides";
+import { AnimatedList } from "@/components/ReactBitsNew";
 
 export default function GuidesSearch({ guides }: { guides: Guide[] }) {
   const [query, setQuery] = useState("");
@@ -30,7 +31,7 @@ export default function GuidesSearch({ guides }: { guides: Guide[] }) {
         placeholder="Search guides, e.g. celtic, love, charts…"
         className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none"
       />
-      <div className="mt-10 space-y-4">
+      <AnimatedList className="mt-10 space-y-4">
         {list.map((g) => (
           <Link
             key={g.slug}
@@ -44,10 +45,10 @@ export default function GuidesSearch({ guides }: { guides: Guide[] }) {
             </span>
           </Link>
         ))}
-        {list.length === 0 && (
-          <p className="text-cream/75">No guides match that search. Try a shorter word.</p>
-        )}
-      </div>
+      </AnimatedList>
+      {list.length === 0 && (
+        <p className="mt-10 text-cream/75">No guides match that search. Try a shorter word.</p>
+      )}
     </div>
   );
 }
