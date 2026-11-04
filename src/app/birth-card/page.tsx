@@ -47,7 +47,8 @@ export default function BirthCardPage() {
         </label>
         <ThemedDatePicker id="birth-card-date" value={date} onChange={setDate} />
         <p className="mt-3 text-sm text-cream/70">
-          Method: keep adding the digits of your birth date until the total
+          Method: add the digits of your birth date; if the total is
+          over 22, add the digits of that total, and repeat until it
           is 22 or less (22 is The Fool). Pick a date and your card
           appears below, no button needed.
         </p>

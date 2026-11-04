@@ -430,6 +430,7 @@ export default function ChartsClient() {
             <li>Gender: Ziwei only.</li>
             <li>Birthplace: Rising and houses for Western and Vedic, longitude correction for Ziwei.</li>
             <li>Birth time: clock time at the birthplace. Western converts with a timezone database that includes DST rules. Vedic uses longitude divided by 15 only. Ziwei uses longitude correction only, 4 minutes per degree. Unknown time uses noon for planets and withholds Rising, Midheaven, and houses. Ziwei needs a birth hour.</li>
+            <li>Near a boundary: for Vedic or Ziwei times near a sign, nakshatra, or double-hour boundary, a longitude-only time can fall on either side, so treat borderline placements as approximate, not timezone-exact.</li>
           </ul>
         </details>
       </div>
