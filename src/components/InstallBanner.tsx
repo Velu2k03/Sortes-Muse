@@ -81,6 +81,18 @@ export default function InstallBanner() {
     const apply = () => {
       const h = bannerRef.current?.offsetHeight ?? 0;
       if (h > 0) document.body.style.paddingBottom = `${h + 24}px`;
+      // Codex fresh review on PR 53, correct: padding alone only
+      // extends the scroll range. If focus is already on a control
+      // the new banner covers, nudge the page just enough to bring
+      // that control clear of the banner top.
+      const active = document.activeElement as HTMLElement | null;
+      if (active && active !== document.body && h > 0) {
+        const rect = active.getBoundingClientRect();
+        const bannerTop = window.innerHeight - h;
+        if (rect.bottom > bannerTop && rect.top < window.innerHeight) {
+          window.scrollBy(0, rect.bottom - bannerTop + 16);
+        }
+      }
     };
     apply();
     const el = bannerRef.current;
