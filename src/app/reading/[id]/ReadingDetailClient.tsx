@@ -383,6 +383,13 @@ export default function ReadingDetail({ id }: { id: string }) {
         )}
       </div>
 
+      <p className="mx-auto mt-10 max-w-3xl text-center text-sm text-mist">
+        Want the astrology side of this question?{" "}
+        <Link href="/charts" className="font-semibold text-goldbright underline underline-offset-4">
+          Cast a birth chart for it
+        </Link>
+      </p>
+
       <div className="mx-auto mt-10 max-w-3xl rounded-3xl border border-gold/25 bg-panel/60 p-6 text-left sm:p-8">
         <p className="text-xs uppercase tracking-[0.25em] text-gold">
           My next step

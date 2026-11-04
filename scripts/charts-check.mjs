@@ -670,4 +670,23 @@ console.log("charts-check: all assertions passed");
   assert.ok(faqList.includes("Expand all") && faqList.includes("Collapse all") && faqList.includes("Jump to a question"), "FAQ must offer expand all, collapse all, and anchor links");
   assert.ok(spreadsClient2.includes("Readings are for reflection and perspective only"), "spreads index must carry the reflection disclaimer");
   console.log("personal-phase4: guide costs, FAQ controls, spread disclaimer: all source assertions passed");
+  // Deep UX Batch B: grouped mobile nav, footer route labels, home
+  // return loop, journal search and sort, report sample, cross-links.
+  // Report detail H1 was checked in this pass: it renders via
+  // SplitText tag="h1", so the audit's literal h1 grep missed it.
+  const header = fs.readFileSync("src/components/Header.tsx", "utf8");
+  assert.ok(header.includes("MOBILE_GROUPS") && header.includes("Reflect") && header.includes("Understand") && header.includes("Explore") && header.includes("Keep"), "mobile menu must be grouped by job");
+  const footer = fs.readFileSync("src/components/Footer.tsx", "utf8");
+  assert.ok(footer.includes(">Deck<") && footer.includes(">Credits<") && footer.includes(">History<"), "footer labels must match routes");
+  const homeBatchB = fs.readFileSync("src/app/page.tsx", "utf8");
+  assert.ok(homeBatchB.includes("<ReturnLoop />"), "home must show the return loop");
+  const historyClientB = fs.readFileSync("src/app/history/HistoryClient.tsx", "utf8");
+  assert.ok(historyClientB.includes('id="journal-search"') && historyClientB.includes('id="journal-sort"'), "journal must offer search and sort");
+  const reportsClient = fs.readFileSync("src/app/reports/ReportsClient.tsx", "utf8");
+  assert.ok(reportsClient.includes("See a sample report layout"), "reports must show a sample layout before spending");
+  const reportDetail = fs.readFileSync("src/app/reports/[id]/ReportDetailClient.tsx", "utf8");
+  assert.ok(reportDetail.includes('tag="h1"'), "report detail must render an h1 via SplitText");
+  const readingDetailB = fs.readFileSync("src/app/reading/[id]/ReadingDetailClient.tsx", "utf8");
+  assert.ok(readingDetailB.includes("Cast a birth chart for it"), "reading detail must link to charts");
+  console.log("deep-ux-batch-b: grouped nav, return loop, journal scale, report sample, cross-links: all source assertions passed");
 }

@@ -395,6 +395,17 @@ export default function ReportsClient() {
         />
       </div>
       <p className="mt-3 text-center text-sm text-cream/75">{TYPE_BLURBS[type]}</p>
+      <details className="mx-auto mt-4 max-w-xl rounded-2xl border border-gold/20 bg-panel/60 p-4 text-left">
+        <summary className="cursor-pointer font-semibold text-goldbright">See a sample report layout, before you spend an Oracle</summary>
+        <p className="mt-2 text-sm text-cream/80">
+          This is the layout, not a personal report. Your generated report fills the same sections with your own positions.
+        </p>
+        <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-cream/80">
+          <li>Transit report: interpretation, Western transits on your date, Vedic Gochara.</li>
+          <li>Year-ahead reading: interpretation, monthly themes, Dasha outlook, Ziwei annual layer.</li>
+          <li>Relationship comparison: interpretation, the two charts, cross-aspects.</li>
+        </ul>
+      </details>
       {type === "comparison" && (
         <p className="mt-2 text-center text-sm text-mist">
           This comparison is opt-in and mutual: you enter both charts. It describes dynamics only, never

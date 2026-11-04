@@ -27,10 +27,29 @@ const NAV: { href: string; label: string; icon: IconName; desc: string }[] = [
 
 // Footer-only sections, listed in the mobile menu (a vertical list has
 // room; the desktop bar stays at nine items so it does not wrap).
-const MOBILE_NAV: { href: string; label: string; icon: IconName; desc: string }[] = [
-  ...NAV,
-  { href: "/birth-card", label: "Birth Card", icon: "calendar", desc: "One Major Arcana card from your birth date" },
-  { href: "/faq", label: "FAQ", icon: "info", desc: "Common questions, answered" },
+// Deep UX Batch B: the mobile menu is grouped by job, so a user
+// finds a section by what they want to do, not by guessing a label.
+const MOBILE_GROUPS: { heading: string; items: { href: string; label: string; icon: IconName; desc: string }[] }[] = [
+  { heading: "Reflect", items: [
+    { href: "/", label: "Home", icon: "home", desc: "Start here: daily card, spreads, and charts" },
+    { href: "/daily", label: "Daily Card", icon: "sparkle", desc: "Your free card of the day" },
+    { href: "/spreads", label: "Readings", icon: "search", desc: "Tarot spreads for a question" },
+  ]},
+  { heading: "Understand", items: [
+    { href: "/charts", label: "Charts", icon: "chart", desc: "Birth charts: Western, Vedic, Ziwei" },
+    { href: "/reports", label: "Reports", icon: "briefcase", desc: "Keep-forever reports, 1 Oracle each" },
+    { href: "/horoscope", label: "Horoscope", icon: "globe", desc: "Daily and weekly reflections, free" },
+  ]},
+  { heading: "Explore", items: [
+    { href: "/deck", label: "Deck", icon: "deck", desc: "All 78 cards, upright and reversed" },
+    { href: "/guides", label: "Guides", icon: "iconoirBook", desc: "How tarot and charts work" },
+    { href: "/birth-card", label: "Birth Card", icon: "calendar", desc: "One Major Arcana card from your birth date" },
+  ]},
+  { heading: "Keep", items: [
+    { href: "/history", label: "Journal", icon: "lock", desc: "Your past readings and notes" },
+    { href: "/credits", label: "Oracles", icon: "coin", desc: "Buy Oracles: 5, 12, and 30 packs" },
+    { href: "/faq", label: "FAQ", icon: "info", desc: "Common questions, answered" },
+  ]},
 ];
 
 export default function Header() {
@@ -181,30 +200,35 @@ export default function Header() {
           className="border-t border-gold/15 bg-ink/95 px-4 py-3 lg:hidden"
           aria-label="Mobile"
         >
-          {MOBILE_NAV.map((n) => {
-            const active = isActive(n.href);
-            return (
-              <Link
-                key={n.href}
-                href={n.href}
-                onClick={() => setOpen(false)}
-                aria-current={active ? "page" : undefined}
-                className="flex items-start gap-3 rounded-lg px-3 py-2.5 hover:bg-gold/10"
-              >
-                <span className="mt-0.5 shrink-0">
-                  <Icon name={n.icon} size={20} />
-                </span>
-                <span>
-                  <span
-                    className={`block text-base ${active ? "font-semibold text-goldbright" : "text-cream/90"}`}
+          {MOBILE_GROUPS.map((g) => (
+            <div key={g.heading}>
+              <p className="px-3 pb-1 pt-3 text-xs uppercase tracking-[0.2em] text-gold">{g.heading}</p>
+              {g.items.map((n) => {
+                const active = isActive(n.href);
+                return (
+                  <Link
+                    key={n.href}
+                    href={n.href}
+                    onClick={() => setOpen(false)}
+                    aria-current={active ? "page" : undefined}
+                    className="flex items-start gap-3 rounded-lg px-3 py-2.5 hover:bg-gold/10"
                   >
-                    {n.label}
-                  </span>
-                  <span className="block text-xs text-mist">{n.desc}</span>
-                </span>
-              </Link>
-            );
-          })}
+                    <span className="mt-0.5 shrink-0">
+                      <Icon name={n.icon} size={20} />
+                    </span>
+                    <span>
+                      <span
+                        className={`block text-base ${active ? "font-semibold text-goldbright" : "text-cream/90"}`}
+                      >
+                        {n.label}
+                      </span>
+                      <span className="block text-xs text-mist">{n.desc}</span>
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
           <Link
             href="/credits"
             onClick={() => setOpen(false)}
