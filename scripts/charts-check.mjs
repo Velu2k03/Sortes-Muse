@@ -561,7 +561,11 @@ console.log("charts-check: all assertions passed");
   // Codex P2 fix supersedes the old in-memory-only line: birth
   // details are now honestly disclosed as remembered on device.
   assert.ok(charts.includes("remembered on this device"), "charts privacy must stay, disclosing on-device retention");
-  assert.ok(charts.includes("AI gets chart") && charts.includes("never birth data"), "charts privacy must stay, in one short line (storage wording is PR 50's disclosed version)");
+  // Merge resolution fix: PR 50's disclosed wording wins on main
+  // ("AI gets only chart positions"), so the old PR 54 pin for the
+  // pre-merge wording ("AI gets chart") no longer matches. The
+  // disclosure itself is unchanged and still checked below.
+  assert.ok(charts.includes("AI gets only chart positions") && charts.includes("never birth data"), "charts privacy must stay, in one short line (storage wording is PR 50's disclosed version)");
 
   console.log("batch10: slop trim, short copy, privacy kept: all source assertions passed");
   // Batch 11: validator fixes, plus the fan. No ReactDrops code copied.
