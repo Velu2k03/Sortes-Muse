@@ -36,8 +36,29 @@ export default function ReturnLoop() {
       setDailyReversed(daily.reversed);
     }
     setStreak(getDailyStreak());
-    const history = getHistory();
-    if (history.length > 0) setLatest(history[0]);
+    // Codex review on PR 51, correct: signed-in users whose readings
+    // live only on the server got "no readings saved yet" here,
+    // because this read local storage only. Merge server history the
+    // same way the journal page does; GET returns an empty list when
+    // signed out, so this is safe for guests too.
+    const local = getHistory();
+    const pick = (list: typeof local) => {
+      const sorted = [...list].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+      if (sorted.length > 0) setLatest(sorted[0]);
+    };
+    pick(local);
+    fetch("/api/history")
+      .then((r) => r.json())
+      .then((d) => {
+        const server = Array.isArray(d.readings) ? d.readings : [];
+        const seen = new Set(local.map((r) => r.id));
+        const merged = [...local];
+        for (const r of server) {
+          if (!seen.has(r.id)) merged.push(r);
+        }
+        pick(merged);
+      })
+      .catch(() => {});
     setLoaded(true);
   }, []);
 
