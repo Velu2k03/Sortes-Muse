@@ -424,7 +424,7 @@ console.log("charts-check: all assertions passed");
   // Direct checkout added disabled:opacity-60 to the same solid button,
   // so accept that suffix. The button is still solid btn-gold, same size
   // and weight, in all three pack cards.
-  assert.ok(credits.includes('className="btn-gold mt-5 w-full rounded-xl px-4 py-3 font-bold disabled:opacity-60"'), "all credits Buy buttons must be solid btn-gold, equal size and weight");
+  assert.ok(credits.includes('className="btn-gold mt-4 w-full rounded-xl px-4 py-2.5 font-bold disabled:opacity-60"'), "all credits Buy buttons must be solid btn-gold, equal size and weight");
   assert.ok(credits.includes("Most popular") || credits.includes("MOST POPULAR") || credits.includes("Most Popular"), "popular pack must still carry its badge distinction");
   const css = fs.readFileSync("src/app/globals.css", "utf8");
   assert.ok(css.includes(".btn-secondary"), "btn-secondary must be defined in globals.css");
