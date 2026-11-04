@@ -8,7 +8,6 @@ import { getPurchaseHistory, type Purchase } from "@/lib/storage";
 import { useAuth } from "@/components/AuthProvider";
 import CheckoutModal from "@/components/CheckoutModal";
 import PurchaseConfirmer from "@/components/PurchaseConfirmer";
-import SampleReading from "@/components/SampleReading";
 import Counter from "@/components/Counter";
 import PixelCard from "@/components/PixelCard";
 import { useSearchParams } from "next/navigation";
@@ -20,25 +19,6 @@ interface ServerTx {
   readings: number;
   created_at: string;
 }
-
-// Pack badge artwork: the same Flow images used as the Lemon Squeezy
-// product covers, downscaled to 160px thumbnails in public/packs so the
-// cards stay light on mobile. The pack name sits right beside the image,
-// so the image itself is decorative.
-const PACK_IMAGES: Record<string, string> = {
-  "pack-5": "/packs/first-light.jpg",
-  "pack-12": "/packs/constellation.jpg",
-  "pack-30": "/packs/celestial-treasury.jpg",
-};
-
-// Positioning line under each pack name, the way premium pricing cards
-// name who the tier is for. Kept local like PACK_IMAGES so no pricing
-// file changes.
-const PACK_TAGLINES: Record<string, string> = {
-  "pack-5": "A quiet place to begin",
-  "pack-12": "A steady rhythm of readings",
-  "pack-30": "Room for every question",
-};
 
 export default function CreditsPage() {
   const { credits, user } = useAuth();
@@ -133,43 +113,44 @@ export default function CreditsPage() {
       {justPurchased && <PurchaseConfirmer />}
       {/* Header now lives in the server page, see page.tsx, so the
           H1 is in the initial HTML. Balance stays centered here. */}
-      <div className="text-center">
-        {reducedMotion ? (
-          <p className="num mt-6 text-7xl font-bold text-cream">
-            {credits ?? 0}
-            <span className="ml-2 align-middle font-body text-lg text-mist">
-              {(credits ?? 0) === 1 ? "Oracle" : "Oracles"}
-            </span>
-          </p>
-        ) : (
-          <div className="mt-6 flex items-baseline justify-center gap-2">
-            <Counter
-              value={credits ?? 0}
-              textColor={siteTheme === "light" ? "#1c1a15" : "#ede6d6"}
-              fontSize={72}
-              fontWeight="bold"
-            />
-            <span className="font-body text-lg text-mist">
-              {(credits ?? 0) === 1 ? "Oracle" : "Oracles"}
-            </span>
-          </div>
-        )}
-        <p className="mx-auto mt-4 max-w-md text-sm text-cream/75">
-          1 Oracle = 1 full reading. Your daily card is always
-          free and never uses an Oracle. Oracles never expire.
-          {user && <span className="block mt-1 text-mist">Signed in as {user.email}</span>}
+      <div className="mt-6 flex flex-col items-center gap-3 text-center sm:flex-row sm:items-end sm:justify-between sm:text-left">
+        <div>
+          {reducedMotion ? (
+            <p className="num text-6xl font-bold text-cream">
+              {credits ?? 0}
+              <span className="ml-2 align-middle font-body text-lg text-mist">
+                {(credits ?? 0) === 1 ? "Oracle" : "Oracles"}
+              </span>
+            </p>
+          ) : (
+            <div className="flex items-baseline justify-center gap-2 sm:justify-start">
+              <Counter
+                value={credits ?? 0}
+                textColor={siteTheme === "light" ? "#1c1a15" : "#ede6d6"}
+                fontSize={56}
+                fontWeight="bold"
+              />
+              <span className="font-body text-lg text-mist">
+                {(credits ?? 0) === 1 ? "Oracle" : "Oracles"}
+              </span>
+            </div>
+          )}
+          {user && <p className="mt-1 text-sm text-mist">Signed in as {user.email}</p>}
+        </div>
+        <p className="max-w-md text-sm text-cream/75">
+          1 Oracle = 1 full reading. Daily card free. Oracles never expire,
+          no subscription. An Oracle opens a reading, not a prediction or promise.{" "}
+          <Link href="/faq#what-are-the-five-oracle-rules" className="text-goldbright underline">
+            See all five Oracle rules
+          </Link>
         </p>
-        <ul className="mx-auto mt-4 max-w-md space-y-1 text-left text-sm text-cream/75">
-          <li>Free first: your first Quick Insight reading is free.</li>
-          <li>Free first chart: your first interpretation in each chart system (Ziwei, Western, Vedic) is free. Chart calculation alone is always free.</li>
-          <li>Free first follow-up: your first follow-up per reading is free.</li>
-          <li>Paid after that: 1 Oracle per full tarot reading or full chart interpretation.</li>
-          <li>No subscription: buy a pack once, use it whenever you like.</li>
-        </ul>
-        <p className="mx-auto mt-4 max-w-md text-sm text-cream/75">An Oracle opens a reading. It is not a prediction, a promise, or a guarantee.</p>
       </div>
 
-      <div className="mt-10 space-y-4">
+      <p className="mt-6 text-center text-sm text-cream/75">
+        Every pack works for tarot readings, birth charts, and reports.
+      </p>
+
+      <div className="mt-4 grid gap-3 sm:grid-cols-3">
         {CREDIT_PACKS.map((p, i) => {
           // Centered cards, approved 2026-11-04: every card is
           // centered, like the React Bits showcase cards, not left
@@ -179,8 +160,6 @@ export default function CreditsPage() {
           // tokens would be wrong, so text colours are dark here.
           const colored = !!p.popular;
           const nameClass = colored ? "text-[#14100a]" : "text-cream";
-          const mistClass = colored ? "text-[#14100a]/70" : "text-mist";
-          const bodyClass = colored ? "text-[#14100a]/85" : "text-cream/85";
           const priceColor = colored
             ? "#14100a"
             : siteTheme === "light"
@@ -188,46 +167,29 @@ export default function CreditsPage() {
               : "#f4d03f";
           const body = (
             <div className="text-center">
-              <img
-                src={PACK_IMAGES[p.id]}
-                alt=""
-                aria-hidden="true"
-                className="mx-auto h-12 w-12 rounded-xl border border-gold/30 object-cover"
-              />
-              <p className={`mt-3 font-display text-2xl ${nameClass}`}>{p.name}</p>
+              <p className={`font-display text-xl ${nameClass}`}>{p.name}</p>
               {p.popular && (
-                <span className="mt-2 inline-block rounded-full bg-[#14100a] px-3 py-1 text-xs font-bold text-[#f4d03f]">
+                <span className="mt-1 inline-block rounded-full bg-[#14100a] px-3 py-1 text-xs font-bold text-[#f4d03f]">
                   Most popular
                 </span>
               )}
-              <p className={`mt-2 text-sm ${mistClass}`}>{PACK_TAGLINES[p.id]}</p>
               {/* Stylish number: React Bits Counter, rolling digits
                   in the display serif, not plain Inter. Reduced
                   motion shows the final price at once, see Counter. */}
-              <div className="mt-5 flex justify-center">
+              <div className="mt-3 flex justify-center">
                 <Counter
                   value={p.price}
                   decimals={2}
                   prefix="$"
-                  fontSize={56}
+                  fontSize={40}
                   fontWeight="bold"
                   textColor={priceColor}
                   className="font-display"
                 />
               </div>
-              <p className={`mt-1 text-sm ${mistClass}`}>Single payment</p>
-              <p className={`mt-3 text-base ${nameClass}`}>
+              <p className={`mt-2 text-base ${nameClass}`}>
                 <span className="font-display text-xl">{p.readings}</span> Oracles · ${perReadingPrice(p)} per Oracle
               </p>
-              {/* 3 points only, approved 2026-11-04. Dropped point:
-                  "No tarot knowledge needed", the least specific
-                  of the four. Kept: included products, one-reading
-                  story use, history. */}
-              <ul className={`mx-auto mt-4 max-w-xs space-y-2 text-sm ${bodyClass}`}>
-                <li>✓ Tarot readings, birth charts, and reports included</li>
-                <li>✓ Your story is used for one reading only</li>
-                <li>✓ Your readings stay in your history</li>
-              </ul>
               {/* Audit 4: every pack uses the same solid btn-gold, same
                   padding, weight, and size. */}
               {/* Direct checkout, approved 2026-11-04: this button goes
@@ -240,7 +202,7 @@ export default function CreditsPage() {
                 type="button"
                 disabled={directProcessing !== null}
                 onClick={() => void buyDirect(p.id)}
-                className="btn-gold mt-5 w-full rounded-xl px-4 py-3 font-bold disabled:opacity-60"
+                className="btn-gold mt-4 w-full rounded-xl px-4 py-2.5 font-bold disabled:opacity-60"
               >
                 {directProcessing === p.id ? "…" : "Checkout"}
               </button>
@@ -281,10 +243,10 @@ export default function CreditsPage() {
                   className="border border-gold/70 shadow-[0_24px_48px_-24px_rgba(212,175,55,0.55)]"
                   style={{ background: "linear-gradient(180deg,#e8c55a,#d4af37 55%,#b8962e)" }}
                 >
-                  <div className="relative z-10 w-full p-6">{body}</div>
+                  <div className="relative z-10 w-full p-4">{body}</div>
                 </PixelCard>
               ) : (
-                <div className="relative rounded-3xl border border-gold/20 bg-panel/60 p-6">
+                <div className="relative rounded-3xl border border-gold/20 bg-panel/60 p-4">
                   {body}
                 </div>
               )}
@@ -293,22 +255,19 @@ export default function CreditsPage() {
         })}
       </div>
 
-      <div className="mt-10 rounded-2xl border border-gold/20 bg-panel/50 p-6">
+      <div className="mt-6 rounded-2xl border border-gold/20 bg-panel/50 p-4">
         <p className="font-display text-xl text-goldbright">Purchase history</p>
         {user ? (
           serverTx === null ? (
             <p className="mt-2 text-sm text-mist">Loading…</p>
           ) : serverTx.length === 0 ? (
-            <p className="mt-2 text-sm text-mist">
-              No purchases yet. Every transaction (pack, amount, date) will be
-              listed here.
-            </p>
+            <p className="mt-2 text-sm text-mist">No purchases yet.</p>
           ) : (
-            <ul className="mt-4 space-y-2">
+            <ul className="mt-3 space-y-2">
               {serverTx.map((t) => (
                 <li
                   key={t.id}
-                  className="flex items-center justify-between gap-3 rounded-xl border border-gold/15 bg-panel/40 px-4 py-3 text-sm"
+                  className="flex items-center justify-between gap-3 rounded-xl border border-gold/15 bg-panel/40 px-3 py-2 text-sm"
                 >
                   <span className="text-cream">
                     {t.readings} Oracles · {t.pack_type}
@@ -327,14 +286,14 @@ export default function CreditsPage() {
             <Link href="/account" className="text-goldbright underline">
               Sign in
             </Link>{" "}
-            to keep your receipts synced to your account.
+            to keep receipts synced.
           </p>
         ) : (
-          <ul className="mt-4 space-y-2">
+          <ul className="mt-3 space-y-2">
             {localHistory.map((p, i) => (
               <li
                 key={`${p.date}-${i}`}
-                className="flex items-center justify-between gap-3 rounded-xl border border-gold/15 bg-panel/40 px-4 py-3 text-sm"
+                className="flex items-center justify-between gap-3 rounded-xl border border-gold/15 bg-panel/40 px-3 py-2 text-sm"
               >
                 <span className="text-cream">
                   {p.readings} Oracles · {p.packId}
@@ -348,16 +307,10 @@ export default function CreditsPage() {
         )}
       </div>
 
-      <p className="mx-auto mt-8 max-w-md text-center text-xs leading-relaxed text-mist">
+      <p className="mx-auto mt-6 max-w-md text-center text-xs leading-relaxed text-mist">
         Pay-per-reading, no subscriptions. Prices include everything; there
         are no hidden fees. Secure checkout is powered by Lemon Squeezy.
       </p>
-
-      {/* M2.2: the same labeled paid-reading sample as the home page,
-          so buyers see exactly what a reading contains before paying. */}
-      <div className="mt-10">
-        <SampleReading />
-      </div>
 
       <CheckoutModal open={open} onClose={() => setOpen(false)} initialPackId={modalPack} />
     </div>

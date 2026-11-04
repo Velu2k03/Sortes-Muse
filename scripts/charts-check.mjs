@@ -670,4 +670,16 @@ console.log("charts-check: all assertions passed");
   assert.ok(faqList.includes("Expand all") && faqList.includes("Collapse all") && faqList.includes("Jump to a question"), "FAQ must offer expand all, collapse all, and anchor links");
   assert.ok(spreadsClient2.includes("Readings are for reflection and perspective only"), "spreads index must carry the reflection disclaimer");
   console.log("personal-phase4: guide costs, FAQ controls, spread disclaimer: all source assertions passed");
+
+  // Deep UX Batch F: credits density. Compact balance row with one short
+  // explanation plus a rules link, 3-column pack grid with name, quantity,
+  // price, per-Oracle price and checkout only, no sample section on the
+  // money page (the sample lives on home).
+  const creditsF = fs.readFileSync("src/app/credits/CreditsClient.tsx", "utf8");
+  assert.ok(creditsF.includes("See all five Oracle rules"), "credits must link the Oracle rules");
+  assert.ok(creditsF.includes("sm:grid-cols-3"), "credits packs must use a 3-column grid");
+  assert.ok(!creditsF.includes("SampleReading"), "credits must not embed the sample reading");
+  assert.ok(!creditsF.includes("PACK_TAGLINES"), "credits must not carry pack taglines");
+  assert.ok(!creditsF.includes("Free first follow-up"), "credits must not repeat the full rules list");
+  console.log("deep-ux-batch-f: credits density: all source assertions passed");
 }
