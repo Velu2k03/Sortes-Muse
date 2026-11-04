@@ -424,7 +424,10 @@ console.log("charts-check: all assertions passed");
   // Direct checkout added disabled:opacity-60 to the same solid button,
   // so accept that suffix. The button is still solid btn-gold, same size
   // and weight, in all three pack cards.
-  assert.ok(credits.includes('className="btn-gold mt-4 w-full rounded-xl px-4 py-2.5 font-bold disabled:opacity-60"'), "all credits Buy buttons must be solid btn-gold, equal size and weight");
+  // Visual corrections: the button moved into an mt-auto wrapper so
+  // all three buttons sit on one line; the button itself keeps the
+  // same solid btn-gold size and weight.
+  assert.ok(credits.includes('className="btn-gold w-full rounded-xl px-4 py-2.5 font-bold disabled:opacity-60"'), "all credits Buy buttons must be solid btn-gold, equal size and weight");
   assert.ok(credits.includes("Most popular") || credits.includes("MOST POPULAR") || credits.includes("Most Popular"), "popular pack must still carry its badge distinction");
   const css = fs.readFileSync("src/app/globals.css", "utf8");
   assert.ok(css.includes(".btn-secondary"), "btn-secondary must be defined in globals.css");
@@ -681,5 +684,14 @@ console.log("charts-check: all assertions passed");
   assert.ok(!creditsF.includes("SampleReading"), "credits must not embed the sample reading");
   assert.ok(!creditsF.includes("PACK_TAGLINES"), "credits must not carry pack taglines");
   assert.ok(!creditsF.includes("Free first follow-up"), "credits must not repeat the full rules list");
+  // Visual corrections follow-up: pack prices are static text, never
+  // the rolling Counter (its intro spin rendered scattered digits in
+  // captures); cards stretch to one row height with bottom-aligned
+  // buttons, and the popular card is distinguished by colour, border,
+  // shadow, and badge, not by a taller box.
+  assert.ok(!creditsF.includes('prefix="$"'), "credits pack prices must be static text, not a rolling Counter");
+  assert.ok(creditsF.includes("items-stretch"), "credits pack grid must stretch cards to equal height");
+  assert.ok(creditsF.includes("mt-auto"), "credits Checkout buttons must align at the card foot");
+  assert.ok(creditsF.includes('minHeight: "0px"'), "popular credits card must not keep the 400px PixelCard minimum height");
   console.log("deep-ux-batch-f: credits density: all source assertions passed");
 }

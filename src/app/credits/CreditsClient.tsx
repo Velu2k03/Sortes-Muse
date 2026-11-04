@@ -150,7 +150,7 @@ export default function CreditsPage() {
         Every pack works for tarot readings, birth charts, and reports.
       </p>
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-3">
+      <div className="mt-4 grid items-stretch gap-4 sm:grid-cols-3">
         {CREDIT_PACKS.map((p, i) => {
           // Centered cards, approved 2026-11-04: every card is
           // centered, like the React Bits showcase cards, not left
@@ -166,27 +166,32 @@ export default function CreditsPage() {
               ? "#7c5e00"
               : "#f4d03f";
           const body = (
-            <div className="text-center">
+            <div className="flex h-full flex-col text-center">
               <p className={`font-display text-xl ${nameClass}`}>{p.name}</p>
-              {p.popular && (
-                <span className="mt-1 inline-block rounded-full bg-[#14100a] px-3 py-1 text-xs font-bold text-[#f4d03f]">
-                  Most popular
-                </span>
-              )}
-              {/* Stylish number: React Bits Counter, rolling digits
-                  in the display serif, not plain Inter. Reduced
-                  motion shows the final price at once, see Counter. */}
-              <div className="mt-3 flex justify-center">
-                <Counter
-                  value={p.price}
-                  decimals={2}
-                  prefix="$"
-                  fontSize={40}
-                  fontWeight="bold"
-                  textColor={priceColor}
-                  className="font-display"
-                />
+              {/* Fixed badge row on every card, so the price line
+                  sits at the same height whether or not this card
+                  carries the badge. The badge is the popular
+                  distinction, not extra height. */}
+              <div className="mt-1 flex h-6 items-center justify-center">
+                {p.popular && (
+                  <span className="inline-block rounded-full bg-[#14100a] px-3 py-1 text-xs font-bold text-[#f4d03f]">
+                    Most popular
+                  </span>
+                )}
               </div>
+              {/* Price is static text, not the rolling Counter.
+                  The Counter intro spin renders digits mid-roll,
+                  which is why screenshots showed scattered,
+                  overlapping price digits. A price must read
+                  correctly at any moment, in any capture, so it
+                  keeps the display serif and size but does not
+                  animate. The balance Counter above is unchanged. */}
+              <p
+                className="mt-3 font-display text-[40px] font-bold leading-none"
+                style={{ color: priceColor }}
+              >
+                ${p.price.toFixed(2)}
+              </p>
               <p className={`mt-2 text-base ${nameClass}`}>
                 <span className="font-display text-xl">{p.readings}</span> Oracles · ${perReadingPrice(p)} per Oracle
               </p>
@@ -198,14 +203,19 @@ export default function CreditsPage() {
                   flows, where no pack was picked yet, and for guests
                   and demo mode here, where an email step or demo Buy
                   is still needed. */}
-              <button
-                type="button"
-                disabled={directProcessing !== null}
-                onClick={() => void buyDirect(p.id)}
-                className="btn-gold mt-4 w-full rounded-xl px-4 py-2.5 font-bold disabled:opacity-60"
-              >
-                {directProcessing === p.id ? "…" : "Checkout"}
-              </button>
+              {/* mt-auto pins every Checkout button to the card
+                  foot, so buttons align across cards even though
+                  the popular card carries the badge row. */}
+              <div className="mt-auto pt-4">
+                <button
+                  type="button"
+                  disabled={directProcessing !== null}
+                  onClick={() => void buyDirect(p.id)}
+                  className="btn-gold w-full rounded-xl px-4 py-2.5 font-bold disabled:opacity-60"
+                >
+                  {directProcessing === p.id ? "…" : "Checkout"}
+                </button>
+              </div>
               {directError && directFailed === p.id && (
                 <p className="mt-2 text-sm alert-error-text">{directError}</p>
               )}
@@ -217,7 +227,7 @@ export default function CreditsPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.04, duration: 0.4 }}
-              className="relative"
+              className="relative h-full"
             >
               {p.popular ? (
                 // PixelCard restored, not removed, 2026-11-04: the
@@ -240,13 +250,20 @@ export default function CreditsPage() {
                   glowColor="#eab308"
                   theme={siteTheme}
                   radius={24}
-                  className="border border-gold/70 shadow-[0_24px_48px_-24px_rgba(212,175,55,0.55)]"
-                  style={{ background: "linear-gradient(180deg,#e8c55a,#d4af37 55%,#b8962e)" }}
+                  className="h-full border border-gold/70 shadow-[0_24px_48px_-24px_rgba(212,175,55,0.55)]"
+                  style={{ minHeight: "0px", background: "linear-gradient(180deg,#e8c55a,#d4af37 55%,#b8962e)" }}
                 >
-                  <div className="relative z-10 w-full p-4">{body}</div>
+                  {/* PixelCard itself carries a 400px minimum height,
+                      which made this card far taller than its
+                      neighbours. The inline minHeight wins over
+                      that class and is scoped to this card only, so
+                      the shared PixelCard (also used on charts) is
+                      untouched. The popular distinction stays
+                      colour, border, shadow, and badge. */}
+                  <div className="relative z-10 flex h-full w-full flex-col p-4">{body}</div>
                 </PixelCard>
               ) : (
-                <div className="relative rounded-3xl border border-gold/20 bg-panel/60 p-4">
+                <div className="relative h-full rounded-3xl border border-gold/20 bg-panel/60 p-4">
                   {body}
                 </div>
               )}
