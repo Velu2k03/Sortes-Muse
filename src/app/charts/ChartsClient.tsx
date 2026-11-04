@@ -130,6 +130,12 @@ export default function ChartsClient() {
   // still on screen, and writing it under the new fingerprint would
   // later restore a chart for the wrong inputs.
   const calcFingerprintRef = useRef<string>("");
+  // Codex fresh review on PR 50, correct: if the user clicks Clear
+  // remembered birth details while a calculation is still pending,
+  // the success continuation below must not write the old details
+  // back and silently undo that clear. The epoch is bumped on every
+  // clear, and the continuation only lands when it is unchanged.
+  const birthSaveEpochRef = useRef(0);
   const systemCache = useRef<Record<string, { result: ChartResult | null; interpretation: string; interpError: string; saved: boolean; fingerprint: string; interpFree: boolean; interpFallback: boolean }>>({});
   const selectSystem = (s: ChartSystem) => {
     const cached = systemCache.current[s];
@@ -437,6 +443,7 @@ export default function ChartsClient() {
       }
     }
     setLoading(true);
+    const saveEpoch = birthSaveEpochRef.current;
     try {
       const res = await fetch("/api/chart/calculate", {
         method: "POST",
@@ -454,15 +461,20 @@ export default function ChartsClient() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Could not calculate this chart.");
-      calcFingerprintRef.current = inputFingerprint;
-      setResult(data.result as ChartResult);
-      // Deep UX Batch A2: remember birth details on this device so
-      // a return visit does not start from a blank form. Raw birth
-      // data stays on device in localStorage, it is not sent anywhere
-      // except the calculate call the user already makes.
-      try {
-        window.localStorage.setItem("sortes-birth-details", JSON.stringify({ date, time, unknownTime, gender, preset, latitude, longitude }));
-      } catch {}
+      // A clear made while this request was in flight wins: landing
+      // the old result and details would undo it, so skip the landing
+      // and leave the cleared form alone.
+      if (saveEpoch === birthSaveEpochRef.current) {
+        calcFingerprintRef.current = inputFingerprint;
+        setResult(data.result as ChartResult);
+        // Deep UX Batch A2: remember birth details on this device so
+        // a return visit does not start from a blank form. Raw birth
+        // data stays on device in localStorage, it is not sent anywhere
+        // except the calculate call the user already makes.
+        try {
+          window.localStorage.setItem("sortes-birth-details", JSON.stringify({ date, time, unknownTime, gender, preset, latitude, longitude }));
+        } catch {}
+      }
       // A clear control lives in the form reset path, not here.
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not calculate this chart.");
@@ -558,6 +570,7 @@ export default function ChartsClient() {
         <button
           type="button"
           onClick={() => {
+            birthSaveEpochRef.current += 1;
             try { window.localStorage.removeItem("sortes-birth-details"); } catch {}
             setDate("");
             setTime("08:00");
