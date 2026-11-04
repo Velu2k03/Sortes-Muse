@@ -45,6 +45,42 @@ export default async function GuidePage({
       </Link>
       <h1 className="mt-4 font-display text-5xl text-goldbright">{guide.title}</h1>
       <p className="mt-4 max-w-xl text-cream/75">{guide.description}</p>
+      {/* Personal Phase 4: cost warnings, Decision 15. These three
+          guides point at paid things, so the cost is stated up front
+          in the guide itself, not only on the spreads, charts, or
+          credits pages. Wording matches the confirmed pricing: every
+          full reading is 1 Oracle, chart calculation is free and
+          interpretation is 1 Oracle, first per system free. */}
+      {(() => {
+        const notices: Record<string, { text: string; href: string; label: string }> = {
+          "celtic-cross-explained": {
+            text: "Trying the Celtic Cross spread costs 1 Oracle, like every full reading, after your first free Quick Insight reading.",
+            href: "/spreads/celtic-cross",
+            label: "Try the Celtic Cross spread",
+          },
+          "tarot-and-birth-charts": {
+            text: "Chart calculation is free. A chart interpretation costs 1 Oracle, with the first interpretation per system free. A tarot reading costs 1 Oracle, after your first free Quick Insight reading.",
+            href: "/charts",
+            label: "Cast a birth chart",
+          },
+          "topic-spreads-love-career-week": {
+            text: "Love Insight, Career Path, and Weekly Outlook each cost 1 Oracle, like every full reading, after your first free Quick Insight reading.",
+            href: "/spreads",
+            label: "Choose a topic spread",
+          },
+        };
+        const notice = notices[guide.slug];
+        if (!notice) return null;
+        return (
+          <p className="mt-6 max-w-xl rounded-2xl border border-gold/25 bg-panel/60 p-4 text-sm leading-relaxed text-cream/85">
+            <strong className="text-goldbright">Cost before you try it: </strong>
+            {notice.text}{" "}
+            <Link href={notice.href} className="font-semibold text-goldbright underline underline-offset-4">
+              {notice.label}
+            </Link>
+          </p>
+        );
+      })()}
       {/* Personal Phase 4: a long guide used to be one wall of
           sections with no way to jump. This contents list is the
           guide's own headings, linked, nothing added or removed. */}

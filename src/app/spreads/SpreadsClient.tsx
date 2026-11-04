@@ -41,6 +41,13 @@ export default function SpreadsPage() {
             ? "Each reading uses 1 Oracle, any spread. Oracles never expire."
             : "Your first Quick Insight reading is free, no card required. Other spreads need 1 Oracle, which is why they show Get Oracles to begin until you have one. After your free Quick Insight, every reading, any spread, is 1 Oracle."}
         </p>
+        {/* Personal Phase 4, Decision 16: reflection disclaimer on
+            the spread pages themselves, not only on FAQ. */}
+        <p className="mx-auto mt-3 max-w-xl text-xs italic text-mist">
+          Readings are for reflection and perspective only, never
+          guaranteed predictions, and never a replacement for
+          professional advice.
+        </p>
       </div>
 
       {/* Personal Phase 3: first-time guidance. The grid alone gives
