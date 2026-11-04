@@ -239,7 +239,7 @@ export default function Header() {
 
       {open && (
         <nav
-          className="border-t border-gold/15 bg-ink/95 px-4 py-3 lg:hidden"
+          className="max-h-[calc(100dvh-4rem)] overflow-y-auto border-t border-gold/15 bg-ink/95 px-4 py-3 lg:hidden"
           aria-label="Mobile"
         >
           {MOBILE_GROUPS.map((g) => (
