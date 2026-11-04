@@ -155,7 +155,7 @@ export default function ThemedDatePicker({
               type="button"
               onClick={() => shiftMonth(-1)}
               aria-label="Previous month"
-              className="rounded-full border border-gold/40 p-2 text-goldbright hover:bg-gold/15"
+              className="rounded-full border border-gold/40 p-3 text-goldbright hover:bg-gold/15"
             >
               <Icon name="chevronLeft" size={18} />
             </button>
@@ -166,7 +166,7 @@ export default function ThemedDatePicker({
               type="button"
               onClick={() => shiftMonth(1)}
               aria-label="Next month"
-              className="rounded-full border border-gold/40 p-2 text-goldbright hover:bg-gold/15"
+              className="rounded-full border border-gold/40 p-3 text-goldbright hover:bg-gold/15"
             >
               <Icon name="chevronRight" size={18} />
             </button>
