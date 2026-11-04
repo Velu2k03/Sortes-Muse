@@ -148,9 +148,35 @@ export default function ReadingDetail({ id }: { id: string }) {
   const [revisitSaved, setRevisitSaved] = useState(false);
   const [revisitSaving, setRevisitSaving] = useState(false);
 
+  // Codex fresh review on PR 51, correct: ReturnLoop can now link a
+  // server-only reading, but this page read local storage only and
+  // showed "Reading not found" on a new device. Fall back to the
+  // server history (full reading objects) when no local copy exists.
   useEffect(() => {
-    queueMicrotask(() => setReading(getReading(id) ?? null));
-  }, [id]);
+    const local = getReading(id);
+    if (local) {
+      setReading(local);
+      return;
+    }
+    if (!user) {
+      setReading(null);
+      return;
+    }
+    let cancelled = false;
+    fetch("/api/history")
+      .then((r) => r.json())
+      .then((d) => {
+        if (cancelled) return;
+        const found = (d.readings ?? []).find((r: { id: string }) => r.id === id);
+        setReading((found as Reading) ?? null);
+      })
+      .catch(() => {
+        if (!cancelled) setReading(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [id, user]);
 
   // Prefill the step input from the saved step once the reading loads,
   // so clearing the field actually clears it instead of falling back.
