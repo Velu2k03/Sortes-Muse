@@ -558,7 +558,11 @@ console.log("charts-check: all assertions passed");
   assert.ok(!flow.includes("Unlock"), "reading flow must not use Unlock wording");
   const spreads = fs.readFileSync("src/app/spreads/SpreadsClient.tsx", "utf8");
   assert.ok(!spreads.includes("unlocks"), "spreads credit note must not use unlocks wording");
+  // Codex P2 fix supersedes the old in-memory-only line: birth
+  // details are now honestly disclosed as remembered on device.
+  assert.ok(charts.includes("remembered on this device"), "charts privacy must stay, disclosing on-device retention");
   assert.ok(charts.includes("AI gets chart") && charts.includes("never birth data"), "charts privacy must stay, in one short line (storage wording is PR 50's disclosed version)");
+
   console.log("batch10: slop trim, short copy, privacy kept: all source assertions passed");
   // Batch 11: validator fixes, plus the fan. No ReactDrops code copied.
   const deck = fs.readFileSync("src/app/deck/page.tsx", "utf8");
@@ -641,7 +645,9 @@ console.log("charts-check: all assertions passed");
   assert.ok(chartRoute.includes("what they may be overlooking"), "chart prompt must ask what the seeker may be overlooking");
   assert.ok(chartRoute.includes("one practical step they could take"), "chart prompt must ask for one practical step");
   assert.ok(readingDetail.includes("Traditional meaning, if you want it"), "reading card sections must disclose traditional meanings behind one tap, not hide them");
-  assert.ok(readingDetail.includes("FadeContent"), "reading at-a-glance must use the reduced-motion-gated reveal");
+  // Deep UX Batch A, doc item 7: FadeContent was replaced by the
+  // rise AnimatedContent, which is also reduced-motion gated.
+  assert.ok(readingDetail.includes("AnimatedContent"), "reading at-a-glance must use the reduced-motion-gated reveal");
   assert.ok(historyClient.includes("SpotlightCard"), "journal repeated questions must use the spotlight interaction");
   assert.ok(chartsClient.includes("Show the full legend"), "chart legend must be progressive disclosure, not a wall before interpretation");
   assert.ok(intake.includes("What happens next: cards are drawn"), "intake confirm step must state what happens next");
@@ -670,6 +676,70 @@ console.log("charts-check: all assertions passed");
   assert.ok(faqList.includes("Expand all") && faqList.includes("Collapse all") && faqList.includes("Jump to a question"), "FAQ must offer expand all, collapse all, and anchor links");
   assert.ok(spreadsClient2.includes("For reflection, not prediction."), "spreads index must carry the reflection disclaimer, in one short line");
   console.log("personal-phase4: guide costs, FAQ controls, spread disclaimer: all source assertions passed");
+  // Deep UX Batch A: doc colours, Rise config, FadeContent
+  // replaced, PixelCard credits to doc spec.
+  const glide = fs.readFileSync("src/components/GlideSelect.tsx", "utf8");
+  assert.ok(glide.includes("accentColor = '#d4af37'") && glide.includes("surfaceColor = '#1a1f2e'"), "GlideSelect defaults must be Sortes colours, not demo zinc");
+  const spiral = fs.readFileSync("src/components/InfiniteSpiral.tsx", "utf8");
+  assert.ok(spiral.includes("border-gold/25 bg-panel/70") && !spiral.includes("bg-white/10"), "deck spiral must use Sortes tokens, not demo white");
+  assert.ok(!fs.readFileSync("src/app/reading/[id]/ReadingDetailClient.tsx", "utf8").includes("FadeContent"), "FadeContent must be replaced, not left in reading detail");
+  const credits = fs.readFileSync("src/app/credits/CreditsClient.tsx", "utf8");
+  assert.ok(credits.includes('shape="diamond"') && credits.includes("gap={6}") && credits.includes("pixelSize={2}") && credits.includes("speed={35}") && credits.includes("opacity={0.35}") && credits.includes("fade={0.7}"), "credits PixelCard must match the doc spec");
+  console.log("deep-ux-batch-a: Sortes colours, Rise config, FadeContent replaced, PixelCard spec: all source assertions passed");
+  // Deep UX Batch A2: daily reveal and typing, Orb, charts cache,
+  // single Oracle rules entry.
+  const dailyPage = fs.readFileSync("src/app/daily/page.tsx", "utf8");
+  assert.ok(!dailyPage.includes('from "@/components/PixelTransition"') && dailyPage.includes("rotateY") && dailyPage.includes("typingSpeed={75}") && dailyPage.includes("variableSpeed={{ min: 40, max: 170 }}") && dailyPage.includes("loop={false}"), "daily must use a flip reveal and the doc typing effect, loop off");
+  const reactBitsNew2 = fs.readFileSync("src/components/ReactBitsNew.tsx", "utf8");
+  assert.ok(reactBitsNew2.includes("export function Orb"), "ReactBitsNew must export Orb");
+  const homePage = fs.readFileSync("src/app/page.tsx", "utf8");
+  assert.ok(homePage.includes("<Orb />"), "home hero must use Orb");
+  const chartsClient2 = fs.readFileSync("src/app/charts/ChartsClient.tsx", "utf8");
+  assert.ok(chartsClient2.includes("systemCache") && chartsClient2.includes("sortes-birth-details"), "charts must cache per-system results and remember birth details");
+  const faqPage2 = fs.readFileSync("src/app/faq/page.tsx", "utf8");
+  assert.ok(faqPage2.includes("What are the five Oracle rules?"), "FAQ must state all five Oracle rules in one place");
+  console.log("deep-ux-batch-a2: daily reveal and typing, Orb, charts cache, Oracle rules: all source assertions passed");
+  // Deep UX Batch B: grouped mobile nav, footer route labels, home
+  // return loop, journal search and sort, report sample, cross-links.
+  // Report detail H1 was checked in this pass: it renders via
+  // SplitText tag="h1", so the audit's literal h1 grep missed it.
+  const header = fs.readFileSync("src/components/Header.tsx", "utf8");
+  assert.ok(header.includes("MOBILE_GROUPS") && header.includes("Reflect") && header.includes("Understand") && header.includes("Explore") && header.includes("Keep"), "mobile menu must be grouped by job");
+  const footer = fs.readFileSync("src/components/Footer.tsx", "utf8");
+  // Unified names (review fix): Spreads, Journal, Oracles everywhere,
+  // replacing the old footer-only Credits/History labels.
+  assert.ok(footer.includes(">Deck<") && footer.includes(">Oracles<") && footer.includes(">Journal<") && footer.includes(">Spreads<"), "footer labels must use the unified names");
+  const homeBatchB = fs.readFileSync("src/app/page.tsx", "utf8");
+  assert.ok(homeBatchB.includes("<ReturnLoop />"), "home must show the return loop");
+  const historyClientB = fs.readFileSync("src/app/history/HistoryClient.tsx", "utf8");
+  assert.ok(historyClientB.includes('id="journal-search"') && historyClientB.includes('id="journal-sort"'), "journal must offer search and sort");
+  const reportsClient = fs.readFileSync("src/app/reports/ReportsClient.tsx", "utf8");
+  assert.ok(reportsClient.includes("See a sample report layout"), "reports must show a sample layout before spending");
+  const reportDetail = fs.readFileSync("src/app/reports/[id]/ReportDetailClient.tsx", "utf8");
+  assert.ok(reportDetail.includes('tag="h1"'), "report detail must render an h1 via SplitText");
+  const readingDetailB = fs.readFileSync("src/app/reading/[id]/ReadingDetailClient.tsx", "utf8");
+  assert.ok(readingDetailB.includes("Cast a birth chart for it"), "reading detail must link to charts");
+  console.log("deep-ux-batch-b: grouped nav, return loop, journal scale, report sample, cross-links: all source assertions passed");
+  // Deep UX Batch C: spreads picker, intake clarity, reading
+  // hierarchy note, accessibility target sizes. Variable names here
+  // carry the BatchC suffix because this check file reuses short
+  // names across groups in one scope.
+  const spreadsBatchC = fs.readFileSync("src/app/spreads/SpreadsClient.tsx", "utf8");
+  assert.ok(spreadsBatchC.includes("What are you asking about?") && spreadsBatchC.includes("spread-") && spreadsBatchC.includes("Positions in this spread"), "spreads must offer a question picker and disclose positions");
+  const intakeBatchC = fs.readFileSync("src/app/intake/[slug]/IntakeFlow.tsx", "utf8");
+  assert.ok(intakeBatchC.includes("Ask like this") && intakeBatchC.includes("Nothing has been charged yet") && intakeBatchC.includes('aria-label="Reading steps"') && !intakeBatchC.includes('aria-hidden="true"'), "intake must show examples, state nothing charged yet, and expose step progress");
+  const readingBatchC = fs.readFileSync("src/app/reading/[id]/ReadingDetailClient.tsx", "utf8");
+  assert.ok(readingBatchC.includes("Your story is not shown here on purpose") && readingBatchC.includes("revisit note"), "reading detail must explain the absent story and the revisit gate");
+  const headerBatchC = fs.readFileSync("src/components/Header.tsx", "utf8");
+  assert.ok(headerBatchC.includes("rounded-lg p-3") && headerBatchC.includes("h-11 w-11"), "header controls must reach 44px targets");
+  console.log("deep-ux-batch-c: spreads picker, intake clarity, reading note, target sizes: all source assertions passed");
+
+  // Deep UX Batch D (review fixes): InstallBanner must not obscure
+  // focused content at the foot of the page.
+  const installBannerD = fs.readFileSync("src/components/InstallBanner.tsx", "utf8");
+  assert.ok(installBannerD.includes("ResizeObserver") && installBannerD.includes("document.body.style.paddingBottom"), "InstallBanner must reserve its measured height as body padding while shown so focused content scrolls above it");
+  console.log("deep-ux-batch-d: InstallBanner focus-obscured fix: all source assertions passed");
+
 }
 
 // Batch E (PR 54): global content simplification, show don't explain.
