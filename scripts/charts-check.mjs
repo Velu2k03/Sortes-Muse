@@ -558,7 +558,9 @@ console.log("charts-check: all assertions passed");
   assert.ok(!flow.includes("Unlock"), "reading flow must not use Unlock wording");
   const spreads = fs.readFileSync("src/app/spreads/SpreadsClient.tsx", "utf8");
   assert.ok(!spreads.includes("unlocks"), "spreads credit note must not use unlocks wording");
-  assert.ok(charts.includes("Birth data is used in memory only"), "charts privacy must stay, in one short line");
+  // Codex P2 fix supersedes the old in-memory-only line: birth
+  // details are now honestly disclosed as remembered on device.
+  assert.ok(charts.includes("remembered on this device"), "charts privacy must stay, disclosing on-device retention");
   console.log("batch10: slop trim, short copy, privacy kept: all source assertions passed");
   // Batch 11: validator fixes, plus the fan. No ReactDrops code copied.
   const deck = fs.readFileSync("src/app/deck/page.tsx", "utf8");
