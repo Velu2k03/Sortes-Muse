@@ -24,8 +24,8 @@ export default function Footer() {
               at md, where the footer itself is three columns. */}
           <ul className="mt-3 grid grid-cols-2 gap-x-6 gap-y-2 text-sm md:block md:space-y-2">
             <li><Link href="/daily" className="text-cream/80 hover:text-goldbright">Daily Card</Link></li>
-            <li><Link href="/spreads" className="text-cream/80 hover:text-goldbright">Readings</Link></li>
-            <li><Link href="/deck" className="text-cream/80 hover:text-goldbright">Card Meanings</Link></li>
+            <li><Link href="/spreads" className="text-cream/80 hover:text-goldbright">Spreads</Link></li>
+            <li><Link href="/deck" className="text-cream/80 hover:text-goldbright">Deck</Link></li>
             <li><Link href="/charts" className="text-cream/80 hover:text-goldbright">Charts</Link></li>
             <li><Link href="/reports" className="text-cream/80 hover:text-goldbright">Reports</Link></li>
             <li><Link href="/horoscope" className="text-cream/80 hover:text-goldbright">Horoscope</Link></li>

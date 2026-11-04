@@ -22,6 +22,14 @@ import { freeReadingUsed } from "@/lib/storage";
  */
 export default function SpreadsPage() {
   const [checkoutOpen, setCheckoutOpen] = useState(false);
+  // Deep UX Batch C: question picker. A newcomer should not have to
+  // self-diagnose a spread name; they pick what they are asking
+  // about, and the matching card is highlighted and scrolled to.
+  const [pickedSlug, setPickedSlug] = useState<string | null>(null);
+  const pickSpread = (slug: string) => {
+    setPickedSlug(slug);
+    document.getElementById(`spread-${slug}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+  };
   const { credits } = useAuth();
   const usedFree = typeof window !== "undefined" && freeReadingUsed();
   const balance = credits ?? 0;
@@ -39,14 +47,12 @@ export default function SpreadsPage() {
         <p className="mx-auto mt-4 max-w-xl text-cream/75">
           {usedFree
             ? "Each reading uses 1 Oracle, any spread. Oracles never expire."
-            : "Your first Quick Insight reading is free, no card required. Other spreads need 1 Oracle, which is why they show Get Oracles to begin until you have one. After your free Quick Insight, every reading, any spread, is 1 Oracle."}
+            : "First Quick Insight free. After that, 1 Oracle per reading, any spread."}
         </p>
         {/* Personal Phase 4, Decision 16: reflection disclaimer on
             the spread pages themselves, not only on FAQ. */}
         <p className="mx-auto mt-3 max-w-xl text-xs italic text-mist">
-          Readings are for reflection and perspective only, never
-          guaranteed predictions, and never a replacement for
-          professional advice.
+          For reflection, not prediction.
         </p>
       </div>
 
@@ -59,8 +65,7 @@ export default function SpreadsPage() {
             Start here, it is free
           </p>
           <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-cream/75">
-            Your first Quick Insight reading costs no Oracle and asks one
-            question. After that, every reading, any spread, is 1 Oracle.
+            One question. No Oracle, no card, no account.
           </p>
           <GlareHover className="mt-4 rounded-xl">
             <Link
@@ -73,16 +78,38 @@ export default function SpreadsPage() {
         </div>
       )}
 
+      <div className="mx-auto mt-8 flex max-w-2xl flex-wrap justify-center gap-2" role="group" aria-label="What are you asking about?">
+        {[
+          { label: "A decision", slug: "past-present-future" },
+          { label: "A relationship", slug: "love-insight" },
+          { label: "My career", slug: "career-path" },
+          { label: "My week", slug: "weekly-outlook" },
+          { label: "A deep dive", slug: "celtic-cross" },
+          { label: "Free first reading", slug: "quick-insight" },
+        ].map((o) => (
+          <button
+            key={o.slug}
+            type="button"
+            onClick={() => pickSpread(o.slug)}
+            aria-pressed={pickedSlug === o.slug}
+            className={`rounded-full px-4 py-2 text-sm font-semibold transition ${pickedSlug === o.slug ? "bg-gold text-ink" : "border border-gold/30 text-cream/90 hover:bg-gold/10"}`}
+          >
+            {o.label}
+          </button>
+        ))}
+      </div>
+
       <div className="mt-10 grid gap-6 md:grid-cols-3">
         {SPREADS.map((s, i) => {
           const locked = !canBegin(s.slug);
           return (
           <motion.article
+            id={`spread-${s.slug}`}
             key={s.slug}
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.05, duration: 0.4 }}
-            className="relative flex flex-col overflow-hidden rounded-3xl border border-gold/25 bg-panel/70"
+            className={`relative flex flex-col overflow-hidden rounded-3xl border bg-panel/70 ${pickedSlug === s.slug ? "border-gold shadow-[0_0_0_2px_rgba(212,175,55,0.6)]" : "border-gold/25"}`}
           >
             {/* Card preview: blurred while the spread cannot be started yet */}
             <div className="relative flex h-52 items-center justify-center gap-2 overflow-hidden bg-navydeep/60 p-6">
@@ -126,21 +153,24 @@ export default function SpreadsPage() {
               <p className="mt-3 flex-1 text-sm leading-relaxed text-cream/75">
                 {s.description}
               </p>
-              <ul className="mt-3 space-y-1">
-                {s.positions.map((p) => (
-                  <li key={p.key} className="text-xs text-cream/80">
-                    <span className="text-goldbright">{p.label}</span>
-                    {": "}
-                    {p.hint}
-                  </li>
-                ))}
-              </ul>
+              <details className="mt-3">
+                <summary className="cursor-pointer text-xs font-semibold text-goldbright">Positions in this spread ({s.positions.length})</summary>
+                <ul className="mt-2 space-y-1">
+                  {s.positions.map((p) => (
+                    <li key={p.key} className="text-xs text-cream/80">
+                      <span className="text-goldbright">{p.label}</span>
+                      {": "}
+                      {p.hint}
+                    </li>
+                  ))}
+                </ul>
+              </details>
               {locked ? (
                 <>
                   <button
                     type="button"
                     onClick={() => setCheckoutOpen(true)}
-                    className="btn-gold mt-5 rounded-xl px-4 py-3 text-center font-bold"
+                    className="btn-ghost mt-5 rounded-xl border border-gold/30 px-4 py-3 text-center font-semibold"
                   >
                     Get Oracles to begin
                   </button>
@@ -160,7 +190,7 @@ export default function SpreadsPage() {
               ) : (
                 <Link
                   href={`/spreads/${s.slug}`}
-                  className="btn-gold mt-5 block rounded-xl px-4 py-3 text-center font-bold"
+                  className="btn-ghost mt-5 block rounded-xl border border-gold/30 px-4 py-3 text-center font-semibold"
                 >
                   {s.slug === "quick-insight" && !usedFree ? "Begin free reading" : "Begin reading"}
                 </Link>
@@ -172,13 +202,13 @@ export default function SpreadsPage() {
       </div>
 
       <div className="mx-auto mt-12 max-w-2xl rounded-2xl border border-gold/20 bg-panel/50 p-6 text-center">
-        <p className="font-display text-2xl text-goldbright">How Oracles work</p>
+        <p className="font-display text-2xl text-goldbright">Oracles</p>
         <p className="mt-2 text-sm leading-relaxed text-cream/75">
-          You pay only for Oracle packs, never per reading, never twice.
-          One Oracle pays for one full reading of any spread, with an AI
-          interpretation for your question. Your daily card is always free
-          and never uses an Oracle. Oracles never expire. No subscriptions.
-          The one free reading is Quick Insight only.
+          1 Oracle per reading. First Quick Insight free. Oracles never
+          expire, no subscription.{" "}
+          <Link href="/faq#what-are-the-five-oracle-rules" className="font-semibold text-goldbright underline underline-offset-4">
+            See all five Oracle rules
+          </Link>
         </p>
         <button
           type="button"

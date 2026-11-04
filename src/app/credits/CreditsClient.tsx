@@ -146,11 +146,13 @@ export default function CreditsPage() {
         </p>
       </div>
 
+
       <p className="mt-6 text-center text-sm text-cream/75">
         Every pack works for tarot readings, birth charts, and reports.
       </p>
 
       <div className="mt-4 grid items-stretch gap-4 sm:grid-cols-3">
+
         {CREDIT_PACKS.map((p, i) => {
           // Centered cards, approved 2026-11-04: every card is
           // centered, like the React Bits showcase cards, not left
@@ -195,6 +197,8 @@ export default function CreditsPage() {
               <p className={`mt-2 text-base ${nameClass}`}>
                 <span className="font-display text-xl">{p.readings}</span> Oracles · ${perReadingPrice(p)} per Oracle
               </p>
+
+
               {/* Audit 4: every pack uses the same solid btn-gold, same
                   padding, weight, and size. */}
               {/* Direct checkout, approved 2026-11-04: this button goes
@@ -243,11 +247,19 @@ export default function CreditsPage() {
                 <PixelCard
                   variant="yellow"
                   colors={["#713f12", "#a16207", "#fef08a"]}
-                  gap={4}
-                  pixelSize={1.8}
-                  speed={20}
-                  glow={0.6}
+                  shape="diamond"
+                  origin="pointer"
+                  gap={6}
+                  pixelSize={2}
+                  speed={35}
+                  revealDuration={600}
+                  spotlight={0.5}
+                  glow={0.5}
                   glowColor="#eab308"
+                  opacity={0.35}
+                  fade={0.7}
+                  trigger="hover"
+                  clickPulse
                   theme={siteTheme}
                   radius={24}
                   className="h-full border border-gold/70 shadow-[0_24px_48px_-24px_rgba(212,175,55,0.55)]"

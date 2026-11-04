@@ -7,7 +7,7 @@ import Icon from "@/components/Icon";
 import ThemedDatePicker from "@/components/ThemedDatePicker";
 import OptionWheel from "@/components/OptionWheel";
 import TextType from "@/components/TextType";
-import FadeContent from "@/components/FadeContent";
+import AnimatedContent from "@/components/AnimatedContent";
 import RubberSegment from "@/components/RubberSegment";
 import { ClickSpark, StarBorder } from "@/components/ReactBits";
 
@@ -19,7 +19,7 @@ import { ClickSpark, StarBorder } from "@/components/ReactBits";
 // and uncharged, and it does not ask for any birth data.
 //
 // Phase A reveal: the user picks a sign and a date, taps Reveal, and the
-// result appears with a TextType sign line and a FadeContent body.
+// result appears with a TextType sign line and a rise animation body.
 // Phase B adds a short unveiling beat (1200ms, wait-and-reward pacing
 // Velu allowed 2026-11-04). The beat is presentation only: the text is
 // local and already computed, and the status line says unveiling, never
@@ -89,8 +89,7 @@ export default function HoroscopePage() {
         <p className="flex items-center justify-center gap-2 text-xs uppercase tracking-[0.35em] text-gold"><Icon name="iconoirSun" size={18} />Daily Horoscope</p>
         <h1 className="mt-3 font-display text-5xl text-goldbright sm:text-6xl">Today&apos;s sun-sign reflection</h1>
         <p className="mx-auto mt-4 max-w-xl text-cream/75">
-          A general reflection for your sun sign, written for Sortes. It is not a personal reading, not a prediction,
-          and it never replaces professional advice. Free, unsaved, and no birth data needed.
+          A general reflection for your sun sign. Free, unsaved, no birth data needed.
         </p>
       </div>
       <div className="mx-auto mt-8 grid gap-4 rounded-3xl border border-gold/25 bg-panel/70 p-6 sm:grid-cols-2">
@@ -204,7 +203,7 @@ export default function HoroscopePage() {
               </div>
             </>
           ) : (
-            <FadeContent trigger="mount" effect="fade" stagger={0.08}>
+            <AnimatedContent trigger="mount" wipe="up" blur={10} distance={60} duration={0.8} scale={0.98} threshold={0.2} stagger={0.08}>
               <p className="mt-3 text-lg leading-relaxed text-cream">{view === "daily" ? h.theme : w.theme}</p>
               <p className="mt-3 leading-relaxed text-cream/85">{view === "daily" ? h.reflection : w.reflection}</p>
               <div className="mt-4 flex flex-wrap gap-x-6 gap-y-1 text-sm text-cream/80">
@@ -214,10 +213,9 @@ export default function HoroscopePage() {
                   <strong className="num text-cream">{view === "daily" ? h.luckyNumber : w.luckyNumber}</strong>
                 </span>
               </div>
-            </FadeContent>
+            </AnimatedContent>
           )}
           <p className="mt-4 text-sm text-cream/60">
-            General sun-sign reflection only. For a personal reading, draw a card or cast a birth chart.
           </p>
           <p className="mt-3 text-sm text-cream/75">
             Want transits computed from your own chart?{" "}
@@ -227,6 +225,9 @@ export default function HoroscopePage() {
             and open Today&apos;s transits to this chart under the wheel. That view uses real
             planetary positions matched to your natal planets; this page does not.
           </p>
+          <Link href="/spreads/quick-insight" className="btn-gold mt-4 inline-block rounded-xl px-6 py-3 font-bold">
+            Ask a personal reading about this
+          </Link>
         </article>
       )}
     </div>

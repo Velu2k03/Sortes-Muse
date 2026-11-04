@@ -252,7 +252,7 @@ export default function IntakeFlow({ slug }: { slug: string }) {
       <Breadcrumbs
         trail={[
           { href: "/", label: "Home" },
-          { href: "/spreads", label: "Readings" },
+          { href: "/spreads", label: "Spreads" },
           { label: spread.name },
         ]}
       />
@@ -275,8 +275,7 @@ export default function IntakeFlow({ slug }: { slug: string }) {
               What is on your mind?
             </h1>
             <p className="mx-auto mt-3 max-w-md text-cream/75">
-              Choose the area of life you want clarity on. Your reading will
-              be woven around your own story.
+              Choose the area of life for this reading.
             </p>
             <div className="mt-8 grid gap-3 sm:grid-cols-2">
               {INTAKE_CATEGORIES.map((c, i) => (
@@ -402,6 +401,18 @@ export default function IntakeFlow({ slug }: { slug: string }) {
                   placeholder="e.g. Should I take the new role or stay where I am?"
                   className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none"
                 />
+                <p className="mt-2 text-xs text-mist">Ask like this, or tap one to start from it:</p>
+                <div className="mt-1 flex flex-wrap gap-2">
+                  {[
+                    "Should I take the new role or stay where I am?",
+                    "What is blocking my relationship right now?",
+                    "What should I focus on this week?",
+                  ].map((ex) => (
+                    <button key={ex} type="button" onClick={() => setQuestion(ex)} className="rounded-full border border-gold/30 px-3 py-1.5 text-xs text-cream/90 hover:bg-gold/10">
+                      {ex}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 
@@ -482,9 +493,13 @@ export default function IntakeFlow({ slug }: { slug: string }) {
                 <li>Readings are for reflection, never guaranteed predictions.</li>
               </ul>
               <p className="mt-4 text-sm leading-relaxed text-cream/85">
-                What happens next: the cards are drawn, you give one word
-                for your first impression, then the reading is written for
-                your question.
+                What happens next: cards are drawn, you give one word,
+                then the reading is written. Nothing has been charged yet: the Oracle
+                is spent when you confirm generation, after your
+                impression, not at the draw. If generation fails
+                while this page is still open, a guest Oracle is
+                returned; a signed-in Oracle is spent only after a
+                reading is written.
               </p>
             </div>
 
@@ -497,9 +512,7 @@ export default function IntakeFlow({ slug }: { slug: string }) {
                   “{questionSuggestion}”
                 </p>
                 <p className="mt-1 text-xs text-mist">
-                  A suggestion from a fixed rule, not from AI. It frames
-                  your question as reflection instead of a verdict. You
-                  can edit it freely.
+                  A fixed-rule suggestion, not from AI. Edit it freely.
                 </p>
                 <div className="mt-3 flex gap-2">
                   <button
@@ -684,9 +697,9 @@ function StepDots({ step }: { step: Step }) {
   const labels = ["Area", "Story", "Confirm", "Reading"];
   const current = order.indexOf(step);
   return (
-    <div className="mb-8 flex items-center justify-center gap-2" aria-hidden="true">
+    <div className="mb-8 flex items-center justify-center gap-2" role="list" aria-label="Reading steps">
       {order.map((s, i) => (
-        <div key={s} className="flex items-center gap-2">
+        <div key={s} role="listitem" aria-current={i === current ? "step" : undefined} className="flex items-center gap-2">
           <div
             className={`flex h-8 w-8 items-center justify-center rounded-full border text-xs font-bold ${
               i <= current

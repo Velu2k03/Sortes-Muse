@@ -358,12 +358,10 @@ export default function ReportsClient() {
       <p className="text-center text-xs uppercase tracking-[0.35em] text-gold">Reports</p>
       <h1 className="mt-2 text-center font-display text-5xl text-goldbright">Keep-forever reports</h1>
       <p className="mt-3 text-center text-cream/80">
-        A report is a document you keep. 1 Oracle per report, and reports never
-        expire. There is no free first report: every report costs 1 Oracle.
+        1 Oracle per report. No free first report. Reports never expire.
       </p>
       <p className="mt-2 text-center text-sm text-mist">
-        Your birth details are used only to calculate this report. They are never stored, and they are
-        never sent to the AI. A saved report holds positions and interpretation only.
+        Birth details are used only for this report, never stored, never sent to AI.
       </p>
 
       {!loading && credits !== null && (
@@ -395,10 +393,20 @@ export default function ReportsClient() {
         />
       </div>
       <p className="mt-3 text-center text-sm text-cream/75">{TYPE_BLURBS[type]}</p>
+      <details className="mx-auto mt-4 max-w-xl rounded-2xl border border-gold/20 bg-panel/60 p-4 text-left">
+        <summary className="cursor-pointer font-semibold text-goldbright">See a sample report layout, before you spend an Oracle</summary>
+        <p className="mt-2 text-sm text-cream/80">
+          This is the layout, not a personal report. Your generated report fills the same sections with your own positions.
+        </p>
+        <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-cream/80">
+          <li>Transit report: interpretation, Western transits on your date, Vedic Gochara.</li>
+          <li>Year-ahead reading: interpretation, monthly themes, Dasha outlook, Ziwei annual layer.</li>
+          <li>Relationship comparison: interpretation, the two charts, cross-aspects.</li>
+        </ul>
+      </details>
       {type === "comparison" && (
         <p className="mt-2 text-center text-sm text-mist">
-          This comparison is opt-in and mutual: you enter both charts. It describes dynamics only, never
-          a verdict on compatibility, and never predicts whether a relationship will last.
+          You enter both charts. Dynamics only, never a verdict, never a prediction about whether a relationship will last.
         </p>
       )}
 
@@ -524,7 +532,7 @@ export default function ReportsClient() {
       )}
 
       {result && (
-        <AnimatedContent trigger="mount" wipe="up" blur={8} distance={40} duration={0.8} stagger={0.08}>
+        <AnimatedContent trigger="mount" wipe="up" blur={10} distance={60} duration={0.8} scale={0.98} threshold={0.2} stagger={0.08}>
         <div className="mt-8 rounded-3xl border border-gold/25 bg-panel/70 p-6">
           <p className="text-xs uppercase tracking-[0.35em] text-gold">Your report</p>
           <h2 className="mt-1 font-display text-3xl text-goldbright">{result.title}</h2>
@@ -554,8 +562,7 @@ export default function ReportsClient() {
         <h2 className="font-display text-3xl text-goldbright">Your saved reports</h2>
         {saved.length === 0 ? (
           <p className="mt-2 text-sm text-mist">
-            No saved reports yet. Generate one above and it stays here, on your account when signed in, or
-            on this device as a guest.
+            No saved reports yet.
           </p>
         ) : (
           <ul className="mt-4 space-y-3">

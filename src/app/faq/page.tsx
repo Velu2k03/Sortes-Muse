@@ -19,6 +19,10 @@ const FAQS = [
     a: "One Oracle opens one full reading, any spread, or one chart interpretation after the first free one per system. Oracles never expire. Packs are sold on the Oracles page: 5 Oracles, 12 Oracles, and 30 Oracles. The daily card never uses an Oracle.",
   },
   {
+    q: "What are the five Oracle rules?",
+    a: "One: your first Quick Insight reading is free, per device, not per account. Two: a chart interpretation is free the first time per system, Ziwei, Western, and Vedic separately, then 1 Oracle each. Three: reports have no free first reading, each report costs 1 Oracle. Four: a reading follow-up is free the first time per reading, then 1 Oracle each, up to 3 per reading. Five: the daily card is always free and never uses an Oracle. Oracles never expire, and there is no subscription.",
+  },
+  {
     q: "Are readings predictions?",
     a: "No. Readings and chart interpretations in Sortes are for reflection and perspective only. They are never guaranteed predictions, and they never replace professional advice about health, money, or legal matters.",
   },
@@ -69,10 +73,6 @@ export default function FaqPage() {
       <h1 className="mt-3 font-display text-5xl text-goldbright">
         Frequently asked questions
       </h1>
-      <p className="mt-4 max-w-xl text-cream/75">
-        Short answers to the questions Sortes users actually ask. For more
-        detail, read the guides, the privacy policy, and the terms.
-      </p>
       <FaqList faqs={FAQS} />
       <p className="mt-10 text-sm text-mist">
         Still stuck? Contact {CONTACT_EMAIL}, or read the{" "}

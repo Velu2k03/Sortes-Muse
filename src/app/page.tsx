@@ -9,9 +9,10 @@ import StatsStrip from "@/components/StatsStrip";
 import SampleReading from "@/components/SampleReading";
 import TarotFan from "@/components/TarotFan";
 import OrbitImages from "@/components/OrbitImages";
+import ReturnLoop from "@/components/ReturnLoop";
 import Icon from "@/components/Icon";
-import { DarkVeil, MagicBento, ShinyText, StarBorder } from "@/components/ReactBits";
-import { GradientText, Magnet, SpotlightCard } from "@/components/ReactBitsNew";
+import { MagicBento, ShinyText, StarBorder } from "@/components/ReactBits";
+import { GradientText, Magnet, Orb, SpotlightCard } from "@/components/ReactBitsNew";
 
 const fadeUp = {
   initial: { opacity: 0, y: 24 },
@@ -35,7 +36,8 @@ export default function Home() {
             className="object-cover opacity-70"
           />
           <div className="absolute inset-0 bg-gradient-to-b from-ink/60 via-ink/75 to-ink" />
-          <DarkVeil />
+          {/* Deep UX Batch A2, doc item 11: Orb hero background, app gold only. */}
+          <Orb />
           {/* Ambient drifting glows */}
           <div
             className="nebula absolute -left-32 top-1/4 h-[28rem] w-[28rem] rounded-full opacity-25 blur-3xl"
@@ -198,7 +200,7 @@ export default function Home() {
               Insight is free.
             </p>
             <p className="mx-auto mt-3 max-w-xl text-sm text-cream/60">
-              Readings are for reflection and perspective, never guaranteed predictions.
+              For reflection, not prediction.
             </p>
           </motion.div>
           <MagicBento />
@@ -214,22 +216,9 @@ export default function Home() {
           <h2 className="mt-6 text-center font-display text-4xl text-goldbright sm:text-5xl">
             What is tarot?
           </h2>
-          <div className="mt-8 space-y-5 text-base leading-relaxed text-cream/85">
-            <p>
-              Tarot is 78 cards, 22 Major and 56 Minor Arcana, used for
-              centuries as a mirror for the mind.
-            </p>
-            <p>
-              A reading is not a verdict on your future. You bring a
-              question, the cards offer images, and meaning emerges between
-              them. A mirror, not an oracle.
-            </p>
-            <p>
-              <span className="text-goldbright">Sortes</span> is Latin for
-              lots. Here the lots are cards, the casting is a shuffle, and
-              the story is yours.
-            </p>
-          </div>
+          <p className="mt-8 text-center text-base leading-relaxed text-cream/85">
+            78 cards. A mirror for the mind, not a verdict on your future.
+          </p>
         </motion.div>
 
         <motion.div {...fadeUp} className="mt-12 grid gap-4 sm:grid-cols-3">
@@ -261,49 +250,9 @@ export default function Home() {
       {/* SAMPLE READING TEASER */}
       <SampleReading />
 
-      {/* TRUST STRIP, Phase 2: no invented proof, no counts,
-          no outcomes. Only claims already stated in
-          Sortes copy: reflection not prediction, story used for
-          one reading only, Oracles never expire, no subscription. */}
-      <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
-        <motion.div {...fadeUp}>
-          <h2 className="text-center font-display text-3xl text-goldbright sm:text-4xl">
-            What Sortes will, and will not, do
-          </h2>
-          <div className="mt-8 grid gap-4 sm:grid-cols-3">
-            <div className="rounded-2xl border border-gold/20 bg-panel/60 p-6">
-              <p className="font-display text-2xl text-gold">A mirror, not a verdict</p>
-              <p className="mt-2 text-sm leading-relaxed text-cream/80">
-                Readings are for reflection and perspective, never
-                guaranteed predictions about what will happen.
-              </p>
-            </div>
-            <div className="rounded-2xl border border-gold/20 bg-panel/60 p-6">
-              <p className="font-display text-2xl text-gold">Your story stays with one reading</p>
-              <p className="mt-2 text-sm leading-relaxed text-cream/80">
-                The story you tell is used for that one reading only.
-                Readings are saved to your journal, so you can return
-                to them, and your daily card is always free.
-              </p>
-            </div>
-            <div className="rounded-2xl border border-gold/20 bg-panel/60 p-6">
-              <p className="font-display text-2xl text-gold">Pay once, use when you like</p>
-              <p className="mt-2 text-sm leading-relaxed text-cream/80">
-                Oracles never expire, and there is no subscription.
-                A reading is 1 Oracle, and packs start at $3.99 for
-                5 Oracles.
-              </p>
-            </div>
-          </div>
-          <p className="mt-6 text-center text-sm text-cream/60">
-            The full wording is in{" "}
-            <Link href="/faq" className="font-semibold text-goldbright underline underline-offset-4">FAQ</Link>
-            {" "}and{" "}
-            <Link href="/privacy" className="font-semibold text-goldbright underline underline-offset-4">Privacy</Link>
-            .
-          </p>
-        </motion.div>
-      </section>
+      {/* Deep UX Batch B: return loop, daily quote, today's card,
+          and journal preview, on home itself, before the seek cards. */}
+      <ReturnLoop />
 
       {/* DAILY CARD TEASER */}
       <section className="mx-auto max-w-4xl px-4 py-16 text-center sm:px-6">
@@ -324,14 +273,12 @@ export default function Home() {
           <div className="mt-8">
             <TarotFan cards={MAJORS.slice(0, 5)} />
           </div>
-          <StarBorder radius="1rem" className="mt-8">
-            <Link
-              href="/daily"
-              className="btn-gold inline-block rounded-2xl px-8 py-3.5 font-bold"
-            >
-              Draw today&apos;s card
-            </Link>
-          </StarBorder>
+          <Link
+            href="/daily"
+            className="btn-ghost mt-8 inline-block rounded-2xl px-8 py-3.5 font-semibold"
+          >
+            Draw today&apos;s card
+          </Link>
         </motion.div>
       </section>
     </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
@@ -82,6 +83,9 @@ export default function DeckPage() {
           placeholder="Search cards, e.g. moon, strength…"
           className="w-full max-w-md rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none"
         />
+        <Link href="/daily" className="text-sm font-semibold text-goldbright underline underline-offset-4">
+          Draw today&apos;s card, free
+        </Link>
         {/* Validator fix: these are filter toggles, not tabs, and
             there is no tabpanel on the page, so role=tab is wrong.
             aria-pressed says the same thing, correctly. */}
@@ -142,8 +146,7 @@ export default function DeckPage() {
       {view === "spiral" && !reducedMotion ? (
         <div className="mt-8">
           <p className="text-center text-sm text-cream/75">
-            Drag the helix to spin it, tap a card to read its story.
-            Prefer a list? Use List above for keyboard browsing.
+            Drag to spin, tap a card. List above for keyboard browsing.
           </p>
           <div
             className="h-[560px]"

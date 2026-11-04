@@ -30,6 +30,17 @@ export default function HistoryPage() {
   // this keeps it one action per entry while guarding the data.
   const [armedId, setArmedId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  // Deep UX Batch B: journal search and sort, so a growing journal
+  // stays usable instead of becoming a longer list.
+  const [search, setSearch] = useState("");
+  const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
+  const filteredHistory = (history ?? [])
+    .filter((r) => {
+      const q = search.trim().toLowerCase();
+      if (!q) return true;
+      return (r.question ?? "").toLowerCase().includes(q) || r.spreadName.toLowerCase().includes(q) || (r.category ?? "").toLowerCase().includes(q);
+    })
+    .sort((a, b) => sortOrder === "newest" ? b.createdAt.localeCompare(a.createdAt) : a.createdAt.localeCompare(b.createdAt));
 
   useEffect(() => {
     const local = getHistory();
@@ -193,9 +204,7 @@ export default function HistoryPage() {
                   Questions you keep returning to
                 </p>
                 <p className="mt-2 text-sm text-cream/75">
-                  The same question, asked more than once. Open the latest
-                  reading to continue it with a follow-up, instead of
-                  starting over.
+                  Asked more than once. Open the latest to continue it.
                 </p>
                 <ul className="mt-4 space-y-2">
                   {repeated.map((list) => {
@@ -289,9 +298,39 @@ export default function HistoryPage() {
             </p>
           )}
 
-          {/* M2.2: timeline, grouped by day, newest first. */}
+          {/* Deep UX Batch B: search and sort controls for the timeline. */}
+          <div className="mt-10 flex flex-col gap-3 sm:flex-row">
+            <div className="flex-1">
+              <label htmlFor="journal-search" className="mb-1.5 block text-sm font-medium text-cream">Search your journal</label>
+              <input
+                id="journal-search"
+                type="search"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search by question, spread, or category"
+                className="w-full rounded-xl border border-gold/25 bg-panel px-4 py-2.5 text-cream placeholder:text-mist"
+              />
+            </div>
+            <div>
+              <label htmlFor="journal-sort" className="mb-1.5 block text-sm font-medium text-cream">Sort</label>
+              <select
+                id="journal-sort"
+                value={sortOrder}
+                onChange={(e) => setSortOrder(e.target.value as "newest" | "oldest")}
+                className="w-full rounded-xl border border-gold/25 bg-panel px-4 py-2.5 text-cream sm:w-auto"
+              >
+                <option value="newest">Newest first</option>
+                <option value="oldest">Oldest first</option>
+              </select>
+            </div>
+          </div>
+          {filteredHistory.length === 0 && (
+            <p className="mt-8 text-center text-sm text-mist">No readings match that search. Try a different word, or clear the search.</p>
+          )}
+
+          {/* M2.2: timeline, grouped by day, in the chosen sort order. */}
           <div className="mt-10 space-y-8">
-            {groupReadingsByDay(history).map((group) => (
+            {groupReadingsByDay(filteredHistory).map((group) => (
               <section key={group.label}>
                 <p className="text-xs uppercase tracking-[0.25em] text-gold">
                   {group.label}
