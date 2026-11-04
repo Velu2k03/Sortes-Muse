@@ -10,7 +10,7 @@ export const metadata = {
 
 export default function Credits() {
   return (
-    <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
+    <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
       {/* Lightsite fix V13: this header renders on the server, so
           the H1 is in the initial HTML. It used to live in the
           client component, which suspends on useSearchParams, so
