@@ -499,6 +499,7 @@ export default function ChartsClient() {
           never birth data.
           {system === "ziwei" &&
             " Ziwei time is corrected by longitude only: 4 minutes per degree from the nearest 15 degree meridian."}
+
         </p>
         {/* Audit 6: this long block used to sit above the form, so a
             first-time user had to scroll to the system tabs and the
@@ -507,12 +508,12 @@ export default function ChartsClient() {
             still one tap away, and the per-system timezone disclosure
             is below the form. */}
         <details className="mx-auto mt-4 max-w-xl rounded-2xl border border-gold/20 bg-panel/50 p-4 text-left text-sm leading-relaxed text-cream/75">
-          <summary className="cursor-pointer font-semibold text-goldbright">How each system uses your inputs (tap for details)</summary>
+          <summary className="cursor-pointer font-semibold text-goldbright">How your inputs are used</summary>
           <ul className="mt-2 list-disc space-y-1 pl-5">
-            <li>Gender: Ziwei only, palace placement depends on it.</li>
-            <li>Birthplace: all three systems. Western and Vedic need it for Rising and houses; Ziwei needs longitude for its correction.</li>
-            <li>Birth time: clock time at the birthplace. Western converts it with a real timezone database, including DST rules for the birthplace on the birth date. Vedic and Ziwei use longitude only, so a time near a boundary may differ by one division. Unknown time: planet positions use noon as a stand-in, and Rising, Midheaven, and houses are withheld. Ziwei needs a birth hour and cannot be calculated without one.</li>
-            <li>Calculation is free and unsaved. Interpretation is separate: 1 Oracle, first per system free.</li>
+            <li>Gender: Ziwei only.</li>
+            <li>Birthplace: Rising and houses for Western and Vedic, longitude correction for Ziwei.</li>
+            <li>Birth time: clock time at the birthplace. Western converts with a timezone database that includes DST rules. Vedic uses longitude divided by 15 only. Ziwei uses longitude correction only, 4 minutes per degree. Unknown time uses noon for planets and withholds Rising, Midheaven, and houses. Ziwei needs a birth hour.</li>
+            <li>Near a boundary: for Vedic or Ziwei times near a sign, nakshatra, or double-hour boundary, a longitude-only time can fall on either side, so treat borderline placements as approximate, not timezone-exact.</li>
           </ul>
         </details>
       </div>
@@ -797,12 +798,7 @@ export default function ChartsClient() {
             {error}
           </p>
         )}
-        <details className="mt-5 rounded-xl border border-gold/25 bg-panel/50 px-4 py-3 text-sm leading-relaxed text-cream/80">
-          <summary className="cursor-pointer font-semibold text-goldbright">Before you calculate, please note: how birth time is converted (tap for details)</summary>
-          <p className="mt-2">
-            Birth time is clock time at the birthplace. Western converts it to UTC with a timezone database that includes DST rules for the birthplace on the birth date. Vedic converts it to UT by longitude divided by 15 only, with no timezone database and no DST. Ziwei applies a longitude correction only, 4 minutes per degree from the nearest 15 degree meridian, with no equation of time and no DST. A time near a boundary may differ by one division under the longitude-only systems.
-          </p>
-        </details>
+
         {/* M1.2: Ziwei cannot be calculated without a birth hour, so
             the button stays disabled with the reason inline instead
             of failing after the click. */}
@@ -864,7 +860,7 @@ export default function ChartsClient() {
           </p>
           {result.system === "ziwei" && (
             <>
-              <p className="mt-3 text-sm text-cream/80">Chart language only: this toggle changes the chart labels, the form above stays in English.</p>
+
               <div role="group" className="mt-4 flex flex-wrap gap-3" aria-label="Chart language">
                 {(["en", "zh"] as const).map((l) => (
                   <button
@@ -1051,9 +1047,7 @@ export default function ChartsClient() {
           <section id="chart-interpretation" className="mt-10 scroll-mt-24 rounded-3xl border border-gold/25 bg-panel/70 p-6" aria-label="Chart interpretation">
             <h3 className="font-display text-2xl text-goldbright">{result.system === "ziwei" && ziweiLang === "zh" ? "解读" : "Interpretation"}</h3>
             <p className="mt-2 text-sm leading-relaxed text-cream/75">
-              In plain words, for your focus and question. The numbers and
-              placements stay in the chart above for reference; you are
-              not expected to interpret them yourself.
+              In plain words, for your focus and question.
             </p>
             {result.system === "ziwei" && ziweiLang === "zh" && (
               <p className="mt-2 text-sm text-cream/80">解读由 AI 用英文生成，基于上方星盘位置；图表标签已为中文。</p>

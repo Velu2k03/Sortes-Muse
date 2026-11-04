@@ -89,8 +89,7 @@ export default function HoroscopePage() {
         <p className="flex items-center justify-center gap-2 text-xs uppercase tracking-[0.35em] text-gold"><Icon name="iconoirSun" size={18} />Daily Horoscope</p>
         <h1 className="mt-3 font-display text-5xl text-goldbright sm:text-6xl">Today&apos;s sun-sign reflection</h1>
         <p className="mx-auto mt-4 max-w-xl text-cream/75">
-          A general reflection for your sun sign, written for Sortes. It is not a personal reading, not a prediction,
-          and it never replaces professional advice. Free, unsaved, and no birth data needed.
+          A general reflection for your sun sign. Free, unsaved, no birth data needed.
         </p>
       </div>
       <div className="mx-auto mt-8 grid gap-4 rounded-3xl border border-gold/25 bg-panel/70 p-6 sm:grid-cols-2">
@@ -217,7 +216,6 @@ export default function HoroscopePage() {
             </AnimatedContent>
           )}
           <p className="mt-4 text-sm text-cream/60">
-            General sun-sign reflection only. For a personal reading, draw a card or cast a birth chart.
           </p>
           <p className="mt-3 text-sm text-cream/75">
             Want transits computed from your own chart?{" "}

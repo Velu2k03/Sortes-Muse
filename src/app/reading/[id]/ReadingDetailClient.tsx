@@ -304,8 +304,7 @@ export default function ReadingDetail({ id }: { id: string }) {
                     {facts.dominantSuit} ({facts.dominantElement}),{" "}
                     <span className="num">{facts.dominantCount}</span> of{" "}
                     <span className="num">{reading.cards.length}</span> cards.
-                    Read this as the flavour running through your question,
-                    not a verdict on it.
+                    The flavour running through your question, not a verdict on it.
                   </dd>
                 </div>
               )}
@@ -399,12 +398,6 @@ export default function ReadingDetail({ id }: { id: string }) {
             <p className="text-xs uppercase tracking-[0.25em] text-gold">
               Personalized interpretation
             </p>
-            <p className="mt-2 text-sm leading-relaxed text-cream/75">
-              Written for your question above. The closing part answers, in
-              order: what stands out, the tension or opportunity, what you
-              may be overlooking, and one practical step. Read it as
-              reflection, not a prediction.
-            </p>
             <TypewriterText
               text={reading.interpretation}
               className="mt-3 whitespace-pre-line leading-relaxed text-cream/90"
@@ -431,8 +424,7 @@ export default function ReadingDetail({ id }: { id: string }) {
           My next step
         </p>
         <p className="mt-2 text-sm leading-relaxed text-cream/85">
-          One small step you choose from this reading. It is saved with
-          the reading, so your journal can remind you of it later.
+          One small step from this reading, saved with it.
         </p>
         <div className="mt-4 flex flex-col gap-3 sm:flex-row">
           <input
@@ -508,8 +500,6 @@ export default function ReadingDetail({ id }: { id: string }) {
             </p>
             <p className="mt-2 text-sm leading-relaxed text-cream/85">
               What has shifted since this reading? A line or two is enough.
-              It is saved with the reading, so your journal keeps the whole
-              arc, not just the first day.
             </p>
             <div className="mt-4 flex flex-col gap-3">
               <textarea

@@ -275,8 +275,7 @@ export default function IntakeFlow({ slug }: { slug: string }) {
               What is on your mind?
             </h1>
             <p className="mx-auto mt-3 max-w-md text-cream/75">
-              Choose the area of life you want clarity on. Your reading will
-              be woven around your own story.
+              Choose the area of life for this reading.
             </p>
             <div className="mt-8 grid gap-3 sm:grid-cols-2">
               {INTAKE_CATEGORIES.map((c, i) => (
@@ -494,9 +493,8 @@ export default function IntakeFlow({ slug }: { slug: string }) {
                 <li>Readings are for reflection, never guaranteed predictions.</li>
               </ul>
               <p className="mt-4 text-sm leading-relaxed text-cream/85">
-                What happens next: the cards are drawn, you give one word
-                for your first impression, then the reading is written for
-                your question. Nothing has been charged yet: the Oracle
+                What happens next: cards are drawn, you give one word,
+                then the reading is written. Nothing has been charged yet: the Oracle
                 is spent when you confirm generation, after your
                 impression, not at the draw. If generation fails
                 while this page is still open, a guest Oracle is
@@ -514,9 +512,7 @@ export default function IntakeFlow({ slug }: { slug: string }) {
                   “{questionSuggestion}”
                 </p>
                 <p className="mt-1 text-xs text-mist">
-                  A suggestion from a fixed rule, not from AI. It frames
-                  your question as reflection instead of a verdict. You
-                  can edit it freely.
+                  A fixed-rule suggestion, not from AI. Edit it freely.
                 </p>
                 <div className="mt-3 flex gap-2">
                   <button

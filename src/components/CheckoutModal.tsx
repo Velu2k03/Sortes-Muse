@@ -233,15 +233,12 @@ export default function CheckoutModal({ open, onClose, reason, initialPackId }: 
 
             {realCheckout ? (
               <p className="mt-5 rounded-xl bg-gold/10 p-3 text-center text-xs text-mist">
-                Secure checkout by Lemon Squeezy. Your Oracles appear
-                instantly after payment, and your account is created
-                automatically from your email.
+                Secure checkout by Lemon Squeezy. Oracles appear instantly
+                after payment; your account is created from your email.
               </p>
             ) : (
               <p className="mt-5 rounded-xl bg-violet/10 p-3 text-center text-xs text-mist">
-                Demo checkout: Oracles are added instantly for testing. Secure
-                Lemon Squeezy payments arrive before launch; your price and packs
-                stay the same.
+                Demo checkout: Oracles are added instantly for testing.
               </p>
             )}
             <button

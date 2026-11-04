@@ -19,9 +19,8 @@ export default function MethodologyPage() {
           How Sortes calculates
         </h1>
         <p className="mx-auto mt-4 max-w-xl text-cream/75">
-          The methods, engines, and limits behind every chart on this site. If a
-          number on a chart page cannot be traced to a rule below, treat it as a
-          bug and tell us.
+          The methods, engines, and limits behind every chart. If a number
+          cannot be traced to a rule below, treat it as a bug.
         </p>
       </div>
 

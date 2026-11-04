@@ -26,14 +26,11 @@ export default function AboutPage() {
         <section>
           <h2 className="font-display text-3xl text-goldbright">What Sortes offers</h2>
           <p className="mt-3">
-            A free daily card, a browser for all 78 Rider-Waite card meanings,
-            six spreads (Quick Insight, Past / Present / Future, Love Insight,
-            Career Path, Weekly Outlook, and the Celtic Cross), a daily
-            sun-sign reflection, and three birth chart systems (Ziwei,
-            Western, and Vedic). Your first Quick Insight reading and the first
-            chart interpretation per system are free. Later readings and
-            interpretations cost one Oracle each, in packs sold through Lemon
-            Squeezy.
+            A free daily card, all 78 Rider-Waite card meanings, six spreads,
+            a daily sun-sign reflection, and three birth chart systems
+            (Ziwei, Western, Vedic). First Quick Insight and first chart
+            interpretation per system are free; later readings cost 1 Oracle
+            each, in packs sold through Lemon Squeezy.
           </p>
         </section>
         <section>
@@ -48,15 +45,12 @@ export default function AboutPage() {
         <section>
           <h2 className="font-display text-3xl text-goldbright">How your data is handled</h2>
           <p className="mt-3">
-            Guest daily cards, Oracle balance, and reading history live in your
-            browser until you create an account. Your story goes to the AI for
-            this reading only and is not saved. Your question, first name,
-            and category are saved in your journal: on this device as a
-            guest, in your account when signed in, until you delete them.
-            For charts, only calculated positions,
-            signs, and palaces are stored, never raw birth date, time, or
-            place, and raw birth data is never sent to an AI prompt. Full
-            details are in the Privacy Policy.
+            As a guest, your daily cards, balance, and history live in your
+            browser. Your story goes to the AI for one reading only and is
+            not saved. Your question, first name, and category are saved in
+            your journal until you delete them. For charts, only calculated
+            positions are stored, never raw birth data, and raw birth data is
+            never sent to AI. Full details are in the Privacy Policy.
           </p>
         </section>
       </div>

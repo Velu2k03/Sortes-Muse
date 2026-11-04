@@ -142,7 +142,7 @@ export default function WesternWheel({ result }: { result: WesternResult }) {
       {result.cusps.length > 0 ? (
         <>
           <h3 className="mt-8 scroll-mt-24 font-display text-xl text-goldbright">Wheel overview</h3>
-          <p className="mt-1 text-sm text-cream/80">Visual overview. Clustered planet labels are staggered on the wheel with leader lines; the planet table above is still the exact reading.</p>
+          <p className="mt-1 text-sm text-cream/80">Visual overview. Clustered labels are staggered on the wheel.</p>
           <motion.div
             initial={reduce ? { opacity: 1 } : { opacity: 0, scale: 0.97 }}
             animate={{ opacity: 1, scale: 1 }}

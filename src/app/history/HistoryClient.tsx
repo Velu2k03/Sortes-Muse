@@ -204,9 +204,7 @@ export default function HistoryPage() {
                   Questions you keep returning to
                 </p>
                 <p className="mt-2 text-sm text-cream/75">
-                  The same question, asked more than once. Open the latest
-                  reading to continue it with a follow-up, instead of
-                  starting over.
+                  Asked more than once. Open the latest to continue it.
                 </p>
                 <ul className="mt-4 space-y-2">
                   {repeated.map((list) => {
