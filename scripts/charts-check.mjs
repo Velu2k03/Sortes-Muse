@@ -732,4 +732,10 @@ console.log("charts-check: all assertions passed");
   assert.ok(headerBatchC.includes("rounded-lg p-3") && headerBatchC.includes("h-11 w-11"), "header controls must reach 44px targets");
   console.log("deep-ux-batch-c: spreads picker, intake clarity, reading note, target sizes: all source assertions passed");
 
+  // Deep UX Batch D (review fixes): InstallBanner must not obscure
+  // focused content at the foot of the page.
+  const installBannerD = fs.readFileSync("src/components/InstallBanner.tsx", "utf8");
+  assert.ok(installBannerD.includes("ResizeObserver") && installBannerD.includes("document.body.style.paddingBottom"), "InstallBanner must reserve its measured height as body padding while shown so focused content scrolls above it");
+  console.log("deep-ux-batch-d: InstallBanner focus-obscured fix: all source assertions passed");
+
 }
