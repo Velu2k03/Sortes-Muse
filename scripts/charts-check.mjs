@@ -659,4 +659,15 @@ console.log("charts-check: all assertions passed");
   assert.ok(guidesSearch2.includes("AnimatedList"), "guides index must use the animated list");
   assert.ok(!pkg.includes('"ogl"') && !pkg.includes('"lenis"'), "Phase 3 must not add ogl or lenis");
   console.log("personal-phase3: guided navigation, guide contents, GlareHover, AnimatedList: all source assertions passed");
+  // Personal Phase 4: guide cost warnings, FAQ expand all and
+  // anchors, spread disclaimer. No pricing, credit, or copy changes
+  // beyond stating the confirmed costs.
+  const guidePage2 = fs.readFileSync("src/app/guides/[slug]/page.tsx", "utf8");
+  assert.ok(guidePage2.includes("Cost before you try it") && guidePage2.includes("celtic-cross-explained") && guidePage2.includes("tarot-and-birth-charts") && guidePage2.includes("topic-spreads-love-career-week"), "the three cost guides must carry a cost warning up front");
+  const faqPage = fs.readFileSync("src/app/faq/page.tsx", "utf8");
+  assert.ok(faqPage.includes("FaqList"), "FAQ must use the expandable list component");
+  const faqList = fs.readFileSync("src/components/FaqList.tsx", "utf8");
+  assert.ok(faqList.includes("Expand all") && faqList.includes("Collapse all") && faqList.includes("Jump to a question"), "FAQ must offer expand all, collapse all, and anchor links");
+  assert.ok(spreadsClient2.includes("Readings are for reflection and perspective only"), "spreads index must carry the reflection disclaimer");
+  console.log("personal-phase4: guide costs, FAQ controls, spread disclaimer: all source assertions passed");
 }

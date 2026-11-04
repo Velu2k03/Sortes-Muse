@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { APP_NAME, CONTACT_EMAIL } from "@/lib/site";
+import FaqList from "@/components/FaqList";
 
 export const metadata = {
   title: "Frequently asked questions",
@@ -72,14 +73,7 @@ export default function FaqPage() {
         Short answers to the questions Sortes users actually ask. For more
         detail, read the guides, the privacy policy, and the terms.
       </p>
-      <div className="mt-10 space-y-4">
-        {FAQS.map((f) => (
-          <details key={f.q} className="rounded-3xl border border-gold/25 bg-panel/70 p-6">
-            <summary className="cursor-pointer font-display text-2xl text-goldbright">{f.q}</summary>
-            <p className="mt-3 leading-relaxed text-cream/85">{f.a}</p>
-          </details>
-        ))}
-      </div>
+      <FaqList faqs={FAQS} />
       <p className="mt-10 text-sm text-mist">
         Still stuck? Contact {CONTACT_EMAIL}, or read the{" "}
         <Link href="/about" className="text-goldbright underline underline-offset-4">About {APP_NAME}</Link> page.
