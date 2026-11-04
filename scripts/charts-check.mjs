@@ -718,5 +718,18 @@ console.log("charts-check: all assertions passed");
   const readingDetailB = fs.readFileSync("src/app/reading/[id]/ReadingDetailClient.tsx", "utf8");
   assert.ok(readingDetailB.includes("Cast a birth chart for it"), "reading detail must link to charts");
   console.log("deep-ux-batch-b: grouped nav, return loop, journal scale, report sample, cross-links: all source assertions passed");
+  // Deep UX Batch C: spreads picker, intake clarity, reading
+  // hierarchy note, accessibility target sizes. Variable names here
+  // carry the BatchC suffix because this check file reuses short
+  // names across groups in one scope.
+  const spreadsBatchC = fs.readFileSync("src/app/spreads/SpreadsClient.tsx", "utf8");
+  assert.ok(spreadsBatchC.includes("What are you asking about?") && spreadsBatchC.includes("spread-") && spreadsBatchC.includes("Positions in this spread"), "spreads must offer a question picker and disclose positions");
+  const intakeBatchC = fs.readFileSync("src/app/intake/[slug]/IntakeFlow.tsx", "utf8");
+  assert.ok(intakeBatchC.includes("Ask like this") && intakeBatchC.includes("Nothing has been charged yet") && intakeBatchC.includes('aria-label="Reading steps"') && !intakeBatchC.includes('aria-hidden="true"'), "intake must show examples, state nothing charged yet, and expose step progress");
+  const readingBatchC = fs.readFileSync("src/app/reading/[id]/ReadingDetailClient.tsx", "utf8");
+  assert.ok(readingBatchC.includes("Your story is not shown here on purpose") && readingBatchC.includes("revisit note"), "reading detail must explain the absent story and the revisit gate");
+  const headerBatchC = fs.readFileSync("src/components/Header.tsx", "utf8");
+  assert.ok(headerBatchC.includes("rounded-lg p-3") && headerBatchC.includes("h-11 w-11"), "header controls must reach 44px targets");
+  console.log("deep-ux-batch-c: spreads picker, intake clarity, reading note, target sizes: all source assertions passed");
 
 }

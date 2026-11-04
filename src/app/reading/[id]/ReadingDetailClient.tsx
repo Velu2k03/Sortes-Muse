@@ -422,6 +422,9 @@ export default function ReadingDetail({ id }: { id: string }) {
           Cast a birth chart for it
         </Link>
       </p>
+      <p className="mx-auto mt-4 max-w-3xl text-center text-sm text-mist">
+        Your story is not shown here on purpose: it was used for this reading only and is not saved.
+      </p>
 
       <div className="mx-auto mt-10 max-w-3xl rounded-3xl border border-gold/25 bg-panel/60 p-6 text-left sm:p-8">
         <p className="text-xs uppercase tracking-[0.25em] text-gold">

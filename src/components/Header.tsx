@@ -185,7 +185,7 @@ export default function Header() {
             onClick={toggleTheme}
             aria-label={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
             title={theme === "dark" ? "Light theme" : "Dark theme"}
-            className="rounded-lg p-2 text-cream/80 transition hover:text-goldbright"
+            className="rounded-lg p-3 text-cream/80 transition hover:text-goldbright"
           >
             <Icon name={theme === "dark" ? "sun" : "moon"} size={20} />
           </button>
@@ -213,7 +213,7 @@ export default function Header() {
                 href="/account"
                 title={user.email}
                 aria-label={`Account: ${user.email}`}
-                className="hidden h-8 w-8 items-center justify-center rounded-full border border-gold/50 bg-gold/15 font-display text-sm font-bold text-goldbright transition hover:border-goldbright lg:flex"
+                className="hidden h-11 w-11 items-center justify-center rounded-full border border-gold/50 bg-gold/15 font-display text-sm font-bold text-goldbright transition hover:border-goldbright lg:flex"
               >
                 {initial}
               </Link>
@@ -227,7 +227,7 @@ export default function Header() {
             ))}
           <button
             type="button"
-            className="rounded-lg p-2 text-cream/80 lg:hidden"
+            className="rounded-lg p-3 text-cream/80 lg:hidden"
             onClick={() => setOpen((v) => !v)}
             aria-label="Toggle menu"
             aria-expanded={open}
