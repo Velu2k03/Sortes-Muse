@@ -234,25 +234,25 @@ export function Orb({
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const reduce = useReducedMotion();
-  // Codex fresh review on PR 50, correct: the orb layer itself is
-  // pointer-events-none, so an onPointerMove on it never fires and
-  // the orbs never followed the pointer. Listen on the hit-tested
-  // parent (the hero section) instead, keeping the decorative layer
-  // click-through.
+  // Codex fresh re-review on PR 50, correct: the first fix listened
+  // on the background layer, but hero copy and CTAs are siblings of
+  // that layer, so moves over them never reached it. Listen on the
+  // shared hero section ancestor (closest section), keeping the
+  // decorative layer click-through.
   useEffect(() => {
     if (reduce) return;
-    const parent = ref.current?.parentElement;
-    if (!parent) return;
+    const section = ref.current?.closest("section");
+    if (!section) return;
     const onMove = (event: PointerEvent) => {
       if (event.pointerType === "touch" || !ref.current) return;
-      const rect = parent.getBoundingClientRect();
+      const rect = section.getBoundingClientRect();
       const x = (event.clientX - rect.left) / rect.width - 0.5;
       const y = (event.clientY - rect.top) / rect.height - 0.5;
       ref.current.style.setProperty("--orb-x", `${x * 30}px`);
       ref.current.style.setProperty("--orb-y", `${y * 30}px`);
     };
-    parent.addEventListener("pointermove", onMove);
-    return () => parent.removeEventListener("pointermove", onMove);
+    section.addEventListener("pointermove", onMove);
+    return () => section.removeEventListener("pointermove", onMove);
   }, [reduce]);
   if (reduce) {
     return (

@@ -120,7 +120,16 @@ export default function ChartsClient() {
   // restored an old result after the birth inputs changed, so the
   // result could appear to match new form values. The snapshot now
   // carries the input fingerprint and restores only when it matches.
-  const inputFingerprint = [date, time, unknownTime, gender, latitude, longitude].join("|");
+  // Fresh Codex review on PR 50, correct: the fingerprint must also
+  // cover focus and question, because a saved interpretation is tied
+  // to them, not only to the birth inputs.
+  const inputFingerprint = [date, time, unknownTime, gender, latitude, longitude, focus, question].join("|");
+  // Fresh Codex review on PR 50, correct: the cache writer must only
+  // store a result under the fingerprint it was calculated with. An
+  // edited field changes inputFingerprint while the old result is
+  // still on screen, and writing it under the new fingerprint would
+  // later restore a chart for the wrong inputs.
+  const calcFingerprintRef = useRef<string>("");
   const systemCache = useRef<Record<string, { result: ChartResult | null; interpretation: string; interpError: string; saved: boolean; fingerprint: string; interpFree: boolean; interpFallback: boolean }>>({});
   const selectSystem = (s: ChartSystem) => {
     const cached = systemCache.current[s];
@@ -136,6 +145,7 @@ export default function ChartsClient() {
       // over from the system just switched away from.
       setInterpFree(cached.interpFree);
       setInterpFallback(cached.interpFallback);
+      calcFingerprintRef.current = cached.fingerprint;
     } else {
       setResult(null);
       setInterpretation("");
@@ -156,6 +166,7 @@ export default function ChartsClient() {
   // Cache writer lives here, after result and saved are declared,
   // so TypeScript does not flag use before assignment.
   useEffect(() => {
+    if (inputFingerprint !== calcFingerprintRef.current) return;
     systemCache.current[system] = { result, interpretation, interpError, saved, fingerprint: inputFingerprint, interpFree, interpFallback };
   }, [system, result, interpretation, interpError, saved, inputFingerprint, interpFree, interpFallback]);
   const [showBurst, setShowBurst] = useState(false);
@@ -443,6 +454,7 @@ export default function ChartsClient() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Could not calculate this chart.");
+      calcFingerprintRef.current = inputFingerprint;
       setResult(data.result as ChartResult);
       // Deep UX Batch A2: remember birth details on this device so
       // a return visit does not start from a blank form. Raw birth
