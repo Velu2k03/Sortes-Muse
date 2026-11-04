@@ -121,7 +121,7 @@ export default function ChartsClient() {
   // result could appear to match new form values. The snapshot now
   // carries the input fingerprint and restores only when it matches.
   const inputFingerprint = [date, time, unknownTime, gender, latitude, longitude].join("|");
-  const systemCache = useRef<Record<string, { result: ChartResult | null; interpretation: string; interpError: string; saved: boolean; fingerprint: string }>>({});
+  const systemCache = useRef<Record<string, { result: ChartResult | null; interpretation: string; interpError: string; saved: boolean; fingerprint: string; interpFree: boolean; interpFallback: boolean }>>({});
   const selectSystem = (s: ChartSystem) => {
     const cached = systemCache.current[s];
     setSystem(s);
@@ -130,6 +130,12 @@ export default function ChartsClient() {
       setInterpretation(cached.interpretation);
       setInterpError(cached.interpError);
       setSaved(cached.saved);
+      // Codex fresh review on PR 50, correct: the free/fallback
+      // badges and the saved free/aiGenerated values are per-system,
+      // so they must be restored with the interpretation, not left
+      // over from the system just switched away from.
+      setInterpFree(cached.interpFree);
+      setInterpFallback(cached.interpFallback);
     } else {
       setResult(null);
       setInterpretation("");
@@ -150,8 +156,8 @@ export default function ChartsClient() {
   // Cache writer lives here, after result and saved are declared,
   // so TypeScript does not flag use before assignment.
   useEffect(() => {
-    systemCache.current[system] = { result, interpretation, interpError, saved, fingerprint: inputFingerprint };
-  }, [system, result, interpretation, interpError, saved, inputFingerprint]);
+    systemCache.current[system] = { result, interpretation, interpError, saved, fingerprint: inputFingerprint, interpFree, interpFallback };
+  }, [system, result, interpretation, interpError, saved, inputFingerprint, interpFree, interpFallback]);
   const [showBurst, setShowBurst] = useState(false);
   const resultRef = useRef<HTMLElement | null>(null);
   // Auto-scroll to the result after Calculate: it used to appear below

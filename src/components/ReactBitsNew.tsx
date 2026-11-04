@@ -234,14 +234,26 @@ export function Orb({
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const reduce = useReducedMotion();
-  const onMove = (event: React.PointerEvent) => {
-    if (reduce || isTouchPointer(event) || !ref.current) return;
-    const rect = ref.current.getBoundingClientRect();
-    const x = (event.clientX - rect.left) / rect.width - 0.5;
-    const y = (event.clientY - rect.top) / rect.height - 0.5;
-    ref.current.style.setProperty("--orb-x", `${x * 30}px`);
-    ref.current.style.setProperty("--orb-y", `${y * 30}px`);
-  };
+  // Codex fresh review on PR 50, correct: the orb layer itself is
+  // pointer-events-none, so an onPointerMove on it never fires and
+  // the orbs never followed the pointer. Listen on the hit-tested
+  // parent (the hero section) instead, keeping the decorative layer
+  // click-through.
+  useEffect(() => {
+    if (reduce) return;
+    const parent = ref.current?.parentElement;
+    if (!parent) return;
+    const onMove = (event: PointerEvent) => {
+      if (event.pointerType === "touch" || !ref.current) return;
+      const rect = parent.getBoundingClientRect();
+      const x = (event.clientX - rect.left) / rect.width - 0.5;
+      const y = (event.clientY - rect.top) / rect.height - 0.5;
+      ref.current.style.setProperty("--orb-x", `${x * 30}px`);
+      ref.current.style.setProperty("--orb-y", `${y * 30}px`);
+    };
+    parent.addEventListener("pointermove", onMove);
+    return () => parent.removeEventListener("pointermove", onMove);
+  }, [reduce]);
   if (reduce) {
     return (
       <div aria-hidden="true" className={`pointer-events-none absolute inset-0 overflow-hidden ${className}`}>
@@ -253,7 +265,6 @@ export function Orb({
     <div
       ref={ref}
       aria-hidden="true"
-      onPointerMove={onMove}
       className={`pointer-events-none absolute inset-0 overflow-hidden ${className}`}
     >
       <motion.div
