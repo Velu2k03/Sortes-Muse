@@ -939,9 +939,7 @@ export default function ChartsClient() {
           <section id="chart-interpretation" className="mt-10 scroll-mt-24 rounded-3xl border border-gold/25 bg-panel/70 p-6" aria-label="Chart interpretation">
             <h3 className="font-display text-2xl text-goldbright">{result.system === "ziwei" && ziweiLang === "zh" ? "解读" : "Interpretation"}</h3>
             <p className="mt-2 text-sm leading-relaxed text-cream/75">
-              In plain words, for your focus and question. The numbers and
-              placements stay in the chart above for reference; you are
-              not expected to interpret them yourself.
+              In plain words, for your focus and question.
             </p>
             {result.system === "ziwei" && ziweiLang === "zh" && (
               <p className="mt-2 text-sm text-cream/80">解读由 AI 用英文生成，基于上方星盘位置；图表标签已为中文。</p>
