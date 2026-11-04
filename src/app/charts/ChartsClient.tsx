@@ -80,33 +80,6 @@ export default function ChartsClient() {
     ziwei: "Chinese Purple Star astrology: palaces, stars, and life periods.",
   };
   const formRef = useRef<HTMLFormElement | null>(null);
-  // Deep UX Batch A2: per-system cache. Switching system used to
-  // wipe the result, interpretation, and saved state, so comparing
-  // systems meant re-entering everything. The cache keeps one
-  // snapshot per system and restores it on switch.
-  const systemCache = useRef<Record<string, { result: ChartResult | null; interpretation: string; interpError: string; saved: boolean }>>({});
-  const selectSystem = (s: ChartSystem) => {
-    const cached = systemCache.current[s];
-    setSystem(s);
-    if (cached) {
-      setResult(cached.result);
-      setInterpretation(cached.interpretation);
-      setInterpError(cached.interpError);
-      setSaved(cached.saved);
-    } else {
-      setResult(null);
-      setInterpretation("");
-      setInterpError("");
-      setSaved(false);
-    }
-    // Picking a system brings the form up into view, so the fields
-    // for the new system are right there instead of leaving the
-    // user staring at the wheel.
-    formRef.current?.scrollIntoView({
-      behavior: reducedMotion ? "auto" : "smooth",
-      block: "start",
-    });
-  };
   // Traditional square is the default Ziwei view: it passed the re-audit
   // cleanly, while the ring edge labels still crowd and overlap. Ring
   // stays as an alternative toggle, it is not removed.
@@ -139,14 +112,46 @@ export default function ChartsClient() {
   const [preset, setPreset] = useState(PRESETS[0].label);
   const [latitude, setLatitude] = useState(String(PRESETS[0].latitude));
   const [longitude, setLongitude] = useState(String(PRESETS[0].longitude));
+  // Deep UX Batch A2: per-system cache. Switching system used to
+  // wipe the result, interpretation, and saved state, so comparing
+  // systems meant re-entering everything. The cache keeps one
+  // snapshot per system and restores it on switch.
+  // Codex review on PR 50, correct: a cache keyed only by system
+  // restored an old result after the birth inputs changed, so the
+  // result could appear to match new form values. The snapshot now
+  // carries the input fingerprint and restores only when it matches.
+  const inputFingerprint = [date, time, unknownTime, gender, latitude, longitude].join("|");
+  const systemCache = useRef<Record<string, { result: ChartResult | null; interpretation: string; interpError: string; saved: boolean; fingerprint: string }>>({});
+  const selectSystem = (s: ChartSystem) => {
+    const cached = systemCache.current[s];
+    setSystem(s);
+    if (cached && cached.fingerprint === inputFingerprint) {
+      setResult(cached.result);
+      setInterpretation(cached.interpretation);
+      setInterpError(cached.interpError);
+      setSaved(cached.saved);
+    } else {
+      setResult(null);
+      setInterpretation("");
+      setInterpError("");
+      setSaved(false);
+    }
+    // Picking a system brings the form up into view, so the fields
+    // for the new system are right there instead of leaving the
+    // user staring at the wheel.
+    formRef.current?.scrollIntoView({
+      behavior: reducedMotion ? "auto" : "smooth",
+      block: "start",
+    });
+  };
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState<ChartResult | null>(null);
   // Cache writer lives here, after result and saved are declared,
   // so TypeScript does not flag use before assignment.
   useEffect(() => {
-    systemCache.current[system] = { result, interpretation, interpError, saved };
-  }, [system, result, interpretation, interpError, saved]);
+    systemCache.current[system] = { result, interpretation, interpError, saved, fingerprint: inputFingerprint };
+  }, [system, result, interpretation, interpError, saved, inputFingerprint]);
   const [showBurst, setShowBurst] = useState(false);
   const resultRef = useRef<HTMLElement | null>(null);
   // Auto-scroll to the result after Calculate: it used to appear below
@@ -458,8 +463,10 @@ export default function ChartsClient() {
           Interpretation is 1 Oracle, first per system free.
         </p>
         <p className="mx-auto mt-2 max-w-xl text-sm text-cream/80">
-          Birth data is used in memory only for this calculation. It is not
-          stored, and AI gets only chart positions, never birth data.
+          Birth data is used for this calculation and, after a
+          successful calculation, remembered on this device so you do
+          not re-enter it next time. AI gets only chart positions,
+          never birth data.
           {system === "ziwei" &&
             " Ziwei time is corrected by longitude only: 4 minutes per degree from the nearest 15 degree meridian."}
         </p>
@@ -526,6 +533,29 @@ export default function ChartsClient() {
 
       <p className="mx-auto mt-3 max-w-lg text-center text-sm text-cream/75">{SYSTEM_BLURBS[system]}</p>
 
+      <div className="mx-auto mt-6 flex max-w-xl flex-wrap items-center justify-between gap-3">
+        <p className="text-xs text-mist">
+          Your birth details are remembered on this device after a successful calculation.
+        </p>
+        <button
+          type="button"
+          onClick={() => {
+            try { window.localStorage.removeItem("sortes-birth-details"); } catch {}
+            setDate("");
+            setTime("08:00");
+            setUnknownTime(false);
+            setPreset(PRESETS[0].label);
+            setLatitude(String(PRESETS[0].latitude));
+            setLongitude(String(PRESETS[0].longitude));
+            setResult(null);
+            setInterpretation("");
+            setSaved(false);
+          }}
+          className="rounded-xl border border-gold/30 px-4 py-2 text-xs font-semibold text-cream/90 hover:bg-gold/10"
+        >
+          Clear remembered birth details
+        </button>
+      </div>
       <form ref={formRef} onSubmit={onSubmit} className="mx-auto mt-8 max-w-xl rounded-3xl border border-gold/25 bg-panel/70 p-6">
         {/* Audit 6: Use example lives at the top of the form, not only
             at its bottom, so it is visible without scrolling once the
