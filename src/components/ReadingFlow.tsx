@@ -163,11 +163,11 @@ export default function ReadingFlow({ slug, intake = null }: Props) {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
-      {/* Phase F: the flow sits under Readings, so the way back is visible. */}
+      {/* Phase F: the flow sits under Spreads, so the way back is visible. */}
       <Breadcrumbs
         trail={[
           { href: "/", label: "Home" },
-          { href: "/spreads", label: "Readings" },
+          { href: "/spreads", label: "Spreads" },
           { label: getSpread(slug).name },
         ]}
       />
@@ -314,6 +314,26 @@ function GateScreen({
           ))}
         </ol>
       </div>
+
+      {(() => {
+        const guideBySpread: Record<string, string> = {
+          "celtic-cross": "/guides/celtic-cross-explained",
+          "love-insight": "/guides/topic-spreads-love-career-week",
+          "career-path": "/guides/topic-spreads-love-career-week",
+          "weekly-outlook": "/guides/topic-spreads-love-career-week",
+          "quick-insight": "/guides/how-to-ask-a-tarot-question",
+          "past-present-future": "/guides/what-is-tarot",
+        };
+        const guide = guideBySpread[spread.slug];
+        if (!guide) return null;
+        return (
+          <p className="mt-6 text-center text-sm text-mist">
+            <Link href={guide} className="font-semibold text-goldbright underline underline-offset-4">
+              Read the guide first
+            </Link>
+          </p>
+        );
+      })()}
 
       <div className="mt-8">
         {isFreeAvailable ? (

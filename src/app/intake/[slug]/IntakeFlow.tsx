@@ -252,7 +252,7 @@ export default function IntakeFlow({ slug }: { slug: string }) {
       <Breadcrumbs
         trail={[
           { href: "/", label: "Home" },
-          { href: "/spreads", label: "Readings" },
+          { href: "/spreads", label: "Spreads" },
           { label: spread.name },
         ]}
       />

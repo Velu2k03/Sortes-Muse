@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 
 const PLACES = [
   { href: "/daily", label: "Daily Card", desc: "Your free card of the day" },
-  { href: "/spreads", label: "Readings", desc: "Tarot spreads for a question" },
+  { href: "/spreads", label: "Spreads", desc: "Tarot spreads for a question" },
   { href: "/deck", label: "Deck", desc: "All 78 card meanings" },
   { href: "/charts", label: "Charts", desc: "Western, Vedic, and Ziwei birth charts" },
   { href: "/guides", label: "Guides", desc: "How tarot and charts work" },

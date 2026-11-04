@@ -80,20 +80,6 @@ export default function ChartsClient() {
     ziwei: "Chinese Purple Star astrology: palaces, stars, and life periods.",
   };
   const formRef = useRef<HTMLFormElement | null>(null);
-  const selectSystem = (s: ChartSystem) => {
-    setSystem(s);
-    setResult(null);
-    setInterpretation("");
-    setInterpError("");
-    setSaved(false);
-    // Picking a system brings the form up into view, so the fields
-    // for the new system are right there instead of leaving the
-    // user staring at the wheel.
-    formRef.current?.scrollIntoView({
-      behavior: reducedMotion ? "auto" : "smooth",
-      block: "start",
-    });
-  };
   // Traditional square is the default Ziwei view: it passed the re-audit
   // cleanly, while the ring edge labels still crowd and overlap. Ring
   // stays as an alternative toggle, it is not removed.
@@ -126,9 +112,69 @@ export default function ChartsClient() {
   const [preset, setPreset] = useState(PRESETS[0].label);
   const [latitude, setLatitude] = useState(String(PRESETS[0].latitude));
   const [longitude, setLongitude] = useState(String(PRESETS[0].longitude));
+  // Deep UX Batch A2: per-system cache. Switching system used to
+  // wipe the result, interpretation, and saved state, so comparing
+  // systems meant re-entering everything. The cache keeps one
+  // snapshot per system and restores it on switch.
+  // Codex review on PR 50, correct: a cache keyed only by system
+  // restored an old result after the birth inputs changed, so the
+  // result could appear to match new form values. The snapshot now
+  // carries the input fingerprint and restores only when it matches.
+  // Fresh Codex review on PR 50, correct: the fingerprint must also
+  // cover focus and question, because a saved interpretation is tied
+  // to them, not only to the birth inputs.
+  const inputFingerprint = [date, time, unknownTime, gender, latitude, longitude, focus, question].join("|");
+  // Fresh Codex review on PR 50, correct: the cache writer must only
+  // store a result under the fingerprint it was calculated with. An
+  // edited field changes inputFingerprint while the old result is
+  // still on screen, and writing it under the new fingerprint would
+  // later restore a chart for the wrong inputs.
+  const calcFingerprintRef = useRef<string>("");
+  // Codex fresh review on PR 50, correct: if the user clicks Clear
+  // remembered birth details while a calculation is still pending,
+  // the success continuation below must not write the old details
+  // back and silently undo that clear. The epoch is bumped on every
+  // clear, and the continuation only lands when it is unchanged.
+  const birthSaveEpochRef = useRef(0);
+  const systemCache = useRef<Record<string, { result: ChartResult | null; interpretation: string; interpError: string; saved: boolean; fingerprint: string; interpFree: boolean; interpFallback: boolean }>>({});
+  const selectSystem = (s: ChartSystem) => {
+    const cached = systemCache.current[s];
+    setSystem(s);
+    if (cached && cached.fingerprint === inputFingerprint) {
+      setResult(cached.result);
+      setInterpretation(cached.interpretation);
+      setInterpError(cached.interpError);
+      setSaved(cached.saved);
+      // Codex fresh review on PR 50, correct: the free/fallback
+      // badges and the saved free/aiGenerated values are per-system,
+      // so they must be restored with the interpretation, not left
+      // over from the system just switched away from.
+      setInterpFree(cached.interpFree);
+      setInterpFallback(cached.interpFallback);
+      calcFingerprintRef.current = cached.fingerprint;
+    } else {
+      setResult(null);
+      setInterpretation("");
+      setInterpError("");
+      setSaved(false);
+    }
+    // Picking a system brings the form up into view, so the fields
+    // for the new system are right there instead of leaving the
+    // user staring at the wheel.
+    formRef.current?.scrollIntoView({
+      behavior: reducedMotion ? "auto" : "smooth",
+      block: "start",
+    });
+  };
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState<ChartResult | null>(null);
+  // Cache writer lives here, after result and saved are declared,
+  // so TypeScript does not flag use before assignment.
+  useEffect(() => {
+    if (inputFingerprint !== calcFingerprintRef.current) return;
+    systemCache.current[system] = { result, interpretation, interpError, saved, fingerprint: inputFingerprint, interpFree, interpFallback };
+  }, [system, result, interpretation, interpError, saved, inputFingerprint, interpFree, interpFallback]);
   const [showBurst, setShowBurst] = useState(false);
   const resultRef = useRef<HTMLElement | null>(null);
   // Auto-scroll to the result after Calculate: it used to appear below
@@ -164,6 +210,23 @@ export default function ChartsClient() {
       if (saved === "en" || saved === "zh") setZiweiLang(saved);
       else window.localStorage.setItem("sortes-ziwei-lang", "en");
     });
+  }, []);
+  // Deep UX Batch A2: restore remembered birth details once, only
+  // when the form is still blank, so a deliberate clear is respected.
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem("sortes-birth-details");
+      if (!raw) return;
+      const saved = JSON.parse(raw) as { date?: string; time?: string; unknownTime?: boolean; gender?: "male" | "female"; preset?: string; latitude?: string; longitude?: string };
+      if (saved.date) setDate(saved.date);
+      if (saved.time) setTime(saved.time);
+      if (typeof saved.unknownTime === "boolean") setUnknownTime(saved.unknownTime);
+      if (saved.gender) setGender(saved.gender);
+      if (saved.preset) setPreset(saved.preset);
+      if (saved.latitude) setLatitude(saved.latitude);
+      if (saved.longitude) setLongitude(saved.longitude);
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   // Glosses toggle: default off in English, on in Chinese. Reset on
   // language change, so English mode is actually English in detail
@@ -380,6 +443,7 @@ export default function ChartsClient() {
       }
     }
     setLoading(true);
+    const saveEpoch = birthSaveEpochRef.current;
     try {
       const res = await fetch("/api/chart/calculate", {
         method: "POST",
@@ -397,7 +461,21 @@ export default function ChartsClient() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Could not calculate this chart.");
-      setResult(data.result as ChartResult);
+      // A clear made while this request was in flight wins: landing
+      // the old result and details would undo it, so skip the landing
+      // and leave the cleared form alone.
+      if (saveEpoch === birthSaveEpochRef.current) {
+        calcFingerprintRef.current = inputFingerprint;
+        setResult(data.result as ChartResult);
+        // Deep UX Batch A2: remember birth details on this device so
+        // a return visit does not start from a blank form. Raw birth
+        // data stays on device in localStorage, it is not sent anywhere
+        // except the calculate call the user already makes.
+        try {
+          window.localStorage.setItem("sortes-birth-details", JSON.stringify({ date, time, unknownTime, gender, preset, latitude, longitude }));
+        } catch {}
+      }
+      // A clear control lives in the form reset path, not here.
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not calculate this chart.");
     } finally {
@@ -415,8 +493,10 @@ export default function ChartsClient() {
           Interpretation is 1 Oracle, first per system free.
         </p>
         <p className="mx-auto mt-2 max-w-xl text-sm text-cream/80">
-          Birth data is used in memory only for this calculation. It is not
-          stored, and AI gets only chart positions, never birth data.
+          Birth data is used for this calculation and, after a
+          successful calculation, remembered on this device so you do
+          not re-enter it next time. AI gets only chart positions,
+          never birth data.
           {system === "ziwei" &&
             " Ziwei time is corrected by longitude only: 4 minutes per degree from the nearest 15 degree meridian."}
         </p>
@@ -483,6 +563,30 @@ export default function ChartsClient() {
 
       <p className="mx-auto mt-3 max-w-lg text-center text-sm text-cream/75">{SYSTEM_BLURBS[system]}</p>
 
+      <div className="mx-auto mt-6 flex max-w-xl flex-wrap items-center justify-between gap-3">
+        <p className="text-xs text-mist">
+          Your birth details are remembered on this device after a successful calculation.
+        </p>
+        <button
+          type="button"
+          onClick={() => {
+            birthSaveEpochRef.current += 1;
+            try { window.localStorage.removeItem("sortes-birth-details"); } catch {}
+            setDate("");
+            setTime("08:00");
+            setUnknownTime(false);
+            setPreset(PRESETS[0].label);
+            setLatitude(String(PRESETS[0].latitude));
+            setLongitude(String(PRESETS[0].longitude));
+            setResult(null);
+            setInterpretation("");
+            setSaved(false);
+          }}
+          className="rounded-xl border border-gold/30 px-4 py-2 text-xs font-semibold text-cream/90 hover:bg-gold/10"
+        >
+          Clear remembered birth details
+        </button>
+      </div>
       <form ref={formRef} onSubmit={onSubmit} className="mx-auto mt-8 max-w-xl rounded-3xl border border-gold/25 bg-panel/70 p-6">
         {/* Audit 6: Use example lives at the top of the form, not only
             at its bottom, so it is visible without scrolling once the
@@ -718,7 +822,7 @@ export default function ChartsClient() {
       </form>
 
       {result && (
-        <AnimatedContent trigger="mount" wipe="up" blur={8} distance={40} duration={0.8} stagger={0}>
+        <AnimatedContent trigger="mount" wipe="up" blur={10} distance={60} duration={0.8} scale={0.98} threshold={0.2} stagger={0}>
         <section ref={resultRef} className="num magic-glow relative mt-10 scroll-mt-24 rounded-3xl border border-gold/25 bg-panel/40 p-4 sm:p-6" aria-live="polite">
           {/* Personal Phase 1: the chart visual comes first, but the
               plain-words interpretation must not be hidden below it.
