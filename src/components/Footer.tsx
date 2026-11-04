@@ -4,9 +4,9 @@ import { APP_SHORT, TAGLINE, CONTACT_EMAIL } from "@/lib/site";
 const COPYRIGHT_YEAR = new Date().getFullYear();
 
 export default function Footer() {
+  // mt-12, not mt-20: the old 80px gap read as empty space
+  // before the footer, on mobile most of all.
   return (
-    {/* mt-12, not mt-20: the old 80px gap read as empty space
-        before the footer, on mobile most of all. */}
     <footer className="mt-12 border-t border-gold/15 bg-navydeep/60">
       <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 sm:px-6 md:grid-cols-3">
         <div>
