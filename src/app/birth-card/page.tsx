@@ -23,7 +23,15 @@ function birthCardNumber(date: string): number | null {
 
 export default function BirthCardPage() {
   const [date, setDate] = useState("");
-  const num = useMemo(() => birthCardNumber(date), [date]);
+  // Future dates are not birth dates: show a plain inline message and
+  // no card, instead of silently calculating a card for 2099. The
+  // YYYY-MM-DD string compares correctly, so no date library is needed.
+  const todayKey = useMemo(() => {
+    const t = new Date();
+    return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}-${String(t.getDate()).padStart(2, "0")}`;
+  }, []);
+  const isFuture = date !== "" && date > todayKey;
+  const num = useMemo(() => (isFuture ? null : birthCardNumber(date)), [date, isFuture]);
   const card = useMemo(() => {
     if (num === null) return null;
     const cardNumber = num % 22;
@@ -46,6 +54,11 @@ export default function BirthCardPage() {
           Birth date
         </label>
         <ThemedDatePicker id="birth-card-date" value={date} onChange={setDate} />
+        {isFuture && (
+          <p role="alert" className="mt-3 text-sm font-semibold text-goldbright">
+            Please choose a date in the past. A birth date cannot be in the future.
+          </p>
+        )}
         <p className="mt-3 text-sm text-cream/70">
           Method: add the digits of your birth date; if the total is
           over 22, add the digits of that total, and repeat until it

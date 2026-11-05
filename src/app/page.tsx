@@ -152,7 +152,7 @@ export default function Home() {
             animate={{ opacity: 1 }}
             className="mt-3 text-sm text-cream/75"
           >
-            Birth charts, Ziwei, Western, and Vedic, calculation only and free.{" "}
+            Free Western, Vedic, and Ziwei birth chart calculations.{" "}
             <Link href="/charts" className="font-semibold text-goldbright underline underline-offset-4">
               Cast a birth chart
             </Link>
