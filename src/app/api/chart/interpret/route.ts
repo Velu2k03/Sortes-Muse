@@ -203,7 +203,15 @@ export async function POST(req: NextRequest) {
   }
   const categoryRaw = typeof body.category === "string" ? body.category : "general";
   const category = (CATEGORIES as readonly string[]).includes(categoryRaw) ? categoryRaw : "general";
-  const question = typeof body.question === "string" ? body.question.slice(0, 300).trim() : "";
+  // Phase 2, 2.4: over-long questions are rejected, not silently
+  // truncated, so the seeker knows their question was not fully read.
+  const question = typeof body.question === "string" ? body.question.trim() : "";
+  if (question.length > 300) {
+    return NextResponse.json(
+      { error: "Question must be 300 characters or fewer." },
+      { status: 400 }
+    );
+  }
   const isHealth = category === "health";
   const healthGuard = isHealth
     ? `HEALTH GUARDRAIL: This is general wellness reflection ONLY. Never diagnose any condition, never name a disease or disorder, never predict medical outcomes, never suggest medication or dosage. Always close with this exact sentence: "${HEALTH_CLOSE}"`

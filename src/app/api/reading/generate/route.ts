@@ -189,6 +189,39 @@ export async function POST(req: NextRequest) {
       { status: 400 }
     );
   }
+  // Phase 2, 2.4: length caps, enforced server-side. Over-long input
+  // is rejected with a clear message instead of silently truncated
+  // or passed to the model unbounded.
+  if (typeof intake.story !== "string" || intake.story.length > 2000) {
+    return NextResponse.json(
+      { error: "Story must be 2000 characters or fewer." },
+      { status: 400 }
+    );
+  }
+  if (typeof intake.question !== "string" || intake.question.length > 300) {
+    return NextResponse.json(
+      { error: "Question must be 300 characters or fewer." },
+      { status: 400 }
+    );
+  }
+  if (cards.length > 20) {
+    return NextResponse.json(
+      { error: "Too many cards in one reading (maximum 20)." },
+      { status: 400 }
+    );
+  }
+  if (
+    intake.answers &&
+    typeof intake.answers === "object" &&
+    Object.values(intake.answers).some(
+      (v) => typeof v === "string" && v.length > 1000
+    )
+  ) {
+    return NextResponse.json(
+      { error: "Each answer must be 1000 characters or fewer." },
+      { status: 400 }
+    );
+  }
 
   const firstName = (intake.firstName || "friend").slice(0, 40);
   const apiKey = process.env.OPENROUTER_API_KEY;

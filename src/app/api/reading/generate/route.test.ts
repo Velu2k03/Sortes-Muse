@@ -153,3 +153,63 @@ describe("POST /api/reading/generate — first free Quick Insight", () => {
     expect((await res.json()).free).toBe(false);
   });
 });
+
+describe("POST /api/reading/generate — input validation (Phase 2, 2.4)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    process.env.OPENROUTER_API_KEY = "test-key";
+    mockedGetSession.mockResolvedValue(null);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          choices: [{ message: { content: READING_TEXT } }],
+          model: "google/gemini-2.5-flash-preview:free",
+        }),
+      })
+    );
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    delete process.env.OPENROUTER_API_KEY;
+  });
+
+  it("rejects a story over 2000 characters with 400", async () => {
+    const b = body("quick-insight", true);
+    b.intake.story = "x".repeat(2001);
+    const res = await POST(req(b, "10.0.1.1"));
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toContain("2000");
+  });
+
+  it("rejects a question over 300 characters with 400", async () => {
+    const b = body("quick-insight", true);
+    b.intake.question = "x".repeat(301);
+    const res = await POST(req(b, "10.0.1.2"));
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toContain("300");
+  });
+
+  it("accepts a story at exactly 2000 characters", async () => {
+    const b = body("quick-insight", true);
+    b.intake.story = "x".repeat(2000);
+    const res = await POST(req(b, "10.0.1.3"));
+    expect(res.status).toBe(200);
+  });
+
+  it("rejects more than 20 cards with 400", async () => {
+    const b = body("quick-insight", true);
+    b.cards = Array.from({ length: 21 }, (_, i) => ({
+      cardId: "major-00",
+      reversed: false,
+      position: `Card ${i}`,
+      positionKey: `c${i}`,
+      name: "The Fool",
+    }));
+    const res = await POST(req(b, "10.0.1.4"));
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toContain("20");
+  });
+});

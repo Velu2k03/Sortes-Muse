@@ -221,6 +221,31 @@ export async function POST(req: NextRequest) {
       : [];
   }
 
+  // Phase 2, 2.4: guest-sent reading fields are untrusted input.
+  // Cap them before they reach the prompt; the question cap above
+  // (1-300) already returns 400. Signed-in readings come from the
+  // database, so these caps bite on the guest path.
+  const tooLong = (v: unknown, max: number) =>
+    typeof v === "string" && v.length > max;
+  if (tooLong(readingData.interpretation, 20000)) {
+    return NextResponse.json(
+      { error: "Reading text must be 20000 characters or fewer." },
+      { status: 400 }
+    );
+  }
+  if (tooLong(readingData.firstImpression, 500) || tooLong(readingData.nextStep, 500)) {
+    return NextResponse.json(
+      { error: "First impression and next step must be 500 characters or fewer each." },
+      { status: 400 }
+    );
+  }
+  if (Array.isArray(readingData.cards) && readingData.cards.length > 20) {
+    return NextResponse.json(
+      { error: "Too many cards in one reading (maximum 20)." },
+      { status: 400 }
+    );
+  }
+
   // Tarot only: reject chart readings (which carry chartSummary).
   if (readingData.chartSummary) {
     return NextResponse.json(
