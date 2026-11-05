@@ -8,12 +8,11 @@ import {
 } from "@/lib/db";
 import type { FollowUp } from "@/lib/types";
 import cardsData from "@/data/cards.json";
+import { generateChat } from "@/lib/ai";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
-const TIMEOUT_MS = 25000;
 const MAX_FOLLOWUPS = 3;
 
 const HEALTH_CLOSE =
@@ -266,14 +265,6 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const modelList = (
-    process.env.OPENROUTER_MODEL ||
-    "google/gemini-2.5-flash-preview:free,xiaomi/mimo-v2-flash:free,meta-llama/llama-3.3-70b-instruct:free"
-  )
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
-
   const { system, user } = buildFollowUpPrompt(
     {
       question: typeof readingData.question === "string" ? readingData.question : undefined,
@@ -288,52 +279,20 @@ export async function POST(req: NextRequest) {
     isFinances
   );
 
-  // Try each model in order (same chain, timeout, and guardrails as generate).
-  let generated: { text: string; model: string } | null = null;
-  for (const model of modelList) {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
-
-    try {
-      const res = await fetch(OPENROUTER_URL, {
-        method: "POST",
-        signal: controller.signal,
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-          "HTTP-Referer": "https://sortes.resonantatlas.com",
-          "X-Title": "Sortes by Resonant Atlas",
-        },
-        body: JSON.stringify({
-          model,
-          messages: [
-            { role: "system", content: system },
-            { role: "user", content: user },
-          ],
-          temperature: 0.8,
-          max_tokens: 1200,
-        }),
-      });
-
-      if (!res.ok) throw new Error(`OpenRouter ${res.status}`);
-
-      const data = await res.json();
-      const text: string | undefined =
-        data?.choices?.[0]?.message?.content?.trim();
-      if (!text) throw new Error("Empty model response");
-
-      // Lenient word count validation: 20 to 800 words.
+  // One shared client (src/lib/ai.ts). The lenient word-count
+  // validation (20 to 800 words) discards thin or bloated text and
+  // tries the next model, same as before the migration.
+  const generated = await generateChat({
+    apiKey,
+    system,
+    user,
+    temperature: 0.8,
+    maxTokens: 1200,
+    validate: (text) => {
       const wc = wordCount(text);
-      if (wc < 20 || wc > 800) throw new Error("Follow-up word count out of range");
-
-      generated = { text, model: data?.model ?? model };
-      clearTimeout(timer);
-      break;
-    } catch {
-      clearTimeout(timer);
-      // Fall through to the next model.
-    }
-  }
+      return wc >= 20 && wc <= 800;
+    },
+  });
 
   // Every model failed: fail honestly with no spend.
   if (!generated) {

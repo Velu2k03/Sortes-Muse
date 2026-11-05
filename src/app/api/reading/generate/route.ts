@@ -10,12 +10,11 @@ import cardsData from "@/data/cards.json";
 import { SENSITIVE_KEYS } from "@/lib/intake";
 import { getSpread } from "@/lib/tarot";
 import { computeSpreadFacts, type FactCard } from "@/lib/spread-facts";
+import { generateChat } from "@/lib/ai";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
-const TIMEOUT_MS = 25000;
 // M0.2 health guardrail parity: the chart route already appends this
 // server-side when missing; the tarot route now does the same, so the
 // closing sentence does not depend on the model obeying the prompt.
@@ -193,15 +192,6 @@ export async function POST(req: NextRequest) {
 
   const firstName = (intake.firstName || "friend").slice(0, 40);
   const apiKey = process.env.OPENROUTER_API_KEY;
-  // Comma-separated fallback chain: fastest free models first, reliable
-  // workhorse last. Override with OPENROUTER_MODEL in env.
-  const modelList = (
-    process.env.OPENROUTER_MODEL ||
-    "google/gemini-2.5-flash-preview:free,xiaomi/mimo-v2-flash:free,meta-llama/llama-3.3-70b-instruct:free"
-  )
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
 
   // M0.1 credit authority: the session is read here, but nothing is
   // spent until a real model has generated text (see below). Guests
@@ -266,55 +256,19 @@ export async function POST(req: NextRequest) {
     // Unknown slug: keep the raw slug as the label.
   }
 
-  // Try each model in order; rate-limited or retired free models fail fast
-  // and we move to the next one instead of giving up.
-  let generated: { text: string; model: string } | null = null;
-  for (const model of modelList) {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
-
-    try {
-      const res = await fetch(OPENROUTER_URL, {
-        method: "POST",
-        signal: controller.signal,
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-          "HTTP-Referer": "https://sortes.resonantatlas.com",
-          "X-Title": "Sortes by Resonant Atlas",
-        },
-        body: JSON.stringify({
-          model,
-          messages: [
-            {
-              role: "system",
-              content: buildSystemPrompt(firstName, taglish, isHealth),
-            },
-            { role: "user", content: buildUserPrompt(cards, intake, spreadLabel, factsSummary) },
-          ],
-          temperature: 0.8,
-          max_tokens: 1200,
-        }),
-      });
-
-      if (!res.ok) throw new Error(`OpenRouter ${res.status}`);
-
-      const data = await res.json();
-      const text: string | undefined =
-        data?.choices?.[0]?.message?.content?.trim();
-      if (!text) throw new Error("Empty model response");
-      // M1.1: discard ungrounded text and try the next model instead
-      // of delivering generic filler as a personal reading.
-      if (!isValidReading(text, cards)) throw new Error("Ungrounded model response");
-
-      generated = { text, model: data?.model ?? model };
-      clearTimeout(timer);
-      break;
-    } catch {
-      clearTimeout(timer);
-      // Fall through to the next model in the chain.
-    }
-  }
+  // One shared client (src/lib/ai.ts): the :free chain, per-model
+  // timeout, retry across models, and structured failure logging.
+  // The grounding validator discards ungrounded text and tries the
+  // next model instead of delivering generic filler as a personal
+  // reading.
+  const generated = await generateChat({
+    apiKey: apiKey ?? "",
+    system: buildSystemPrompt(firstName, taglish, isHealth),
+    user: buildUserPrompt(cards, intake, spreadLabel, factsSummary),
+    temperature: 0.8,
+    maxTokens: 1200,
+    validate: (text) => isValidReading(text, cards),
+  });
 
   // Every model failed (slow, rate-limited, or erroring): fail honestly.
   // A paying user must never pay for static text, so no static fallback

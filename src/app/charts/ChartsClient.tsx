@@ -23,6 +23,7 @@ import SwipeToast from "@/components/SwipeToast";
 import CometDial from "@/components/CometDial";
 import { chartFreeUsed, markChartFreeUsed, makeReading, type ChartFreeSystem } from "@/lib/storage";
 import { chartInterpretationCost } from "@/lib/chart-pricing";
+import { buildStaticChartInterpretation } from "@/lib/chart-fallback";
 
 type ChartResult = ZiweiResult | WesternResult | VedicResult;
 type ChartSystem = "ziwei" | "western" | "vedic";
@@ -405,6 +406,15 @@ export default function ChartsClient() {
         setInterpError(message.includes("spent") ? message : `${message} No Oracle was spent.`);
         setInterpFailed(true);
         setInterpToastOpen(true);
+        // Phase 2, 2.3: the AI failed, so show the deterministic
+        // standard interpretation built from the computed placements
+        // instead of leaving only an error. It is labelled as
+        // standard, not AI-generated, and it spends nothing: a guest
+        // pre-spend was refunded above, a signed-in user spent
+        // nothing client-side, and the free use is untouched, so a
+        // retry stays free when it was. The retry UI stays live.
+        setInterpretation(buildStaticChartInterpretation(result, focus));
+        setInterpFallback(true);
       }
     } finally {
       setInterpLoading(false);
@@ -1196,8 +1206,9 @@ export default function ChartsClient() {
             {interpretation && (
               <div className="mt-6">
                 <p className="text-xs uppercase tracking-widest text-gold">
-                  {interpFree ? "Free interpretation" : "1 Oracle interpretation"}
-                  {interpFallback ? " · Prepared from chart positions" : " · Personalized"}
+                  {interpFallback
+                    ? "Standard interpretation · prepared from your chart positions, not AI-generated"
+                    : `${interpFree ? "Free interpretation" : "1 Oracle interpretation"} · Personalized`}
                 </p>
                 <p className="mt-3 whitespace-pre-wrap leading-relaxed text-cream/90">{interpretation}</p>
                 <div className="mt-5 flex flex-wrap gap-3">

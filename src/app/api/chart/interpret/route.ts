@@ -7,6 +7,7 @@ import {
   hasUsedFreeInterpretation,
   markFreeInterpretationUsed,
 } from "@/lib/db";
+import { generateChat } from "@/lib/ai";
 
 // Chart interpretation, Phase 2. Reuses the tarot OpenRouter pattern
 // (same model fallback chain, same timeout) but is a separate route
@@ -29,8 +30,6 @@ import {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
-const TIMEOUT_MS = 25000;
 const HEALTH_CLOSE =
   "This reflection is not medical advice. Please speak with a licensed professional about any health concern.";
 
@@ -247,46 +246,15 @@ Write the personalized chart reflection now.`;
       { status: 503 }
     );
   }
-  const modelList = (
-    process.env.OPENROUTER_MODEL ||
-    "google/gemini-2.5-flash-preview:free,xiaomi/mimo-v2-flash:free,meta-llama/llama-3.3-70b-instruct:free"
-  ).split(",").map((s) => s.trim()).filter(Boolean);
-
-  let generated: { text: string; model: string } | null = null;
-  for (const model of modelList) {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
-    try {
-      const res = await fetch(OPENROUTER_URL, {
-        method: "POST",
-        signal: controller.signal,
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-          "HTTP-Referer": "https://sortes.resonantatlas.com",
-          "X-Title": "Sortes by Resonant Atlas",
-        },
-        body: JSON.stringify({
-          model,
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: userPrompt },
-          ],
-          temperature: 0.8,
-          max_tokens: 1200,
-        }),
-      });
-      if (!res.ok) throw new Error(`OpenRouter ${res.status}`);
-      const data = await res.json();
-      const text: string | undefined = data?.choices?.[0]?.message?.content?.trim();
-      if (!text) throw new Error("Empty model response");
-      clearTimeout(timer);
-      generated = { text, model: data?.model ?? model };
-      break;
-    } catch {
-      clearTimeout(timer);
-    }
-  }
+  // One shared client (src/lib/ai.ts): the :free chain, per-model
+  // timeout, retry across models, structured failure logging.
+  const generated = await generateChat({
+    apiKey,
+    system: systemPrompt,
+    user: userPrompt,
+    temperature: 0.8,
+    maxTokens: 1200,
+  });
 
   // Every model failed: fail honestly. A paying user must never pay
   // for static text, so no static fallback is served here, no credit
