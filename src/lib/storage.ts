@@ -8,7 +8,6 @@ const K = {
   history: "sortes-reading-history",
   aiCache: "sortes-ai-cache",
   installDismissed: "sortes-install-dismissed",
-  pushDismissed: "sortes-push-dismissed",
   purchases: "sortes-purchases",
   dailyStreak: "sortes-daily-streak",
   reports: "sortes-reports",
@@ -241,12 +240,6 @@ export function installBannerDismissed(): boolean {
 }
 export function dismissInstallBanner(): void {
   write(K.installDismissed, true);
-}
-export function pushPromptDismissed(): boolean {
-  return read<boolean>(K.pushDismissed, false);
-}
-export function dismissPushPrompt(): void {
-  write(K.pushDismissed, true);
 }
 
 // PWA prompts: at most one prompt per session, whichever appears first.
