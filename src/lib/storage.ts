@@ -11,6 +11,7 @@ const K = {
   purchases: "sortes-purchases",
   dailyStreak: "sortes-daily-streak",
   reports: "sortes-reports",
+  birthProfiles: "sortes-birth-profiles",
 } as const;
 
 function read<T>(key: string, fallback: T): T {
@@ -253,6 +254,20 @@ export function setCachedInterpretation(key: string, text: string): void {
   const cache = read<Record<string, string>>(K.aiCache, {});
   cache[key] = text;
   write(K.aiCache, cache);
+}
+
+// Phase 5 (5.2): saved birth profiles, local-only (same privacy
+// model as remembered birth details). Birth data never leaves the
+// device from here; only computed chart positions are ever sent.
+import type { BirthProfile } from "./birth-profiles";
+
+export function getBirthProfiles(): BirthProfile[] {
+  const list = read<BirthProfile[]>(K.birthProfiles, []);
+  return Array.isArray(list) ? list : [];
+}
+
+export function saveBirthProfiles(profiles: BirthProfile[]): void {
+  write(K.birthProfiles, profiles);
 }
 
 // PWA prompts

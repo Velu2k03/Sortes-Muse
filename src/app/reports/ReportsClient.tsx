@@ -11,6 +11,8 @@ import CallChip from "@/components/CallChip";
 import AnimatedContent from "@/components/AnimatedContent";
 import Counter from "@/components/Counter";
 import { getReports, saveReport, spendCredit } from "@/lib/storage";
+import BirthProfilePicker from "@/components/BirthProfilePicker";
+import { profileToReportFields } from "@/lib/birth-profiles";
 import type { SavedReport, ReportType } from "@/lib/reports";
 
 const inputClass =
@@ -82,6 +84,24 @@ function BirthForm({
   return (
     <div className="rounded-3xl border border-gold/25 bg-panel/70 p-6">
       <p className="font-display text-2xl text-goldbright">{title}</p>
+      <div className="mt-4">
+        <BirthProfilePicker
+          label={prefix}
+          current={{
+            name: "",
+            date: value.date,
+            time: value.unknownTime
+              ? ""
+              : `${value.hour.padStart(2, "0")}:${value.minute.padStart(2, "0")}`,
+            unknownTime: value.unknownTime,
+            gender: value.gender,
+            preset: value.preset,
+            latitude: value.latitude,
+            longitude: value.longitude,
+          }}
+          onSelect={(p) => onChange({ ...value, ...profileToReportFields(p) })}
+        />
+      </div>
       <div className="mt-4 space-y-4">
         <div>
           <label htmlFor={`${prefix}-date`} className={labelClass}>

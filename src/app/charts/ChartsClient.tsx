@@ -29,6 +29,8 @@ import SplitText from "@/components/SplitText";
 import AnimatedContent from "@/components/AnimatedContent";
 import SwipeToast from "@/components/SwipeToast";
 import { chartFreeUsed, markChartFreeUsed, makeReading, type ChartFreeSystem } from "@/lib/storage";
+import BirthProfilePicker from "@/components/BirthProfilePicker";
+import { profileToChartFields } from "@/lib/birth-profiles";
 import { chartInterpretationCost } from "@/lib/chart-pricing";
 import { buildStaticChartInterpretation } from "@/lib/chart-fallback";
 
@@ -681,6 +683,33 @@ export default function ChartsClient() {
         >
           Clear remembered birth details
         </button>
+      </div>
+      <div className="mx-auto mt-6 max-w-xl">
+        <BirthProfilePicker
+          label="charts"
+          current={{
+            name: "",
+            date,
+            time,
+            unknownTime,
+            gender,
+            preset,
+            latitude,
+            longitude,
+            timeZone: timeZoneOverride,
+          }}
+          onSelect={(p) => {
+            const f = profileToChartFields(p);
+            setDate(f.date);
+            setTime(f.time);
+            setUnknownTime(f.unknownTime);
+            setGender(f.gender);
+            setPreset(f.preset);
+            setLatitude(f.latitude);
+            setLongitude(f.longitude);
+            setTimeZoneOverride(f.timeZone);
+          }}
+        />
       </div>
       <form ref={formRef} onSubmit={onSubmit} className="mx-auto mt-8 max-w-xl rounded-3xl border border-gold/25 bg-panel/70 p-6">
         {/* Audit 6: Use example lives at the top of the form, not only
