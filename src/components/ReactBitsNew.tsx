@@ -14,8 +14,6 @@ import { motion, useReducedMotion } from "motion/react";
  * Motion-based parts import motion/react, which is already present.
  *
  * Purposeful use only, one interaction type per area:
- * - GradientText: hero Sortes word only, gold on the dark hero.
- * - Magnet: hero primary button only, pointer only.
  * - SpotlightCard: What do you seek cards only, plus journal
  *   repeated questions in Personal Phase 2.
  * - PageTransition: a short fade and rise on navigation, all pages.
@@ -24,6 +22,10 @@ import { motion, useReducedMotion } from "motion/react";
  * - Orb: home hero background only, gold orbs in app colours, slow
  *   rotation, hover intensity from pointer position, static under
  *   reduced motion. Local implementation, no ogl dependency.
+ *
+ * Phase 4C (4.6/4.7): GradientText and Magnet were deleted here.
+ * Both were homepage-only (hero word sweep, hero button pull) and
+ * the homepage no longer uses them under restrained motion.
  *
  * Every component is static under prefers-reduced-motion and does
  * nothing special on touch, where there is no pointer to follow.
@@ -40,40 +42,6 @@ function isReducedMotion(): boolean {
 
 function isTouchPointer(event: React.PointerEvent): boolean {
   return event.pointerType === "touch";
-}
-
-export function GradientText({
-  children,
-  colors = ["#d4af37", "#f4d03f", "#b8962e", "#f4d03f", "#d4af37"],
-  animationSpeed = 6,
-  className = "",
-}: {
-  children: ReactNode;
-  colors?: string[];
-  animationSpeed?: number;
-  className?: string;
-}) {
-  const reduce = useReducedMotion();
-  if (reduce) {
-    return <span className={className} style={{ color: colors[1] }}>{children}</span>;
-  }
-  return (
-    <motion.span
-      className={className}
-      style={{
-        backgroundImage: `linear-gradient(110deg, ${colors.join(", ")})`,
-        backgroundSize: "220% 100%",
-        backgroundClip: "text",
-        WebkitBackgroundClip: "text",
-        WebkitTextFillColor: "transparent",
-        color: "transparent",
-      } as CSSProperties}
-      animate={{ backgroundPosition: ["0% 0", "220% 0"] }}
-      transition={{ duration: animationSpeed, repeat: Infinity, ease: "easeInOut" }}
-    >
-      {children}
-    </motion.span>
-  );
 }
 
 export function SpotlightCard({
@@ -120,38 +88,6 @@ export function SpotlightCard({
         }}
       />
       <div className="relative">{children}</div>
-    </div>
-  );
-}
-
-export function Magnet({
-  children,
-  strength = 0.25,
-  className = "",
-}: {
-  children: ReactNode;
-  strength?: number;
-  className?: string;
-}) {
-  const ref = useRef<HTMLDivElement>(null);
-  const onMove = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (isTouchPointer(event) || isReducedMotion() || !ref.current) return;
-    const bounds = ref.current.getBoundingClientRect();
-    const x = (event.clientX - (bounds.left + bounds.width / 2)) * strength;
-    const y = (event.clientY - (bounds.top + bounds.height / 2)) * strength;
-    ref.current.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
-  };
-  const onLeave = () => {
-    if (ref.current) ref.current.style.transform = "translate(0px, 0px)";
-  };
-  return (
-    <div
-      ref={ref}
-      onPointerMove={onMove}
-      onPointerLeave={onLeave}
-      className={`inline-block transition-transform duration-200 ease-out ${className}`}
-    >
-      {children}
     </div>
   );
 }

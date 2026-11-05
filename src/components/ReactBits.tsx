@@ -1,51 +1,14 @@
 "use client";
 
-import { useEffect, useRef, useState, type CSSProperties, type PointerEvent, type ReactNode } from "react";
-import Link from "next/link";
-import { SPREADS } from "@/lib/tarot";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import "./ReactBits.css";
 
-export function DarkVeil() {
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const veil = ref.current;
-    const hero = veil?.parentElement?.parentElement;
-    if (!hero) return;
-
-    const motionPreference = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const onPointerMove = (event: globalThis.PointerEvent) => {
-      if (motionPreference.matches || event.pointerType === "touch") return;
-      const bounds = hero.getBoundingClientRect();
-      hero.style.setProperty("--veil-x", `${((event.clientX - bounds.left) / bounds.width) * 100}%`);
-      hero.style.setProperty("--veil-y", `${((event.clientY - bounds.top) / bounds.height) * 100}%`);
-    };
-    const syncMotion = () => {
-      if (motionPreference.matches) {
-        hero.removeEventListener("pointermove", onPointerMove);
-        hero.style.removeProperty("--veil-x");
-        hero.style.removeProperty("--veil-y");
-      } else {
-        hero.addEventListener("pointermove", onPointerMove, { passive: true });
-      }
-    };
-
-    syncMotion();
-    motionPreference.addEventListener("change", syncMotion);
-    return () => {
-      motionPreference.removeEventListener("change", syncMotion);
-      hero.removeEventListener("pointermove", onPointerMove);
-      hero.style.removeProperty("--veil-x");
-      hero.style.removeProperty("--veil-y");
-    };
-  }, []);
-
-  return <div ref={ref} className="dark-veil" aria-hidden="true" />;
-}
-
-export function ShinyText({ children }: { children: ReactNode }) {
-  return <span className="shiny-text">{children}</span>;
-}
+// Phase 4C (4.6/4.7): DarkVeil, ShinyText, and MagicBento were deleted
+// here. DarkVeil had zero usages; ShinyText and MagicBento were
+// homepage-only and the homepage no longer uses them (restrained
+// motion: starfield + card lift + section reveal). What remains is
+// used elsewhere: ClickSpark on horoscope and in the reading flow,
+// StarBorder on daily and horoscope. Their CSS lives in ReactBits.css.
 
 interface Burst {
   id: number;
@@ -132,103 +95,5 @@ export function StarBorder({
       {children}
       {animated && <span className="star-border__light" aria-hidden="true" />}
     </span>
-  );
-}
-
-function isReducedMotion(): boolean {
-  if (typeof window === "undefined") return false;
-  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-}
-
-function updateBentoPosition(event: PointerEvent<HTMLElement>) {
-  if (isReducedMotion() || event.pointerType === "touch") return;
-  const bounds = event.currentTarget.getBoundingClientRect();
-  event.currentTarget.style.setProperty("--bento-x", `${event.clientX - bounds.left}px`);
-  event.currentTarget.style.setProperty("--bento-y", `${event.clientY - bounds.top}px`);
-}
-
-export function MagicBento() {
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const motionPreference = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const syncMotion = () => {
-      if (motionPreference.matches && containerRef.current) {
-        const cards = containerRef.current.querySelectorAll<HTMLElement>(".magic-bento__card");
-        cards.forEach((card) => {
-          card.style.removeProperty("--bento-x");
-          card.style.removeProperty("--bento-y");
-        });
-      }
-    };
-    syncMotion();
-    motionPreference.addEventListener("change", syncMotion);
-    return () => {
-      motionPreference.removeEventListener("change", syncMotion);
-    };
-  }, []);
-
-  return (
-    <div
-      ref={containerRef}
-      className="magic-bento mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-6"
-    >
-      {SPREADS.map((spread) => (
-        <article
-          key={spread.slug}
-          className={`magic-bento__card relative overflow-hidden rounded-3xl border border-gold/25 bg-panel/70 p-7 ${
-            spread.slug === "quick-insight"
-              ? "lg:col-span-2 lg:row-span-2"
-              : spread.slug === "past-present-future"
-                ? "lg:col-span-4"
-                : "lg:col-span-2"
-          }`}
-          onPointerMove={updateBentoPosition}
-          onPointerLeave={(event) => {
-            event.currentTarget.style.removeProperty("--bento-x");
-            event.currentTarget.style.removeProperty("--bento-y");
-          }}
-        >
-          <span className="magic-bento__edge" aria-hidden="true" />
-          {spread.slug === "quick-insight" && (
-            <span className="absolute right-4 top-4 rounded-full bg-gold px-3 py-1 text-xs font-bold text-ink">
-              FIRST FREE
-            </span>
-          )}
-          <div className="relative">
-            <p className="text-xs uppercase tracking-[0.25em] text-mist">
-              {spread.cards} {spread.cards === 1 ? "card" : "cards"}
-            </p>
-            <h3 className="mt-2 font-display text-3xl text-cream">{spread.name}</h3>
-            <p className="mt-3 min-h-[3.5rem] text-sm leading-relaxed text-cream/75">
-              {spread.description}
-            </p>
-            <p className="mt-4 font-display text-2xl text-goldbright">
-              {spread.slug === "quick-insight" ? "Free" : (<><span className="font-body">1</span> Oracle</>)}
-            </p>
-            {spread.slug === "quick-insight" ? (
-              <StarBorder
-                radius="0.75rem"
-                className="star-border-frame--block mt-5"
-              >
-                <Link
-                  href={`/spreads/${spread.slug}`}
-                  className="btn-gold block rounded-xl px-4 py-3 text-center font-semibold"
-                >
-                  Start free reading
-                </Link>
-              </StarBorder>
-            ) : (
-              <Link
-                href={`/spreads/${spread.slug}`}
-                className="btn-ghost mt-5 block rounded-xl px-4 py-3 text-center font-semibold"
-              >
-                View spread
-              </Link>
-            )}
-          </div>
-        </article>
-      ))}
-    </div>
   );
 }
