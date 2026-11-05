@@ -6,7 +6,6 @@ import { dailyHoroscope, weeklyHoroscope, SUN_SIGNS, type SunSign } from "@/lib/
 import Icon from "@/components/Icon";
 import ThemedDatePicker from "@/components/ThemedDatePicker";
 import OptionWheel from "@/components/OptionWheel";
-import TextType from "@/components/TextType";
 import AnimatedContent from "@/components/AnimatedContent";
 import RubberSegment from "@/components/RubberSegment";
 import { ClickSpark, StarBorder } from "@/components/ReactBits";
@@ -19,7 +18,7 @@ import { ClickSpark, StarBorder } from "@/components/ReactBits";
 // and uncharged, and it does not ask for any birth data.
 //
 // Phase A reveal: the user picks a sign and a date, taps Reveal, and the
-// result appears with a TextType sign line and a rise animation body.
+// result appears with a plain sign line and a rise animation body.
 // Phase B adds a short unveiling beat (1200ms, wait-and-reward pacing
 // Velu allowed 2026-11-04). The beat is presentation only: the text is
 // local and already computed, and the status line says unveiling, never
@@ -171,25 +170,11 @@ export default function HoroscopePage() {
         </p>
       ) : (
         <article className="mt-6 rounded-3xl border border-gold/25 bg-panel/70 p-6">
-          {reducedMotion ? (
-            <p className="text-xs uppercase tracking-[0.25em] text-gold">
-              {signLine}
-            </p>
-          ) : (
-            <TextType
-              text={signLine}
-              className="text-xs uppercase tracking-[0.25em] text-gold"
-              deletingSpeed={35}
-              pauseDuration={2200}
-              typeEffect="fade"
-              cursorStyle="bar"
-              cursorCharacter="●"
-              cursorBlinkDuration={0.55}
-              mistakes={0.55}
-              variableSpeed={{ min: 40, max: 170 }}
-              loop={false}
-            />
-          )}
+          {/* Phase 2, 2.2: the sign line used to type itself out with
+              fake typos. It renders in full now, like the body below. */}
+          <p className="text-xs uppercase tracking-[0.25em] text-gold">
+            {signLine}
+          </p>
           {reducedMotion ? (
             <>
               <p className="mt-3 text-lg leading-relaxed text-cream">{view === "daily" ? h.theme : w.theme}</p>

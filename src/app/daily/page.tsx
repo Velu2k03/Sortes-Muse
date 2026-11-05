@@ -18,7 +18,6 @@ import HoldButton from "@/components/HoldButton";
 import HoloCard from "@/components/HoloCard";
 import Image from "next/image";
 import Link from "next/link";
-import TextType from "@/components/TextType";
 
 type Phase = "idle" | "shuffling" | "revealed";
 
@@ -31,7 +30,6 @@ export default function DailyPage() {
   const [daily, setDaily] = useState<DailyCardState | null>(null);
   const [streak, setStreak] = useState(0);
   const [zoomOpen, setZoomOpen] = useState(false);
-  const [showFullMeaning, setShowFullMeaning] = useState(false);
   const drawTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   // HoldButton colours bypass the theme tokens, so track the
   // document theme, 2026-11-04, instead of staying dark in light mode.
@@ -63,7 +61,6 @@ export default function DailyPage() {
   const reduceMotion = useReducedMotion();
 
   const draw = () => {
-    setShowFullMeaning(false);
     setPhase("shuffling");
     // A short ritual pause before the card appears.
     if (drawTimer.current) clearTimeout(drawTimer.current);
@@ -217,44 +214,20 @@ export default function DailyPage() {
                     </span>
                   ))}
                 </div>
-                {/* Deep UX Batch A2, doc item 6: human typing effect,
-                    loop off so the meaning stays once typed. Demo
-                    prefix "We build" is not used; the meaning itself
-                    is the text. Cursor colour is currentColor so it
-                    stays visible in light mode, where pure white
-                    would vanish on a light panel. */}
-                {showFullMeaning ? (
-                  <p className="mx-auto mt-5 max-w-lg leading-relaxed text-cream/90">
-                    {orientationMeaning(card, daily.reversed)}
-                  </p>
-                ) : (
-                  <>
-                    <TextType
-                      text={orientationMeaning(card, daily.reversed)}
-                      typingSpeed={75}
-                      deletingSpeed={35}
-                      pauseDuration={2200}
-                      mistakes={0.3}
-                      typeEffect="fade"
-                      cursorBlinkDuration={0.55}
-                      variableSpeed={{ min: 40, max: 170 }}
-                      cursorGlide
-                      cursorStyle="bar"
-                      cursorCharacter="_"
-                      showCursor
-                      loop={false}
-                      initialDelay={600}
-                      className="mx-auto mt-5 max-w-lg leading-relaxed text-cream/90"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowFullMeaning(true)}
-                      className="mt-3 text-sm text-mist underline underline-offset-4 hover:text-goldbright"
-                    >
-                      Show full meaning now
-                    </button>
-                  </>
-                )}
+                {/* Phase 2, 2.2: the meaning used to type itself out
+                    with fake typos, and "Show full meaning now"
+                    swapped the component mid-type, which truncated
+                    it mid-word ("...De|"). The full meaning now
+                    renders at once with a dignified fade-in; there
+                    is no partial state left to skip from. */}
+                <motion.p
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, ease: "easeOut" }}
+                  className="mx-auto mt-5 max-w-lg leading-relaxed text-cream/90"
+                >
+                  {orientationMeaning(card, daily.reversed)}
+                </motion.p>
                 <p className="mt-6 text-xs italic text-mist">
                   A reflection for today, not a prediction. Come back tomorrow
                   for a new card
