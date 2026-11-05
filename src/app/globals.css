@@ -292,6 +292,18 @@ body {
 /* Validator fix V4: error text must pass contrast in both themes.
    text-red-200 on white is 1.45:1 in light mode, a real AA fail.
    Dark keeps the pale red, light uses red-800, about 7.6:1 on white. */
+/* BranchedMenu header menu: the component fixes its muted branch
+   colour at 55% of its ink, which fails WCAG contrast in light
+   theme (light cream panel, light muted text) and is only just
+   passing in dark theme. The !important custom property beats the
+   component's own inline --bm-muted. */
+html[data-theme="light"] .sortes-bm {
+  --bm-muted: #57503e !important;
+}
+html[data-theme="dark"] .sortes-bm {
+  --bm-muted: #b8b0a0 !important;
+}
+
 .alert-error-text {
   color: #fecaca;
 }
