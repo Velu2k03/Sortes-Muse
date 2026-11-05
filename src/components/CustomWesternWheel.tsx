@@ -89,8 +89,12 @@ export default function CustomWesternWheel({ result, theme }: { result: WesternR
     placed.push(d);
   }
 
+  // Phase 4B (4.2): the old min-w-[640px] forced a 640px-wide box
+  // inside a 390px phone, so the wheel clipped and scrolled sideways
+  // instead of scaling. The viewBox is already square and correct,
+  // so w-full h-auto scales it down cleanly; max-w caps it on desktop.
   return (
-    <svg viewBox="0 0 640 640" role="img" aria-label="Western birth chart wheel with staggered planet labels" className="mx-auto w-full min-w-[640px] max-w-[640px]">
+    <svg viewBox="0 0 640 640" role="img" aria-label="Western birth chart wheel with staggered planet labels" className="mx-auto h-auto w-full max-w-[640px]">
       <circle cx={cx} cy={cy} r={310} fill={bg} stroke={line} strokeWidth={1} />
       <circle cx={cx} cy={cy} r={262} fill="none" stroke={line} strokeWidth={1} />
       <circle cx={cx} cy={cy} r={180} fill="none" stroke={line} strokeWidth={1} strokeOpacity={0.5} />

@@ -1,6 +1,8 @@
 "use client";
 
 import type { VedicResult } from "@/lib/vedic";
+import VedicDiamondChart from "@/components/VedicDiamondChart";
+import { formatUtcOffset } from "@/lib/format-offset";
 
 // Vedic D1 chart display (sidereal Lahiri, whole-sign houses).
 export default function VedicChart({ result }: { result: VedicResult }) {
@@ -29,7 +31,10 @@ export default function VedicChart({ result }: { result: VedicResult }) {
         )}
       </div>
       <p className="mt-2 text-sm text-cream/80">
-        Sidereal Lahiri, whole-sign houses. Birth time is converted to UT with a longitude offset only, no timezone database and no DST, so a chart near a sign or nakshatra cusp may differ by one division.
+        Sidereal Lahiri, whole-sign houses.{" "}
+        {result.timeBasis === "iana"
+          ? `Birth time was converted to UT with ${result.timeZone ?? ""} (${formatUtcOffset(result.utcOffsetMinutes)}), including daylight saving for the birth date.`
+          : "No timezone could be resolved for these coordinates, so birth time was converted to UT with a longitude offset only, no timezone database and no DST, so a chart near a sign or nakshatra cusp may differ by one division."}
       </p>
       <div className="mt-4 overflow-x-auto">
         <table className="min-w-[520px] w-full text-left text-sm text-cream/85">
@@ -53,6 +58,26 @@ export default function VedicChart({ result }: { result: VedicResult }) {
           </tbody>
         </table>
       </div>
+      {/* Phase 4B (4.2d): North Indian diamond chart from the computed
+          placements. Withheld, honestly, when the birth time is
+          unknown: the diamond is drawn around the Lagna and houses. */}
+      {result.ascendantSign ? (
+        <>
+          <h3 className="mt-8 font-display text-xl text-goldbright">Diamond chart</h3>
+          <p className="mt-1 text-sm text-cream/80">
+            North Indian diamond: the Lagna is the top diamond, marked Lg, and houses run counter-clockwise from it.
+            Planets are listed by house; the table above is the exact list.
+          </p>
+          <div className="mt-4">
+            <VedicDiamondChart result={result} />
+          </div>
+        </>
+      ) : (
+        <p className="mt-8 rounded-2xl border border-gold/25 bg-panel/70 p-4 text-sm text-cream/80">
+          No diamond chart without a birth time: the diamond is drawn around the Lagna and houses, which are withheld
+          for unknown-time charts. The planet table above is the full chart.
+        </p>
+      )}
       <details className="mt-4 scroll-mt-24 rounded-2xl border border-gold/25 bg-panel/70 p-4">
         <summary className="cursor-pointer text-sm font-semibold text-goldbright">
           Navamsa (D9) and Dasamsa (D10) (tap to list)

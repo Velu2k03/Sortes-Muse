@@ -190,9 +190,16 @@ export default function ZiweiChartBoard({ result, lang = "en", view = "ring", sh
       <motion.div
         {...fade}
         transition={{ duration: reduce ? 0 : 0.5, ease: "easeOut" }}
-        className="mx-auto mt-4 w-full max-w-[640px] overflow-x-auto"
+        className="mx-auto mt-4 w-full max-w-[640px]"
       >
-        <svg viewBox="0 0 720 720" aria-label={en ? "Ziwei circle chart" : "紫微斗数圆盘"} className="w-full min-w-[480px]">
+        {/* Phase 4B (4.2): the old min-w-[480px] stopped the ring
+            scaling below 480px, so a 390px phone scrolled it sideways
+            instead of seeing the whole chart. The viewBox is square,
+            so w-full h-auto scales it down cleanly. The labels were
+            already fixed: two short lines per wedge, tangentially
+            rotated so side wedges read vertically inside their own
+            wedge instead of across the spokes. */}
+        <svg viewBox="0 0 720 720" aria-label={en ? "Ziwei circle chart" : "紫微斗数圆盘"} className="h-auto w-full">
           <circle cx={RING_CENTRE} cy={RING_CENTRE} r={RING_OUTER + 6} fill={ring.bg} stroke={ring.stroke} strokeOpacity="0.35" />
           {result.palaces.map((p, i) => {
             const start = sectorStart(i);

@@ -46,8 +46,8 @@ export default function WesternWheel({ result }: { result: WesternResult }) {
           <span className="text-goldbright">Unknown birth time: planet positions use noon as a stand-in. Rising, Midheaven, and houses are withheld, not estimated.</span>
         )}
       </div>
-      <h3 className="mt-6 font-display text-xl text-goldbright">Planet table: read this first</h3>
-      <p className="mt-1 text-sm text-cream/80">Exact positions, signs, and houses. The wheel below is a visual overview; clustered planet labels are staggered on the wheel itself with leader lines, so they do not stack.</p>
+      <h3 className="mt-6 font-display text-xl text-goldbright">Planet table</h3>
+      <p className="mt-1 text-sm text-cream/80">Exact positions, signs, and houses. The wheel below shows the same positions, with clustered labels staggered and leader lines to their true spots.</p>
       <div className="mt-4 overflow-x-auto">
       <table className="min-w-[520px] w-full text-left text-sm text-cream/85">
         <thead>
