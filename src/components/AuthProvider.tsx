@@ -44,7 +44,7 @@ interface AuthContextValue {
   // server too. True when the reading is gone from every store that
   // held it; false leaves the entry in place for a retry.
   deleteReading: (id: string) => Promise<boolean>;
-  /** Run after a successful sign-in: merge guest wallet + history. */
+  /** Run after a successful sign-in: merge the guest journal. */
   afterSignIn: () => Promise<void>;
 }
 
@@ -64,51 +64,35 @@ async function safeJson(res: Response): Promise<any> {
 }
 
 async function migrateGuestData(): Promise<number> {
-  const localCredits = getCredits();
   const history = getHistory();
-  if (localCredits > 0) {
-    try {
-      const res = await fetch("/api/credits/migrate", {
+  // Phase 1: the guest device wallet is no longer a source of credits.
+  // Local credits have no legitimate paid backing: the only way they
+  // ever went up was the demo grant (now deleted), and the refund path
+  // only ever returns a credit the guest already spent. So local
+  // credits are never sent to the server and never minted. Migration
+  // moves the journal only; once the journal sync succeeds the local
+  // wallet is zeroed, so a stale or tampered device balance cannot be
+  // spent later as a guest.
+  try {
+    if (history.length > 0) {
+      const res = await fetch("/api/history", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ localCredits }),
+        body: JSON.stringify({ readings: history }),
       });
-      const data = await safeJson(res);
-      // Only zero the local wallet when the server confirms the merge.
-      // A failed merge keeps local credits so the next refresh can retry.
-      if (!res.ok || typeof data.credits !== "number") {
-        throw new Error("merge failed");
-      }
-      setLocalCredits(0);
-      window.dispatchEvent(new Event("sortes:credits-changed"));
-      if (history.length > 0) {
-        await fetch("/api/history", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ readings: history }),
-        }).catch(() => {});
-      }
-      localStorage.setItem(MIGRATED_KEY, "1");
-      return data.credits;
-    } catch {
-      // Merge failed: keep the guest wallet intact and report the
-      // server balance (or the local one) so nothing is lost.
-      const me = await fetch("/api/auth/me")
-        .then(safeJson)
-        .catch(() => ({}));
-      return typeof me.user?.credits === "number"
-        ? me.user.credits
-        : localCredits;
+      if (!res.ok) throw new Error("history sync failed");
     }
+    setLocalCredits(0);
+    window.dispatchEvent(new Event("sortes:credits-changed"));
+    localStorage.setItem(MIGRATED_KEY, "1");
+  } catch {
+    // Sync failed: keep the guest journal intact so the next refresh
+    // can retry, and report the server balance (never the local one).
+    const me = await fetch("/api/auth/me")
+      .then(safeJson)
+      .catch(() => ({}));
+    return typeof me.user?.credits === "number" ? me.user.credits : 0;
   }
-  if (history.length > 0) {
-    await fetch("/api/history", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ readings: history }),
-    }).catch(() => {});
-  }
-  localStorage.setItem(MIGRATED_KEY, "1");
   const me = await safeJson(await fetch("/api/auth/me"));
   return me.user?.credits ?? 0;
 }
