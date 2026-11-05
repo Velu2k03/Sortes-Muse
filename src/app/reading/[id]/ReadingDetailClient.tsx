@@ -424,7 +424,7 @@ export default function ReadingDetail({ id }: { id: string }) {
           My next step
         </p>
         <p className="mt-2 text-sm leading-relaxed text-cream/85">
-          One small step from this reading, saved with it.
+          One small step from this reading, saved with it and shown in your Journal.
         </p>
         <div className="mt-4 flex flex-col gap-3 sm:flex-row">
           <input

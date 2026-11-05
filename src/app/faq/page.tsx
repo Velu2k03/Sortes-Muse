@@ -36,7 +36,7 @@ const FAQS = [
   },
   {
     q: "How do I sign in?",
-    a: "On the account page, use the email code tab. In production, Sortes sends an 8 digit code through Supabase, or a magic link you can click instead. After you sign in, your guest Oracles and journal move into your account, and you stay signed in for 30 days.",
+    a: "On the account page, choose Email code for an 8 digit code sent through Supabase (the same email also carries a magic link you can click instead), or choose Password to sign in with email and password. There is no Google sign-in. After you sign in, your guest Oracles and journal move into your account, and you stay signed in for 30 days.",
   },
   {
     q: "What if I bought Oracles with a different email?",
