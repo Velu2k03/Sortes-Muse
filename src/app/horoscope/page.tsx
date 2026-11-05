@@ -179,25 +179,11 @@ export default function HoroscopePage() {
             <>
               <p className="mt-3 text-lg leading-relaxed text-cream">{view === "daily" ? h.theme : w.theme}</p>
               <p className="mt-3 leading-relaxed text-cream/85">{view === "daily" ? h.reflection : w.reflection}</p>
-              <div className="mt-4 flex flex-wrap gap-x-6 gap-y-1 text-sm text-cream/80">
-                <span>
-                  Playful pick: <strong className="text-cream">{view === "daily" ? h.luckyColour : w.luckyColour}</strong>
-                  {" · "}
-                  <strong className="num text-cream">{view === "daily" ? h.luckyNumber : w.luckyNumber}</strong>
-                </span>
-              </div>
             </>
           ) : (
             <AnimatedContent trigger="mount" wipe="up" blur={10} distance={60} duration={0.8} scale={0.98} threshold={0.2} stagger={0.08}>
               <p className="mt-3 text-lg leading-relaxed text-cream">{view === "daily" ? h.theme : w.theme}</p>
               <p className="mt-3 leading-relaxed text-cream/85">{view === "daily" ? h.reflection : w.reflection}</p>
-              <div className="mt-4 flex flex-wrap gap-x-6 gap-y-1 text-sm text-cream/80">
-                <span>
-                  Playful pick: <strong className="text-cream">{view === "daily" ? h.luckyColour : w.luckyColour}</strong>
-                  {" · "}
-                  <strong className="num text-cream">{view === "daily" ? h.luckyNumber : w.luckyNumber}</strong>
-                </span>
-              </div>
             </AnimatedContent>
           )}
           <p className="mt-4 text-sm text-cream/60">

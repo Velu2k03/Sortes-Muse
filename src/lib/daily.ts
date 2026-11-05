@@ -5,8 +5,10 @@
 // The daily text is a dated, clearly labelled general reflection: seven
 // rotating per-sign themes (original, reflection-framed, never a guaranteed
 // prediction, never medical or financial advice) plus a rotating daily
-// reflection line and a deterministic playful colour and number pick.
-// Nothing here is a personal reading and nothing is charged.
+// reflection line. Nothing here is a personal reading and nothing is
+// charged. Phase 3 (3.9): the lucky colour and lucky number picks are
+// deleted — deterministic hash picks dressed as fortune-telling, not
+// reflection. What remains is the honest reflection text only.
 export const SUN_SIGNS = [
   "Aries",
   "Taurus",
@@ -144,21 +146,6 @@ const DAILY_LINES = [
   "Today is a good day to finish something small and let that finished feeling carry forward.",
 ];
 
-const LUCKY_COLOURS = [
-  "Gold",
-  "Deep blue",
-  "Sage green",
-  "Warm cream",
-  "Terracotta",
-  "Soft violet",
-  "Charcoal",
-  "Sky blue",
-  "Forest green",
-  "Rose",
-  "Sand",
-  "Silver",
-];
-
 function hashString(s: string): number {
   let h = 0;
   for (let i = 0; i < s.length; i++) {
@@ -178,12 +165,9 @@ export interface DailyHoroscope {
   date: string;
   theme: string;
   reflection: string;
-  luckyColour: string;
-  luckyNumber: number;
 }
 
 export function dailyHoroscope(sign: SunSign, date: string): DailyHoroscope {
-  const h = hashString(`${sign}|${date}`);
   const doy = dayOfYear(date);
   const signIndex = SUN_SIGNS.indexOf(sign);
   return {
@@ -191,8 +175,6 @@ export function dailyHoroscope(sign: SunSign, date: string): DailyHoroscope {
     date,
     theme: SIGN_THEMES[sign][(doy + signIndex) % SIGN_THEMES[sign].length],
     reflection: DAILY_LINES[doy % DAILY_LINES.length],
-    luckyColour: LUCKY_COLOURS[(h + doy) % LUCKY_COLOURS.length],
-    luckyNumber: (h % 9) + 1,
   };
 }
 
@@ -211,8 +193,6 @@ export interface WeeklyHoroscope {
   weekStart: string;
   theme: string;
   reflection: string;
-  luckyColour: string;
-  luckyNumber: number;
 }
 
 export function weekStartMonday(date: string): string {
@@ -233,8 +213,6 @@ export function weeklyHoroscope(sign: SunSign, date: string): WeeklyHoroscope {
     weekStart: start,
     theme: SIGN_THEMES[sign][(weekNum + signIndex) % SIGN_THEMES[sign].length],
     reflection: WEEKLY_LINES[(h + weekNum) % WEEKLY_LINES.length],
-    luckyColour: LUCKY_COLOURS[(h + weekNum) % LUCKY_COLOURS.length],
-    luckyNumber: (h % 9) + 1,
   };
 }
 
