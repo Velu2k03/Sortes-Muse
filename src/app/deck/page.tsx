@@ -3,9 +3,20 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { CARDS, MAJORS, cardsBySuit, SUITS, suitLabel } from "@/lib/cards";
-import CardModal from "@/components/CardModal";
+import {
+  CARDS,
+  MAJORS,
+  cardsBySuit,
+  SUITS,
+  suitLabel,
+  cardSlug,
+  DEFAULT_DECK_VIEW,
+  resolveDeckView,
+  type DeckView,
+} from "@/lib/cards";
+import type { TarotCard } from "@/lib/types";
 import InfiniteSpiral from "@/components/InfiniteSpiral";
 
 type Filter = "all" | "major" | "wands" | "cups" | "swords" | "pentacles";
@@ -19,11 +30,16 @@ const FILTERS: { key: Filter; label: string }[] = [
   { key: "pentacles", label: "Pentacles" },
 ];
 
+// Phase 4A (4.4): the card grid is the default view; the spiral is an
+// opt-in "Spiral gallery". Every card is a link to its own
+// /deck/[slug] page (deep-linkable, shareable). The old ?card=
+// deep link (used by the home orbit) redirects to the card page, so
+// existing links keep working.
 export default function DeckPage() {
+  const router = useRouter();
   const [filter, setFilter] = useState<Filter>("all");
   const [query, setQuery] = useState("");
-  const [selected, setSelected] = useState<string | null>(null);
-  const [view, setView] = useState<"spiral" | "list">("spiral");
+  const [view, setView] = useState<DeckView>(DEFAULT_DECK_VIEW);
   const [reducedMotion, setReducedMotion] = useState(false);
   // The spiral sets pointer capture on press, so a real tap's click event
   // is retargeted to the spiral root and never lands on a card. Detect
@@ -42,10 +58,10 @@ export default function DeckPage() {
 
   useEffect(() => {
     const cardId = new URLSearchParams(window.location.search).get("card");
-    if (!cardId || !CARDS.some((card) => card.id === cardId)) return;
-    const frame = window.requestAnimationFrame(() => setSelected(cardId));
-    return () => window.cancelAnimationFrame(frame);
-  }, []);
+    const card = cardId ? CARDS.find((c) => c.id === cardId) : undefined;
+    if (!card) return;
+    router.replace(`/deck/${cardSlug(card.name)}`);
+  }, [router]);
 
   const cards = useMemo(() => {
     let list = CARDS;
@@ -56,99 +72,101 @@ export default function DeckPage() {
     return list;
   }, [filter, query]);
 
+  // Reduced motion forces the grid, whatever the toggle says.
+  const effectiveView = resolveDeckView(view, reducedMotion);
+  const openCard = (card: TarotCard) =>
+    router.push(`/deck/${cardSlug(card.name)}`);
+
   return (
-    <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+    <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
       <div className="text-center">
         <p className="text-xs uppercase tracking-[0.35em] text-gold">The deck</p>
-        <h1 className="mt-3 font-display text-5xl text-goldbright sm:text-6xl">
+        <h1 className="mt-2 font-display text-4xl text-goldbright sm:text-5xl">
           {filter === "all" && !query.trim()
             ? "All 78 cards"
             : `${cards.length} ${cards.length === 1 ? "card" : "cards"}`}
         </h1>
-        <p className="mx-auto mt-4 max-w-xl text-cream/75">
+        <p className="mx-auto mt-3 max-w-xl text-sm text-cream/75">
           The complete Rider-Waite deck with upright and reversed meanings.
           Free forever. Tap any card to read its story.
         </p>
-      </div>
-
-      <div className="mt-8 flex flex-col items-center gap-4">
-        <label htmlFor="deck-search" className="mb-1.5 block text-sm font-medium text-cream">
-          Search cards
-        </label>
-        <input
-          id="deck-search"
-          type="search"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search cards, e.g. moon, strength…"
-          className="w-full max-w-md rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none"
-        />
-        <Link href="/daily" className="text-sm font-semibold text-goldbright underline underline-offset-4">
+        <Link href="/daily" className="mt-2 inline-block text-sm font-semibold text-goldbright underline underline-offset-4">
           Draw today&apos;s card, free
         </Link>
-        {/* Validator fix: these are filter toggles, not tabs, and
-            there is no tabpanel on the page, so role=tab is wrong.
-            aria-pressed says the same thing, correctly. */}
-        <div role="group" className="flex flex-wrap justify-center gap-2" aria-label="Filter cards">
-          {FILTERS.map((f) => (
+      </div>
+
+      {/* Phase 4A (4.4): one sticky toolbar, one row: search, suit
+          filter pills, view toggle. It stays under the sticky header
+          (h-16) so the cards start above the fold. */}
+      <div className="sticky top-16 z-30 -mx-4 mt-6 border-y border-gold/15 bg-ink/90 px-4 py-3 backdrop-blur-md sm:-mx-6 sm:px-6">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-3">
+          <label htmlFor="deck-search" className="sr-only">
+            Search cards
+          </label>
+          <input
+            id="deck-search"
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search cards, e.g. moon, strength…"
+            className="min-w-52 flex-1 rounded-xl border border-gold/25 bg-panel/70 px-4 py-2.5 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none sm:max-w-xs"
+          />
+          {/* Validator fix (kept): these are filter toggles, not tabs,
+              and there is no tabpanel on the page, so role=tab is
+              wrong. aria-pressed says the same thing, correctly. */}
+          <div role="group" className="flex flex-wrap justify-center gap-2" aria-label="Filter cards">
+            {FILTERS.map((f) => (
+              <button
+                key={f.key}
+                type="button"
+                aria-pressed={filter === f.key}
+                onClick={() => setFilter(f.key)}
+                className={`rounded-full px-3 py-2 text-sm font-semibold transition ${
+                  filter === f.key
+                    ? "bg-gold text-ink"
+                    : "border border-gold/30 text-cream/80 hover:border-gold/60 hover:text-goldbright"
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+          <div role="group" className="flex gap-2" aria-label="Deck view">
             <button
-              key={f.key}
               type="button"
-              aria-pressed={filter === f.key}
-              onClick={() => setFilter(f.key)}
+              aria-pressed={effectiveView === "grid"}
+              onClick={() => setView("grid")}
               className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
-                filter === f.key
+                effectiveView === "grid"
                   ? "bg-gold text-ink"
                   : "border border-gold/30 text-cream/80 hover:border-gold/60 hover:text-goldbright"
               }`}
             >
-              {f.label}
+              Card grid
             </button>
-          ))}
-        </div>
-        <p className="text-xs text-mist" aria-live="polite">
-          {cards.length} {cards.length === 1 ? "card" : "cards"}
-          {filter !== "all" && filter !== "major" && ` · ${suitLabel(filter)}`}
-        </p>
-        <div role="group" className="flex gap-2" aria-label="Deck view">
-          <button
-            type="button"
-            aria-pressed={view === "spiral" && !reducedMotion}
-            onClick={() => setView("spiral")}
-            className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
-              view === "spiral" && !reducedMotion
-                ? "bg-gold text-ink"
-                : "border border-gold/30 text-cream/80 hover:border-gold/60 hover:text-goldbright"
-            }`}
-          >
-            Spiral
-          </button>
-          <button
-            type="button"
-            aria-pressed={view === "list" || reducedMotion}
-            onClick={() => setView("list")}
-            className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
-              view === "list" || reducedMotion
-                ? "bg-gold text-ink"
-                : "border border-gold/30 text-cream/80 hover:border-gold/60 hover:text-goldbright"
-            }`}
-          >
-            List
-          </button>
-        </div>
-        {reducedMotion && (
-          <p className="text-xs text-mist">
-            Reduced motion is on, so the deck shows as a list.
+            <button
+              type="button"
+              aria-pressed={effectiveView === "spiral"}
+              onClick={() => setView("spiral")}
+              className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+                effectiveView === "spiral"
+                  ? "bg-gold text-ink"
+                  : "border border-gold/30 text-cream/80 hover:border-gold/60 hover:text-goldbright"
+              }`}
+            >
+              Spiral gallery
+            </button>
+          </div>
+          <p className="w-full text-center text-xs text-mist sm:w-auto" aria-live="polite">
+            {cards.length} {cards.length === 1 ? "card" : "cards"}
+            {filter !== "all" && filter !== "major" && ` · ${suitLabel(filter)}`}
+            {reducedMotion && " · reduced motion: grid view"}
           </p>
-        )}
+        </div>
       </div>
 
-      {view === "spiral" && !reducedMotion ? (
-        <div className="mt-8">
-          {/* Phase 3 (3.8): plain instruction, no apology copy. The
-              List view above is a real button toggle and is reachable
-              by keyboard; the spiral default is unchanged here —
-              Phase 4.4 owns the Grid default. */}
+      {effectiveView === "spiral" ? (
+        <div className="mt-6">
           <p className="text-center text-sm text-cream/75">
             Drag to spin, tap a card to read it.
           </p>
@@ -164,7 +182,7 @@ export default function DeckPage() {
               const item = (e.target as HTMLElement).closest('[role="listitem"]');
               const name = item?.getAttribute("aria-label");
               const card = cards.find((c) => c.name === name);
-              if (card) setSelected(card.id);
+              if (card) openCard(card);
             }}
             onPointerDown={(e) => {
               tapStartRef.current = { x: e.clientX, y: e.clientY };
@@ -179,7 +197,7 @@ export default function DeckPage() {
               const item = under?.closest('[role="listitem"]');
               const name = item?.getAttribute("aria-label");
               const card = cards.find((c) => c.name === name);
-              if (card) setSelected(card.id);
+              if (card) openCard(card);
             }}
           >
             <InfiniteSpiral
@@ -226,23 +244,24 @@ export default function DeckPage() {
         </div>
       ) : (
         <>
-        <div className="mt-8 grid grid-cols-3 gap-3 sm:grid-cols-4 sm:gap-4 md:grid-cols-6">
+        <div className="mt-6 grid grid-cols-3 gap-3 sm:grid-cols-4 sm:gap-4 md:grid-cols-6">
         {cards.map((c, i) => (
-          <motion.button
+          <motion.div
             key={c.id}
-            type="button"
-            onClick={() => setSelected(c.id)}
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: Math.min(i * 0.02, 0.5), duration: 0.4 }}
-            className="group overflow-hidden rounded-xl border border-gold/20 bg-panel/50 transition hover:-translate-y-1 hover:border-gold/60 hover:shadow-[0_12px_30px_rgba(212,175,55,0.15)]"
+          >
+          <Link
+            href={`/deck/${cardSlug(c.name)}`}
+            className="group block overflow-hidden rounded-xl border border-gold/20 bg-panel/50 transition hover:-translate-y-1 hover:border-gold/60 hover:shadow-[0_12px_30px_rgba(212,175,55,0.15)]"
             aria-label={`View meaning of ${c.name}`}
           >
-            {/* Validator fix: a button may only contain phrasing
+            {/* Validator fix: a link may only contain phrasing
                 content, so the tile image wrapper and name are spans
                 with block display, not div and p. Same layout. */}
             <span className="relative block aspect-[3/5] w-full">
-              {/* Axe fix: the button already carries aria-label
+              {/* Axe fix: the link already carries aria-label
                   "View meaning of {name}" and the name is visible
                   below, so a named alt would repeat it 78 times. */}
               <Image
@@ -257,7 +276,8 @@ export default function DeckPage() {
             <span className="block truncate px-2 py-2 text-xs font-medium text-cream/90 group-hover:text-goldbright">
               {c.name}
             </span>
-          </motion.button>
+          </Link>
+          </motion.div>
         ))}
       </div>
 
@@ -277,8 +297,6 @@ export default function DeckPage() {
       )}
       </>
       )}
-
-      <CardModal cardId={selected} onClose={() => setSelected(null)} />
 
       <p className="mt-10 text-center text-xs text-mist">
         Card imagery: the public-domain Rider-Waite deck (1909). Meanings are

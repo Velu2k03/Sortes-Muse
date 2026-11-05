@@ -14,6 +14,50 @@ export function getCard(id: string): TarotCard {
 export const MAJORS = CARDS.filter((c) => c.arcana === "major");
 export const MINORS = CARDS.filter((c) => c.arcana === "minor");
 
+// Phase 4A (4.4): the per-card route slug, from the card name:
+// "The Fool" -> "the-fool", "Ace of Wands" -> "ace-of-wands".
+// Verified against src/data/cards.json: all 78 names slugify to
+// unique, non-empty slugs (pinned by src/lib/__tests__/deck.test.ts).
+export function cardSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+const bySlug = new Map(CARDS.map((c) => [cardSlug(c.name), c]));
+
+export function getCardBySlug(slug: string): TarotCard | undefined {
+  return bySlug.get(slug);
+}
+
+// Classical suit -> element mapping, for the card detail page.
+// Major Arcana cards have no suit, so no element.
+export function suitElement(
+  suit: TarotCard["suit"],
+): "Fire" | "Water" | "Air" | "Earth" | undefined {
+  const map = {
+    wands: "Fire",
+    cups: "Water",
+    swords: "Air",
+    pentacles: "Earth",
+  } as const;
+  return suit ? map[suit] : undefined;
+}
+
+// Phase 4A (4.4): the card grid is the default deck view; the spiral
+// gallery is opt-in. Under prefers-reduced-motion the spiral is never
+// shown, whatever was requested.
+export type DeckView = "grid" | "spiral";
+export const DEFAULT_DECK_VIEW: DeckView = "grid";
+
+export function resolveDeckView(
+  requested: DeckView,
+  reducedMotion: boolean,
+): DeckView {
+  return reducedMotion ? "grid" : requested;
+}
+
 export const SUITS = ["wands", "cups", "swords", "pentacles"] as const;
 
 export function cardsBySuit(suit: string): TarotCard[] {

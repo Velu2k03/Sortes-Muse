@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { SITE_URL } from "@/lib/site";
+import { CARDS, cardSlug } from "@/lib/cards";
 
 // New audit tool finding: /sitemap.xml returned 404, so search
 // engines had no page list to discover. Only canonical pages are
@@ -14,6 +15,8 @@ import { SITE_URL } from "@/lib/site";
 // detail pages are flows, not canonical content, so they stay out.
 // Phase 3 (3.3): /journal and /oracles are the canonical routes now;
 // /history and /credits redirect to them permanently.
+// Phase 4A (4.4): all 78 /deck/[slug] card pages are canonical too,
+// generated from the same slug helper as the routes themselves.
 const PAGES = [
   "/",
   "/daily",
@@ -46,10 +49,14 @@ const PAGES = [
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();
-  return PAGES.map((path) => ({
+  const pages = [
+    ...PAGES,
+    ...CARDS.map((c) => `/deck/${cardSlug(c.name)}`),
+  ];
+  return pages.map((path) => ({
     url: `${SITE_URL}${path}`,
     lastModified: now,
     changeFrequency: path === "/" || path === "/daily" ? "daily" : "weekly",
-    priority: path === "/" ? 1 : path === "/deck" || path === "/charts" ? 0.9 : 0.8,
+    priority: path === "/" ? 1 : path === "/deck" || path === "/charts" ? 0.9 : path.startsWith("/deck/") ? 0.7 : 0.8,
   }));
 }
