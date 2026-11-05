@@ -6,6 +6,12 @@
     "skipLibCheck": true,
     "strict": true,
     "noEmit": true,
+    // Phase 4B (4.3): server-only lib files are also loaded directly
+    // by scripts/charts-check.mjs under Node type stripping, which
+    // resolves explicit .ts paths but not extensionless relative
+    // imports (see the note in src/lib/vedic.ts). This flag lets
+    // TypeScript accept those explicit .ts imports.
+    "allowImportingTsExtensions": true,
     "esModuleInterop": true,
     "module": "esnext",
     "moduleResolution": "bundler",

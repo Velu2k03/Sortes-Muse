@@ -6,6 +6,7 @@
 // so they are loaded with createRequire (works in the Node route and in
 // the Node test script; this file must not be imported by client components).
 import { createRequire } from "node:module";
+import { resolveBirthTime, solarWallTime, type TimeBasis } from "./timezone.ts";
 
 const require = createRequire(import.meta.url);
 // M3.3: the astrolabe type grows with the period APIs iztro
@@ -74,6 +75,9 @@ export interface ChartInput {
   gender: ChartGender;
   latitude: number;
   longitude: number;
+  // Optional user correction: an IANA zone name that wins over the
+  // coordinate lookup. Invalid names are refused, never guessed.
+  timeZone?: string;
 }
 
 // shortcut: iztro's own en-US star names are misleading translations
@@ -94,11 +98,16 @@ const PALACE_EN: Record<string, string> = {
   "父母": "Parents",
 };
 
-// Longitude correction for Ziwei time (see applyLongitudeCorrection):
-// the birthplace longitude is used only to shift the clock time toward
-// local solar time. No timezone database, no DST, and no equation of time
-// are applied, so this is a longitude correction, not full true solar
-// time. Callers must say so on the page.
+// Longitude correction for Ziwei time (see buildZiweiAstrolabe):
+// when no IANA zone can be resolved, the birthplace longitude is
+// used only to shift the clock time toward local solar time. No
+// timezone database, no DST, and no equation of time are applied in
+// that fallback, so it is a longitude correction, not full true
+// solar time. Callers must say so on the page. When a zone IS
+// resolved (coordinates plus an optional user override), the civil
+// time is converted to UTC with its historical offset, DST included,
+// and solar time is UTC plus longitude / 15 hours; the equation of
+// time is still not applied in either path.
 export function applyLongitudeCorrection(
   date: string,
   hour: number,
@@ -186,6 +195,13 @@ export interface ZiweiResult {
   unknownTime: boolean;
   solarCorrectionMinutes: number;
   solarCorrectedTime: string | null;
+  // Phase 4B (4.3): which time conversion was used. "iana" means the
+  // civil time was converted with the historical offset of timeZone
+  // (DST included); "longitude" means no zone could be resolved and
+  // the old 4-minutes-per-degree correction was used instead.
+  timeZone: string | null;
+  utcOffsetMinutes: number | null;
+  timeBasis: TimeBasis;
   palaces: ZiweiPalace[];
 }
 
@@ -198,12 +214,17 @@ function buildZiweiAstrolabe(input: {
   minute?: number;
   gender: ChartGender;
   longitude?: number;
+  latitude?: number;
+  timeZone?: string;
 }): {
   astrolabe: IztroAstrolabe;
   effDate: string;
   effHour: number;
   effMinute: number;
   correction: number;
+  timeZone: string | null;
+  utcOffsetMinutes: number | null;
+  timeBasis: TimeBasis;
 } {
   // M1.2: Ziwei cannot be calculated without a birth hour. The twelve
   // palaces are placed by the two-hour branch, so a noon double-hour
@@ -213,24 +234,52 @@ function buildZiweiAstrolabe(input: {
       "Ziwei needs a birth hour: the twelve palaces are placed by the two-hour branch you were born in, so a chart from an unknown hour would be a guess."
     );
   }
-  // Longitude correction, when a birthplace longitude is supplied:
-  // shift the clock time before iztro picks its double-hour.
+  // Phase 4B (4.3): civil time to solar time. With a latitude the
+  // IANA zone is resolved from the coordinates (or the user's
+  // override wins), the historical offset including DST converts the
+  // clock time to UTC, and solar time is UTC plus longitude / 15
+  // hours. Without a latitude there is nothing to look a zone up
+  // from, so the old longitude-only correction runs instead and the
+  // result says so (timeBasis "longitude").
   let effDate = input.date;
   let effHour = input.hour;
   let effMinute = input.minute ?? 0;
   let correction = 0;
+  let timeZone: string | null = null;
+  let utcOffsetMinutes: number | null = null;
+  let timeBasis: TimeBasis = "longitude";
   if (typeof input.longitude === "number" && Number.isFinite(input.longitude)) {
-    const c = applyLongitudeCorrection(input.date, input.hour, input.minute ?? 0, input.longitude);
-    effDate = c.date;
-    effHour = c.hour;
-    effMinute = c.minute;
-    correction = c.correctionMinutes;
+    const resolved = resolveBirthTime({
+      date: input.date,
+      hour: input.hour,
+      minute: input.minute ?? 0,
+      latitude: input.latitude,
+      longitude: input.longitude,
+      timeZone: input.timeZone,
+    });
+    timeZone = resolved.timeZone;
+    utcOffsetMinutes = resolved.utcOffsetMinutes;
+    timeBasis = resolved.basis;
+    if (resolved.basis === "iana") {
+      const { y, m, d } = parseDate(input.date);
+      const solar = solarWallTime(resolved.utc, input.longitude, Date.UTC(y, m - 1, d, input.hour, input.minute ?? 0));
+      effDate = solar.date;
+      effHour = solar.hour;
+      effMinute = solar.minute;
+      correction = solar.correctionMinutes;
+    } else {
+      const c = applyLongitudeCorrection(input.date, input.hour, input.minute ?? 0, input.longitude);
+      effDate = c.date;
+      effHour = c.hour;
+      effMinute = c.minute;
+      correction = c.correctionMinutes;
+    }
   }
   const { y, m, d } = parseDate(effDate);
   const timeIndex = timeIndexForHour(effHour, effMinute);
   const genderName = input.gender === "female" ? "女" : "男";
   const solar = `${y}-${m}-${d}`;
-  return { astrolabe: astro.bySolar(solar, timeIndex, genderName), effDate, effHour, effMinute, correction };
+  return { astrolabe: astro.bySolar(solar, timeIndex, genderName), effDate, effHour, effMinute, correction, timeZone, utcOffsetMinutes, timeBasis };
 }
 
 function mapZiweiPalaces(astrolabe: IztroAstrolabe): ZiweiPalace[] {
@@ -264,13 +313,18 @@ export function calculateZiwei(input: {
   minute?: number;
   gender: ChartGender;
   longitude?: number;
+  latitude?: number;
+  timeZone?: string;
 }): ZiweiResult {
-  const { astrolabe, effDate, effHour, effMinute, correction } = buildZiweiAstrolabe(input);
+  const { astrolabe, effDate, effHour, effMinute, correction, timeZone, utcOffsetMinutes, timeBasis } = buildZiweiAstrolabe(input);
   return {
     system: "ziwei",
     solarDate: effDate,
     solarCorrectionMinutes: correction,
     solarCorrectedTime: input.hour === null ? null : `${String(effHour).padStart(2, "0")}:${String(effMinute).padStart(2, "0")}`,
+    timeZone,
+    utcOffsetMinutes,
+    timeBasis,
     lunarDate: astrolabe.lunarDate,
     chineseDate: astrolabe.chineseDate,
     zodiac: astrolabe.zodiac,
@@ -336,6 +390,8 @@ export function calculateZiweiStacks(
     minute?: number;
     gender: ChartGender;
     longitude?: number;
+    latitude?: number;
+    timeZone?: string;
   },
   year: number,
   todayISO?: string
@@ -423,6 +479,13 @@ export interface WesternResult {
   midheavenSign: string | null;
   midheavenLongitude: number | null;
   unknownTime: boolean;
+  // Phase 4B (4.3): the zone the engine already resolved from the
+  // coordinates, reported so the page can show it. The engine does
+  // its own lookup with tz-lookup + moment-timezone (DST included);
+  // this is display metadata, not a second conversion.
+  timeZone: string | null;
+  utcOffsetMinutes: number;
+  timeBasis: TimeBasis;
   planets: WesternPlanet[];
   // Empty when birth time is unknown: no noon-derived houses.
   cusps: number[];
@@ -436,6 +499,7 @@ export function calculateWestern(input: {
   minute?: number;
   latitude: number;
   longitude: number;
+  timeZone?: string;
 }): WesternResult {
   const { y, m, d } = parseDate(input.date);
   if (input.latitude < -90 || input.latitude > 90 || input.longitude < -180 || input.longitude > 180) {
@@ -446,6 +510,11 @@ export function calculateWestern(input: {
   const unknown = input.hour === null;
   const hour = input.hour ?? 12;
   const minute = input.minute ?? 0;
+  // Phase 4B (4.3): display metadata only. The engine below already
+  // converts with a real timezone database including DST, from the
+  // same coordinates; this resolves the same zone with the same
+  // lookup so the page can name it.
+  const resolved = resolveBirthTime({ date: input.date, hour, minute, latitude: input.latitude, longitude: input.longitude, timeZone: input.timeZone });
   const build = (yy: number, mm: number, dd: number) => {
     const origin = new Origin({
       year: yy,
@@ -502,6 +571,9 @@ export function calculateWestern(input: {
     midheavenSign: unknown ? null : horoscope.Midheaven.Sign.label,
     midheavenLongitude: unknown ? null : horoscope.Midheaven.ChartPosition.Ecliptic.DecimalDegrees,
     unknownTime: unknown,
+    timeZone: resolved.timeZone,
+    utcOffsetMinutes: resolved.utcOffsetMinutes,
+    timeBasis: resolved.basis,
     planets,
     cusps: unknown ? [] : horoscope.Houses.map((h) => h.ChartPosition.StartPosition.Ecliptic.DecimalDegrees),
     aspectCount: horoscope.Aspects.all.length,
@@ -631,7 +703,7 @@ export function computeTransits(
 
 export function calculateChart(input: ChartInput): ZiweiResult | WesternResult {
   if (input.system === "ziwei") {
-    return calculateZiwei({ date: input.date, hour: input.hour, minute: input.minute, gender: input.gender, longitude: input.longitude });
+    return calculateZiwei({ date: input.date, hour: input.hour, minute: input.minute, gender: input.gender, longitude: input.longitude, latitude: input.latitude, timeZone: input.timeZone });
   }
-  return calculateWestern({ date: input.date, hour: input.hour, minute: input.minute, latitude: input.latitude, longitude: input.longitude });
+  return calculateWestern({ date: input.date, hour: input.hour, minute: input.minute, latitude: input.latitude, longitude: input.longitude, timeZone: input.timeZone });
 }

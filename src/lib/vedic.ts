@@ -2,15 +2,20 @@
 // Engine: caelus 0.25.0, MIT, clean-room TypeScript, no Swiss Ephemeris
 // code, no AGPL, no ephemeris files. Sidereal zodiac: Lahiri ayanamsa.
 // Houses: whole sign, the standard Vedic D1 (rasi) presentation.
-// Time limit, stated on the page: the birth clock time is converted to UT
-// with a longitude offset only (longitude / 15 hours). No timezone
-// database, no DST, and no historical timezone rules are applied, so a
-// chart near a sign or nakshatra cusp may differ by one division from a
-// timezone-exact calculation. Birth data is used in-memory only, exactly
-// as for Ziwei and Western, and is never sent to any AI prompt.
+// Time conversion (Phase 4B, 4.3): the birth clock time is converted
+// to UT with the IANA timezone resolved from the birthplace
+// coordinates (historical offset, DST included), or with an explicit
+// zone override the user supplies. Only when no zone can be resolved
+// does it fall back to the old longitude offset (longitude / 15
+// hours), and the result says so (timeBasis "longitude"). A chart
+// near a sign or nakshatra cusp can still differ by one division
+// from a timezone-exact calculation when the fallback was used.
+// Birth data is used in-memory only, exactly as for Ziwei and Western,
+// and is never sent to any AI prompt.
 // Server-only: caelus is ESM and is loaded here, not by client components.
 import { Engine, nakshatra, vimshottariAt, julianDay } from "caelus";
 import { embeddedData } from "caelus/data-embedded";
+import { resolveBirthTime, type TimeBasis } from "./timezone.ts";
 
 // Vimshottari dasha dates live here, not in a separate module, so
 // node type stripping (used by scripts/charts-check.mjs) can load this
@@ -409,6 +414,13 @@ export interface VedicResult {
   // M3.2: sidereal longitude of the Lagna, for divisional charts.
   // Null when birth time is unknown, like the sign.
   ascendantLongitude: number | null;
+  // Phase 4B (4.3): which time conversion was used. "iana" means the
+  // civil time was converted with the historical offset of timeZone
+  // (DST included); "longitude" means no zone could be resolved and
+  // the old longitude / 15 conversion was used instead.
+  timeZone: string | null;
+  utcOffsetMinutes: number;
+  timeBasis: TimeBasis;
   // M3.2: Navamsa (D9) and Dasamsa (D10) for every planet, plus the
   // divisional Lagnas when the birth time is known. Computed from
   // the natal positions, so no extra fetch is needed to show them.
@@ -440,6 +452,7 @@ export function calculateVedic(input: {
   minute?: number;
   latitude: number;
   longitude: number;
+  timeZone?: string;
 }): VedicResult {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(input.date);
   if (!match) throw new Error("date must be YYYY-MM-DD");
@@ -449,14 +462,23 @@ export function calculateVedic(input: {
   if (input.latitude < -90 || input.latitude > 90 || input.longitude < -180 || input.longitude > 180) {
     throw new Error("latitude/longitude out of range");
   }
-  // Local clock time to UT, longitude offset only (see limit above).
+  // Phase 4B (4.3): local clock time to UT with the IANA zone for
+  // the birthplace (historical offset, DST included), falling back
+  // to the longitude offset only when no zone resolves.
   // M1.2: unknown time still uses noon as a stand-in for planet
   // positions only. Lagna and houses are withheld, never noon-derived.
   const unknown = input.hour === null;
   const localHour = input.hour ?? 12;
   const localMinute = input.minute ?? 0;
-  const local = new Date(Date.UTC(y, m - 1, d, localHour, localMinute, 0));
-  const ut = new Date(local.getTime() - (input.longitude / 15) * 3600 * 1000);
+  const resolved = resolveBirthTime({
+    date: input.date,
+    hour: localHour,
+    minute: localMinute,
+    latitude: input.latitude,
+    longitude: input.longitude,
+    timeZone: input.timeZone,
+  });
+  const ut = resolved.utc;
   const e = getEngine();
   const buildChart = (when: Date) =>
     e.chart(
@@ -539,6 +561,9 @@ export function calculateVedic(input: {
     moonSign: bodies.moon.sign,
     ascendantSign: unknown ? null : signFromLongitude(chart.angles.asc),
     ascendantLongitude,
+    timeZone: resolved.timeZone,
+    utcOffsetMinutes: resolved.utcOffsetMinutes,
+    timeBasis: resolved.basis,
     divisional,
     moonNakshatra: nak.name,
     moonNakshatraPada: nak.pada,

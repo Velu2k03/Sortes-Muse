@@ -11,6 +11,9 @@ const western: WesternResult = {
   midheavenSign: "Taurus",
   midheavenLongitude: 45,
   unknownTime: false,
+  timeZone: "Asia/Manila",
+  utcOffsetMinutes: 480,
+  timeBasis: "iana",
   planets: [
     { name: "Sun", longitude: 10, sign: "Aries", house: 1, retrograde: false },
     { name: "Moon", longitude: 100, sign: "Cancer", house: 4, retrograde: false },
@@ -38,6 +41,9 @@ const vedic = {
   moonSign: "Cancer",
   ascendantSign: "Virgo",
   ascendantLongitude: 150,
+  timeZone: "Asia/Manila",
+  utcOffsetMinutes: 480,
+  timeBasis: "iana",
   divisional: {},
   moonNakshatra: "Pushya",
   moonNakshatraPada: 2,
@@ -65,6 +71,9 @@ const ziwei: ZiweiResult = {
   unknownTime: false,
   solarCorrectionMinutes: 0,
   solarCorrectedTime: null,
+  timeZone: "Asia/Manila",
+  utcOffsetMinutes: 480,
+  timeBasis: "iana",
   palaces: [
     {
       index: 0,
