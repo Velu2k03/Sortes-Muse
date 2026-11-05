@@ -87,6 +87,10 @@ export default function ChartsClient() {
   const [placeSearch, setPlaceSearch] = useState("");
   const [placeStatus, setPlaceStatus] = useState("");
   const [placeBusy, setPlaceBusy] = useState(false);
+  // Query last resolved by Find, so Calculate can spot a typed place
+  // that was never looked up and resolve it first instead of silently
+  // calculating with the preset coordinates.
+  const [placeResolvedFor, setPlaceResolvedFor] = useState<string | null>(null);
   const [focus, setFocus] = useState<(typeof FOCUS_AREAS)[number]>("general");
   const [question, setQuestion] = useState("");
   const [interpretation, setInterpretation] = useState("");
@@ -263,10 +267,10 @@ export default function ChartsClient() {
     setLongitude(String(PRESETS[0].longitude));
   }
 
-  async function lookupPlace() {
+  async function lookupPlace(): Promise<{ latitude: number; longitude: number } | null> {
     if (!placeSearch.trim()) {
       setPlaceStatus("Type a place name first, for example a city.");
-      return;
+      return null;
     }
     setPlaceBusy(true);
     setPlaceStatus("Looking up coordinates…");
@@ -277,9 +281,12 @@ export default function ChartsClient() {
       setLatitude(String(data.latitude));
       setLongitude(String(data.longitude));
       setPreset("Custom");
+      setPlaceResolvedFor(placeSearch.trim());
       setPlaceStatus(`Found coordinates: ${data.latitude}, ${data.longitude}. The place name itself is not stored or sent to AI.`);
+      return { latitude: data.latitude, longitude: data.longitude };
     } catch (err) {
       setPlaceStatus(err instanceof Error ? err.message : "Place lookup failed.");
+      return null;
     } finally {
       setPlaceBusy(false);
     }
@@ -446,6 +453,24 @@ export default function ChartsClient() {
       setError("Please choose a birth date.");
       return;
     }
+    // A typed place that was never resolved must not calculate with
+    // the preset coordinates. Resolve it first, and stop on failure
+    // so the user sees the lookup error instead of a wrong chart.
+    let calcLatitude = Number(latitude);
+    let calcLongitude = Number(longitude);
+    if (placeSearch.trim() && placeResolvedFor !== placeSearch.trim()) {
+      if (placeBusy) {
+        setError("The place lookup is still running. Please wait a moment, then try again.");
+        return;
+      }
+      const found = await lookupPlace();
+      if (!found) {
+        setError("Could not find that place. Check the name, or press Find again.");
+        return;
+      }
+      calcLatitude = found.latitude;
+      calcLongitude = found.longitude;
+    }
     let hour: number | null = null;
     let minute = 0;
     if (!unknownTime) {
@@ -475,8 +500,8 @@ export default function ChartsClient() {
           minute,
           unknownTime,
           gender,
-          latitude: Number(latitude),
-          longitude: Number(longitude),
+          latitude: calcLatitude,
+          longitude: calcLongitude,
         }),
       });
       const data = await res.json();
@@ -810,7 +835,7 @@ export default function ChartsClient() {
             {placeStatus && <p className="mt-2 text-sm text-cream/70">{placeStatus}</p>}
             <p className="mt-1 text-xs text-cream/80">
               The place name is used only for this lookup. Only its coordinates are kept for the calculation, and the
-              place name is never stored and never sent to AI.
+              place name is never stored and never sent to AI. Calculate chart also resolves a typed place first.
             </p>
           </div>
         </div>

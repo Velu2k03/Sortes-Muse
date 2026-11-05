@@ -324,6 +324,23 @@ export default function HistoryPage() {
               </select>
             </div>
           </div>
+          <div className="mt-3 flex justify-end">
+            <button
+              type="button"
+              onClick={() => {
+                const blob = new Blob([JSON.stringify(history, null, 2)], { type: "application/json" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `sortes-journal-${new Date().toISOString().slice(0, 10)}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+              }}
+              className="btn-ghost rounded-xl px-4 py-2.5 text-sm font-semibold"
+            >
+              Export journal as JSON
+            </button>
+          </div>
           {/* Codex re-review, correct: with a blank search this
               message asked users to clear a search they never made,
               on an empty or still-loading journal. Only show it
