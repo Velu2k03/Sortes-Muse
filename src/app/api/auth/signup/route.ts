@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getUserByEmail, createUser } from "@/lib/db";
+import { getUserByEmail, createUserWithPassword } from "@/lib/db";
 import {
   hashPassword,
   createSession,
@@ -7,6 +7,7 @@ import {
   SESSION_COOKIE,
   SESSION_MAX_AGE,
   authConfigured,} from "@/lib/auth";
+import { checkRateLimit, clientIp, rateLimitExceeded, RATE_LIMITS } from "@/lib/rateLimit";
 
 export const dynamic = "force-dynamic";
 
@@ -28,6 +29,9 @@ function signInResponse(user: { id: string; email: string; credits: number }) {
 }
 
 export async function POST(req: NextRequest) {
+  if (!checkRateLimit(`signup:${clientIp(req)}`, RATE_LIMITS.authIp).allowed) {
+    return rateLimitExceeded();
+  }
   try {
     let body: { email?: string; password?: string };
     try {
@@ -56,14 +60,28 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Any existing account — with or without a password — is a 409.
+    // The old code only rejected accounts that already had a password,
+    // so anyone could set a password on a passwordless account (created
+    // by OTP sign-in or the purchase webhook) and take it over.
+    // Setting a password on an existing account now requires proving
+    // the email first: request an OTP code, verify it (which signs
+    // in), then use the signed-in set-password route.
     const existing = await getUserByEmail(email);
-    if (existing?.password_hash) {
+    if (existing) {
       return NextResponse.json(
         { error: "This email already has an account. Please sign in instead." },
         { status: 409 }
       );
     }
-    const user = await createUser(email, await hashPassword(password));
+    const user = await createUserWithPassword(email, await hashPassword(password));
+    if (!user) {
+      // Lost a race with another signup for the same email.
+      return NextResponse.json(
+        { error: "This email already has an account. Please sign in instead." },
+        { status: 409 }
+      );
+    }
     return await signInResponse(user);
   } catch (err) {
     console.error("signup failed:", err);

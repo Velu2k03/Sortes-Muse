@@ -181,7 +181,7 @@ export async function getUserById(id: string): Promise<DbUser | null> {
   return db.users.find((u) => u.id === id) ?? null;
 }
 
-export async function createUser(email: string, passwordHash?: string): Promise<DbUser> {
+export async function createUser(email: string): Promise<DbUser> {
   await ensureSchema();
   const user: DbUser = {
     id: uid(),
@@ -190,25 +190,48 @@ export async function createUser(email: string, passwordHash?: string): Promise<
     created_at: new Date().toISOString(),
   };
   if (usePostgres) {
-    await sql`INSERT INTO users (id, email, credits, password_hash, created_at) VALUES (${user.id}, ${user.email}, 0, ${passwordHash ?? null}, NOW()) ON CONFLICT (email) DO NOTHING`;
-    const existing = (await getUserByEmail(email)) as DbUser;
-    // Account created earlier via magic code: attach the password now.
-    if (passwordHash && !existing.password_hash) {
-      await setUserPassword(existing.id, passwordHash);
-      return { ...existing, password_hash: passwordHash };
-    }
-    return existing;
+    await sql`INSERT INTO users (id, email, credits, password_hash, created_at) VALUES (${user.id}, ${user.email}, 0, ${null}, NOW()) ON CONFLICT (email) DO NOTHING`;
+    return (await getUserByEmail(email)) as DbUser;
   }
   const db = await readLocal();
   const existing = db.users.find((u) => u.email === email);
-  if (existing) {
-    if (passwordHash && !existing.password_hash) {
-      existing.password_hash = passwordHash;
-      await writeLocal(db);
-    }
-    return existing;
+  if (existing) return existing;
+  db.users.push(user);
+  await writeLocal(db);
+  return user;
+}
+
+/**
+ * Signup only. Atomically creates the account WITH its password, and
+ * returns null when the email already exists — so two concurrent
+ * signups for the same address cannot both pass an existence check
+ * and then both sign in as the same account. Callers must treat null
+ * as a 409. This is the ONLY place a password is attached at creation:
+ * createUser never sets one, so an existing passwordless account
+ * (created by OTP sign-in or the purchase webhook) can only gain a
+ * password after the owner proves the email — OTP sign-in, then the
+ * signed-in set-password route.
+ */
+export async function createUserWithPassword(
+  email: string,
+  passwordHash: string
+): Promise<DbUser | null> {
+  await ensureSchema();
+  const user: DbUser = {
+    id: uid(),
+    email,
+    credits: 0,
+    created_at: new Date().toISOString(),
+    password_hash: passwordHash,
+  };
+  if (usePostgres) {
+    const { rows } = await sql`INSERT INTO users (id, email, credits, password_hash, created_at)
+      VALUES (${user.id}, ${user.email}, 0, ${passwordHash}, NOW())
+      ON CONFLICT (email) DO NOTHING RETURNING *`;
+    return (rows[0] as DbUser) ?? null;
   }
-  if (passwordHash) user.password_hash = passwordHash;
+  const db = await readLocal();
+  if (db.users.some((u) => u.email === email)) return null;
   db.users.push(user);
   await writeLocal(db);
   return user;
