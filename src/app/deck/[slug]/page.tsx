@@ -27,8 +27,11 @@ export async function generateMetadata({
   const { slug } = await params;
   const card = getCardBySlug(slug);
   if (!card) return { title: "Card not found" };
+  // Phase 4C (4.10a): the title must NOT carry "| Sortes" itself.
+  // The root layout template is "%s | Sortes", so the old suffix here
+  // rendered "The Fool Tarot Card Meaning | Sortes | Sortes".
   return {
-    title: `${card.name} Tarot Card Meaning | ${APP_SHORT}`,
+    title: `${card.name} Tarot Card Meaning`,
     description: card.meaning.upright,
     alternates: { canonical: `/deck/${slug}` },
   };

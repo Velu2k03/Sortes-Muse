@@ -4,7 +4,7 @@
 
 A modern tarot reading web app (PWA). Draw a free daily card, browse all 78
 card meanings, and receive personalized AI readings woven around your own
-story. Live at **https://tarot.resonantatlas.com**.
+story. Live at **https://sortes.resonantatlas.com**.
 
 Built with Next.js 16, React 19, Tailwind CSS v4, and Framer Motion.
 
@@ -41,15 +41,15 @@ cp .env.example .env.local
 | `AUTH_SECRET` | Production | Any random 32+ character string (`openssl rand -base64 32`). Signs session cookies. |
 | `POSTGRES_URL` or `DATABASE_URL` | Production | Vercel project → Storage → Postgres → `.env.local` snippet. Tables are auto-created on first use. Without it, a local JSON store is used (dev only). |
 | `RESEND_API_KEY` | Production | [resend.com](https://resend.com) → API Keys. Sends sign-in codes by email. Without it (dev), codes print to the server console and appear in the sign-in UI. |
-| `EMAIL_FROM` | No | Defaults to `Sortes <noreply@tarot.resonantatlas.com>`. Resend → Domains (verify the domain first). |
+| `EMAIL_FROM` | No | Defaults to `Sortes <noreply@sortes.resonantatlas.com>`. Resend → Domains (verify the domain first). |
 | `LEMONSQUEEZY_API_KEY` | For real payments | Lemon Squeezy → Settings → API. Enables real checkout; without it the app uses the labeled demo checkout. |
 | `LEMONSQUEEZY_STORE_ID` | For real payments | Lemon Squeezy → Settings → Stores → your store (the numeric ID in the URL). |
 | `LEMONSQUEEZY_VARIANT_PACK5` | For real payments | Lemon Squeezy → Products → your product → Variants → the 5-reading variant ID. |
 | `LEMONSQUEEZY_VARIANT_PACK12` | For real payments | Same, the 12-reading variant ID. |
 | `LEMONSQUEEZY_VARIANT_PACK30` | For real payments | Same, the 30-reading variant ID. |
-| `LEMONSQUEEZY_WEBHOOK_SECRET` | For real payments | Lemon Squeezy → Settings → Webhooks → your webhook → Signing secret. The webhook URL to register is `https://tarot.resonantatlas.com/api/webhooks/lemonsqueezy`; subscribe to the `order_created` event. |
-| `NEXT_PUBLIC_PLAUSIBLE_DOMAIN` | No | Your domain in [plausible.io](https://plausible.io) (e.g. `tarot.resonantatlas.com`). Without it, analytics calls are no-ops (dev logs to console). |
-| `NEXT_PUBLIC_SITE_URL` | No | Defaults to `https://tarot.resonantatlas.com`. Used for checkout redirects and canonical URLs. |
+| `LEMONSQUEEZY_WEBHOOK_SECRET` | For real payments | Lemon Squeezy → Settings → Webhooks → your webhook → Signing secret. The webhook URL to register is `https://sortes.resonantatlas.com/api/webhooks/lemonsqueezy`; subscribe to the `order_created` event. |
+| `NEXT_PUBLIC_PLAUSIBLE_DOMAIN` | No | Your domain in [plausible.io](https://plausible.io) (e.g. `sortes.resonantatlas.com`). Without it, analytics calls are no-ops (dev logs to console). |
+| `NEXT_PUBLIC_SITE_URL` | No | Defaults to `https://sortes.resonantatlas.com`. Used for checkout redirects and canonical URLs. |
 | `CRON_SECRET` | For win-back emails | Random 32+ char string. Vercel Cron sends it as a Bearer token to `/api/cron/winback` (scheduled in `vercel.json`, daily 02:00 UTC). Without it, the win-back job returns 500 and no emails go out. |
 
 ## Retention engine
@@ -101,13 +101,13 @@ cp .env.example .env.local
    `POSTGRES_URL`, `RESEND_API_KEY`, and the Lemon Squeezy keys for real
    payments).
 3. Deploy.
-4. **Custom domain:** the canonical domain is `tarot.resonantatlas.com`.
-   In your DNS provider, add a `CNAME` record: host `tarot` →
+4. **Custom domain:** the canonical domain is `sortes.resonantatlas.com`.
+   In your DNS provider, add a `CNAME` record: host `sortes` →
    `cname.vercel-dns.com`. Then in Vercel → Project → Settings → Domains,
-   add `tarot.resonantatlas.com`. (The root domain and any other subdomains
-   are untouched — this project only ever uses `tarot.resonantatlas.com`.)
+   add `sortes.resonantatlas.com`. (The root domain and any other subdomains
+   are untouched — this project only ever uses `sortes.resonantatlas.com`.)
 5. In Lemon Squeezy → Settings → Webhooks, point the webhook at
-   `https://tarot.resonantatlas.com/api/webhooks/lemonsqueezy` with the
+   `https://sortes.resonantatlas.com/api/webhooks/lemonsqueezy` with the
    `order_created` event.
 
 ## Project structure
