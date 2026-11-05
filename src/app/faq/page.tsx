@@ -20,7 +20,7 @@ const FAQS = [
   },
   {
     q: "What are the five Oracle rules?",
-    a: "One: your first Quick Insight reading is free, per device, not per account. Two: a chart interpretation is free the first time per system, Ziwei, Western, and Vedic separately, then 1 Oracle each. Three: reports have no free first reading, each report costs 1 Oracle. Four: a reading follow-up is free the first time per reading, then 1 Oracle each, up to 3 per reading. Five: the daily card is always free and never uses an Oracle. Oracles never expire, and there is no subscription.",
+    a: "One: your first Quick Insight reading is free, once per device as a guest and once per account when signed in. Two: a chart interpretation is free the first time per system, Ziwei, Western, and Vedic separately, then 1 Oracle each. Three: reports have no free first reading, each report costs 1 Oracle. Four: a reading follow-up is free the first time per reading, then 1 Oracle each, up to 3 per reading. Five: the daily card is always free and never uses an Oracle. Oracles never expire, and there is no subscription.",
   },
   {
     q: "Are readings predictions?",
@@ -36,7 +36,7 @@ const FAQS = [
   },
   {
     q: "How do I sign in?",
-    a: "On the account page, choose Email code for an 8 digit code sent through Supabase (the same email also carries a magic link you can click instead), or choose Password to sign in with email and password. There is no Google sign-in. After you sign in, your guest Oracles and journal move into your account, and you stay signed in for 30 days.",
+    a: "On the account page, choose Email code to have a sign-in code sent to your email, then enter the code shown on the page. The same email also carries a magic link you can click instead. Or choose Password to sign in with email and password. There is no Google sign-in. After you sign in, your guest Oracles and journal move into your account, and you stay signed in for 30 days.",
   },
   {
     q: "What if I bought Oracles with a different email?",

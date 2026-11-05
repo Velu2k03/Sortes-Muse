@@ -336,14 +336,6 @@ export default function AccountPage() {
                 <p className="text-sm text-cream/80">
                   Next step: a {codeLength}-digit code will be sent to this email. Nothing is sent until you tap Send sign-in code.
                 </p>
-                <p className="mt-3 text-xs uppercase tracking-[0.2em] text-mist">Code field preview</p>
-                <div className="mt-2 flex gap-2" aria-hidden="true">
-                  {Array.from({ length: codeLength }, (_, i) => i).map((i) => (
-                    <span key={i} className="flex h-11 w-10 items-center justify-center rounded-lg border border-gold/25 bg-panel/70 text-lg text-mist">
-                      ·
-                    </span>
-                  ))}
-                </div>
               </div>
               <button
                 type="submit"
