@@ -117,7 +117,7 @@ export default function ZiweiStacks({
           {loading ? "Calculating…" : "Show stacks"}
         </button>
       </div>
-      {error && <p className="mt-3 text-sm text-red-400">{error}</p>}
+      {error && <p className="mt-3 text-sm text-danger">{error}</p>}
 
       {data && (
         <div className="mt-6">

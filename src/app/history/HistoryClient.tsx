@@ -293,7 +293,7 @@ export default function HistoryPage() {
           )}
 
           {deleteError && (
-            <p className="mt-6 text-center text-sm text-red-400">
+            <p className="mt-6 text-center text-sm text-danger">
               {deleteError}
             </p>
           )}
