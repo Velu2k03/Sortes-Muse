@@ -10,6 +10,7 @@
   --color-cream: #ede6d6;
   --color-mist: #9ca3af;
   --color-violet: #8b5cf6;
+  --color-danger: #f87171;
 
   --font-display: "Cormorant Garamond", "Times New Roman", Georgia, serif;
   --font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -45,6 +46,7 @@ html[data-theme="light"] {
   --color-cream: #1c1a15;
   --color-mist: #45423c;
   --color-violet: #6d28d9;
+  --color-danger: #b91c1c;
 }
 html[data-theme="light"] /* Numbers: genjutsu paint method, distinct readable numerals. Inter
    with tabular figures, so prices, credits, degrees and counts line
