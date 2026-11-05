@@ -63,7 +63,7 @@ export default function ChartsClient() {
   // ink colour), so track the document theme the same way the
   // credits page does for PixelCard. GlideSelect now follows the
   // theme too, 2026-11-04, instead of staying dark in light mode.
-  const [siteTheme, setSiteTheme] = useState<"dark" | "light">("light");
+  const [siteTheme, setSiteTheme] = useState<"dark" | "light">("dark");
   useEffect(() => {
     const sync = () =>
       setSiteTheme(document.documentElement.dataset.theme === "light" ? "light" : "dark");

@@ -1,1 +1,1 @@
-try{var t=localStorage.getItem('sortes-theme');document.documentElement.dataset.theme=(t==='light'||t==='dark')?t:'light';}catch{document.documentElement.dataset.theme='light';}
+try{var t=localStorage.getItem('sortes-theme');var theme=(t==='light'||t==='dark')?t:'dark';document.documentElement.dataset.theme=theme;var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute('content',theme==='dark'?'#0a0e1a':'#fdf9ee');}catch{document.documentElement.dataset.theme='dark';}

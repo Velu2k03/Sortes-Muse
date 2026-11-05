@@ -59,6 +59,14 @@ const BAR_GROUPS = [
 
 const ALL_HREFS = ["/", "/daily", "/spreads", "/deck", "/birth-card", "/charts", "/reports", "/horoscope", "/guides", "/faq", "/about", "/methodology", "/history"];
 
+// Theme-color per active theme, kept in step with data-theme by
+// theme.js (before paint) and the Header toggle (on change).
+const THEME_COLORS = { dark: "#0a0e1a", light: "#fdf9ee" } as const;
+function syncThemeColor(theme: "dark" | "light"): void {
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute("content", THEME_COLORS[theme]);
+}
+
 export default function Header() {
   const { credits, user, loading } = useAuth();
   const pathname = usePathname();
@@ -75,18 +83,27 @@ export default function Header() {
   })();
   const [panel, setPanel] = useState<number | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
-  // Theme default is light, persisted in
+  // Theme default is dark, persisted in
   // localStorage under sortes-theme, layout's inline script already
   // set data-theme before paint so there is no light flash. The toggle
   // here only flips the stored value and the attribute, and tells the
   // theme-aware Western wheel to re-render via a window event.
-  const [theme, setTheme] = useState<"dark" | "light">("light");
+  // Phase 2, 2.5: the toggle also keeps the meta theme-color in step
+  // with the active theme (dark #0a0e1a, light #fdf9ee), so the
+  // browser chrome matches the page; theme.js does the same before
+  // paint for first load.
+  const [theme, setTheme] = useState<"dark" | "light">("dark");
   useEffect(() => {
     try {
       const saved = localStorage.getItem("sortes-theme");
-      if (saved === "light" || saved === "dark") queueMicrotask(() => setTheme(saved));
+      if (saved === "light" || saved === "dark") {
+        queueMicrotask(() => {
+          setTheme(saved);
+          syncThemeColor(saved);
+        });
+      }
     } catch {
-      // Private mode or blocked storage: stay light, do not crash.
+      // Private mode or blocked storage: stay dark, do not crash.
     }
   }, []);
   const toggleTheme = () => {
@@ -98,6 +115,7 @@ export default function Header() {
       // Storage blocked: theme still flips for this session.
     }
     document.documentElement.dataset.theme = next;
+    syncThemeColor(next);
     window.dispatchEvent(new Event("sortes-theme-change"));
   };
   const initial = user?.email ? user.email.charAt(0).toUpperCase() : "?";

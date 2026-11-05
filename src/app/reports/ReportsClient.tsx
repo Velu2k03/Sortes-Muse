@@ -225,7 +225,7 @@ export default function ReportsClient() {
   const [type, setType] = useState<ReportType>("transit");
   // Segment and button colours bypass the theme tokens, so track the
   // document theme the same way the credits page does, 2026-11-04.
-  const [siteTheme, setSiteTheme] = useState<"dark" | "light">("light");
+  const [siteTheme, setSiteTheme] = useState<"dark" | "light">("dark");
   useEffect(() => {
     const sync = () =>
       setSiteTheme(document.documentElement.dataset.theme === "light" ? "light" : "dark");

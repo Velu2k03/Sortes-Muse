@@ -95,7 +95,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       suppressHydrationWarning
     >
       <body className="flex min-h-full flex-col font-body">
-        {/* Theme before paint: default light, localStorage
+        {/* Theme before paint: default dark, localStorage
             sortes-theme wins. Runs before React hydration so the
             first paint is already the saved theme, not a light flash. */}
         <Script src="/theme.js" strategy="beforeInteractive" />

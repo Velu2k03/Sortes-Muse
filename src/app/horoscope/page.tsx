@@ -44,7 +44,7 @@ export default function HoroscopePage() {
   // like the credits Counter and charts dials did. Track the
   // document theme here. RubberSegment now follows the theme too,
   // 2026-11-04, instead of keeping its dark track in light mode.
-  const [siteTheme, setSiteTheme] = useState<"dark" | "light">("light");
+  const [siteTheme, setSiteTheme] = useState<"dark" | "light">("dark");
   useEffect(() => {
     const sync = () =>
       setSiteTheme(document.documentElement.dataset.theme === "light" ? "light" : "dark");

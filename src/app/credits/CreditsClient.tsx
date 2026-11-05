@@ -9,7 +9,6 @@ import { useAuth } from "@/components/AuthProvider";
 import CheckoutModal from "@/components/CheckoutModal";
 import PurchaseConfirmer from "@/components/PurchaseConfirmer";
 import Counter from "@/components/Counter";
-import PixelCard from "@/components/PixelCard";
 import { useSearchParams } from "next/navigation";
 
 interface ServerTx {
@@ -41,7 +40,7 @@ export default function CreditsPage() {
   // track the document theme the same way theme.js sets it, and
   // pass a dark colour in light mode and a light colour in dark
   // mode. See the light numbers fix, 2026-11-04.
-  const [siteTheme, setSiteTheme] = useState<"dark" | "light">("light");
+  const [siteTheme, setSiteTheme] = useState<"dark" | "light">("dark");
   useEffect(() => {
     const sync = () =>
       setSiteTheme(document.documentElement.dataset.theme === "light" ? "light" : "dark");
@@ -155,17 +154,15 @@ export default function CreditsPage() {
         {CREDIT_PACKS.map((p, i) => {
           // Centered cards, approved 2026-11-04: every card is
           // centered, like the React Bits showcase cards, not left
-          // aligned. The popular card is the colored one, a gold
-          // card with dark text in both themes, so it stands out
-          // against the panel cards. On a gold card the theme
-          // tokens would be wrong, so text colours are dark here.
-          const colored = !!p.popular;
-          const nameClass = colored ? "text-[#14100a]" : "text-cream";
-          const priceColor = colored
-            ? "#14100a"
-            : siteTheme === "light"
-              ? "#7c5e00"
-              : "#f4d03f";
+          // aligned. Phase 2, 2.5: the popular card used to be a gold
+          // PixelCard with dark text, which made its gold Checkout
+          // button sit on gold at 1.00:1. It is a dark panel with a
+          // gold border now, so all cards use theme text and the gold
+          // button has real contrast; the popular distinction stays
+          // border, shadow, and badge.
+          const nameClass = "text-cream";
+          const priceColor =
+            siteTheme === "light" ? "#7c5e00" : "#f4d03f";
           const body = (
             <div className="flex h-full flex-col text-center">
               <p className={`font-display text-xl ${nameClass}`}>{p.name}</p>
@@ -231,52 +228,20 @@ export default function CreditsPage() {
               transition={{ delay: i * 0.04, duration: 0.4 }}
               className="relative h-full"
             >
-              {p.popular ? (
-                // PixelCard restored, not removed, 2026-11-04: the
-                // popular card is a React Bits PixelCard again, with
-                // the centered body, 3 points, and Counter price from
-                // the redesign inside it. The gold colour is an inline
-                // background on the PixelCard itself, so it wins over
-                // the card surface in both themes, and the pixel
-                // colours are dark gold plus light gold so they still
-                // show on gold. PixelCard is now fluid, so the card
-                // is full width and grows with its content instead
-                // of clipping at 300x400.
-                <PixelCard
-                  variant="yellow"
-                  colors={["#713f12", "#a16207", "#fef08a"]}
-                  shape="diamond"
-                  origin="pointer"
-                  gap={6}
-                  pixelSize={2}
-                  speed={35}
-                  revealDuration={600}
-                  spotlight={0.5}
-                  glow={0.5}
-                  glowColor="#eab308"
-                  opacity={0.35}
-                  fade={0.7}
-                  trigger="hover"
-                  clickPulse
-                  theme={siteTheme}
-                  radius={24}
-                  className="h-full border border-gold/70 shadow-[0_24px_48px_-24px_rgba(212,175,55,0.55)]"
-                  style={{ minHeight: "0px", background: "linear-gradient(180deg,#e8c55a,#d4af37 55%,#b8962e)" }}
-                >
-                  {/* PixelCard itself carries a 400px minimum height,
-                      which made this card far taller than its
-                      neighbours. The inline minHeight wins over
-                      that class and is scoped to this card only, so
-                      the shared PixelCard (also used on charts) is
-                      untouched. The popular distinction stays
-                      colour, border, shadow, and badge. */}
-                  <div className="relative z-10 flex h-full w-full flex-col p-4">{body}</div>
-                </PixelCard>
-              ) : (
-                <div className="relative h-full rounded-3xl border border-gold/20 bg-panel/60 p-4">
-                  {body}
-                </div>
-              )}
+              {/* Phase 2, 2.5: the popular card is a dark panel with a
+                  gold border, not a gold PixelCard, so the gold
+                  Checkout button has real contrast (7.81:1 in the
+                  default dark theme). The popular distinction stays
+                  border, shadow, and the badge, not a gold fill. */}
+              <div
+                className={`relative h-full rounded-3xl border p-4 ${
+                  p.popular
+                    ? "border-gold/70 bg-panel/80 shadow-[0_24px_48px_-24px_rgba(212,175,55,0.55)]"
+                    : "border-gold/20 bg-panel/60"
+                }`}
+              >
+                {body}
+              </div>
             </motion.div>
           );
         })}
