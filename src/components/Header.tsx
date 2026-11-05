@@ -101,6 +101,14 @@ export default function Header() {
     window.dispatchEvent(new Event("sortes-theme-change"));
   };
   const initial = user?.email ? user.email.charAt(0).toUpperCase() : "?";
+  // BranchedMenu colours are theme-aware: the panel background is
+  // bg-navydeep, which is dark navy in dark theme and light cream in
+  // light theme, so hardcoded dark-theme ink fails axe in light
+  // theme. The muted branch colour is overridden in globals.css
+  // (.sortes-bm), since the component fixes it at 55% internally.
+  const bmColor = theme === "dark" ? "#ede6d6" : "#3a3325";
+  const bmAccent = theme === "dark" ? "#d4af37" : "#7c5e00";
+  const bmLine = theme === "dark" ? "rgba(212, 175, 55, 0.45)" : "rgba(124, 94, 0, 0.45)";
   const go = (value: string) => {
     setPanel(null);
     setMobileOpen(false);
@@ -214,10 +222,11 @@ export default function Header() {
               defaultOpen={panel}
               defaultActive={activeHref}
               onSelect={(value) => go(value)}
-              color="#ede6d6"
-              accentColor="#d4af37"
-              lineColor="rgba(212, 175, 55, 0.45)"
+              color={bmColor}
+              accentColor={bmAccent}
+              lineColor={bmLine}
               width={260}
+              className="sortes-bm"
             />
           </div>
         )}
@@ -244,10 +253,11 @@ export default function Header() {
             defaultOpen={[1, 2, 3]}
             defaultActive={activeHref}
             onSelect={(value) => go(value)}
-            color="#ede6d6"
-            accentColor="#d4af37"
-            lineColor="rgba(212, 175, 55, 0.45)"
+            color={bmColor}
+            accentColor={bmAccent}
+            lineColor={bmLine}
             width={320}
+            className="sortes-bm"
           />
           <Link
             href="/credits"
