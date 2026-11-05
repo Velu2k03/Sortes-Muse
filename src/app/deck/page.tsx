@@ -145,8 +145,12 @@ export default function DeckPage() {
 
       {view === "spiral" && !reducedMotion ? (
         <div className="mt-8">
+          {/* Phase 3 (3.8): plain instruction, no apology copy. The
+              List view above is a real button toggle and is reachable
+              by keyboard; the spiral default is unchanged here —
+              Phase 4.4 owns the Grid default. */}
           <p className="text-center text-sm text-cream/75">
-            Drag to spin, tap a card. List above for keyboard browsing.
+            Drag to spin, tap a card to read it.
           </p>
           <div
             className="h-[560px]"

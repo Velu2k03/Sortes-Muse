@@ -122,14 +122,12 @@ export default function DailyPage() {
                 >
                   Hold to draw today&apos;s card
                 </HoldButton>
+              {/* Phase 3 (3.8): one draw action only. The hold button
+                  is the single trigger (keyboard-operable: hold Space
+                  or Enter, with a screen-reader hint). The second
+                  "Prefer a tap? Draw now" trigger competed with it
+                  and is deleted; tap-the-card is Phase 4's call. */}
               </StarBorder>
-              <button
-                type="button"
-                onClick={draw}
-                className="mt-4 text-sm text-mist underline underline-offset-4 hover:text-goldbright"
-              >
-                Prefer a tap? Draw now
-              </button>
             </motion.div>
           )}
 
