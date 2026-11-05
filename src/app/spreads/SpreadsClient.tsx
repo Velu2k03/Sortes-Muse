@@ -2,12 +2,11 @@
 import Icon from "@/components/Icon";
 
 import Link from "next/link";
-import Image from "next/image";
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { SPREADS, CARD_BACK } from "@/lib/tarot";
+import { SPREADS } from "@/lib/tarot";
 import { SPREAD_SAMPLES } from "@/lib/spread-samples";
-import { getCard } from "@/lib/cards";
+import SpreadDiagram from "@/components/SpreadDiagram";
 import CheckoutModal from "@/components/CheckoutModal";
 import { GlareHover } from "@/components/ReactBitsNew";
 import { useAuth } from "@/components/AuthProvider";
@@ -16,10 +15,11 @@ import { freeReadingUsed } from "@/lib/storage";
 /**
  * Spread selection.
  * There is exactly ONE payment in the whole app: buying Oracle packs.
- * 1 Oracle = 1 full reading of any spread. Spreads show a blurred "locked"
- * preview only while the seeker cannot start a reading right now (no free
- * reading left and 0 Oracles); the moment they have an Oracle, the spread
- * opens with "Begin reading" and the gate offers the personalized intake.
+ * 1 Oracle = 1 full reading of any spread. Spreads show a crisp
+ * SVG diagram of their card positions whether or not the seeker can
+ * start a reading right now (no free reading left and 0 Oracles);
+ * the moment they have an Oracle, the spread opens with
+ * "Begin reading" and the gate offers the personalized intake.
  */
 export default function SpreadsPage() {
   const [checkoutOpen, setCheckoutOpen] = useState(false);
@@ -115,38 +115,30 @@ export default function SpreadsPage() {
             transition={{ delay: i * 0.05, duration: 0.4 }}
             className={`relative flex flex-col overflow-hidden rounded-3xl border bg-panel/70 ${pickedSlug === s.slug ? "border-gold shadow-[0_0_0_2px_rgba(212,175,55,0.6)]" : "border-gold/25"}`}
           >
-            {/* Card preview: blurred while the spread cannot be started yet */}
-            <div className="relative flex h-52 items-center justify-center gap-2 overflow-hidden bg-navydeep/60 p-6">
-              {s.positions.slice(0, 5).map((pos, j) => (
-                <div
-                  key={pos.key}
-                  className={`relative h-36 w-24 shrink-0 overflow-hidden rounded-lg border border-gold/30 ${
-                    locked ? "blur-[6px]" : ""
-                  }`}
-                  style={{ transform: `rotate(${(j - 2) * 7}deg)` }}
-                  aria-hidden="true"
-                >
-                  <Image
-                    src={locked ? CARD_BACK : getCard(["major-17", "major-19", "major-01", "major-00", "major-21"][j % 5]).image}
-                    alt=""
-                    fill
-                    sizes="96px"
-                    className="object-cover"
-                  />
-                </div>
-              ))}
+            {/* Phase 4A (4.5): crisp sacred-geometry diagram of the
+                spread's card positions, gold-on-dark linework. The
+                old blurred card-back "locked" preview is gone; a
+                locked spread shows its layout too, with a small lock
+                chip, and the gate stays on the button below. */}
+            <div className="relative flex h-52 items-center justify-center overflow-hidden bg-navydeep/60 p-4">
+              <div className="h-full w-full max-w-72">
+                <SpreadDiagram spread={s} />
+              </div>
               {locked && (
-                <div className="absolute inset-0 flex items-center justify-center bg-ink/45">
-                  <span className="rounded-full border border-gold/50 bg-ink/80 px-4 py-2 text-sm font-semibold text-goldbright">
-                    <span className="inline-flex items-center gap-2"><Icon name="lock" size={16} />Locked preview</span>
-                  </span>
-                </div>
+                <span className="absolute right-3 top-3 rounded-full border border-gold/50 bg-ink/80 px-3 py-1 text-xs font-semibold text-goldbright">
+                  <span className="inline-flex items-center gap-1.5"><Icon name="lock" size={14} />Locked</span>
+                </span>
               )}
             </div>
 
             <div className="flex flex-1 flex-col p-6">
-              <div className="flex items-baseline justify-between gap-3">
-                <h2 className="font-display text-3xl text-cream">{s.name}</h2>
+              {/* Phase 4A (4.5): the long "Past / Present / Future"
+                  title used to collide with the price on one
+                  no-wrap row. The row now wraps, and the title may
+                  shrink, so the price drops below instead of
+                  overlapping. */}
+              <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                <h2 className="min-w-0 flex-1 break-words font-display text-3xl text-cream">{s.name}</h2>
                 <p className="shrink-0 whitespace-nowrap font-display text-xl text-goldbright">
                   {s.slug === "quick-insight" && !usedFree ? "Free" : (<><span className="font-body">1</span> Oracle</>)}
                 </p>
