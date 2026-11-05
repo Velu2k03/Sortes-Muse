@@ -206,6 +206,11 @@ export function getReports(): SavedReport[] {
 
 export function saveReport(r: SavedReport): void {
   const list = getReports();
+  // Phase 3 (3.5): saving is idempotent — the same report id stores
+  // once. The server branch already dedupes (ON CONFLICT DO NOTHING);
+  // without this, the guest retry-save button after a failed save
+  // would store the same report twice in device storage.
+  if (list.some((x) => x.id === r.id)) return;
   list.unshift(r);
   write(K.reports, list.slice(0, MAX_REPORTS));
 }

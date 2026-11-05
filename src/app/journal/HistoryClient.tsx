@@ -76,6 +76,17 @@ export default function HistoryPage() {
             ? "Every full reading and saved chart interpretation you complete is kept here and synced to your account, so your journal follows you across devices. Daily cards are not saved as full readings."
             : "Every full reading and saved chart interpretation you complete is kept here on this device. Sign in to sync your journal across devices. Daily cards are not saved as full readings."}
         </p>
+        {/* Phase 3 (3.5): plain device-only warning for guests. Guest
+            entries live in this browser's storage; clearing browser
+            data deletes them. Signed-in entries are synced, so the
+            warning is guest-only. */}
+        {!user && (
+          <p className="mx-auto mt-3 max-w-xl text-sm text-goldbright/90">
+            Guest entries live only on this device and browser. If you
+            clear your browser data, they are gone. Sign in to keep
+            them.
+          </p>
+        )}
       </div>
 
       {history === null && (
