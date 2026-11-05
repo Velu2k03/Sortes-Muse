@@ -56,8 +56,7 @@
   transform: rotateY(180deg);
 }
 
-.holo-card__face img,
-.holo-card__face canvas {
+.holo-card__face img {
   position: absolute;
   inset: 0;
   display: block;
@@ -71,11 +70,31 @@
   -webkit-user-drag: none;
 }
 
-.holo-card__face canvas {
+/* Phase 4B (4.11): warm gold rim light, pure CSS. No rainbow, no
+   WebGL: a soft gold highlight that follows the pointer plus a thin
+   gold rim. --hc-glow (0-1) is driven by the tilt loop: 1 on hover,
+   0.45 on idle drift, 0 at rest. --hc-intensity scales it. The sheen
+   stays invisible until the art has loaded (data-ready). */
+.holo-card__sheen {
+  position: absolute;
+  inset: 0;
+  display: block;
+  border-radius: var(--hc-radius);
+  pointer-events: none;
   opacity: 0;
+  background:
+    radial-gradient(
+      120% 90% at var(--hc-lx, 36%) var(--hc-ly, 26%),
+      color-mix(in srgb, var(--hc-foil, #d4af37) 30%, transparent),
+      color-mix(in srgb, var(--hc-foil, #d4af37) 10%, transparent) 45%,
+      transparent 70%
+    );
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--hc-foil, #d4af37) 55%, transparent),
+    inset 0 0 18px color-mix(in srgb, var(--hc-foil, #d4af37) 25%, transparent);
   transition: opacity 0.3s ease;
 }
 
-.holo-card[data-ready] .holo-card__face canvas {
-  opacity: 1;
+.holo-card[data-ready] .holo-card__sheen {
+  opacity: calc(var(--hc-glow, 0) * var(--hc-intensity, 0.85));
 }
