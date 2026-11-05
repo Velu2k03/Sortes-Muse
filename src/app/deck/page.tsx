@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
@@ -17,7 +18,12 @@ import {
   type DeckView,
 } from "@/lib/cards";
 import type { TarotCard } from "@/lib/types";
-import InfiniteSpiral from "@/components/InfiniteSpiral";
+// Phase 4C (4.8a): the spiral gallery is code-split. It renders only
+// when the seeker opts into the spiral view (grid is the default), so
+// it is a separate chunk loaded on demand instead of first-paint
+// weight on the deck grid. Plain dynamic() (SSR kept): the component
+// is rendered conditionally, so there is no SSR behaviour to lose.
+const InfiniteSpiral = dynamic(() => import("@/components/InfiniteSpiral"));
 
 type Filter = "all" | "major" | "wands" | "cups" | "swords" | "pentacles";
 

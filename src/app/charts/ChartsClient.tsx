@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { toPng } from "html-to-image";
+import dynamic from "next/dynamic";
 import type { WesternResult, ZiweiResult } from "@/lib/charts";
 import type { VedicResult } from "@/lib/vedic";
 import type { ZiweiLanguage } from "@/lib/ziwei-i18n";
@@ -9,12 +9,19 @@ import { localizeStar, zodiacEn, ZIWEI_LEGEND_ZH } from "@/lib/ziwei-i18n";
 import ThemedDatePicker from "@/components/ThemedDatePicker";
 import { formatUtcOffset } from "@/lib/format-offset";
 import CardBurst from "@/components/CardBurst";
-import ZiweiChartBoard, { type ZiweiView } from "@/components/ZiweiChartBoard";
-import WesternWheel from "@/components/WesternWheel";
-import WesternTransits from "@/components/WesternTransits";
-import VedicTransits from "@/components/VedicTransits";
-import ZiweiStacks from "@/components/ZiweiStacks";
-import VedicChart from "@/components/VedicChart";
+// Phase 4C (4.8a): the chart renderers are code-split. Every one of
+// them renders only after a chart is cast (behind `result`), so they
+// are separate chunks loaded on demand instead of first-paint weight
+// on the birth-data form. Plain dynamic() (SSR kept): these are
+// client components rendered conditionally, so there is no SSR
+// behaviour to preserve or lose, and no ssr:false is needed.
+import type { ZiweiView } from "@/components/ZiweiChartBoard";
+const ZiweiChartBoard = dynamic(() => import("@/components/ZiweiChartBoard"));
+const WesternWheel = dynamic(() => import("@/components/WesternWheel"));
+const WesternTransits = dynamic(() => import("@/components/WesternTransits"));
+const VedicTransits = dynamic(() => import("@/components/VedicTransits"));
+const ZiweiStacks = dynamic(() => import("@/components/ZiweiStacks"));
+const VedicChart = dynamic(() => import("@/components/VedicChart"));
 import { useAuth } from "@/components/AuthProvider";
 import Icon from "@/components/Icon";
 import GlideSelect from "@/components/GlideSelect";
@@ -446,6 +453,9 @@ export default function ChartsClient() {
     if (!shareRef.current || shareBusy) return;
     setShareBusy(true);
     try {
+      // Phase 4C (4.8a): html-to-image loads only when the seeker
+      // actually exports a chart image, not on first paint.
+      const { toPng } = await import("html-to-image");
       const dataUrl = await toPng(shareRef.current, { cacheBust: true, pixelRatio: 2, backgroundColor: "#0a0e1a" });
       const a = document.createElement("a");
       a.download = "sortes-chart.png";
