@@ -56,8 +56,7 @@ export default function CreditsPage() {
   // so they redirect at once. Guests have no email yet and the
   // checkout API needs one before Lemon Squeezy, so a guest gets
   // the modal only as the email step, with their pack marked
-  // Selected, not as a second pick. Demo mode (Lemon not
-  // configured) also falls back to the modal, where demo Buy lives.
+  // Selected, not as a second pick.
   const buyDirect = async (packId: string) => {
     setDirectError(null);
     setDirectFailed(null);
@@ -205,8 +204,7 @@ export default function CreditsPage() {
                   straight to Lemon Squeezy for this card's pack.
                   The modal stays for spreads, header, and reading
                   flows, where no pack was picked yet, and for guests
-                  and demo mode here, where an email step or demo Buy
-                  is still needed. */}
+                  here, where an email step is still needed. */}
               {/* mt-auto pins every Checkout button to the card
                   foot, so buttons align across cards even though
                   the popular card carries the badge row. */}

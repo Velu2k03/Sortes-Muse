@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CREDIT_PACKS, apiPackId, perReadingPrice } from "@/lib/site";
 import { useAuth } from "@/components/AuthProvider";
-import CardBurst from "@/components/CardBurst";
 import { trackPurchaseCompleted } from "@/components/Analytics";
 
 interface Props {
@@ -20,20 +19,17 @@ interface Props {
 }
 
 /**
- * Credit top-up.
- * - When Lemon Squeezy is configured (env vars set): real checkout. Guests
- *   check out with email only; the webhook auto-creates their account and
- *   grants credits instantly.
- * - Otherwise: clearly-labeled demo checkout so every flow stays testable.
+ * Credit top-up via Lemon Squeezy only. Phase 1 (1.5) deleted the
+ * demo checkout: it granted Oracles for free in production code, so
+ * it is gone, not hidden. When Lemon Squeezy is not configured the
+ * modal says checkout is unavailable instead of granting anything.
  */
 export default function CheckoutModal({ open, onClose, reason, initialPackId }: Props) {
-  const { add, refresh, user } = useAuth();
+  const { user } = useAuth();
   const [processing, setProcessing] = useState<string | null>(null);
-  const [done, setDone] = useState<string | null>(null);
   const [realCheckout, setRealCheckout] = useState<boolean | null>(null);
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   useEffect(() => {
     if (open) {
@@ -46,45 +42,7 @@ export default function CheckoutModal({ open, onClose, reason, initialPackId }: 
         .then((d) => setRealCheckout(Boolean(d.enabled)))
         .catch(() => setRealCheckout(false));
     }
-    return () => {
-      timers.current.forEach(clearTimeout);
-      timers.current = [];
-    };
   }, [open, user]);
-
-  const later = (ms: number, fn: () => void) => {
-    timers.current.push(setTimeout(fn, ms));
-  };
-
-  const buyDemo = (packId: string, readings: number, price: number) => {
-    setProcessing(packId);
-    later(900, async () => {
-      if (user) {
-        // Signed in: record the transaction server-side (labeled demo) and grant.
-        try {
-          await fetch("/api/credits/record", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ packId, readings, price }),
-          });
-          await refresh();
-        } catch {
-          /* non-fatal in demo mode */
-        }
-      } else {
-        const { recordPurchase } = await import("@/lib/storage");
-        recordPurchase({ packId, readings, price, date: new Date().toISOString() });
-        await add(readings);
-      }
-      setProcessing(null);
-      setDone(packId);
-      trackPurchaseCompleted(packId, price);
-      later(1200, () => {
-        setDone(null);
-        onClose();
-      });
-    });
-  };
 
   const buyReal = async (packId: string) => {
     const trimmed = email.trim();
@@ -203,21 +161,11 @@ export default function CheckoutModal({ open, onClose, reason, initialPackId }: 
                       </p>
                       <button
                         type="button"
-                        disabled={processing !== null || realCheckout === null}
-                        onClick={() =>
-                          realCheckout
-                            ? void buyReal(p.id)
-                            : buyDemo(p.id, p.readings, p.price)
-                        }
+                        disabled={processing !== null || realCheckout !== true}
+                        onClick={() => void buyReal(p.id)}
                         className="btn-gold rounded-xl px-5 py-2.5 text-sm font-bold disabled:opacity-60"
                       >
-                        {processing === p.id
-                          ? "…"
-                          : done === p.id
-                            ? "Added ✓"
-                            : realCheckout
-                              ? "Checkout"
-                              : "Buy"}
+                        {processing === p.id ? "…" : "Checkout"}
                       </button>
                     </div>
                   </div>
@@ -231,14 +179,14 @@ export default function CheckoutModal({ open, onClose, reason, initialPackId }: 
               </p>
             )}
 
-            {realCheckout ? (
+            {realCheckout === false ? (
+              <p className="mt-5 rounded-xl border border-red-400/40 bg-red-500/10 p-3 text-center text-xs alert-error-text">
+                Checkout is not available right now. Please try again later.
+              </p>
+            ) : (
               <p className="mt-5 rounded-xl bg-gold/10 p-3 text-center text-xs text-mist">
                 Secure checkout by Lemon Squeezy. Oracles appear instantly
                 after payment; your account is created from your email.
-              </p>
-            ) : (
-              <p className="mt-5 rounded-xl bg-violet/10 p-3 text-center text-xs text-mist">
-                Demo checkout: Oracles are added instantly for testing.
               </p>
             )}
             <button
@@ -250,15 +198,6 @@ export default function CheckoutModal({ open, onClose, reason, initialPackId }: 
             </button>
           </motion.div>
         </motion.div>
-      )}
-      {/* Golden fountain when a purchase lands */}
-      {done && (
-        <div
-          aria-hidden="true"
-          className="pointer-events-none fixed inset-0 z-[60] flex items-center justify-center"
-        >
-          <CardBurst count={48} distance={260} />
-        </div>
       )}
     </AnimatePresence>
   );

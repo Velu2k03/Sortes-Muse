@@ -68,12 +68,6 @@ export function getPurchaseHistory(): Purchase[] {
   return read<Purchase[]>(K.purchases, []);
 }
 
-export function recordPurchase(p: Purchase): void {
-  const list = getPurchaseHistory();
-  list.unshift(p);
-  write(K.purchases, list.slice(0, 50));
-}
-
 // First reading free
 export function freeReadingUsed(): boolean {
   return read<boolean>(K.freeReadingUsed, false);
