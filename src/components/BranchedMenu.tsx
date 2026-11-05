@@ -1,6 +1,6 @@
 'use client';
 
-import React, { isValidElement, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import React, { isValidElement, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { HugeiconsIcon, type IconSvgElement } from '@hugeicons/react';
 import {
   CursorPointer01Icon,
@@ -102,7 +102,12 @@ const BranchedMenu: React.FC<BranchedMenuProps> = ({
   const heads = useRef<(HTMLButtonElement | null)[]>([]);
   const markerRef = useRef<HTMLSpanElement>(null);
   const latest = useRef<{ onSelect?: BranchedMenuProps['onSelect']; onToggle?: BranchedMenuProps['onToggle'] }>({});
-  latest.current = { onSelect, onToggle };
+  // Sortes fix: upstream assigns latest.current during render,
+  // which eslint react-hooks/refs flags. An effect is equivalent
+  // here because the ref is only read inside event handlers.
+  useEffect(() => {
+    latest.current = { onSelect, onToggle };
+  });
 
   const activeSection = items.findIndex(it => it.children?.some(kid => kid.value === active));
   const markerShown = activeSection >= 0 && open.has(activeSection);

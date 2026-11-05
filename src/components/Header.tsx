@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import CountUp from "@/components/CountUp";
-import Icon, { type IconName } from "@/components/Icon";
+import Icon from "@/components/Icon";
 import BranchedMenu, { type BranchedMenuItem } from "@/components/BranchedMenu";
 import { APP_SHORT } from "@/lib/site";
 
