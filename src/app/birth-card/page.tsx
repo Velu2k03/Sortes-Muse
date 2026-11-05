@@ -3,22 +3,21 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { MAJORS } from "@/lib/cards";
+import { birthCardNumbers } from "@/lib/birth-card";
 import ThemedDatePicker from "@/components/ThemedDatePicker";
 
 // Birth card calculator, calculated in memory only. The date you enter
 // is never stored, never sent to a server, and never sent to AI.
 // Method, stated on the page: add all digits of the birth date, then
 // keep adding the digits of the result until the total is 22 or less.
-// That total maps to a Major Arcana card: 1 is The Magician through
-// 21 is The World, and 22 is The Fool. This is a reflection tool,
-// not a prediction and not a personal reading.
-function birthCardNumber(date: string): number | null {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return null;
-  let total = date.replaceAll("-", "").split("").reduce((s, ch) => s + Number(ch), 0);
-  while (total > 22) {
-    total = String(total).split("").reduce((s, ch) => s + Number(ch), 0);
-  }
-  return total;
+// That total is the Personality card (22 is The Fool). Add the digits
+// of the Personality number until a single digit remains: that is the
+// Soul card. This is the traditional Personality & Soul pair, a
+// reflection tool, not a prediction and not a personal reading.
+function cardForNumber(n: number) {
+  // Personality 22 is The Fool, numbered 0 in the deck data.
+  const cardNumber = n % 22;
+  return MAJORS.find((c) => c.number === cardNumber) ?? null;
 }
 
 export default function BirthCardPage() {
@@ -31,12 +30,15 @@ export default function BirthCardPage() {
     return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}-${String(t.getDate()).padStart(2, "0")}`;
   }, []);
   const isFuture = date !== "" && date > todayKey;
-  const num = useMemo(() => (isFuture ? null : birthCardNumber(date)), [date, isFuture]);
-  const card = useMemo(() => {
-    if (num === null) return null;
-    const cardNumber = num % 22;
-    return MAJORS.find((c) => c.number === cardNumber) ?? null;
-  }, [num]);
+  const pair = useMemo(() => (isFuture ? null : birthCardNumbers(date)), [date, isFuture]);
+  const personalityCard = useMemo(
+    () => (pair === null ? null : cardForNumber(pair.personality)),
+    [pair]
+  );
+  const soulCard = useMemo(
+    () => (pair === null ? null : cardForNumber(pair.soul)),
+    [pair]
+  );
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6">
@@ -44,7 +46,7 @@ export default function BirthCardPage() {
         <p className="text-xs uppercase tracking-[0.35em] text-gold">Calculator</p>
         <h1 className="mt-3 font-display text-5xl text-goldbright sm:text-6xl">Your birth card</h1>
         <p className="mx-auto mt-4 max-w-xl text-cream/75">
-          One Major Arcana card from your birth date, calculated in your
+          Two Major Arcana cards from your birth date, calculated in your
           browser. Nothing is stored or sent anywhere. A reflection tool,
           not a prediction.
         </p>
@@ -62,21 +64,54 @@ export default function BirthCardPage() {
         <p className="mt-3 text-sm text-cream/70">
           Method: add the digits of your birth date; if the total is
           over 22, add the digits of that total, and repeat until it
-          is 22 or less (22 is The Fool). Pick a date and your card
-          appears below, no button needed.
+          is 22 or less (22 is The Fool). That is your Personality
+          card. Add the digits of the Personality number until a
+          single digit remains: that is your Soul card. Pick a date
+          and your cards appear below, no button needed.
         </p>
       </div>
-      {card && num !== null && (
-        <article className="mt-6 rounded-3xl border border-gold/25 bg-panel/70 p-6">
-          <p className="text-xs uppercase tracking-[0.25em] text-gold">
-            Total {num} · {card.name}
+      {pair !== null && personalityCard && soulCard && (
+        <div className="mt-6">
+          <p className="text-center text-sm text-mist">
+            Digit total {pair.total} · Personality {pair.personality} · Soul {pair.soul}
           </p>
-          <h2 className="mt-3 font-display text-4xl text-goldbright">{card.name}</h2>
-          <p className="mt-3 leading-relaxed text-cream/85">{card.meaning.upright}</p>
-          <p className="mt-3 text-sm text-cream/70">
-            Keywords: {card.keywords.upright.join(", ")}.
-          </p>
-          <div className="mt-6 flex flex-wrap gap-3">
+          <div className="mt-4 grid gap-6 sm:grid-cols-2">
+            <article className="rounded-3xl border border-gold/25 bg-panel/70 p-6">
+              <p className="text-xs uppercase tracking-[0.25em] text-gold">
+                Personality card · {personalityCard.name}
+              </p>
+              <h2 className="mt-3 font-display text-4xl text-goldbright">{personalityCard.name}</h2>
+              <p className="mt-2 text-sm leading-relaxed text-cream/75">
+                In this system, the Personality card describes how you
+                meet the world: the lesson you work with in daily life.
+              </p>
+              <p className="mt-3 leading-relaxed text-cream/85">{personalityCard.meaning.upright}</p>
+              <p className="mt-3 text-sm text-cream/70">
+                Keywords: {personalityCard.keywords.upright.join(", ")}.
+              </p>
+            </article>
+            <article className="rounded-3xl border border-gold/25 bg-panel/70 p-6">
+              <p className="text-xs uppercase tracking-[0.25em] text-gold">
+                Soul card · {soulCard.name}
+              </p>
+              <h2 className="mt-3 font-display text-4xl text-goldbright">{soulCard.name}</h2>
+              <p className="mt-2 text-sm leading-relaxed text-cream/75">
+                The Soul card describes the inner lesson behind it: what
+                your life keeps teaching you, underneath the day to day.
+              </p>
+              <p className="mt-3 leading-relaxed text-cream/85">{soulCard.meaning.upright}</p>
+              <p className="mt-3 text-sm text-cream/70">
+                Keywords: {soulCard.keywords.upright.join(", ")}.
+              </p>
+            </article>
+          </div>
+          {pair.personality === pair.soul && (
+            <p className="mt-4 text-center text-sm text-cream/70">
+              Your Personality and Soul cards are the same card: the
+              outer lesson and the inner lesson point the same way.
+            </p>
+          )}
+          <div className="mt-6 flex flex-wrap justify-center gap-3">
             <Link href="/deck" className="btn-gold">
               Browse the deck
             </Link>
@@ -84,7 +119,7 @@ export default function BirthCardPage() {
               Get a reading
             </Link>
           </div>
-        </article>
+        </div>
       )}
     </div>
   );
