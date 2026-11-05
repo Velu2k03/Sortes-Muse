@@ -463,7 +463,7 @@ export default function ReportsClient() {
         </div>
       )}
       {error && (
-        <div className="mt-6 rounded-2xl border border-red-400/40 bg-panel/70 p-4 text-center text-sm text-red-200">
+        <div className="mt-6 rounded-2xl border border-danger/40 bg-panel/70 p-4 text-center text-sm text-danger">
           {error}{" "}
           {error.includes("1 Oracle") && (
             <Link href="/credits" className="font-semibold underline">
@@ -537,7 +537,7 @@ export default function ReportsClient() {
           <p className="text-xs uppercase tracking-[0.35em] text-gold">Your report</p>
           <h2 className="mt-1 font-display text-3xl text-goldbright">{result.title}</h2>
           {saveError ? (
-            <div className="mt-3 rounded-xl border border-red-400/40 p-3 text-sm text-red-200">
+            <div className="mt-3 rounded-xl border border-danger/40 p-3 text-sm text-danger">
               The report was generated, but saving it failed. Your Oracle was spent only once; retry the
               save without another charge.{" "}
               <button type="button" onClick={() => saveGenerated(result)} className="font-semibold underline">
