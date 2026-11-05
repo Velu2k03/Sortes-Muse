@@ -332,8 +332,8 @@ console.log("gochara 2026-11-03: transit Moon", goA.planets.find((p) => p.name =
 const dailyA = dailyHoroscope("Aries", "2026-11-01");
 const dailyA2 = dailyHoroscope("Aries", "2026-11-01");
 assert.equal(dailyA.theme, dailyA2.theme, "daily must be deterministic for the same sign and date");
-assert.ok(dailyA.luckyNumber >= 1 && dailyA.luckyNumber <= 9, "daily lucky number must be 1-9");
-assert.ok(dailyA.luckyColour.length > 0, "daily needs a lucky colour");
+assert.equal(dailyA.luckyNumber, undefined, "daily must not carry a lucky number (removed Phase 3)");
+assert.equal(dailyA.luckyColour, undefined, "daily must not carry a lucky colour (removed Phase 3)");
 assert.notEqual(dailyHoroscope("Taurus", "2026-11-01").theme, dailyA.theme, "daily themes differ per sign");
 console.log("daily Aries 2026-11-01:", dailyA.theme.slice(0, 60) + "...");
 
@@ -349,8 +349,10 @@ console.log("ziwei EN summary:", enSummary);
 const chartsClient = fs.readFileSync(new URL("../src/app/charts/ChartsClient.tsx", import.meta.url), "utf8");
 assert.ok(chartsClient.includes('useState<ZiweiView>("square")'), "Ziwei default view must be square");
 assert.ok(chartsClient.includes('chartSummaryText(result, ziweiLang)'), "summary must follow the chart language");
-const pushPrompt = fs.readFileSync(new URL("../src/components/PushPrompt.tsx", import.meta.url), "utf8");
-assert.ok(pushPrompt.includes('pathname?.startsWith("/charts")'), "reminder dialog must be suppressed on /charts");
+// PushPrompt was deleted in Phase 3 (it only asked for Notification permission; no real Web Push exists).
+assert.ok(!fs.existsSync(new URL("../src/components/PushPrompt.tsx", import.meta.url)), "PushPrompt must stay deleted");
+const layoutSrc = fs.readFileSync(new URL("../src/app/layout.tsx", import.meta.url), "utf8");
+assert.ok(!layoutSrc.includes("<PushPrompt") && !layoutSrc.includes("from \"./PushPrompt\"") && !layoutSrc.includes("from \"../components/PushPrompt\""), "layout must not mount PushPrompt");
 // Vedic dasha planets must be capitalised, not lower-case saturn/mercury.
 assert.ok(vedicA.currentDasha.split(" / ").every((s) => /^[A-Z]/.test(s)), "Vedic dasha names must be capitalised");
 console.log("vedic dasha A:", vedicA.currentDasha);
@@ -417,7 +419,7 @@ console.log("charts-check: all assertions passed");
   assert.ok(custom.includes("leader") || custom.includes("<line"), "custom wheel must draw leader lines from true position to staggered label");
   assert.ok(wheel.includes("Clustered planets, staggered list"), "Western wheel must carry a staggered cluster list outside the wheel");
   assert.ok(wheel.includes("scroll-mt-24"), "Western aspects/wheel headings must carry scroll margin");
-  const credits = fs.readFileSync("src/app/credits/CreditsClient.tsx", "utf8");
+  const credits = fs.readFileSync("src/app/oracles/CreditsClient.tsx", "utf8");
   // Audit 4 supersedes the Audit 3 btn-secondary note: all Buy buttons
   // are now the same solid btn-gold, popular distinguished by badge only.
   assert.ok(!credits.includes("btn-secondary"), "Audit 4: credits Buy buttons must no longer use btn-secondary");
@@ -484,7 +486,7 @@ console.log("charts-check: all assertions passed");
   const charts = fs.readFileSync("src/app/charts/ChartsClient.tsx", "utf8");
   assert.ok(charts.includes("如何读这张星盘"), "legend heading must be Chinese in Chinese mode");
   assert.ok(charts.includes("解读") && charts.includes("AI 用英文生成"), "interpretation heading must follow chart language, with a note that AI text stays English");
-  const credits = fs.readFileSync("src/app/credits/CreditsClient.tsx", "utf8");
+  const credits = fs.readFileSync("src/app/oracles/CreditsClient.tsx", "utf8");
   assert.ok(!credits.includes('bg-gold/10'), "popular credits card must carry no extra gold tint; badge is the only distinction");
   const layout = fs.readFileSync("src/app/layout.tsx", "utf8");
   assert.ok(layout.split("dangerouslySetInnerHTML").length - 1 === 1 && layout.includes('type="application/ld+json"'), "layout may use dangerouslySetInnerHTML only once, for JSON-LD, never for the theme script");
@@ -519,7 +521,7 @@ console.log("charts-check: all assertions passed");
   assert.ok(!wheel.includes("instead of from the wheel"), "old contradictory list intro must be gone");
   const account = fs.readFileSync("src/app/account/AccountClient.tsx", "utf8");
   assert.ok(account.includes("{codeLength}-digit code will be sent"), "account page must preview the code step before sending a code");
-  assert.ok(account.includes("Code field preview"), "account page must show the code field format preview");
+  assert.ok(!account.includes("Code field preview"), "account page must not show a dead code-field preview (removed Phase 3.2)");
   const auth = fs.readFileSync("src/lib/auth.ts", "utf8");
   assert.ok(auth.includes('padStart(6, "0")'), "code length preview must match auth.ts: 6 digits");
   const charts = fs.readFileSync("src/app/charts/ChartsClient.tsx", "utf8");
@@ -586,9 +588,9 @@ console.log("charts-check: all assertions passed");
   // Batch 14: Lightsite fixes. JSON-LD in layout, credits H1 on server.
   const layout14 = fs.readFileSync("src/app/layout.tsx", "utf8");
   assert.ok(layout14.includes('"@type": "Organization"') && layout14.includes('"@type": "WebSite"'), "layout must carry Organization and WebSite JSON-LD");
-  const creditsPage = fs.readFileSync("src/app/credits/page.tsx", "utf8");
+  const creditsPage = fs.readFileSync("src/app/oracles/page.tsx", "utf8");
   assert.ok(creditsPage.includes("<h1") && creditsPage.includes("Your balance"), "credits H1 must render in the server page, not only in the suspending client");
-  const creditsClient = fs.readFileSync("src/app/credits/CreditsClient.tsx", "utf8");
+  const creditsClient = fs.readFileSync("src/app/oracles/CreditsClient.tsx", "utf8");
   assert.ok(!creditsClient.includes("<h1"), "credits client must not duplicate the server H1");
   console.log("batch14: lightsite JSON-LD and credits server H1: all source assertions passed");
   // Phase 1: dead typed URLs must redirect, not 404.
@@ -597,7 +599,8 @@ console.log("charts-check: all assertions passed");
     assert.ok(config.includes(`source: "${slug}"`), `next.config must redirect dead slug ${slug}`);
   }
   const notFound = fs.readFileSync("src/app/not-found.tsx", "utf8");
-  assert.ok(notFound.includes('title: "Page not found | Sortes"'), "not-found page must carry its own title, not the home title");
+  assert.ok(notFound.includes('title: "Page not found"'), "not-found page must carry its own title, not the home title");
+  assert.ok(!notFound.includes('title: "Page not found | Sortes"'), "not-found title must not embed the suffix (root template appends it; fixed Phase 3.4)");
   assert.ok(notFound.includes('href: "/daily"') && notFound.includes('href: "/guides"'), "not-found page must offer real places to go, not only home");
   console.log("phase1: dead URL redirects and not-found places: all source assertions passed");
   // Phase 2: one dominant hero action, Oracle cash value, trust strip.
@@ -641,7 +644,7 @@ console.log("charts-check: all assertions passed");
   assert.ok(!generateRoute.includes("guaranteed prediction") || generateRoute.includes("NEVER as guaranteed prediction"), "generation prompt must keep the reflection, not prediction, guardrail");
   const readingDetail = fs.readFileSync("src/app/reading/[id]/ReadingDetailClient.tsx", "utf8");
   assert.ok(readingDetail.includes("About this reading, at a glance") && readingDetail.includes("computeSpreadFacts"), "reading detail must show computed at-a-glance facts from the draw");
-  const historyClient = fs.readFileSync("src/app/history/HistoryClient.tsx", "utf8");
+  const historyClient = fs.readFileSync("src/app/journal/HistoryClient.tsx", "utf8");
   assert.ok(historyClient.includes("Questions you keep returning to"), "journal must surface repeated questions");
   const chartsClient = fs.readFileSync("src/app/charts/ChartsClient.tsx", "utf8");
   assert.ok(chartsClient.includes('href="#chart-interpretation"') && chartsClient.includes('id="chart-interpretation"'), "charts result must offer a jump to the plain-words interpretation");
@@ -690,13 +693,14 @@ console.log("charts-check: all assertions passed");
   const spiral = fs.readFileSync("src/components/InfiniteSpiral.tsx", "utf8");
   assert.ok(spiral.includes("border-gold/25 bg-panel/70") && !spiral.includes("bg-white/10"), "deck spiral must use Sortes tokens, not demo white");
   assert.ok(!fs.readFileSync("src/app/reading/[id]/ReadingDetailClient.tsx", "utf8").includes("FadeContent"), "FadeContent must be replaced, not left in reading detail");
-  const credits = fs.readFileSync("src/app/credits/CreditsClient.tsx", "utf8");
-  assert.ok(credits.includes('shape="diamond"') && credits.includes("gap={6}") && credits.includes("pixelSize={2}") && credits.includes("speed={35}") && credits.includes("opacity={0.35}") && credits.includes("fade={0.7}"), "credits PixelCard must match the doc spec");
+  const credits = fs.readFileSync("src/app/oracles/CreditsClient.tsx", "utf8");
+  assert.ok(!credits.includes("<PixelCard"), "popular Oracles card must not render a gold PixelCard (removed Phase 2.5: gold-on-gold was 1.00:1)");
+  assert.ok(credits.includes("border-gold/70 bg-panel/80"), "popular Oracles card must be a dark panel with a gold border");
   console.log("deep-ux-batch-a: Sortes colours, Rise config, FadeContent replaced, PixelCard spec: all source assertions passed");
   // Deep UX Batch A2: daily reveal and typing, Orb, charts cache,
   // single Oracle rules entry.
   const dailyPage = fs.readFileSync("src/app/daily/page.tsx", "utf8");
-  assert.ok(!dailyPage.includes('from "@/components/PixelTransition"') && dailyPage.includes("rotateY") && dailyPage.includes("typingSpeed={75}") && dailyPage.includes("variableSpeed={{ min: 40, max: 170 }}") && dailyPage.includes("loop={false}"), "daily must use a flip reveal and the doc typing effect, loop off");
+  assert.ok(!dailyPage.includes('from "@/components/PixelTransition"') && dailyPage.includes("rotateY") && !dailyPage.includes("typingSpeed") && !dailyPage.includes("TextType"), "daily must use a flip reveal with full-text fade-in, no typewriter (removed Phase 2.2)");
   const reactBitsNew2 = fs.readFileSync("src/components/ReactBitsNew.tsx", "utf8");
   assert.ok(reactBitsNew2.includes("export function Orb"), "ReactBitsNew must export Orb");
   const homePage = fs.readFileSync("src/app/page.tsx", "utf8");
@@ -711,14 +715,14 @@ console.log("charts-check: all assertions passed");
   // Report detail H1 was checked in this pass: it renders via
   // SplitText tag="h1", so the audit's literal h1 grep missed it.
   const header = fs.readFileSync("src/components/Header.tsx", "utf8");
-  assert.ok(header.includes("MOBILE_GROUPS") && header.includes("Reflect") && header.includes("Understand") && header.includes("Explore") && header.includes("Keep"), "mobile menu must be grouped by job");
+  assert.ok(header.includes("const GROUPS") && header.includes('label: "Tarot"') && header.includes('label: "Astrology"') && header.includes('label: "Learn"') && header.includes("BranchedMenu"), "mobile menu must be grouped by job (Tarot / Astrology / Learn groups; Phase 4A replaced the old Reflect/Understand/Explore/Keep labels)");
   const footer = fs.readFileSync("src/components/Footer.tsx", "utf8");
   // Unified names (review fix): Spreads, Journal, Oracles everywhere,
   // replacing the old footer-only Credits/History labels.
   assert.ok(footer.includes(">Deck<") && footer.includes(">Oracles<") && footer.includes(">Journal<") && footer.includes(">Spreads<"), "footer labels must use the unified names");
   const homeBatchB = fs.readFileSync("src/app/page.tsx", "utf8");
   assert.ok(homeBatchB.includes("<ReturnLoop />"), "home must show the return loop");
-  const historyClientB = fs.readFileSync("src/app/history/HistoryClient.tsx", "utf8");
+  const historyClientB = fs.readFileSync("src/app/journal/HistoryClient.tsx", "utf8");
   assert.ok(historyClientB.includes('id="journal-search"') && historyClientB.includes('id="journal-sort"'), "journal must offer search and sort");
   const reportsClient = fs.readFileSync("src/app/reports/ReportsClient.tsx", "utf8");
   assert.ok(reportsClient.includes("See a sample report layout"), "reports must show a sample layout before spending");
@@ -761,7 +765,7 @@ console.log("charts-check: all assertions passed");
   const chartsE = fs.readFileSync("src/app/charts/ChartsClient.tsx", "utf8");
   assert.ok(!chartsE.includes("Before you calculate, please note"), "Batch E: duplicate charts timezone block removed");
   assert.ok(chartsE.includes("How your inputs are used"), "Batch E: one collapsed charts inputs block remains");
-  const creditsE = fs.readFileSync("src/app/credits/CreditsClient.tsx", "utf8");
+  const creditsE = fs.readFileSync("src/app/oracles/CreditsClient.tsx", "utf8");
   // Batch F supersedes the Batch E wording: the merged credits page
   // states inclusions as "works for", not "includes".
   assert.ok(creditsE.includes("Every pack works for tarot readings, birth charts, and reports."), "Batch E: pack inclusions stated once above the grid");
@@ -776,7 +780,7 @@ console.log("charts-check: all assertions passed");
   // explanation plus a rules link, 3-column pack grid with name, quantity,
   // price, per-Oracle price and checkout only, no sample section on the
   // money page (the sample lives on home).
-  const creditsF = fs.readFileSync("src/app/credits/CreditsClient.tsx", "utf8");
+  const creditsF = fs.readFileSync("src/app/oracles/CreditsClient.tsx", "utf8");
   assert.ok(creditsF.includes("See all five Oracle rules"), "credits must link the Oracle rules");
   assert.ok(creditsF.includes("sm:grid-cols-3"), "credits packs must use a 3-column grid");
   assert.ok(!creditsF.includes("SampleReading"), "credits must not embed the sample reading");
@@ -790,7 +794,7 @@ console.log("charts-check: all assertions passed");
   assert.ok(!creditsF.includes('prefix="$"'), "credits pack prices must be static text, not a rolling Counter");
   assert.ok(creditsF.includes("items-stretch"), "credits pack grid must stretch cards to equal height");
   assert.ok(creditsF.includes("mt-auto"), "credits Checkout buttons must align at the card foot");
-  assert.ok(creditsF.includes('minHeight: "0px"'), "popular credits card must not keep the 400px PixelCard minimum height");
+  assert.ok(!creditsF.includes("minHeight"), "popular Oracles card must not keep any PixelCard minimum height (PixelCard removed Phase 2.5)");
   console.log("deep-ux-batch-f: credits density: all source assertions passed");
 }
 
@@ -800,7 +804,7 @@ console.log("charts-check: all assertions passed");
   const chartsRR = fs.readFileSync("src/app/charts/ChartsClient.tsx", "utf8");
   assert.ok(chartsRR.includes("requestSystem === systemRef.current"), "pending chart calculations must be discarded when the system changes mid-request");
   assert.ok(chartsRR.includes("setInterpFailed(cached.interpFailed)"), "cached systems must restore their retry flags with the interpretation");
-  const historyRR = fs.readFileSync("src/app/history/HistoryClient.tsx", "utf8");
+  const historyRR = fs.readFileSync("src/app/journal/HistoryClient.tsx", "utf8");
   assert.ok(historyRR.includes('search.trim() !== ""'), "journal no-match message must require an active search");
   const spreadsRR = fs.readFileSync("src/app/spreads/SpreadsClient.tsx", "utf8");
   assert.ok(spreadsRR.includes('usedFree ? "Quick Insight"'), "spreads picker must stop advertising a used free reading as free");

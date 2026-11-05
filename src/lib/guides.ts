@@ -136,7 +136,7 @@ export const GUIDES: Guide[] = [
         heading: "Privacy, in one paragraph",
         paragraphs: [
           "For charts, Sortes calculates positions and stores only those positions, signs, and palaces. It does not store your raw birth date, time, or place in the database, and it never sends raw birth data to an AI prompt. The AI interpretation receives only positions, signs, houses, and stars, plus your question or focus. For tarot, your story goes to the AI for this reading only and is not saved; your question, first name, and category are saved in your journal until you delete them.",
-          "Time conversion differs by system: Western uses a timezone database with DST rules for the birthplace on the birth date, Vedic converts by longitude divided by 15 only, and Ziwei applies a longitude correction of four minutes per degree from the nearest fifteen-degree meridian. A birth time near a double-hour or house boundary may fall on either side under the longitude-only systems. Those limits are shown on the charts page itself.",
+          "Time conversion: all three systems resolve the birthplace's IANA timezone with its historical DST rules for the birth date. Where a zone cannot be resolved, Vedic and Ziwei fall back to longitude-only conversion and say so on the charts page. A birth time near a double-hour or house boundary may still fall on either side when the fallback applies.",
         ],
       },
       {
