@@ -76,6 +76,9 @@ interface LocalDb {
   transactions: DbTransaction[];
   readings: Array<{ id: string; user_id: string; data: unknown; created_at: string }>;
   freeInterpretations: Array<{ user_id: string; system: string; used_at: string }>;
+  // Phase 2, 2.1: optional because local files written before Phase 2
+  // have no freeReadings key; the functions fall back to an empty list.
+  freeReadings?: Array<{ user_id: string; used_at: string }>;
   // M4.1: optional because local files written before M4.1 have no
   // reports key; report functions fall back to an empty list.
   reports?: Array<{ id: string; user_id: string; data: unknown; created_at: string }>;
@@ -156,6 +159,18 @@ export async function ensureSchema(): Promise<void> {
       system TEXT NOT NULL,
       used_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       PRIMARY KEY (user_id, system)
+    )`;
+  // Added later (Phase 2, 2.1): server-side record of each signed-in
+  // user's first free Quick Insight reading. Same shape as
+  // free_interpretations: the FAQ promises the first Quick Insight
+  // free per device, and for signed-in users the server record is
+  // the enforceable half (guests keep the device-local flag, since
+  // guests have no server account to charge). One row per user.
+  await sql`
+    CREATE TABLE IF NOT EXISTS free_readings (
+      user_id TEXT NOT NULL REFERENCES users(id),
+      used_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      PRIMARY KEY (user_id)
     )`;
   // Added later (Phase 1, 1.3): one-time checkout nonces. A nonce is
   // created when a checkout starts and stored in an httpOnly cookie;
@@ -296,6 +311,32 @@ export async function spendUserCredits(userId: string, n: number): Promise<boole
   u.credits -= n;
   await writeLocal(db);
   return true;
+}
+
+// Free Quick Insight readings (server-side, signed-in users only).
+// Guests keep the existing device-local flag in src/lib/storage.ts.
+export async function hasUsedFreeReading(userId: string): Promise<boolean> {
+  await ensureSchema();
+  if (usePostgres) {
+    const { rows } = await sql`SELECT 1 FROM free_readings WHERE user_id = ${userId} LIMIT 1`;
+    return rows.length > 0;
+  }
+  const db = await readLocal();
+  return (db.freeReadings ?? []).some((x) => x.user_id === userId);
+}
+
+export async function markFreeReadingUsed(userId: string): Promise<void> {
+  await ensureSchema();
+  if (usePostgres) {
+    await sql`INSERT INTO free_readings (user_id) VALUES (${userId}) ON CONFLICT DO NOTHING`;
+    return;
+  }
+  const db = await readLocal();
+  const list = db.freeReadings ?? (db.freeReadings = []);
+  if (!list.some((x) => x.user_id === userId)) {
+    list.push({ user_id: userId, used_at: new Date().toISOString() });
+    await writeLocal(db);
+  }
 }
 
 // Free chart interpretations (server-side, signed-in users only).

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import ReadingWait, { PROCESSING_LINES } from "@/components/ReadingWait";
@@ -21,6 +21,8 @@ import {
 import {
   makeReading,
   setCachedInterpretation,
+  freeReadingUsed,
+  markFreeReadingUsed,
 } from "@/lib/storage";
 import { useAuth } from "@/components/AuthProvider";
 import { trackReadingStarted, trackReadingCompleted } from "@/components/Analytics";
@@ -53,6 +55,15 @@ export default function IntakeFlow({ slug }: { slug: string }) {
   // toastOpen drives the transient toast on top of it.
   const [generationFailed, setGenerationFailed] = useState(false);
   const [toastOpen, setToastOpen] = useState(false);
+  // Phase 2, 2.1: the first Quick Insight is free per device (FAQ
+  // rule). Read the device flag on mount; it gates the credit checks
+  // below and is marked only after a successful generation, never
+  // before, so a failed attempt never burns the free reading.
+  const [usedFree, setUsedFree] = useState(false);
+  useEffect(() => {
+    queueMicrotask(() => setUsedFree(freeReadingUsed()));
+  }, []);
+  const isFreeAvailable = spread.slug === "quick-insight" && !usedFree;
 
   const category = categoryKey ? getCategory(categoryKey) : null;
 
@@ -86,7 +97,7 @@ export default function IntakeFlow({ slug }: { slug: string }) {
   // continuing again simply draws fresh cards.
   const beginDraw = () => {
     if (!category) return;
-    if ((credits ?? 0) < 1) {
+    if (!isFreeAvailable && (credits ?? 0) < 1) {
       setError("You are out of Oracles. Please top up to continue.");
       return;
     }
@@ -99,7 +110,7 @@ export default function IntakeFlow({ slug }: { slug: string }) {
     if (!category || !drawnCards) return;
     // Guard against double-clicks: one tap, one credit.
     if (busy) return;
-    if ((credits ?? 0) < 1) {
+    if (!isFreeAvailable && (credits ?? 0) < 1) {
       setError("You are out of Oracles. Please top up to continue.");
       return;
     }
@@ -114,8 +125,11 @@ export default function IntakeFlow({ slug }: { slug: string }) {
     // The route spends server-side only after a real model generates
     // text, so a failed generation can never cost a credit. Guests keep
     // the device-local wallet and its pre-spend plus catch refund.
+    // A first free Quick Insight skips the pre-spend entirely: the
+    // route checks the server record for signed-in users and the
+    // device flag (claimFree) for guests.
     const signedIn = !!user;
-    if (!signedIn) {
+    if (!signedIn && !isFreeAvailable) {
       const ok = await spend(1);
       if (!ok) {
         setError("You are out of Oracles. Please top up to continue.");
@@ -161,6 +175,7 @@ export default function IntakeFlow({ slug }: { slug: string }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           spreadSlug: spread.slug,
+          claimFree: isFreeAvailable,
           cards: cards.map((c) => ({
             cardId: c.cardId,
             reversed: c.reversed,
@@ -184,6 +199,13 @@ export default function IntakeFlow({ slug }: { slug: string }) {
       }
       const data = await res.json();
       const interpretation: string = data.interpretation;
+      // The free reading is consumed only now, on a real generated
+      // reading. The server marks its own record for signed-in users;
+      // the device flag is the guest record.
+      if (isFreeAvailable) {
+        markFreeReadingUsed();
+        setUsedFree(true);
+      }
 
       const reading = makeReading({
         spreadSlug: spread.slug,
@@ -201,7 +223,7 @@ export default function IntakeFlow({ slug }: { slug: string }) {
             : undefined,
         firstImpression: firstWord || undefined,
         firstName,
-        free: false,
+        free: isFreeAvailable,
       });
       await persistReading(reading);
       setCachedInterpretation(reading.id, interpretation);
@@ -230,8 +252,9 @@ export default function IntakeFlow({ slug }: { slug: string }) {
       // a failed generation returns it. Signed-in users spent nothing
       // client-side (the route spends only after success), so no
       // refund call here, and the balance endpoint no longer accepts
-      // positive client grants at all.
-      if (!signedIn) await add(1);
+      // positive client grants at all. A free reading pre-spent
+      // nothing, so there is nothing to return.
+      if (!signedIn && !isFreeAvailable) await add(1);
       setBusy(false);
       // SlideCommit needs the rejection to show its error state; the
       // error message above is already set, so this only signals it.
@@ -482,7 +505,11 @@ export default function IntakeFlow({ slug }: { slug: string }) {
                 </div>
                 <div>
                   <dt className="text-xs uppercase tracking-[0.2em] text-mist">Cost</dt>
-                  <dd className="mt-1 text-cream">1 Oracle · personalized AI interpretation</dd>
+                  <dd className="mt-1 text-cream">
+                    {isFreeAvailable
+                      ? "Free · your first Quick Insight, no Oracle needed"
+                      : "1 Oracle · personalized AI interpretation"}
+                  </dd>
                 </div>
               </dl>
               <div className="rule-gold my-6" />
@@ -494,12 +521,10 @@ export default function IntakeFlow({ slug }: { slug: string }) {
               </ul>
               <p className="mt-4 text-sm leading-relaxed text-cream/85">
                 What happens next: cards are drawn, you give one word,
-                then the reading is written. Nothing has been charged yet: the Oracle
-                is spent when you confirm generation, after your
-                impression, not at the draw. If generation fails
-                while this page is still open, a guest Oracle is
-                returned; a signed-in Oracle is spent only after a
-                reading is written.
+                then the reading is written.{" "}
+                {isFreeAvailable
+                  ? "This first Quick Insight is free: nothing is charged, and the free reading is used only once the reading is written. If generation fails, the free reading stays yours to try again."
+                  : "Nothing has been charged yet: the Oracle is spent when you confirm generation, after your impression, not at the draw. If generation fails while this page is still open, a guest Oracle is returned; a signed-in Oracle is spent only after a reading is written."}
               </p>
             </div>
 

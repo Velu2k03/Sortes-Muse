@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { getUserById, spendUserCredits } from "@/lib/db";
+import {
+  getUserById,
+  spendUserCredits,
+  hasUsedFreeReading,
+  markFreeReadingUsed,
+} from "@/lib/db";
 import cardsData from "@/data/cards.json";
 import { SENSITIVE_KEYS } from "@/lib/intake";
 import { getSpread } from "@/lib/tarot";
@@ -162,7 +167,16 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  let body: { cards?: ApiCard[]; intake?: Intake; spreadSlug?: string };
+  let body: {
+    cards?: ApiCard[];
+    intake?: Intake;
+    spreadSlug?: string;
+    /** Guest device claim: the device-local free flag says this is the
+        first Quick Insight. Only honoured for guests (no session) and
+        only for quick-insight; signed-in users are checked against
+        the server record instead. */
+    claimFree?: boolean;
+  };
   try {
     body = await req.json();
   } catch {
@@ -194,6 +208,21 @@ export async function POST(req: NextRequest) {
   // (no session) keep the client-side localStorage wallet; the money
   // boundary is sign-in, because guests have no server account to charge.
   const session = await getSession();
+
+  // Phase 2, 2.1: the first Quick Insight is free (FAQ rule, per
+  // device). For signed-in users the server record is authoritative
+  // and the free use is marked only after a real generation (below),
+  // so a failed generation never consumes it. For guests the device
+  // flag is the record: the client sends claimFree, the server spends
+  // nothing for guests either way, and the client marks its flag only
+  // after a successful generation. Other spreads are never free.
+  const isQuickInsight = body.spreadSlug === "quick-insight";
+  const serverFree =
+    session && isQuickInsight
+      ? !(await hasUsedFreeReading(session.userId))
+      : false;
+  const guestFree =
+    !session && isQuickInsight && body.claimFree === true;
 
   // No key configured: fail honestly instead of serving static text as
   // a reading. No credit is spent on this path.
@@ -311,20 +340,26 @@ export async function POST(req: NextRequest) {
   // Spend only after a real generation, so a failed generation can never
   // cost a credit and no refund path is needed. The spend is atomic
   // (credits >= 1 checked in the update); if it fails, the text is
-  // withheld rather than delivered unpaid.
+  // withheld rather than delivered unpaid. A first free Quick Insight
+  // marks the server record instead of spending.
   if (session) {
-    const ok = await spendUserCredits(session.userId, 1);
-    if (!ok) {
-      return NextResponse.json(
-        { error: "You need 1 Oracle for this reading. No Oracle was spent." },
-        { status: 402 }
-      );
+    if (serverFree) {
+      await markFreeReadingUsed(session.userId);
+    } else {
+      const ok = await spendUserCredits(session.userId, 1);
+      if (!ok) {
+        return NextResponse.json(
+          { error: "You need 1 Oracle for this reading. No Oracle was spent." },
+          { status: 402 }
+        );
+      }
     }
     const user = await getUserById(session.userId);
     return NextResponse.json({
       interpretation: finalText,
       model: generated.model,
       fallback: false,
+      free: serverFree,
       credits: user?.credits ?? 0,
     });
   }
@@ -333,5 +368,6 @@ export async function POST(req: NextRequest) {
     interpretation: finalText,
     model: generated.model,
     fallback: false,
+    free: guestFree,
   });
 }
