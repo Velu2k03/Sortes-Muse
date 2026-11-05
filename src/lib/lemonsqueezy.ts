@@ -1,4 +1,5 @@
 import { createHmac, timingSafeEqual } from "crypto";
+import { CREDIT_PACKS } from "./site";
 
 const API_BASE = "https://api.lemonsqueezy.com/v1";
 
@@ -45,6 +46,38 @@ export function packIdForVariant(variantId: string): string {
   if (variantId === process.env.LEMONSQUEEZY_VARIANT_PACK5) return "pack5";
   if (variantId === process.env.LEMONSQUEEZY_VARIANT_PACK12) return "pack12";
   return "pack30";
+}
+
+/**
+ * Expected charge for a variant, in cents, derived from CREDIT_PACKS
+ * (the single price source of truth). Null for an unknown variant.
+ */
+export function expectedTotalCentsForVariant(variantId: string): number | null {
+  const readings = readingsForVariant(variantId);
+  if (readings === null) return null;
+  const pack = CREDIT_PACKS.find((p) => p.readings === readings);
+  return pack ? Math.round(pack.price * 100) : null;
+}
+
+/**
+ * Phase 1 (1.4): does this order's money match its variant? Accepts
+ * an exact total, or a subtotal that matches with a higher total
+ * (tax added on top of the pack price). Rejects discounts and
+ * underpayment: a subtotal that matches but a total below the pack
+ * price means the buyer did not pay full price. Lemon Squeezy sends
+ * total/subtotal in cents.
+ */
+export function verifyOrderAmount(
+  attrs: { total?: number | string; subtotal?: number | string },
+  variantId: string
+): boolean {
+  const expected = expectedTotalCentsForVariant(variantId);
+  if (expected === null) return false;
+  const total = Number(attrs.total);
+  if (total === expected) return true;
+  const subtotal = Number(attrs.subtotal);
+  if (subtotal === expected && total > expected) return true;
+  return false;
 }
 
 export async function createCheckout(args: {

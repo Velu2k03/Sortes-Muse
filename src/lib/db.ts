@@ -271,7 +271,9 @@ export async function setUserPassword(userId: string, passwordHash: string): Pro
 export async function addUserCredits(userId: string, n: number): Promise<number> {
   await ensureSchema();
   if (usePostgres) {
-    const { rows } = await sql`UPDATE users SET credits = credits + ${n} WHERE id = ${userId} RETURNING credits`;
+    // GREATEST(0, ...) so a refund can never drive the balance
+    // negative (Phase 1, 1.4). The local branch already clamped.
+    const { rows } = await sql`UPDATE users SET credits = GREATEST(0, credits + ${n}) WHERE id = ${userId} RETURNING credits`;
     return (rows[0] as { credits: number }).credits;
   }
   const db = await readLocal();
@@ -450,17 +452,131 @@ export async function listTransactions(userId: string): Promise<DbTransaction[]>
   return db.transactions.filter((t) => t.user_id === userId).slice(0, 50);
 }
 
-/** Webhook idempotency: has this Lemon Squeezy order been fulfilled already? */
-export async function findTransactionByOrderId(orderId: string): Promise<DbTransaction | null> {
+/** The fulfillment row for an order, excluding refund rows. */
+async function findFulfillmentByOrderId(orderId: string): Promise<DbTransaction | null> {
   if (!orderId) return null;
   await ensureSchema();
   const marker = `lemonsqueezy:${orderId}`;
   if (usePostgres) {
-    const { rows } = await sql`SELECT * FROM transactions WHERE pack_type LIKE ${"%" + marker + "%"} LIMIT 1`;
+    const { rows } = await sql`SELECT * FROM transactions WHERE pack_type LIKE ${"%" + marker + "%"} AND pack_type NOT LIKE ${"%:refund%"} ORDER BY created_at ASC LIMIT 1`;
     return (rows[0] as DbTransaction) ?? null;
   }
   const db = await readLocal();
-  return db.transactions.find((t) => t.pack_type.includes(marker)) ?? null;
+  return db.transactions.find((t) => t.pack_type.includes(marker) && !t.pack_type.includes(":refund")) ?? null;
+}
+
+/**
+ * Phase 1 (1.4): fulfill a paid order atomically — the transaction row
+ * and the credit grant commit together or not at all, in one
+ * sql.begin transaction. The user row is locked first, so two
+ * concurrent deliveries of the same webhook cannot both pass the
+ * duplicate check and double-grant. Returns duplicate: true when
+ * this order was already fulfilled (Lemon Squeezy retries webhooks).
+ */
+export async function fulfillOrder(args: {
+  userId: string;
+  email: string;
+  packType: string;
+  amount: number;
+  readings: number;
+  orderId: string;
+}): Promise<{ transaction: DbTransaction | null; credits: number; duplicate: boolean }> {
+  await ensureSchema();
+  const marker = `lemonsqueezy:${args.orderId}`;
+  const row: DbTransaction = {
+    id: `t_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`,
+    user_id: args.userId,
+    email: args.email,
+    pack_type: args.packType,
+    amount: args.amount,
+    readings: args.readings,
+    created_at: new Date().toISOString(),
+  };
+  if (usePostgres) {
+    if (!pg) throw new Error("Database not configured");
+    return await pg.begin(async (tx) => {
+      await tx`SELECT id FROM users WHERE id = ${args.userId} FOR UPDATE`;
+      const dup = await tx`SELECT id FROM transactions WHERE pack_type LIKE ${"%" + marker + "%"} LIMIT 1`;
+      if (dup.length > 0) {
+        const cur = await tx`SELECT credits FROM users WHERE id = ${args.userId}`;
+        return {
+          transaction: null,
+          credits: (cur[0] as { credits: number } | undefined)?.credits ?? 0,
+          duplicate: true,
+        };
+      }
+      await tx`INSERT INTO transactions (id, user_id, email, pack_type, amount, readings, created_at)
+        VALUES (${row.id}, ${row.user_id}, ${row.email}, ${row.pack_type}, ${row.amount}, ${row.readings}, NOW())`;
+      const upd = await tx`UPDATE users SET credits = credits + ${args.readings} WHERE id = ${args.userId} RETURNING credits`;
+      if (upd.length === 0) throw new Error("User not found during fulfillment");
+      return { transaction: row, credits: (upd[0] as { credits: number }).credits, duplicate: false };
+    });
+  }
+  const db = await readLocal();
+  if (db.transactions.some((t) => t.pack_type.includes(marker))) {
+    const u = db.users.find((x) => x.id === args.userId);
+    return { transaction: null, credits: u?.credits ?? 0, duplicate: true };
+  }
+  const u = db.users.find((x) => x.id === args.userId);
+  if (!u) throw new Error("User not found during fulfillment");
+  db.transactions.unshift(row);
+  u.credits = Math.max(0, u.credits + args.readings);
+  await writeLocal(db);
+  return { transaction: row, credits: u.credits, duplicate: false };
+}
+
+/**
+ * Phase 1 (1.4): revoke a refunded order's grant, idempotently.
+ * Removes exactly the readings the original fulfillment granted,
+ * never drives the balance below 0 (GREATEST(0, ...) server-side),
+ * and records a negative refund transaction so a retried refund
+ * cannot revoke twice. Returns revoked: false when there was no
+ * fulfillment to revoke, or it was already revoked — the caller
+ * logs that; it is not an error.
+ */
+export async function revokeOrder(orderId: string): Promise<{ revoked: boolean; readings: number }> {
+  await ensureSchema();
+  if (!orderId) return { revoked: false, readings: 0 };
+  const refundMarker = `lemonsqueezy:${orderId}:refund`;
+  const orig = await findFulfillmentByOrderId(orderId);
+  if (!orig) return { revoked: false, readings: 0 };
+  let userId = orig.user_id;
+  if (!userId) {
+    const u = await getUserByEmail(orig.email);
+    userId = u?.id ?? null;
+  }
+  if (!userId) return { revoked: false, readings: orig.readings };
+  const refundRow: DbTransaction = {
+    id: `t_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`,
+    user_id: userId,
+    email: orig.email,
+    pack_type: `refund (${refundMarker})`,
+    amount: -orig.amount,
+    readings: -orig.readings,
+    created_at: new Date().toISOString(),
+  };
+  if (usePostgres) {
+    if (!pg) throw new Error("Database not configured");
+    return await pg.begin(async (tx) => {
+      await tx`SELECT id FROM users WHERE id = ${userId} FOR UPDATE`;
+      const existing = await tx`SELECT id FROM transactions WHERE pack_type LIKE ${"%" + refundMarker + "%"} LIMIT 1`;
+      if (existing.length > 0) return { revoked: false, readings: orig.readings };
+      await tx`INSERT INTO transactions (id, user_id, email, pack_type, amount, readings, created_at)
+        VALUES (${refundRow.id}, ${refundRow.user_id}, ${refundRow.email}, ${refundRow.pack_type}, ${refundRow.amount}, ${refundRow.readings}, NOW())`;
+      await tx`UPDATE users SET credits = GREATEST(0, credits - ${orig.readings}) WHERE id = ${userId}`;
+      return { revoked: true, readings: orig.readings };
+    });
+  }
+  const db = await readLocal();
+  if (db.transactions.some((t) => t.pack_type.includes(refundMarker))) {
+    return { revoked: false, readings: orig.readings };
+  }
+  const u = db.users.find((x) => x.id === userId);
+  if (!u) return { revoked: false, readings: orig.readings };
+  db.transactions.unshift(refundRow);
+  u.credits = Math.max(0, u.credits - orig.readings);
+  await writeLocal(db);
+  return { revoked: true, readings: orig.readings };
 }
 
 // Synced readings

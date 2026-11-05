@@ -3,21 +3,24 @@ import {
   verifyWebhookSignature,
   readingsForVariant,
   packIdForVariant,
+  verifyOrderAmount,
 } from "@/lib/lemonsqueezy";
 import {
   getUserByEmail,
   createUser,
-  addUserCredits,
-  createTransaction,
-  findTransactionByOrderId,
+  fulfillOrder,
+  revokeOrder,
 } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
 /**
- * Lemon Squeezy webhook. Verifies the HMAC signature, then fulfills
- * `order_created` events: auto-creates the account from the buyer's email,
- * grants the pack's readings, and stores the transaction.
+ * Lemon Squeezy webhook. Verifies the HMAC signature, then:
+ * - `order_created`: verifies the store, currency and amount against
+ *   the expected pack values, then fulfills atomically (transaction
+ *   row + credit grant in one DB transaction, idempotent per order).
+ * - `order_refunded`: revokes the granted credits idempotently,
+ *   never driving the balance below 0.
  */
 export async function POST(req: NextRequest) {
   const raw = await req.text();
@@ -33,6 +36,9 @@ export async function POST(req: NextRequest) {
       attributes?: {
         user_email?: string;
         total?: number;
+        subtotal?: number;
+        currency?: string;
+        store_id?: number;
         status?: string;
         first_order_item?: { variant_id?: number };
       };
@@ -44,7 +50,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid payload." }, { status: 400 });
   }
 
-  if (event.meta?.event_name !== "order_created") {
+  const eventName = event.meta?.event_name;
+  if (eventName === "order_refunded") {
+    const orderId = event.data?.id ?? "";
+    const result = await revokeOrder(orderId);
+    if (!result.revoked) {
+      console.warn(`[webhook] refund for order ${orderId}: nothing to revoke (no fulfillment, or already revoked).`);
+    } else {
+      console.warn(`[webhook] refund for order ${orderId}: revoked ${result.readings} credits.`);
+    }
+    return NextResponse.json({ ok: true, refunded: result.revoked });
+  }
+
+  if (eventName !== "order_created") {
     return NextResponse.json({ ok: true, ignored: true });
   }
 
@@ -59,21 +77,37 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, ignored: "not paid" });
   }
 
-  // Idempotency: Lemon Squeezy may retry webhooks; skip duplicate orders.
-  const orderId = event.data?.id ?? "";
-  const existing = await findTransactionByOrderId(orderId);
-  if (existing) return NextResponse.json({ ok: true, duplicate: true });
+  // Phase 1 (1.4): the order must be for this store, in USD, and for
+  // the pack's price. A signed webhook is already authentic, so a
+  // mismatch here means the store is misconfigured (wrong variant
+  // price, tax/discount surprise) — refuse to grant, and log it loudly
+  // instead of silently fulfilling the wrong pack.
+  const expectedStoreId = process.env.LEMONSQUEEZY_STORE_ID;
+  if (!expectedStoreId || String(attrs?.store_id ?? "") !== expectedStoreId) {
+    console.error(`[webhook] order ${event.data?.id ?? "?"}: store_id mismatch (got ${attrs?.store_id}, expected ${expectedStoreId ?? "unset"}). Not fulfilling.`);
+    return NextResponse.json({ error: "Store mismatch." }, { status: 400 });
+  }
+  if (attrs?.currency !== "USD") {
+    console.error(`[webhook] order ${event.data?.id ?? "?"}: unexpected currency ${attrs?.currency}. Not fulfilling.`);
+    return NextResponse.json({ error: "Unexpected currency." }, { status: 400 });
+  }
+  if (!verifyOrderAmount(attrs, variantId)) {
+    console.error(`[webhook] order ${event.data?.id ?? "?"}: amount mismatch (total ${attrs?.total}, subtotal ${attrs?.subtotal}) for variant ${variantId}. Not fulfilling.`);
+    return NextResponse.json({ error: "Amount mismatch." }, { status: 400 });
+  }
 
+  const orderId = event.data?.id ?? "";
   const user = (await getUserByEmail(email)) ?? (await createUser(email));
   const amount = Number(attrs?.total ?? 0) / 100;
-  await createTransaction({
+  const result = await fulfillOrder({
     userId: user.id,
     email,
     packType: `${packIdForVariant(variantId)} (lemonsqueezy:${orderId})`,
     amount,
     readings,
+    orderId,
   });
-  await addUserCredits(user.id, readings);
+  if (result.duplicate) return NextResponse.json({ ok: true, duplicate: true });
 
   return NextResponse.json({ ok: true });
 }
