@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import CountUp from "@/components/CountUp";
 import Icon from "@/components/Icon";
@@ -12,12 +12,18 @@ import { APP_SHORT } from "@/lib/site";
 
 // Header grouping, 2026-11-05: the desktop bar shows four groups
 // (Tarot, Astrology, Learn, Journal) instead of nine links plus a
-// More menu. Tapping a group opens one React Bits BranchedMenu panel
-// with every destination in that group, the current page traced by
-// the branch line. Home stays on the logo, Oracles stays as the pill
-// plus Top up, and Sign in stays where it was, so buying is never
-// hidden behind a menu. The same BranchedMenu is the mobile menu.
-// About and Methodology live in Learn; they were footer-only before.
+// More menu. Home stays on the logo, Oracles stays as one pill, and
+// Sign in stays where it was, so buying is never hidden behind a
+// menu. About and Methodology live in Learn; they were footer-only
+// before.
+//
+// Phase 4A (4.1): each desktop group opens a small popover anchored
+// directly below the item that was clicked, showing ONLY that
+// group's links. The old BranchedMenu teleport opened one panel on
+// the far right no matter which group was clicked. BranchedMenu
+// stays for the mobile drawer only. Keyboard: ArrowDown opens a
+// group and moves into it, ArrowUp/Down cycle its links, Escape
+// closes and returns focus to the trigger, Tab closes the menu.
 const GROUPS: BranchedMenuItem[] = [
   { label: "Home", value: "/" },
   {
@@ -49,8 +55,8 @@ const GROUPS: BranchedMenuItem[] = [
   { label: "Journal", value: "/journal" },
 ];
 
-// Desktop bar group buttons open the panel with that section open.
-// Journal is a leaf, so its bar button is a plain link.
+// Desktop bar group buttons open the anchored popover for that
+// group. Journal is a leaf, so its bar button is a plain link.
 const BAR_GROUPS = [
   { label: "Tarot", index: 1 },
   { label: "Astrology", index: 2 },
@@ -79,10 +85,36 @@ export default function Header() {
     if (pathname.startsWith("/reading/")) return "/journal";
     if (pathname.startsWith("/reports/")) return "/reports";
     if (pathname.startsWith("/guides/")) return "/guides";
+    if (pathname.startsWith("/deck/")) return "/deck";
     return ALL_HREFS.includes(pathname) ? pathname : "/";
   })();
-  const [panel, setPanel] = useState<number | null>(null);
+  // Index into GROUPS of the open desktop popover, or null.
+  const [openGroup, setOpenGroup] = useState<number | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const triggerRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const itemRefs = useRef<(HTMLAnchorElement | null)[]>([]);
+  // ArrowDown on a trigger opens the group and moves focus into it;
+  // the effect below runs once the menu exists in the DOM.
+  const focusFirstOnOpen = useRef(false);
+  useEffect(() => {
+    if (openGroup !== null && focusFirstOnOpen.current) {
+      focusFirstOnOpen.current = false;
+      itemRefs.current[0]?.focus();
+    }
+  }, [openGroup]);
+
+  const closeMenu = (returnFocus: boolean) => {
+    const index = openGroup;
+    setOpenGroup(null);
+    if (returnFocus && index !== null) {
+      triggerRefs.current[index]?.focus();
+    }
+  };
+  const openMenu = (index: number, focusFirst: boolean) => {
+    focusFirstOnOpen.current = focusFirst;
+    itemRefs.current = [];
+    setOpenGroup((v) => (v === index ? null : index));
+  };
   // Theme default is dark, persisted in
   // localStorage under sortes-theme, layout's inline script already
   // set data-theme before paint so there is no light flash. The toggle
@@ -124,11 +156,12 @@ export default function Header() {
   // light theme, so hardcoded dark-theme ink fails axe in light
   // theme. The muted branch colour is overridden in globals.css
   // (.sortes-bm), since the component fixes it at 55% internally.
+  // Still used by the mobile drawer, the only BranchedMenu left.
   const bmColor = theme === "dark" ? "#ede6d6" : "#3a3325";
   const bmAccent = theme === "dark" ? "#d4af37" : "#7c5e00";
   const bmLine = theme === "dark" ? "rgba(212, 175, 55, 0.45)" : "rgba(124, 94, 0, 0.45)";
   const go = (value: string) => {
-    setPanel(null);
+    setOpenGroup(null);
     setMobileOpen(false);
     router.push(value);
   };
@@ -150,19 +183,84 @@ export default function Header() {
         </Link>
 
         <nav className="hidden items-center gap-4 lg:flex" aria-label="Primary">
-          {BAR_GROUPS.map((g) => (
-            <button
-              key={g.label}
-              type="button"
-              onClick={() => setPanel((v) => (v === g.index ? null : g.index))}
-              onKeyDown={(e) => { if (e.key === "Escape") setPanel(null); }}
-              aria-expanded={panel === g.index}
-              aria-haspopup="true"
-              className={panel === g.index ? "text-sm font-semibold text-goldbright" : "text-sm text-cream/80 transition hover:text-goldbright"}
-            >
-              {g.label}
-            </button>
-          ))}
+          {BAR_GROUPS.map((g) => {
+            const group = GROUPS[g.index];
+            const children = group.children ?? [];
+            const isOpen = openGroup === g.index;
+            const isActive = children.some((kid) => kid.value === activeHref);
+            return (
+              <div key={g.label} className="relative">
+                <button
+                  ref={(el) => {
+                    triggerRefs.current[g.index] = el;
+                  }}
+                  type="button"
+                  onClick={() => openMenu(g.index, false)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Escape") closeMenu(true);
+                    if (e.key === "ArrowDown") {
+                      e.preventDefault();
+                      openMenu(g.index, true);
+                    }
+                  }}
+                  aria-expanded={isOpen}
+                  aria-haspopup="menu"
+                  aria-controls={`nav-menu-${g.label.toLowerCase()}`}
+                  className={isOpen || isActive ? "text-sm font-semibold text-goldbright" : "text-sm text-cream/80 transition hover:text-goldbright"}
+                >
+                  {g.label}
+                </button>
+                {isOpen && (
+                  <div
+                    id={`nav-menu-${g.label.toLowerCase()}`}
+                    role="menu"
+                    aria-label={g.label}
+                    className="absolute left-0 top-full z-50 mt-2 w-56 rounded-2xl border border-gold/25 bg-navydeep p-2 shadow-2xl"
+                    onKeyDown={(e) => {
+                      const items = itemRefs.current;
+                      const current = items.indexOf(document.activeElement as HTMLAnchorElement);
+                      if (e.key === "Escape") {
+                        e.preventDefault();
+                        closeMenu(true);
+                      } else if (e.key === "ArrowDown") {
+                        e.preventDefault();
+                        items[(current + 1) % items.length]?.focus();
+                      } else if (e.key === "ArrowUp") {
+                        e.preventDefault();
+                        items[(current - 1 + items.length) % items.length]?.focus();
+                      } else if (e.key === "Home") {
+                        e.preventDefault();
+                        items[0]?.focus();
+                      } else if (e.key === "End") {
+                        e.preventDefault();
+                        items[items.length - 1]?.focus();
+                      } else if (e.key === "Tab") {
+                        setOpenGroup(null);
+                      }
+                    }}
+                  >
+                    {children.map((kid, i) => (
+                      <Link
+                        key={kid.value}
+                        ref={(el) => {
+                          itemRefs.current[i] = el;
+                        }}
+                        href={kid.value}
+                        role="menuitem"
+                        aria-current={activeHref === kid.value ? "page" : undefined}
+                        onClick={() => setOpenGroup(null)}
+                        className={`block rounded-xl px-3 py-2.5 text-sm transition hover:bg-gold/10 hover:text-goldbright ${
+                          activeHref === kid.value ? "font-semibold text-goldbright" : "text-cream/85"
+                        }`}
+                      >
+                        {kid.label}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
           <Link
             href="/journal"
             aria-current={activeHref === "/journal" ? "page" : undefined}
@@ -182,23 +280,21 @@ export default function Header() {
           >
             <Icon name={theme === "dark" ? "sun" : "moon"} size={20} />
           </button>
+          {/* Phase 4A (4.1): one Oracle pill, not two controls. The
+              balance and the Top up action are a single link to
+              /oracles; the separate Top up button is gone. */}
           <Link
             href="/oracles"
-            className="flex items-center gap-1 rounded-full border border-gold/40 bg-gold/10 px-2.5 py-1.5 text-sm font-semibold text-goldbright"
-            aria-label={`Oracle balance: ${credits ?? 0} Oracles`}
-            title="Your Oracles"
+            className="flex items-center gap-1.5 rounded-full border border-gold/40 bg-gold/10 px-2.5 py-1.5 text-sm font-semibold text-goldbright"
+            aria-label={`Oracle balance: ${credits ?? 0} Oracles. Top up.`}
+            title="Your Oracles — top up"
           >
             <Icon name="coin" size={18} />
             <span className="num">
               <CountUp value={credits ?? 0} />
             </span>
             <span>Oracles</span>
-          </Link>
-          <Link
-            href="/oracles"
-            className="btn-gold hidden rounded-full px-4 py-1.5 text-sm font-bold lg:inline-block"
-          >
-            Top up
+            <span className="border-l border-gold/40 pl-1.5">Top up</span>
           </Link>
           {!loading &&
             (user ? (
@@ -228,35 +324,15 @@ export default function Header() {
             <Icon name={mobileOpen ? "close" : "menu"} size={22} />
           </button>
         </div>
-
-        {panel !== null && (
-          <div
-            className="absolute right-4 top-full z-50 mt-2 hidden w-[300px] rounded-2xl border border-gold/25 bg-navydeep p-4 shadow-2xl lg:block sm:right-6"
-            onKeyDown={(e) => { if (e.key === "Escape") setPanel(null); }}
-          >
-            <BranchedMenu
-              key={`desktop-${panel}-${activeHref}`}
-              items={GROUPS}
-              defaultOpen={panel}
-              defaultActive={activeHref}
-              onSelect={(value) => go(value)}
-              color={bmColor}
-              accentColor={bmAccent}
-              lineColor={bmLine}
-              width={260}
-              className="sortes-bm"
-            />
-          </div>
-        )}
       </div>
 
-      {panel !== null && (
+      {openGroup !== null && (
         <button
           type="button"
           aria-label="Close menu"
           tabIndex={-1}
           className="fixed inset-0 z-30 hidden cursor-default bg-transparent lg:block"
-          onClick={() => setPanel(null)}
+          onClick={() => closeMenu(false)}
         />
       )}
 
