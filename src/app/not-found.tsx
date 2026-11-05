@@ -6,7 +6,7 @@ import Link from "next/link";
 // way forward except home. Give it its own title and a short list
 // of the places most visitors actually want.
 export const metadata: Metadata = {
-  title: "Page not found | Sortes",
+  title: "Page not found",
   description:
     "That Sortes page does not exist. Try a daily card, a reading, the deck, a birth chart, or a guide instead.",
   robots: { index: false, follow: true },

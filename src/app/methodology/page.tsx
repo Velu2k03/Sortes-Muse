@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Methodology | Sortes",
+  title: "Methodology",
   description:
     "How Sortes calculates Western, Vedic, and Ziwei charts, transits, and panchanga: engines, time rules, orb tables, and stated limits.",
   alternates: { canonical: "/methodology" },

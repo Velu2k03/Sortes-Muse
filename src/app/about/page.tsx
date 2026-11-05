@@ -2,7 +2,7 @@ import Link from "next/link";
 import { APP_NAME, CONTACT_EMAIL } from "@/lib/site";
 
 export const metadata = {
-  title: "About Sortes",
+  title: "About",
   description:
     "Sortes by Resonant Atlas: a tarot reading app for reflection. Who runs it, what it offers, how it handles your data, and how to contact it.",
   alternates: { canonical: "/about" },
