@@ -5,7 +5,7 @@ import Icon from "@/components/Icon";
 export const metadata = {
   title: "Oracles",
   description: "Top up your Sortes Oracles. 1 Oracle = 1 full reading.",
-  alternates: { canonical: "/credits" },
+  alternates: { canonical: "/oracles" },
 };
 
 export default function Credits() {

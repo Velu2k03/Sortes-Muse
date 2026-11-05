@@ -142,7 +142,7 @@ export default function Home() {
             className="mt-3 text-sm text-cream/75"
           >
             After that, a reading is 1 Oracle. Oracle packs start at{" "}
-            <Link href="/credits" className="font-semibold text-goldbright underline underline-offset-4">
+            <Link href="/oracles" className="font-semibold text-goldbright underline underline-offset-4">
               $3.99 for 5 Oracles
             </Link>
             , and Oracles never expire. No subscription.

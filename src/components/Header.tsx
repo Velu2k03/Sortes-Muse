@@ -46,7 +46,7 @@ const GROUPS: BranchedMenuItem[] = [
       { value: "/methodology", label: "Methodology" },
     ],
   },
-  { label: "Journal", value: "/history" },
+  { label: "Journal", value: "/journal" },
 ];
 
 // Desktop bar group buttons open the panel with that section open.
@@ -57,7 +57,7 @@ const BAR_GROUPS = [
   { label: "Learn", index: 3 },
 ];
 
-const ALL_HREFS = ["/", "/daily", "/spreads", "/deck", "/birth-card", "/charts", "/reports", "/horoscope", "/guides", "/faq", "/about", "/methodology", "/history"];
+const ALL_HREFS = ["/", "/daily", "/spreads", "/deck", "/birth-card", "/charts", "/reports", "/horoscope", "/guides", "/faq", "/about", "/methodology", "/journal"];
 
 // Theme-color per active theme, kept in step with data-theme by
 // theme.js (before paint) and the Header toggle (on change).
@@ -76,7 +76,7 @@ export default function Header() {
   // Spreads, a report detail highlights Reports.
   const activeHref = (() => {
     if (pathname.startsWith("/spreads/") || pathname.startsWith("/intake/")) return "/spreads";
-    if (pathname.startsWith("/reading/")) return "/history";
+    if (pathname.startsWith("/reading/")) return "/journal";
     if (pathname.startsWith("/reports/")) return "/reports";
     if (pathname.startsWith("/guides/")) return "/guides";
     return ALL_HREFS.includes(pathname) ? pathname : "/";
@@ -164,9 +164,9 @@ export default function Header() {
             </button>
           ))}
           <Link
-            href="/history"
-            aria-current={activeHref === "/history" ? "page" : undefined}
-            className={activeHref === "/history" ? "text-sm font-semibold text-goldbright" : "text-sm text-cream/80 transition hover:text-goldbright"}
+            href="/journal"
+            aria-current={activeHref === "/journal" ? "page" : undefined}
+            className={activeHref === "/journal" ? "text-sm font-semibold text-goldbright" : "text-sm text-cream/80 transition hover:text-goldbright"}
           >
             Journal
           </Link>
@@ -183,7 +183,7 @@ export default function Header() {
             <Icon name={theme === "dark" ? "sun" : "moon"} size={20} />
           </button>
           <Link
-            href="/credits"
+            href="/oracles"
             className="flex items-center gap-1 rounded-full border border-gold/40 bg-gold/10 px-2.5 py-1.5 text-sm font-semibold text-goldbright"
             aria-label={`Oracle balance: ${credits ?? 0} Oracles`}
             title="Your Oracles"
@@ -195,7 +195,7 @@ export default function Header() {
             <span>Oracles</span>
           </Link>
           <Link
-            href="/credits"
+            href="/oracles"
             className="btn-gold hidden rounded-full px-4 py-1.5 text-sm font-bold lg:inline-block"
           >
             Top up
@@ -278,7 +278,7 @@ export default function Header() {
             className="sortes-bm"
           />
           <Link
-            href="/credits"
+            href="/oracles"
             onClick={() => setMobileOpen(false)}
             className="btn-gold mt-3 block rounded-xl px-3 py-2.5 text-center text-base font-bold"
           >

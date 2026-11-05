@@ -226,7 +226,7 @@ export default function ReadingDetail({ id }: { id: string }) {
       <Breadcrumbs
         trail={[
           { href: "/", label: "Home" },
-          { href: "/history", label: "Journal" },
+          { href: "/journal", label: "Journal" },
           { label: reading.spreadName },
         ]}
       />

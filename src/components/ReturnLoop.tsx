@@ -110,7 +110,7 @@ export default function ReturnLoop() {
                 </Link>
               </>
             )}
-            <Link href="/history" className="mt-3 block text-sm text-mist underline underline-offset-4">
+            <Link href="/journal" className="mt-3 block text-sm text-mist underline underline-offset-4">
               See all past readings
             </Link>
           </div>

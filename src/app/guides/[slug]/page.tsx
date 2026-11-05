@@ -48,7 +48,7 @@ export default async function GuidePage({
       {/* Personal Phase 4: cost warnings, Decision 15. These three
           guides point at paid things, so the cost is stated up front
           in the guide itself, not only on the spreads, charts, or
-          credits pages. Wording matches the confirmed pricing: every
+          Oracles pages. Wording matches the confirmed pricing: every
           full reading is 1 Oracle, chart calculation is free and
           interpretation is 1 Oracle, first per system free. */}
       {(() => {

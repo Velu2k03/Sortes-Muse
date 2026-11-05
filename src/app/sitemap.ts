@@ -3,7 +3,7 @@ import { SITE_URL } from "@/lib/site";
 
 // New audit tool finding: /sitemap.xml returned 404, so search
 // engines had no page list to discover. Only canonical pages are
-// listed: redirect pages (/card-meanings, /readings, /journal),
+// listed: redirect pages (/card-meanings, /readings, /history),
 // the account page, and the offline fallback are left out.
 // Phase 1 verification, 2026-11-04: this list was checked against
 // src/app routes and against the live sitemap.xml, and it matches:
@@ -12,6 +12,8 @@ import { SITE_URL } from "@/lib/site";
 // Dead typed URLs are handled by redirects in next.config.ts, not
 // by adding non-canonical pages to this list. Intake and reading
 // detail pages are flows, not canonical content, so they stay out.
+// Phase 3 (3.3): /journal and /oracles are the canonical routes now;
+// /history and /credits redirect to them permanently.
 const PAGES = [
   "/",
   "/daily",
@@ -26,8 +28,8 @@ const PAGES = [
   "/spreads/career-path",
   "/spreads/weekly-outlook",
   "/spreads/celtic-cross",
-  "/history",
-  "/credits",
+  "/journal",
+  "/oracles",
   "/methodology",
   "/about",
   "/faq",

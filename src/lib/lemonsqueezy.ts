@@ -106,7 +106,7 @@ export async function createCheckout(args: {
             custom: { pack_id: args.packId, readings: String(readings) },
           },
           product_options: {
-            redirect_url: `${site}/credits?purchase=success`,
+            redirect_url: `${site}/oracles?purchase=success`,
           },
         },
         relationships: {

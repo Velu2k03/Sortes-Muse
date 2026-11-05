@@ -26,9 +26,9 @@ Canonical site: https://sortes.resonantatlas.com/
 - https://sortes.resonantatlas.com/about
 - https://sortes.resonantatlas.com/faq
 - https://sortes.resonantatlas.com/birth-card
-- https://sortes.resonantatlas.com/credits
+- https://sortes.resonantatlas.com/oracles
 - https://sortes.resonantatlas.com/privacy
 - https://sortes.resonantatlas.com/terms
 
 ## Privacy, in brief
-Guest daily cards, credit balance, and reading history live in the browser until an account is created. Raw tarot intake data is deleted after 30 days. For charts, only calculated positions, signs, and palaces are stored, never raw birth date, time, or place, and raw birth data is never sent to an AI prompt.
+Guest daily cards, Oracle balance, and reading history live in the browser until an account is created. Raw tarot intake data is deleted after 30 days. For charts, only calculated positions, signs, and palaces are stored, never raw birth date, time, or place, and raw birth data is never sent to an AI prompt.

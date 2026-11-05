@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useAuth } from "@/components/AuthProvider";
 
 /**
- * Shown on /credits?purchase=success right after Lemon Squeezy redirects back.
+ * Shown on /oracles?purchase=success right after Lemon Squeezy redirects back.
  * Polls the balance until the webhook's credits land (usually seconds), so
  * there is no waiting screen — the reveal is instant.
  */

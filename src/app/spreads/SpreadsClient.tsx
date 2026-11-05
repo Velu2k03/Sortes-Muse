@@ -14,10 +14,10 @@ import { freeReadingUsed } from "@/lib/storage";
 
 /**
  * Spread selection.
- * There is exactly ONE payment in the whole app: buying credit packs.
- * 1 credit = 1 full reading of any spread. Spreads show a blurred "locked"
+ * There is exactly ONE payment in the whole app: buying Oracle packs.
+ * 1 Oracle = 1 full reading of any spread. Spreads show a blurred "locked"
  * preview only while the seeker cannot start a reading right now (no free
- * reading left and 0 credits); the moment they have a credit, the spread
+ * reading left and 0 Oracles); the moment they have an Oracle, the spread
  * opens with "Begin reading" and the gate offers the personalized intake.
  */
 export default function SpreadsPage() {

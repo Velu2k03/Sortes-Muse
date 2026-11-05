@@ -40,12 +40,12 @@ export async function POST(req: NextRequest) {
   }
   if (delta > 0) {
     return NextResponse.json(
-      { error: "Credits can only be granted by the server (purchases and refunds). Client grants are not accepted." },
+      { error: "Oracles can only be granted by the server (purchases and refunds). Client grants are not accepted." },
       { status: 400 }
     );
   }
   const ok = await spendUserCredits(session.userId, -delta);
-  if (!ok) return NextResponse.json({ error: "Insufficient credits." }, { status: 402 });
+  if (!ok) return NextResponse.json({ error: "Insufficient Oracles." }, { status: 402 });
   const user = await getUserById(session.userId);
   return NextResponse.json({ credits: user?.credits ?? 0 });
 }

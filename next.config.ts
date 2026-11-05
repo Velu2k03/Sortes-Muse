@@ -11,6 +11,11 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       { source: "/daily-card", destination: "/daily", permanent: true },
+      // Phase 3 (3.3): /credits → /oracles, /history → /journal.
+      // The labels were already Oracles and Journal; the routes now
+      // match. Old URLs redirect permanently, never 404.
+      { source: "/credits", destination: "/oracles", permanent: true },
+      { source: "/history", destination: "/journal", permanent: true },
       { source: "/charts/western", destination: "/charts", permanent: true },
       { source: "/charts/vedic", destination: "/charts", permanent: true },
       { source: "/charts/ziwei", destination: "/charts", permanent: true },

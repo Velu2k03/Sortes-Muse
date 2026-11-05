@@ -300,8 +300,10 @@ export default function CreditsPage() {
       </div>
 
       <p className="mx-auto mt-6 max-w-md text-center text-xs leading-relaxed text-mist">
-        Pay-per-reading, no subscriptions. Prices include everything; there
-        are no hidden fees. Secure checkout is powered by Lemon Squeezy.
+        Pay-per-reading, no subscriptions. Prices are in US dollars
+        (USD). The checkout shows the full amount, including any
+        applicable taxes or fees; there are no hidden fees. Secure
+        checkout is powered by Lemon Squeezy.
       </p>
 
       <CheckoutModal open={open} onClose={() => setOpen(false)} initialPackId={modalPack} />

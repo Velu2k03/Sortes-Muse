@@ -29,8 +29,8 @@ export default function Footer() {
             <li><Link href="/charts" className="text-cream/80 hover:text-goldbright">Charts</Link></li>
             <li><Link href="/reports" className="text-cream/80 hover:text-goldbright">Reports</Link></li>
             <li><Link href="/horoscope" className="text-cream/80 hover:text-goldbright">Horoscope</Link></li>
-            <li><Link href="/credits" className="text-cream/80 hover:text-goldbright">Oracles</Link></li>
-            <li><Link href="/history" className="text-cream/80 hover:text-goldbright">Journal</Link></li>
+            <li><Link href="/oracles" className="text-cream/80 hover:text-goldbright">Oracles</Link></li>
+            <li><Link href="/journal" className="text-cream/80 hover:text-goldbright">Journal</Link></li>
             <li><Link href="/guides" className="text-cream/80 hover:text-goldbright">Guides</Link></li>
             <li><Link href="/faq" className="text-cream/80 hover:text-goldbright">FAQ</Link></li>
             <li><Link href="/birth-card" className="text-cream/80 hover:text-goldbright">Birth Card</Link></li>

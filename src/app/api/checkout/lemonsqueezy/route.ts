@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
   // address and it becomes their account on sign-in.
   if (!email) {
     return NextResponse.json(
-      { error: "An email is required so your credits reach your account." },
+      { error: "An email is required so your Oracles reach your account." },
       { status: 400 }
     );
   }

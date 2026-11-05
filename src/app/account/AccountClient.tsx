@@ -418,7 +418,7 @@ export default function AccountPage() {
             <div className="rule-gold my-6" />
             <div className="flex flex-wrap gap-3">
               <Link
-                href="/credits"
+                href="/oracles"
                 className="btn-gold rounded-xl px-6 py-3 font-bold"
               >
                 Top up Oracles
