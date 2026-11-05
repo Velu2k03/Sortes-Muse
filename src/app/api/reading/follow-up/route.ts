@@ -9,6 +9,8 @@ import {
 import type { FollowUp } from "@/lib/types";
 import cardsData from "@/data/cards.json";
 import { generateChat } from "@/lib/ai";
+import { drawClarifierCard } from "@/lib/clarifier";
+import { CARDS } from "@/lib/cards";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -74,7 +76,8 @@ function buildFollowUpPrompt(
   },
   followUpQuestion: string,
   isHealth: boolean,
-  isFinances: boolean
+  isFinances: boolean,
+  clarifierName?: string | null
 ): { system: string; user: string } {
   // Card summary from the original reading
   const cardLines = (reading.cards || [])
@@ -98,7 +101,7 @@ function buildFollowUpPrompt(
 
 Rules:
 - Answer ONLY this follow-up question in the context of the original reading below.
-- Never start a new reading. Never draw new cards. Never invent cards or positions not listed below.
+- Never start a new reading. ${clarifierName ? `One clarifier card was drawn for this follow-up: ${clarifierName}. Read it as one extra thread alongside the original cards, not as a new spread.` : "Never draw new cards."} Never draw any further cards, and never invent cards or positions not listed below.
 - Reference the original cards, question, interpretation, first impression, and chosen next step when they are relevant to the follow-up.
 - Keep it to one thread: stay inside this reading's scope.
 - Frame everything as reflection and perspective, never as guaranteed prediction.
@@ -111,12 +114,17 @@ ${financesGuard}`.trim();
     ? `Seeker's first impression: ${reading.firstImpression}`
     : "";
   const step = reading.nextStep ? `Chosen next step: ${reading.nextStep}` : "";
+  const clarifierLine = clarifierName
+    ? `Clarifier card drawn for this follow-up: ${clarifierName}`
+    : "";
 
   const user = `${originalQ}
 ${reading.category ? `Category: ${reading.category}` : ""}
 
 Original cards:
 ${cardLines || "(none)"}
+
+${clarifierLine}
 
 Original interpretation (summary):
 ${(reading.interpretation || "").slice(0, 2000)}
@@ -290,6 +298,17 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // Phase 5 (5.3): draw 1 real clarifier card server-side, from the
+  // cards NOT already in this reading's spread, uniformly at random.
+  // The draw happens once per follow-up attempt, before generation,
+  // and is saved with the follow-up below. Cost logic is untouched:
+  // isFree and the 3-follow-up cap above are exactly as before.
+  const spreadCardIds = (Array.isArray(readingData.cards) ? readingData.cards : [])
+    .map((c) => (c as { cardId?: unknown }).cardId)
+    .filter((id): id is string => typeof id === "string");
+  const clarifierCardId = drawClarifierCard(spreadCardIds, CARDS.map((c) => c.id));
+  const clarifierName = clarifierCardId ? cardNameById(clarifierCardId) ?? null : null;
+
   const { system, user } = buildFollowUpPrompt(
     {
       question: typeof readingData.question === "string" ? readingData.question : undefined,
@@ -301,7 +320,8 @@ export async function POST(req: NextRequest) {
     },
     question,
     isHealth,
-    isFinances
+    isFinances,
+    clarifierName
   );
 
   // One shared client (src/lib/ai.ts). The lenient word-count
@@ -345,6 +365,10 @@ export async function POST(req: NextRequest) {
     answer: finalText,
     createdAt: new Date().toISOString(),
     free: isFree,
+    // Phase 5 (5.3): the clarifier card is saved with the follow-up
+    // in the journal/reading record, so the thread shows what was
+    // drawn. Null (deck exhausted) stores as absent.
+    ...(clarifierCardId ? { clarifierCardId } : {}),
   };
   const updatedFollowUps = [...existingFollowUps, newFollowUp];
 

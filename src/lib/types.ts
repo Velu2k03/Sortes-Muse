@@ -74,4 +74,7 @@ export interface FollowUp {
   answer: string;
   createdAt: string;
   free: boolean;
+  // Phase 5 (5.3): the clarifier card drawn server-side for this
+  // follow-up, from the cards not already in the reading's spread.
+  clarifierCardId?: string;
 }

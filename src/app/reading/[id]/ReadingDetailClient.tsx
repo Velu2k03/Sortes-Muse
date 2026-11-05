@@ -571,6 +571,11 @@ export default function ReadingDetail({ id }: { id: string }) {
           <>
             <div className="rule-gold w-24" />
             <p className="font-display text-2xl text-cream">Still turning it over?</p>
+            <p className="max-w-md text-sm text-cream/75">
+              Each follow-up draws one fresh clarifier card from the
+              cards not already in this spread, and the answer reads
+              it alongside your original cards.
+            </p>
 
             {/* Existing follow-ups, oldest first */}
             {(reading.followUps ?? []).length > 0 && (
@@ -586,6 +591,25 @@ export default function ReadingDetail({ id }: { id: string }) {
                     <p className="mt-1 text-sm italic text-cream/80">
                       &ldquo;{fu.question}&rdquo;
                     </p>
+                    {/* Phase 5 (5.3): the clarifier card drawn for this
+                        follow-up, from the cards not already in the
+                        spread. Older follow-ups (pre-Phase 5) have
+                        none, so the line is conditional. */}
+                    {fu.clarifierCardId && (
+                      <p className="mt-2 text-sm text-goldbright">
+                        Clarifier card:{" "}
+                        {(() => {
+                          try {
+                            return getCard(fu.clarifierCardId).name;
+                          } catch {
+                            return fu.clarifierCardId;
+                          }
+                        })()}{" "}
+                        <span className="text-xs text-mist">
+                          — drawn fresh for this follow-up
+                        </span>
+                      </p>
+                    )}
                     <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-cream/90">
                       {fu.answer}
                     </p>
