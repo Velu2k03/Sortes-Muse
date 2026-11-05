@@ -7,6 +7,7 @@ import type { VedicResult } from "@/lib/vedic";
 import type { ZiweiLanguage } from "@/lib/ziwei-i18n";
 import { localizeStar, zodiacEn, ZIWEI_LEGEND_ZH } from "@/lib/ziwei-i18n";
 import ThemedDatePicker from "@/components/ThemedDatePicker";
+import { formatUtcOffset } from "@/lib/format-offset";
 import CardBurst from "@/components/CardBurst";
 import ZiweiChartBoard, { type ZiweiView } from "@/components/ZiweiChartBoard";
 import WesternWheel from "@/components/WesternWheel";
@@ -20,7 +21,6 @@ import GlideSelect from "@/components/GlideSelect";
 import SplitText from "@/components/SplitText";
 import AnimatedContent from "@/components/AnimatedContent";
 import SwipeToast from "@/components/SwipeToast";
-import CometDial from "@/components/CometDial";
 import { chartFreeUsed, markChartFreeUsed, makeReading, type ChartFreeSystem } from "@/lib/storage";
 import { chartInterpretationCost } from "@/lib/chart-pricing";
 import { buildStaticChartInterpretation } from "@/lib/chart-fallback";
@@ -59,10 +59,8 @@ export default function ChartsClient() {
     mq.addEventListener("change", sync);
     return () => mq.removeEventListener("change", sync);
   }, []);
-  // Dial numbers bypass the theme tokens (CometDial takes a hard
-  // ink colour), so track the document theme the same way the
-  // credits page does for PixelCard. GlideSelect now follows the
-  // theme too, 2026-11-04, instead of staying dark in light mode.
+  // GlideSelect takes hard colours, so track the document theme the
+  // same way the credits page does for PixelCard.
   const [siteTheme, setSiteTheme] = useState<"dark" | "light">("dark");
   useEffect(() => {
     const sync = () =>
@@ -113,6 +111,10 @@ export default function ChartsClient() {
   const [date, setDate] = useState("");
   const [time, setTime] = useState("08:00");
   const [unknownTime, setUnknownTime] = useState(false);
+  // Phase 4B (4.3): optional IANA timezone override. Blank means
+  // auto-detect from the birthplace coordinates; a wrong auto-detected
+  // zone can be corrected here and the chart recalculated.
+  const [timeZoneOverride, setTimeZoneOverride] = useState("");
   const [gender, setGender] = useState<"male" | "female">("female");
   const [preset, setPreset] = useState(PRESETS[0].label);
   const [latitude, setLatitude] = useState(String(PRESETS[0].latitude));
@@ -128,7 +130,7 @@ export default function ChartsClient() {
   // Fresh Codex review on PR 50, correct: the fingerprint must also
   // cover focus and question, because a saved interpretation is tied
   // to them, not only to the birth inputs.
-  const inputFingerprint = [date, time, unknownTime, gender, latitude, longitude, focus, question].join("|");
+  const inputFingerprint = [date, time, unknownTime, gender, latitude, longitude, timeZoneOverride, focus, question].join("|");
   // Fresh Codex review on PR 50, correct: the cache writer must only
   // store a result under the fingerprint it was calculated with. An
   // edited field changes inputFingerprint while the old result is
@@ -237,7 +239,7 @@ export default function ChartsClient() {
     try {
       const raw = window.localStorage.getItem("sortes-birth-details");
       if (!raw) return;
-      const saved = JSON.parse(raw) as { date?: string; time?: string; unknownTime?: boolean; gender?: "male" | "female"; preset?: string; latitude?: string; longitude?: string };
+      const saved = JSON.parse(raw) as { date?: string; time?: string; unknownTime?: boolean; gender?: "male" | "female"; preset?: string; latitude?: string; longitude?: string; timeZone?: string };
       if (saved.date) setDate(saved.date);
       if (saved.time) setTime(saved.time);
       if (typeof saved.unknownTime === "boolean") setUnknownTime(saved.unknownTime);
@@ -245,6 +247,7 @@ export default function ChartsClient() {
       if (saved.preset) setPreset(saved.preset);
       if (saved.latitude) setLatitude(saved.latitude);
       if (saved.longitude) setLongitude(saved.longitude);
+      if (saved.timeZone) setTimeZoneOverride(saved.timeZone);
     } catch {}
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -263,6 +266,7 @@ export default function ChartsClient() {
     setDate("1990-01-01");
     setTime("08:00");
     setUnknownTime(false);
+    setTimeZoneOverride("");
     setPreset(PRESETS[0].label);
     setLatitude(String(PRESETS[0].latitude));
     setLongitude(String(PRESETS[0].longitude));
@@ -484,6 +488,13 @@ export default function ChartsClient() {
     let hour: number | null = null;
     let minute = 0;
     if (!unknownTime) {
+      // Native time input, but a cleared field submits an empty
+      // string, and Number("") is 0, so an empty time would silently
+      // become 00:00. Require the HH:MM shape instead.
+      if (!/^\d{2}:\d{2}$/.test(time)) {
+        setError("Please choose a birth time, or tick unknown time.");
+        return;
+      }
       const parts = time.split(":");
       hour = Number(parts[0]);
       minute = Number(parts[1] ?? 0);
@@ -512,6 +523,7 @@ export default function ChartsClient() {
           gender,
           latitude: calcLatitude,
           longitude: calcLongitude,
+          timeZone: timeZoneOverride.trim() || undefined,
         }),
       });
       const data = await res.json();
@@ -528,7 +540,7 @@ export default function ChartsClient() {
         // data stays on device in localStorage, it is not sent anywhere
         // except the calculate call the user already makes.
         try {
-          window.localStorage.setItem("sortes-birth-details", JSON.stringify({ date, time, unknownTime, gender, preset, latitude, longitude }));
+          window.localStorage.setItem("sortes-birth-details", JSON.stringify({ date, time, unknownTime, gender, preset, latitude, longitude, timeZone: timeZoneOverride.trim() || undefined }));
         } catch {}
       }
       // A clear control lives in the form reset path, not here.
@@ -554,7 +566,7 @@ export default function ChartsClient() {
           not re-enter it next time. AI gets only chart positions,
           never birth data.
           {system === "ziwei" &&
-            " Ziwei time is corrected by longitude only: 4 minutes per degree from the nearest 15 degree meridian."}
+            " Ziwei time uses the birthplace timezone (with daylight saving), then a longitude correction to solar time."}
 
         </p>
         {/* Audit 6: this long block used to sit above the form, so a
@@ -568,8 +580,8 @@ export default function ChartsClient() {
           <ul className="mt-2 list-disc space-y-1 pl-5">
             <li>Gender: Ziwei only.</li>
             <li>Birthplace: Rising and houses for Western and Vedic, longitude correction for Ziwei.</li>
-            <li>Birth time: clock time at the birthplace. Western converts with a timezone database that includes DST rules. Vedic uses longitude divided by 15 only. Ziwei uses longitude correction only, 4 minutes per degree. Unknown time uses noon for planets and withholds Rising, Midheaven, and houses. Ziwei needs a birth hour.</li>
-            <li>Near a boundary: for Vedic or Ziwei times near a sign, nakshatra, or double-hour boundary, a longitude-only time can fall on either side, so treat borderline placements as approximate, not timezone-exact.</li>
+            <li>Birth time: clock time at the birthplace. Western converts with a timezone database that includes DST rules. Vedic and Ziwei use the same lookup: the timezone for the birthplace, with DST rules for the birth date, and Ziwei then corrects by longitude to solar time. If no timezone resolves for the coordinates, they fall back to longitude only (Vedic: longitude divided by 15 only; Ziwei: longitude correction only, 4 minutes per degree) and the chart says so. Unknown time uses noon for planets and withholds Rising, Midheaven, and houses. Ziwei needs a birth hour.</li>
+            <li>Near a boundary: for Vedic or Ziwei times near a sign, nakshatra, or double-hour boundary, a fallback longitude-only time can fall on either side, so treat borderline placements as approximate, not timezone-exact.</li>
           </ul>
         </details>
       </div>
@@ -632,6 +644,7 @@ export default function ChartsClient() {
             setDate("");
             setTime("08:00");
             setUnknownTime(false);
+            setTimeZoneOverride("");
             setPreset(PRESETS[0].label);
             setLatitude(String(PRESETS[0].latitude));
             setLongitude(String(PRESETS[0].longitude));
@@ -680,71 +693,26 @@ export default function ChartsClient() {
             <ThemedDatePicker id="chart-date" value={date} onChange={setDate} />
           </div>
           <div>
-            <span className={labelClass}>Birth time</span>
+            <label htmlFor="chart-time" className={labelClass}>
+              Birth time
+            </label>
             <label className="flex items-center gap-2 text-sm text-cream/80">
               <input type="checkbox" checked={unknownTime} onChange={(e) => setUnknownTime(e.target.checked)} />
               I do not know the birth time
             </label>
-            {/* The dials are the time control now; the plain time box
-                is gone except under reduced motion, where the dials
-                are off and the box is the only way to set a time. */}
-            {reducedMotion ? (
-              <input
-                id="chart-time"
-                type="time"
-                disabled={unknownTime}
-                value={time}
-                onChange={(e) => setTime(e.target.value)}
-                className={`${inputClass} mt-2`}
-              />
-            ) : (
-              !unknownTime && (
-                <div className="mt-4 flex flex-col items-center">
-                  <div className="flex items-center justify-center gap-1">
-                    <div className="flex flex-col items-center">
-                      <CometDial
-                        value={Number(time.split(":")[0] ?? 8)}
-                        min={0}
-                        max={23}
-                        step={1}
-                        size={150}
-                        unit=""
-                        label="Birth hour"
-                        accent={siteTheme === "light" ? "#8a6d0a" : "#d4af37"}
-                        ink={siteTheme === "light" ? "#1c1a15" : "#ede6d6"}
-                        onChange={(hour) => {
-                          const minutes = time.split(":")[1] ?? "00";
-                          setTime(`${String(hour).padStart(2, "0")}:${minutes}`);
-                        }}
-                      />
-                      <span className="mt-1 text-xs text-mist">Hour</span>
-                    </div>
-                    <span className="pb-5 font-display text-3xl text-goldbright">:</span>
-                    <div className="flex flex-col items-center">
-                      <CometDial
-                        value={Number(time.split(":")[1] ?? 0)}
-                        min={0}
-                        max={59}
-                        step={1}
-                        size={150}
-                        unit=""
-                        label="Birth minute"
-                        accent={siteTheme === "light" ? "#8a6d0a" : "#d4af37"}
-                        ink={siteTheme === "light" ? "#1c1a15" : "#ede6d6"}
-                        onChange={(minute) => {
-                          const hours = time.split(":")[0] ?? "08";
-                          setTime(`${hours}:${String(minute).padStart(2, "0")}`);
-                        }}
-                      />
-                      <span className="mt-1 text-xs text-mist">Minute</span>
-                    </div>
-                  </div>
-                  <p className="mt-2 text-center text-sm text-cream/75">
-                    Turn the dials to set the birth time, then press Calculate chart.
-                  </p>
-                </div>
-              )
-            )}
+            {/* Phase 4B (4.2): the hour/minute dials are gone. A plain
+                time input is keyboard-typable, works with reduced
+                motion, and cannot drift off by a stray drag. The
+                date stays on the themed picker beside it. */}
+            <input
+              id="chart-time"
+              type="time"
+              disabled={unknownTime}
+              value={time}
+              onChange={(e) => setTime(e.target.value)}
+              className={`${inputClass} mt-2`}
+            />
+            <p className="mt-1 text-xs text-cream/80">Type the time as HH:MM, or tap the field to pick it. Clock time at the birthplace.</p>
           </div>
           {system === "ziwei" && (
             <div>
@@ -824,6 +792,27 @@ export default function ChartsClient() {
               Longitude
             </label>
             <input id="chart-lon" type="number" step="any" required value={longitude} onChange={(e) => setLongitude(e.target.value)} className={inputClass} />
+          </div>
+          <div className="sm:col-span-2">
+            <label htmlFor="chart-timezone" className={labelClass}>
+              Timezone (optional, only if the chart names the wrong one)
+            </label>
+            <input
+              id="chart-timezone"
+              type="text"
+              value={timeZoneOverride}
+              onChange={(e) => setTimeZoneOverride(e.target.value)}
+              placeholder="Auto-detect from birthplace, e.g. America/New_York"
+              autoCapitalize="off"
+              autoCorrect="off"
+              spellCheck={false}
+              className={inputClass}
+            />
+            <p className="mt-1 text-xs text-cream/80">
+              Left blank, the timezone is looked up from the birthplace coordinates, with daylight saving for the
+              birth date, and the chart below names the zone it used. If that zone is wrong, type the IANA name
+              here (for example America/New_York) and recalculate.
+            </p>
           </div>
           <div className="sm:col-span-2">
             <label htmlFor="chart-place-search" className={labelClass}>
@@ -914,6 +903,23 @@ export default function ChartsClient() {
             <strong className="text-goldbright">Your chart in one line: </strong>
             {chartSummaryText(result, ziweiLang)}
           </p>
+          {/* Phase 4B (4.3): the time assumption is shown, not hidden.
+              IANA path: the zone and its historical offset (DST
+              included) for the birth date. Fallback: no zone could be
+              resolved, so the time was converted by longitude only,
+              and the timezone field above is how to correct it. */}
+          {result.timeZone ? (
+            <p className="mt-3 text-sm text-cream/70">
+              Timezone used: {result.timeZone} ({formatUtcOffset(result.utcOffsetMinutes ?? 0)}), with daylight saving for the birth date.
+              {result.system === "ziwei" ? " Solar time is then set by longitude." : ""}
+            </p>
+          ) : (
+            <p className="mt-3 text-sm text-cream/70">
+              No timezone could be resolved for these coordinates, so the birth time was converted by longitude only
+              ({formatUtcOffset(result.utcOffsetMinutes ?? 0)}). If this is wrong, enter the IANA timezone in the
+              form above and recalculate.
+            </p>
+          )}
           {result.system === "ziwei" && (
             <>
 
@@ -958,8 +964,9 @@ export default function ChartsClient() {
               </div>
               {result.solarCorrectionMinutes !== 0 && (
                 <p className="mt-3 text-sm text-cream/70">
-                  Longitude correction applied: {result.solarCorrectionMinutes > 0 ? "+" : ""}
-                  {result.solarCorrectionMinutes} minutes, corrected time {result.solarCorrectedTime}. Equation of time, DST, and historical timezones are not applied.
+                  {result.timeBasis === "iana"
+                    ? `Timezone ${result.timeZone ?? ""} (${formatUtcOffset(result.utcOffsetMinutes ?? 0)}) applied, then longitude correction to solar time: ${result.solarCorrectionMinutes > 0 ? "+" : ""}${result.solarCorrectionMinutes} minutes, corrected time ${result.solarCorrectedTime}. Equation of time is not applied.`
+                    : `Longitude correction applied: ${result.solarCorrectionMinutes > 0 ? "+" : ""}${result.solarCorrectionMinutes} minutes, corrected time ${result.solarCorrectedTime}. No timezone could be resolved, so DST and historical timezones are not applied; equation of time is not applied either.`}
                 </p>
               )}
             </>
@@ -1040,6 +1047,8 @@ export default function ChartsClient() {
               minute={Number(time.split(":")[1] ?? 0)}
               gender={gender}
               longitude={Number(longitude)}
+              latitude={Number(latitude)}
+              timeZone={timeZoneOverride.trim() || undefined}
             />
           )}
 

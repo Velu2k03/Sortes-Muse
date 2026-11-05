@@ -17,6 +17,8 @@ export async function POST(req: NextRequest) {
     minute?: unknown;
     gender?: unknown;
     longitude?: unknown;
+    latitude?: unknown;
+    timeZone?: unknown;
     year?: unknown;
     today?: unknown;
   };
@@ -43,6 +45,16 @@ export async function POST(req: NextRequest) {
   if (body.longitude !== undefined && (typeof body.longitude !== "number" || !Number.isFinite(body.longitude))) {
     return NextResponse.json({ error: "longitude must be a finite number." }, { status: 400 });
   }
+  // Phase 4B (4.3): optional latitude and timezone override, so the
+  // stacks use the same IANA conversion as the natal chart. Both
+  // are optional; without them the stacks keep the old
+  // longitude-only correction, exactly like the natal chart does.
+  if (body.latitude !== undefined && (typeof body.latitude !== "number" || !Number.isFinite(body.latitude) || body.latitude < -90 || body.latitude > 90)) {
+    return NextResponse.json({ error: "latitude must be a finite number from -90 to 90." }, { status: 400 });
+  }
+  if (body.timeZone !== undefined && typeof body.timeZone !== "string") {
+    return NextResponse.json({ error: "timeZone must be an IANA timezone name." }, { status: 400 });
+  }
   if (typeof body.year !== "number" || !Number.isInteger(body.year)) {
     return NextResponse.json({ error: "year must be an integer." }, { status: 400 });
   }
@@ -57,6 +69,8 @@ export async function POST(req: NextRequest) {
         minute: typeof body.minute === "number" ? body.minute : 0,
         gender: body.gender,
         longitude: typeof body.longitude === "number" ? body.longitude : undefined,
+        latitude: typeof body.latitude === "number" ? body.latitude : undefined,
+        timeZone: typeof body.timeZone === "string" && body.timeZone.trim() ? body.timeZone.trim() : undefined,
       },
       body.year,
       typeof body.today === "string" ? body.today : undefined

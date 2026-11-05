@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { calculateChart } from "@/lib/charts";
+import { calculateChart, calculateZiwei } from "@/lib/charts";
 import { calculateVedic } from "@/lib/vedic";
 
 // Calculation only: no AI, no credit charge, no storage, no database.
@@ -51,6 +51,11 @@ export async function POST(req: NextRequest) {
   const minute = typeof body.minute === "number" && body.minute >= 0 && body.minute <= 59 ? Math.floor(body.minute) : 0;
   const latitude = typeof body.latitude === "number" ? body.latitude : NaN;
   const longitude = typeof body.longitude === "number" ? body.longitude : NaN;
+  // Phase 4B (4.3): optional IANA timezone override, so a user who
+  // sees the wrong zone on their chart can correct it. An invalid
+  // name is refused by the lib (400 below), never guessed. Empty
+  // means auto-detect from the coordinates.
+  const timeZone = typeof body.timeZone === "string" && body.timeZone.trim() ? body.timeZone.trim() : undefined;
   if (system !== "ziwei" && (!Number.isFinite(latitude) || !Number.isFinite(longitude))) {
     return NextResponse.json({ error: "latitude and longitude are required for Western and Vedic charts." }, { status: 400 });
   }
@@ -62,6 +67,23 @@ export async function POST(req: NextRequest) {
         minute,
         latitude: Number(latitude),
         longitude: Number(longitude),
+        timeZone,
+      });
+      return NextResponse.json({ result });
+    }
+    if (system === "ziwei") {
+      // Latitude is passed only when supplied: the old route default
+      // of 0 would look a zone up at the equator for the birthplace
+      // longitude, which is a wrong zone, not a missing one. Without
+      // a latitude the lib keeps the longitude-only correction.
+      const result = calculateZiwei({
+        date,
+        hour,
+        minute,
+        gender,
+        latitude: Number.isFinite(latitude) ? latitude : undefined,
+        longitude: Number.isFinite(longitude) ? longitude : undefined,
+        timeZone,
       });
       return NextResponse.json({ result });
     }
@@ -71,8 +93,9 @@ export async function POST(req: NextRequest) {
       hour,
       minute,
       gender,
-      latitude: Number.isFinite(latitude) ? latitude : 0,
-      longitude: Number.isFinite(longitude) ? longitude : 0,
+      latitude: Number(latitude),
+      longitude: Number(longitude),
+      timeZone,
     });
     return NextResponse.json({ result });
   } catch (err) {

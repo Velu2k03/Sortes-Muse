@@ -30,6 +30,8 @@
 // returned offset always matches the returned UTC instant.
 import { createRequire } from "node:module";
 
+export { formatUtcOffset } from "./format-offset.ts";
+
 const require = createRequire(import.meta.url);
 const tzlookup = require("tz-lookup") as (latitude: number, longitude: number) => string;
 
@@ -193,14 +195,4 @@ export function solarWallTime(
     minute,
     correctionMinutes: Math.round(((solarMs - civilWallMs) / 60000) * 10) / 10,
   };
-}
-
-/** "UTC−04:00", "UTC+05:45", "UTC+00:00". Minus is U+2212, matching
-    the site's typographic style. */
-export function formatUtcOffset(offsetMinutes: number): string {
-  const sign = offsetMinutes < 0 ? "−" : "+";
-  const abs = Math.round(Math.abs(offsetMinutes));
-  const hh = String(Math.floor(abs / 60)).padStart(2, "0");
-  const mm = String(abs % 60).padStart(2, "0");
-  return `UTC${sign}${hh}:${mm}`;
 }

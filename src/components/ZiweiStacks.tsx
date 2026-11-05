@@ -55,12 +55,19 @@ export default function ZiweiStacks({
   minute,
   gender,
   longitude,
+  latitude,
+  timeZone,
 }: {
   date: string;
   hour: number;
   minute: number;
   gender: "male" | "female";
   longitude: number;
+  // Phase 4B (4.3): latitude and the user's timezone override, so the
+  // stacks use the same IANA conversion as the natal chart. Both are
+  // optional; without them the stacks keep the longitude-only path.
+  latitude?: number;
+  timeZone?: string;
 }) {
   const [year, setYear] = useState(localYear());
   const [data, setData] = useState<StacksData | null>(null);
@@ -76,7 +83,7 @@ export default function ZiweiStacks({
       const res = await fetch("/api/chart/ziwei-stacks", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ date, hour, minute, gender, longitude, year, today: todayStr }),
+        body: JSON.stringify({ date, hour, minute, gender, longitude, latitude, timeZone, year, today: todayStr }),
       });
       const json = await res.json();
       if (!res.ok) {
