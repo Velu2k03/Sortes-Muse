@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { getSupabaseBrowser } from "@/lib/supabase-browser";
+import { clearLocalAccountData } from "@/lib/storage";
 
 interface ServerTx {
   id: string;
@@ -24,12 +25,22 @@ export default function AccountPage() {
   const [error, setError] = useState<string | null>(null);
   const [devCode, setDevCode] = useState<string | null>(null);
   const [authTab, setAuthTab] = useState<"password" | "code">("password");
-  const [pwMode, setPwMode] = useState<"signin" | "signup">("signin");
+  // Phase 3 (3.6): Create account and Sign in are two equal top-level
+  // paths, not a sub-toggle hidden under one method. The method tabs
+  // (password / email code) sit one level below and apply to both.
+  const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [password, setPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [currentPassword, setCurrentPassword] = useState("");
   const [pwNotice, setPwNotice] = useState<string | null>(null);
   const [transactions, setTransactions] = useState<ServerTx[] | null>(null);
+  const [exportBusy, setExportBusy] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
+  const [exportDone, setExportDone] = useState(false);
+  const [deleteArmed, setDeleteArmed] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deleted, setDeleted] = useState(false);
   // Supabase sends an 8 digit code in production; the local fallback
   // sends a 6 digit code. The UI follows whichever sender is active.
   const codeLength = getSupabaseBrowser() ? 8 : 6;
@@ -45,7 +56,7 @@ export default function AccountPage() {
         setTransactions(null);
         setStep("email");
         // Prefill the email used at checkout, so guests who just paid can
-        // sign in and claim their credits without retyping it.
+        // sign in and claim their Oracles without retyping it.
         try {
           const purchased = sessionStorage.getItem("sortes-purchase-email");
           if (purchased) setEmail((e) => e || purchased);
@@ -75,7 +86,7 @@ export default function AccountPage() {
     setError(null);
     try {
       const res = await fetch(
-        pwMode === "signin" ? "/api/auth/login" : "/api/auth/signup",
+        mode === "signin" ? "/api/auth/login" : "/api/auth/signup",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -197,10 +208,87 @@ export default function AccountPage() {
     }
   };
 
+  const exportAccount = async () => {
+    setExportBusy(true);
+    setExportError(null);
+    setExportDone(false);
+    try {
+      const res = await fetch("/api/account/export");
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? "Export failed.");
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `sortes-data-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      setExportDone(true);
+    } catch (err) {
+      setExportError(err instanceof Error ? err.message : "Export failed.");
+    } finally {
+      setExportBusy(false);
+    }
+  };
+
+  // Two taps to delete, like the journal's per-reading delete: the
+  // first tap arms, the second confirms. The route deletes the user
+  // and all server data; the device copies of the same data go too,
+  // and the Supabase session is signed out so it cannot re-establish
+  // a Sortes session on the next visit.
+  const deleteAccount = async () => {
+    if (!deleteArmed) {
+      setDeleteArmed(true);
+      setDeleteError(null);
+      return;
+    }
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      const res = await fetch("/api/account/delete", { method: "DELETE" });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? "Could not delete your account.");
+      }
+      clearLocalAccountData();
+      await getSupabaseBrowser()?.auth.signOut().catch(() => {});
+      await signOut();
+      setDeleted(true);
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : "Could not delete your account.");
+      setDeleteArmed(false);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="mx-auto max-w-2xl px-4 py-24 text-center text-mist">
         Loading your account…
+      </div>
+    );
+  }
+
+  if (deleted) {
+    return (
+      <div className="mx-auto max-w-2xl px-4 py-24 text-center sm:px-6">
+        <p className="font-display text-4xl text-goldbright">
+          Your account is deleted
+        </p>
+        <p className="mx-auto mt-3 max-w-md leading-relaxed text-cream/75">
+          Your account, Oracles, journal, reports, and purchase history
+          are gone, including the copies on this device. Thank you for
+          casting the lots with us.
+        </p>
+        <Link
+          href="/"
+          className="btn-gold mt-6 inline-block rounded-xl px-6 py-3 font-bold"
+        >
+          Return home
+        </Link>
       </div>
     );
   }
@@ -217,15 +305,39 @@ export default function AccountPage() {
       {!user ? (
         <div className="mt-8 rounded-3xl border border-gold/20 bg-panel/60 p-6 sm:p-8">
           <p className="font-display text-2xl text-cream">
-            Sign in to sync everything
+            {mode === "signin"
+              ? "Sign in to sync everything"
+              : "Create your account"}
           </p>
           <p className="mt-2 text-sm leading-relaxed text-cream/75">
-            Your guest Oracles and journal move into your account
-            automatically, then follow you across devices. You stay signed
-            in for 30 days.
+            {mode === "signin"
+              ? "Your guest Oracles and journal move into your account automatically, then follow you across devices. You stay signed in for 30 days."
+              : "One account keeps your Oracles, journal, and reports synced across devices. Sign in with an email code or a password. There is no Google sign-in."}
           </p>
 
+          {/* Phase 3 (3.6): two equal paths. */}
           <div className="mt-6 grid grid-cols-2 gap-1 rounded-xl border border-gold/25 bg-panel/70 p-1">
+            {(["signin", "signup"] as const).map((m) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => {
+                  setMode(m);
+                  setError(null);
+                  setStep("email");
+                }}
+                className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
+                  mode === m
+                    ? "bg-gold/20 text-goldbright"
+                    : "text-mist hover:text-cream"
+                }`}
+              >
+                {m === "signin" ? "Sign in" : "Create account"}
+              </button>
+            ))}
+          </div>
+
+          <div className="mt-3 grid grid-cols-2 gap-1 rounded-xl border border-gold/25 bg-panel/70 p-1">
             {(["password", "code"] as const).map((t) => (
               <button
                 key={t}
@@ -248,25 +360,6 @@ export default function AccountPage() {
 
           {authTab === "password" ? (
             <form onSubmit={submitPassword} className="mt-6 space-y-4">
-              <div className="flex gap-4 text-sm">
-                {(["signin", "signup"] as const).map((m) => (
-                  <button
-                    key={m}
-                    type="button"
-                    onClick={() => {
-                      setPwMode(m);
-                      setError(null);
-                    }}
-                    className={`border-b-2 pb-1 font-semibold transition ${
-                      pwMode === m
-                        ? "border-gold text-goldbright"
-                        : "border-transparent text-mist hover:text-cream"
-                    }`}
-                  >
-                    {m === "signin" ? "Sign in" : "Create account"}
-                  </button>
-                ))}
-              </div>
               <div>
                 <label htmlFor="acct-email" className="mb-1.5 block text-sm font-medium text-cream">
                   Email address
@@ -293,8 +386,8 @@ export default function AccountPage() {
                   minLength={8}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder={pwMode === "signup" ? "At least 8 characters" : "Your password"}
-                  autoComplete={pwMode === "signup" ? "new-password" : "current-password"}
+                  placeholder={mode === "signup" ? "At least 8 characters" : "Your password"}
+                  autoComplete={mode === "signup" ? "new-password" : "current-password"}
                   className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none"
                 />
               </div>
@@ -305,11 +398,11 @@ export default function AccountPage() {
               >
                 {busy
                   ? "Please wait…"
-                  : pwMode === "signin"
+                  : mode === "signin"
                     ? "Sign in"
                     : "Create account"}
               </button>
-              {pwMode === "signin" && (
+              {mode === "signin" && (
                 <p className="text-center text-xs text-mist">
                   Bought Oracles with a different email? They merge in when
                   you sign in with that address.
@@ -337,6 +430,12 @@ export default function AccountPage() {
                   Next step: a {codeLength}-digit code will be sent to this email. Nothing is sent until you tap Send sign-in code.
                 </p>
               </div>
+              {mode === "signup" && (
+                <p className="text-center text-xs text-mist">
+                  No account with this email yet? Signing in with a code
+                  creates one.
+                </p>
+              )}
               <button
                 type="submit"
                 disabled={busy}
@@ -511,6 +610,61 @@ export default function AccountPage() {
                 </p>
               )}
             </form>
+          </div>
+
+          {/* Phase 3 (3.6): self-serve export and deletion. Export
+              downloads the account's Oracle balance, purchase history,
+              journal readings, and reports as one JSON file. Delete is
+              permanent: account, Oracles, journal, reports, and
+              purchase history, including the copies on this device. */}
+          <div className="mt-6 rounded-3xl border border-gold/20 bg-panel/60 p-6 sm:p-8">
+            <p className="font-display text-xl text-cream">Your data</p>
+            <p className="mt-1 text-sm text-cream/70">
+              Download everything this account holds, or delete the
+              account entirely.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={() => void exportAccount()}
+                disabled={exportBusy}
+                className="btn-ghost rounded-xl px-6 py-3 font-semibold disabled:opacity-50"
+              >
+                {exportBusy ? "Exporting…" : "Export all data"}
+              </button>
+              <button
+                type="button"
+                onClick={() => void deleteAccount()}
+                disabled={deleting}
+                className="rounded-xl border border-danger/40 px-6 py-3 font-semibold text-danger hover:bg-danger/10 disabled:opacity-50"
+              >
+                {deleting
+                  ? "Deleting…"
+                  : deleteArmed
+                    ? "Confirm delete account?"
+                    : "Delete account"}
+              </button>
+            </div>
+            {deleteArmed && !deleting && (
+              <p role="alert" className="mt-3 text-sm text-danger">
+                This permanently deletes your account, Oracles, journal,
+                reports, and purchase history, including the copies on
+                this device. This cannot be undone. Tap &ldquo;Confirm
+                delete account?&rdquo; again to go ahead, or leave this
+                page to cancel.
+              </p>
+            )}
+            {exportDone && (
+              <p className="mt-3 text-sm text-goldbright">
+                Your data has been downloaded.
+              </p>
+            )}
+            {exportError && (
+              <p className="mt-3 text-sm alert-error-text">{exportError}</p>
+            )}
+            {deleteError && (
+              <p className="mt-3 text-sm alert-error-text">{deleteError}</p>
+            )}
           </div>
         </>
       )}

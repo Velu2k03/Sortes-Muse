@@ -227,6 +227,22 @@ export function deleteReport(id: string): boolean {
   return true;
 }
 
+// Phase 3 (3.6): clear the device copies of account data after an
+// account deletion (the server data is deleted by the DELETE route).
+// Daily card, streak, AI cache, and install dismissal are device
+// ritual state, not account data, so they stay.
+export function clearLocalAccountData(): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.removeItem(K.history);
+    localStorage.removeItem(K.reports);
+    localStorage.removeItem(K.credits);
+    localStorage.removeItem(K.purchases);
+  } catch {
+    // Storage unavailable; there is nothing to clear.
+  }
+}
+
 // AI cache: re-opening history never triggers a second API call
 export function getCachedInterpretation(key: string): string | null {
   const cache = read<Record<string, string>>(K.aiCache, {});

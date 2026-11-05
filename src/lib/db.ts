@@ -283,6 +283,56 @@ export async function setUserPassword(userId: string, passwordHash: string): Pro
   }
 }
 
+// Phase 3 (3.6): delete an account and ALL its data. The foreign
+// keys in this file are plain REFERENCES with no ON DELETE CASCADE,
+// and that is deliberate: the constraint names are Postgres-generated,
+// so a blind ALTER in ensureSchema could leave the old blocking
+// constraint in place while adding a second one, and DDL on every
+// cold start is the wrong place for it. Instead deleteUser deletes
+// the dependent rows explicitly first — that IS the cascade,
+// deterministic in both branches, in one transaction on Postgres
+// and one read/modify/write locally — then the user row. False when
+// the user does not exist. Transactions match by user id OR email:
+// a guest purchase made before sign-in can carry a null user id
+// with this email, and it is still this person's data.
+export async function deleteUser(userId: string): Promise<boolean> {
+  await ensureSchema();
+  if (usePostgres) {
+    if (!pg) throw new Error("Database not configured");
+    return await pg.begin(async (tx) => {
+      const found = await tx`SELECT id, email FROM users WHERE id = ${userId} FOR UPDATE`;
+      if (found.length === 0) return false;
+      const email = (found[0] as { email: string }).email;
+      await tx`DELETE FROM auth_codes WHERE email = ${email}`;
+      await tx`DELETE FROM checkout_nonces WHERE email = ${email}`;
+      await tx`DELETE FROM free_readings WHERE user_id = ${userId}`;
+      await tx`DELETE FROM free_interpretations WHERE user_id = ${userId}`;
+      await tx`DELETE FROM readings WHERE user_id = ${userId}`;
+      await tx`DELETE FROM reports WHERE user_id = ${userId}`;
+      await tx`DELETE FROM transactions WHERE user_id = ${userId} OR email = ${email}`;
+      await tx`DELETE FROM users WHERE id = ${userId}`;
+      return true;
+    });
+  }
+  const db = await readLocal();
+  const user = db.users.find((x) => x.id === userId);
+  if (!user) return false;
+  db.users = db.users.filter((x) => x.id !== userId);
+  db.readings = db.readings.filter((r) => r.user_id !== userId);
+  db.reports = (db.reports ?? []).filter((r) => r.user_id !== userId);
+  db.transactions = db.transactions.filter(
+    (t) => t.user_id !== userId && t.email !== user.email
+  );
+  db.freeReadings = (db.freeReadings ?? []).filter((x) => x.user_id !== userId);
+  db.freeInterpretations = (db.freeInterpretations ?? []).filter(
+    (x) => x.user_id !== userId
+  );
+  delete db.codes[user.email];
+  db.nonces = (db.nonces ?? []).filter((n) => n.email !== user.email);
+  await writeLocal(db);
+  return true;
+}
+
 export async function addUserCredits(userId: string, n: number): Promise<number> {
   await ensureSchema();
   if (usePostgres) {
