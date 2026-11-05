@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUserById, setUserPassword } from "@/lib/db";
 import { getSession, hashPassword, verifyPassword } from "@/lib/auth";
+import { checkRateLimit, clientIp, rateLimitExceeded, RATE_LIMITS } from "@/lib/rateLimit";
 
 export const dynamic = "force-dynamic";
 
 /** Signed-in users can set a password (or change it with the current one). */
 export async function POST(req: NextRequest) {
+  if (!checkRateLimit(`setpw:${clientIp(req)}`, RATE_LIMITS.authIp).allowed) {
+    return rateLimitExceeded();
+  }
   try {
     const session = await getSession();
     if (!session) {

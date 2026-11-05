@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { getUserById, spendUserCredits } from "@/lib/db";
+import { checkRateLimit, clientIp, rateLimitExceeded, RATE_LIMITS } from "@/lib/rateLimit";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +23,9 @@ export async function GET() {
  * request, because any signed-in session could otherwise mint credits.
  */
 export async function POST(req: NextRequest) {
+  if (!checkRateLimit(`balance:${clientIp(req)}`, RATE_LIMITS.moneyIp).allowed) {
+    return rateLimitExceeded();
+  }
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
   let body: { delta?: number };

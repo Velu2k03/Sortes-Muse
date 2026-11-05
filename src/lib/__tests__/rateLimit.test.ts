@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { checkRateLimit, resetRateLimits, RATE_LIMITS } from "@/lib/rateLimit";
+import { checkRateLimit, isRateLimited, recordRateLimit, resetRateLimits, RATE_LIMITS } from "@/lib/rateLimit";
 
 describe("checkRateLimit", () => {
   beforeEach(() => resetRateLimits());
@@ -27,6 +27,18 @@ describe("checkRateLimit", () => {
     expect(checkRateLimit("w", rule).allowed).toBe(false);
     await new Promise((r) => setTimeout(r, 25));
     expect(checkRateLimit("w", rule).allowed).toBe(true);
+  });
+
+  it("peek/record lets a caller count only failures (login semantics)", () => {
+    const rule = { windowMs: 60_000, max: 2 };
+    expect(isRateLimited("f", rule)).toBe(false);
+    recordRateLimit("f", rule);
+    expect(isRateLimited("f", rule)).toBe(false);
+    recordRateLimit("f", rule);
+    expect(isRateLimited("f", rule)).toBe(true);
+    // Peeking never records: a fresh key is still allowed.
+    expect(isRateLimited("fresh", rule)).toBe(false);
+    expect(checkRateLimit("fresh", rule).allowed).toBe(true);
   });
 
   it("resetRateLimits clears every bucket", () => {

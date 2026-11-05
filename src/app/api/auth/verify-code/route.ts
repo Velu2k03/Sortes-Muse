@@ -13,10 +13,14 @@ import {
   SESSION_COOKIE,
   SESSION_MAX_AGE,
   authConfigured,} from "@/lib/auth";
+import { checkRateLimit, clientIp, rateLimitExceeded, RATE_LIMITS } from "@/lib/rateLimit";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
+  if (!checkRateLimit(`verify:${clientIp(req)}`, RATE_LIMITS.authIp).allowed) {
+    return rateLimitExceeded();
+  }
   try {
     return await handleVerify(req);
   } catch (err) {

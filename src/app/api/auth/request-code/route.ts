@@ -2,11 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { storeAuthCode, getAuthCode } from "@/lib/db";
 import { newCode, hashCode, isValidEmail, authConfigured } from "@/lib/auth";
 import { sendSignInCode } from "@/lib/email";
+import { checkRateLimit, rateLimitExceeded, RATE_LIMITS } from "@/lib/rateLimit";
 
 export const dynamic = "force-dynamic";
-
-// Light rate limit: 5 code requests per email per hour (best effort, in memory).
-const recent = new Map<string, number[]>();
 
 export async function POST(req: NextRequest) {
   try {
@@ -48,14 +46,11 @@ async function handleRequest(req: NextRequest) {
   }
 
   const now = Date.now();
-  const stamps = (recent.get(email) ?? []).filter((t) => now - t < 3600_000);
-  if (stamps.length >= 5) {
-    return NextResponse.json(
-      { error: "Too many requests. Please try again later." },
-      { status: 429 }
-    );
+  // 5 code requests per email per hour (shared limiter; same budget
+  // as the old per-route map it replaces).
+  if (!checkRateLimit(`code:${email}`, RATE_LIMITS.codeEmail).allowed) {
+    return rateLimitExceeded();
   }
-  recent.set(email, [...stamps, now]);
 
   // If a code was issued in the last 60s, don't regenerate (avoid email floods).
   const existing = await getAuthCode(email);

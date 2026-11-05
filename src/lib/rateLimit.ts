@@ -37,19 +37,33 @@ export const RATE_LIMITS = {
 
 const buckets = new Map<string, number[]>();
 
+/** Stamps inside the window for a key (pruned as a side effect). */
+function liveStamps(key: string, rule: RateLimitRule): number[] {
+  const now = Date.now();
+  const stamps = (buckets.get(key) ?? []).filter((t) => now - t < rule.windowMs);
+  buckets.set(key, stamps);
+  return stamps;
+}
+
+/** True when the key is already at its budget, without recording a hit. */
+export function isRateLimited(key: string, rule: RateLimitRule): boolean {
+  return liveStamps(key, rule).length >= rule.max;
+}
+
+/** Records one hit against the key's budget. */
+export function recordRateLimit(key: string, rule: RateLimitRule): void {
+  const stamps = liveStamps(key, rule);
+  stamps.push(Date.now());
+  buckets.set(key, stamps);
+}
+
 export function checkRateLimit(
   key: string,
   rule: RateLimitRule
 ): { allowed: boolean; remaining: number } {
-  const now = Date.now();
-  const stamps = (buckets.get(key) ?? []).filter((t) => now - t < rule.windowMs);
-  if (stamps.length >= rule.max) {
-    buckets.set(key, stamps);
-    return { allowed: false, remaining: 0 };
-  }
-  stamps.push(now);
-  buckets.set(key, stamps);
-  return { allowed: true, remaining: rule.max - stamps.length };
+  if (isRateLimited(key, rule)) return { allowed: false, remaining: 0 };
+  recordRateLimit(key, rule);
+  return { allowed: true, remaining: rule.max - liveStamps(key, rule).length };
 }
 
 /** Test-only: drop every bucket. Never called from a route. */
