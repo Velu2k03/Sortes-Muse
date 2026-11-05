@@ -387,3 +387,91 @@ html[data-theme="light"] {
     scroll-behavior: auto;
   }
 }
+
+/* Phase 5 (5.4a): Heirloom print export. The heirloom sheet is
+   hidden on screen; in print, everything else is hidden and only
+   the sheet prints, typeset on light paper in Cormorant Garamond
+   (the brand display face) with Celestial Indigo ink and a gold
+   rule. Real text, not an image, so the saved PDF stays selectable
+   and searchable. */
+.heirloom-print-sheet {
+  display: none;
+}
+@media print {
+  @page {
+    margin: 18mm;
+  }
+  body * {
+    visibility: hidden;
+  }
+  .heirloom-print-sheet,
+  .heirloom-print-sheet * {
+    visibility: visible;
+  }
+  .heirloom-print-sheet {
+    display: block;
+    position: absolute;
+    inset: 0;
+    color: #1a2340;
+    background: #ffffff;
+    font-family: "Cormorant Garamond", "Times New Roman", Georgia, serif;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .heirloom-brand {
+    font-size: 13pt;
+    letter-spacing: 0.35em;
+    color: #8a6d0a;
+    text-align: center;
+    margin: 0;
+  }
+  .heirloom-title {
+    font-size: 30pt;
+    line-height: 1.15;
+    text-align: center;
+    margin: 8pt 0 0;
+    color: #1a2340;
+  }
+  .heirloom-subtitle {
+    font-size: 13pt;
+    font-style: italic;
+    text-align: center;
+    color: #3d4666;
+    margin: 6pt 0 0;
+  }
+  .heirloom-date {
+    font-size: 11pt;
+    text-align: center;
+    color: #3d4666;
+    margin: 6pt 0 0;
+  }
+  .heirloom-rule {
+    border: none;
+    border-top: 1pt solid #d4af37;
+    margin: 14pt 0;
+  }
+  .heirloom-section {
+    margin: 0 0 14pt;
+    break-inside: avoid;
+  }
+  .heirloom-heading {
+    font-size: 14pt;
+    color: #8a6d0a;
+    margin: 0 0 4pt;
+  }
+  .heirloom-body {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 11.5pt;
+    line-height: 1.6;
+    white-space: pre-line;
+    margin: 0;
+    color: #1a2340;
+  }
+  .heirloom-footer {
+    font-size: 10pt;
+    font-style: italic;
+    text-align: center;
+    color: #3d4666;
+    margin: 0;
+  }
+}

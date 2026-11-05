@@ -10,6 +10,7 @@ import { computeSpreadFacts } from "@/lib/spread-facts";
 import TarotCard from "@/components/TarotCard";
 import CardModal from "@/components/CardModal";
 import ShareReading from "@/components/ShareReading";
+import HeirloomPrint from "@/components/HeirloomPrint";
 import TypewriterText from "@/components/TypewriterText";
 import SplitText from "@/components/SplitText";
 import SwipeToast from "@/components/SwipeToast";
@@ -564,6 +565,37 @@ export default function ReadingDetail({ id }: { id: string }) {
           spreadName={reading.spreadName}
           drawn={reading.cards}
           date={reading.createdAt}
+        />
+        {/* Phase 5 (5.4a): heirloom keepsake export (print-to-PDF).
+            Only this reading's real content: question, cards,
+            interpretation, step, follow-ups, revisit note. */}
+        <HeirloomPrint
+          title={reading.spreadName}
+          subtitle={reading.question}
+          date={reading.createdAt}
+          sections={[
+            {
+              heading: "Cards drawn",
+              body: reading.cards
+                .map((d) => {
+                  try {
+                    return `${d.position}: ${getCard(d.cardId).name}${d.reversed ? " (reversed)" : ""}`;
+                  } catch {
+                    return `${d.position}: ${d.cardId}`;
+                  }
+                })
+                .join("\n"),
+            },
+            { heading: "Interpretation", body: reading.interpretation ?? "" },
+            { heading: "My next step", body: reading.nextStep ?? "" },
+            {
+              heading: "Follow-ups",
+              body: (reading.followUps ?? [])
+                .map((fu) => `${fu.question}\n${fu.answer}`)
+                .join("\n\n"),
+            },
+            { heading: "Revisit note", body: reading.revisitNote ?? "" },
+          ]}
         />
 
         {/* M2.1: follow-up section (tarot readings with an interpretation only) */}

@@ -7,6 +7,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { getReport, deleteReport } from "@/lib/storage";
 import type { SavedReport } from "@/lib/reports";
 import SplitText from "@/components/SplitText";
+import HeirloomPrint from "@/components/HeirloomPrint";
 import AnimatedContent from "@/components/AnimatedContent";
 
 export default function ReportDetailClient() {
@@ -104,6 +105,16 @@ export default function ReportDetailClient() {
       </p>
 
       <p className="mt-6 whitespace-pre-wrap leading-relaxed text-cream/90">{report.interpretation}</p>
+
+      {/* Phase 5 (5.4a): heirloom keepsake export (print-to-PDF) of
+          this report's real interpretation. */}
+      <div className="mt-6">
+        <HeirloomPrint
+          title={report.title}
+          date={report.createdAt}
+          sections={[{ heading: "Interpretation", body: report.interpretation }]}
+        />
+      </div>
 
       <div className="mt-10 space-y-8">
         {data.kind === "transit" && (

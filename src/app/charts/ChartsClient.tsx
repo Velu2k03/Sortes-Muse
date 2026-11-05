@@ -29,6 +29,7 @@ import SplitText from "@/components/SplitText";
 import AnimatedContent from "@/components/AnimatedContent";
 import SwipeToast from "@/components/SwipeToast";
 import { chartFreeUsed, markChartFreeUsed, makeReading, type ChartFreeSystem } from "@/lib/storage";
+import HeirloomPrint from "@/components/HeirloomPrint";
 import BirthProfilePicker from "@/components/BirthProfilePicker";
 import { profileToChartFields } from "@/lib/birth-profiles";
 import { chartInterpretationCost } from "@/lib/chart-pricing";
@@ -1283,7 +1284,20 @@ export default function ChartsClient() {
                   </button>
                 </div>
                 {saved && <p className="mt-3 text-sm text-cream/70">Saved as positions only, never birth data. See your journal.</p>}
-
+                {/* Phase 5 (5.4a): heirloom keepsake export
+                    (print-to-PDF) of this chart's real summary and
+                    interpretation. */}
+                <div className="mt-5">
+                  <HeirloomPrint
+                    title={result.system === "ziwei" ? "Ziwei chart" : result.system === "vedic" ? "Vedic chart" : "Western chart"}
+                    subtitle={question.trim() ? `Focus: ${focus} · “${question.trim()}”` : `Focus: ${focus}`}
+                    date={new Date().toISOString()}
+                    sections={[
+                      { heading: "Your chart in one line", body: chartSummaryText(result, ziweiLang) },
+                      { heading: "Interpretation", body: interpretation },
+                    ]}
+                  />
+                </div>
               </div>
             )}
           </section>
