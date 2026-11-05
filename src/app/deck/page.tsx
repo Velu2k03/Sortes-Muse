@@ -206,9 +206,18 @@ export default function DeckPage() {
             />
           </div>
           {cards.length === 0 && (
-            <p className="mt-8 text-center text-mist">
-              No cards match your search. Try another name.
-            </p>
+            <div className="mt-8 text-center">
+              <p className="text-mist">
+                No cards match {query.trim() ? `"${query.trim()}"` : "your search"}. Try another name, or reset the filters.
+              </p>
+              <button
+                type="button"
+                onClick={() => { setQuery(""); setFilter("all"); }}
+                className="mt-3 rounded-full border border-gold/30 px-4 py-2 text-sm font-semibold text-goldbright hover:border-gold/60"
+              >
+                Reset filters
+              </button>
+            </div>
           )}
         </div>
       ) : (
@@ -249,9 +258,18 @@ export default function DeckPage() {
       </div>
 
       {cards.length === 0 && (
-        <p className="mt-16 text-center text-mist">
-          No cards match your search. Try another name.
-        </p>
+        <div className="mt-16 text-center">
+          <p className="text-mist">
+            No cards match {query.trim() ? `"${query.trim()}"` : "your search"}. Try another name, or reset the filters.
+          </p>
+          <button
+            type="button"
+            onClick={() => { setQuery(""); setFilter("all"); }}
+            className="mt-3 rounded-full border border-gold/30 px-4 py-2 text-sm font-semibold text-goldbright hover:border-gold/60"
+          >
+            Reset filters
+          </button>
+        </div>
       )}
       </>
       )}
