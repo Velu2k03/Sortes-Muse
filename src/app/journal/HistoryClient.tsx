@@ -10,9 +10,12 @@ import { useAuth } from "@/components/AuthProvider";
 import type { Reading } from "@/lib/types";
 import { getCard } from "@/lib/cards";
 import {
+  buildJournalMarkdown,
   groupReadingsByDay,
   isRevisitEligible,
   monthlyReview,
+  PATTERN_MIRROR_MIN_READINGS,
+  patternMirror,
 } from "@/lib/journal";
 
 /**
@@ -179,6 +182,135 @@ export default function HistoryPage() {
             );
           })()}
 
+          {/* Phase 5 (5.1): Pattern Mirror dashboard, computed 100%
+              locally from the seeker's own journal entries. No AI,
+              no invented data: every count comes from the readings
+              above, and fewer than 3 readings shows an honest empty
+              state instead of a thin pattern. */}
+          {(() => {
+            const mirror = patternMirror(history, (cardId) => {
+              try {
+                const c = getCard(cardId);
+                return { arcana: c.arcana, suit: c.suit };
+              } catch {
+                return null;
+              }
+            });
+            const cardName = (cardId: string) => {
+              try {
+                return getCard(cardId).name;
+              } catch {
+                return cardId;
+              }
+            };
+            const elementOf: Record<string, string> = {
+              wands: "Fire",
+              cups: "Water",
+              swords: "Air",
+              pentacles: "Earth",
+            };
+            return (
+              <section
+                aria-label="Pattern Mirror"
+                className="num mt-10 rounded-3xl border border-gold/20 bg-panel/60 p-5 sm:p-6"
+              >
+                <p className="text-xs uppercase tracking-[0.25em] text-gold">
+                  Pattern Mirror
+                </p>
+                {history.length < PATTERN_MIRROR_MIN_READINGS ? (
+                  <p className="mt-2 text-sm text-cream/75">
+                    No patterns yet — your first few readings will appear
+                    here.
+                  </p>
+                ) : (
+                  <>
+                    {mirror.mostDrawn.length > 0 && (
+                      <div className="mt-3">
+                        <p className="text-sm font-semibold text-cream">
+                          Most-drawn cards
+                        </p>
+                        <ul className="mt-1 space-y-1 text-sm text-cream/85">
+                          {mirror.mostDrawn.map((c) => (
+                            <li key={c.cardId}>
+                              {cardName(c.cardId)} · ×{c.count}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {mirror.totalDraws > 0 && (
+                      <div className="mt-4">
+                        <p className="text-sm font-semibold text-cream">
+                          Suit and element balance
+                        </p>
+                        <ul className="mt-1 space-y-1 text-sm text-cream/85">
+                          {mirror.suitBalance.map((s) => (
+                            <li key={s.suit} className="capitalize">
+                              {s.suit} ({elementOf[s.suit]}) · ×{s.count}
+                            </li>
+                          ))}
+                        </ul>
+                        <p className="mt-1 text-sm text-cream/75">
+                          Major Arcana ×{mirror.majors} · Minor Arcana ×
+                          {mirror.minors}
+                        </p>
+                      </div>
+                    )}
+                    {mirror.stalkers.length > 0 && (
+                      <div className="mt-4">
+                        <p className="text-sm font-semibold text-cream">
+                          Cards that keep reappearing
+                        </p>
+                        <p className="mt-1 text-sm text-cream/75">
+                          Drawn 3 or more times across your journal — a
+                          card that keeps showing up, not a verdict.
+                        </p>
+                        <ul className="mt-1 space-y-1 text-sm text-cream/85">
+                          {mirror.stalkers.map((c) => (
+                            <li key={c.cardId}>
+                              {cardName(c.cardId)} · ×{c.count}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {mirror.revisitCandidate && (
+                      <div className="mt-4 rounded-2xl border border-gold/20 bg-panel/40 p-4">
+                        <p className="text-sm font-semibold text-cream">
+                          From about a week ago
+                        </p>
+                        <p className="mt-1 text-sm text-cream/75">
+                          {mirror.revisitCandidate.spreadName}
+                          {mirror.revisitCandidate.question
+                            ? ` · “${mirror.revisitCandidate.question}”`
+                            : ""}{" "}
+                          — cast{" "}
+                          {new Date(
+                            mirror.revisitCandidate.createdAt
+                          ).toLocaleDateString(undefined, {
+                            year: "numeric",
+                            month: "short",
+                            day: "numeric",
+                          })}
+                          . Worth a re-read now that a week has passed.
+                        </p>
+                        <Link
+                          href={`/reading/${mirror.revisitCandidate.id}`}
+                          className="mt-2 inline-block text-sm font-semibold text-goldbright underline"
+                        >
+                          Re-read it
+                        </Link>
+                      </div>
+                    )}
+                  </>
+                )}
+                <p className="mt-3 text-xs text-mist">
+                  Computed from your own readings only. Never paywalled.
+                </p>
+              </section>
+            );
+          })()}
+
           {/* Personal Phase 1: repeated questions, computed from the
               seeker's own saved questions only. Normalizing case and
               punctuation links the same question across readings, so
@@ -335,7 +467,29 @@ export default function HistoryPage() {
               </select>
             </div>
           </div>
-          <div className="mt-3 flex justify-end">
+          <div className="mt-3 flex flex-wrap justify-end gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                const md = buildJournalMarkdown(history, (cardId) => {
+                  try {
+                    return getCard(cardId).name;
+                  } catch {
+                    return cardId;
+                  }
+                });
+                const blob = new Blob([md], { type: "text/markdown" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `sortes-journal-${new Date().toISOString().slice(0, 10)}.md`;
+                a.click();
+                URL.revokeObjectURL(url);
+              }}
+              className="btn-ghost rounded-xl px-4 py-2.5 text-sm font-semibold"
+            >
+              Export journal as Markdown
+            </button>
             <button
               type="button"
               onClick={() => {
