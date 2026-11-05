@@ -456,9 +456,6 @@ export function calculateVedic(input: {
 }): VedicResult {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(input.date);
   if (!match) throw new Error("date must be YYYY-MM-DD");
-  const y = Number(match[1]);
-  const m = Number(match[2]);
-  const d = Number(match[3]);
   if (input.latitude < -90 || input.latitude > 90 || input.longitude < -180 || input.longitude > 180) {
     throw new Error("latitude/longitude out of range");
   }

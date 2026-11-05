@@ -116,9 +116,12 @@ export default function HoloCard({
   // The image itself drives readiness now that there is no GL
   // texture to upload: the sheen fades in once the art has loaded.
   // Reset when the image changes, so a new card does not flash the
-  // old one's ready state.
+  // old one's ready state. The reset is queued as a microtask (the
+  // same pattern ChartsClient uses for its saved-language restore),
+  // so it runs before the new image's load event but is not a
+  // synchronous setState inside the effect body.
   useEffect(() => {
-    setReady(false);
+    queueMicrotask(() => setReady(false));
   }, [image]);
 
   useEffect(() => {
