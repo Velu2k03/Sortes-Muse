@@ -31,6 +31,7 @@ export default function DailyPage() {
   const [daily, setDaily] = useState<DailyCardState | null>(null);
   const [streak, setStreak] = useState(0);
   const [zoomOpen, setZoomOpen] = useState(false);
+  const [showFullMeaning, setShowFullMeaning] = useState(false);
   const drawTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   // HoldButton colours bypass the theme tokens, so track the
   // document theme, 2026-11-04, instead of staying dark in light mode.
@@ -62,6 +63,7 @@ export default function DailyPage() {
   const reduceMotion = useReducedMotion();
 
   const draw = () => {
+    setShowFullMeaning(false);
     setPhase("shuffling");
     // A short ritual pause before the card appears.
     if (drawTimer.current) clearTimeout(drawTimer.current);
@@ -221,23 +223,38 @@ export default function DailyPage() {
                     is the text. Cursor colour is currentColor so it
                     stays visible in light mode, where pure white
                     would vanish on a light panel. */}
-                <TextType
-                  text={orientationMeaning(card, daily.reversed)}
-                  typingSpeed={75}
-                  deletingSpeed={35}
-                  pauseDuration={2200}
-                  mistakes={0.3}
-                  typeEffect="fade"
-                  cursorBlinkDuration={0.55}
-                  variableSpeed={{ min: 40, max: 170 }}
-                  cursorGlide
-                  cursorStyle="bar"
-                  cursorCharacter="_"
-                  showCursor
-                  loop={false}
-                  initialDelay={600}
-                  className="mx-auto mt-5 max-w-lg leading-relaxed text-cream/90"
-                />
+                {showFullMeaning ? (
+                  <p className="mx-auto mt-5 max-w-lg leading-relaxed text-cream/90">
+                    {orientationMeaning(card, daily.reversed)}
+                  </p>
+                ) : (
+                  <>
+                    <TextType
+                      text={orientationMeaning(card, daily.reversed)}
+                      typingSpeed={75}
+                      deletingSpeed={35}
+                      pauseDuration={2200}
+                      mistakes={0.3}
+                      typeEffect="fade"
+                      cursorBlinkDuration={0.55}
+                      variableSpeed={{ min: 40, max: 170 }}
+                      cursorGlide
+                      cursorStyle="bar"
+                      cursorCharacter="_"
+                      showCursor
+                      loop={false}
+                      initialDelay={600}
+                      className="mx-auto mt-5 max-w-lg leading-relaxed text-cream/90"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowFullMeaning(true)}
+                      className="mt-3 text-sm text-mist underline underline-offset-4 hover:text-goldbright"
+                    >
+                      Show full meaning now
+                    </button>
+                  </>
+                )}
                 <p className="mt-6 text-xs italic text-mist">
                   A reflection for today, not a prediction. Come back tomorrow
                   for a new card
