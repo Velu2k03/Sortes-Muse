@@ -81,7 +81,7 @@ export default function CreditsPage() {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error ?? "Checkout failed.");
       if (!data.url) throw new Error("Checkout failed.");
-      window.location.href = data.url;
+      window.location.assign(data.url);
     } catch (err) {
       setDirectError(err instanceof Error ? err.message : "Checkout failed.");
       setDirectFailed(packId);

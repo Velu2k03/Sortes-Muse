@@ -9,14 +9,13 @@ import {
   type DailyCardState,
 } from "@/lib/storage";
 import { getCard, orientationKeywords, orientationMeaning } from "@/lib/cards";
-import { drawSingle, CARD_BACK } from "@/lib/tarot";
+import { drawSingle } from "@/lib/tarot";
 import TarotCard from "@/components/TarotCard";
 import CardModal from "@/components/CardModal";
 import { trackDailyCardDrawn } from "@/components/Analytics";
 import { StarBorder } from "@/components/ReactBits";
 import HoldButton from "@/components/HoldButton";
 import HoloCard from "@/components/HoloCard";
-import Image from "next/image";
 import Link from "next/link";
 
 type Phase = "idle" | "shuffling" | "revealed";

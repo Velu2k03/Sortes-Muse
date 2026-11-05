@@ -271,7 +271,14 @@ function Counter({
     tabular
   };
   const settingsRef = useRef(settings);
-  settingsRef.current = settings;
+  // Phase 4C lint: latest-settings ref synced in a layout effect, not
+  // during render. It must be a layout effect (not a passive one) and
+  // declared before the layout effect below: that effect reads the ref
+  // to compute trend and stagger when the amount changes, and layout
+  // effects run before passive ones on the same commit.
+  useIsoLayoutEffect(() => {
+    settingsRef.current = settings;
+  });
 
   const paint = (item: Item) => {
     const el = item.el;
@@ -383,7 +390,12 @@ function Counter({
   };
 
   const kickRef = useRef(kick);
-  kickRef.current = kick;
+  // Phase 4C lint: latest-kick ref synced in a layout effect, next to
+  // the settings sync above. The ref is read only from the rAF loop,
+  // which runs after commit.
+  useIsoLayoutEffect(() => {
+    kickRef.current = kick;
+  });
 
   useIsoLayoutEffect(() => {
     const e = engine.current;

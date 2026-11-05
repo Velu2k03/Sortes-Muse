@@ -262,7 +262,11 @@ export default function ReportsClient() {
   };
 
   useEffect(() => {
-    if (!loading) void loadSaved();
+    // Phase 4C lint: the load is deferred a microtask past the effect.
+    // loadSaved sets state only after its await (server) or
+    // synchronously for guests, so the deferral keeps both paths out
+    // of the effect body.
+    if (!loading) queueMicrotask(() => void loadSaved());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, user]);
 

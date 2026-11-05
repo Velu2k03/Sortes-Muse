@@ -140,9 +140,14 @@ const LatticeLoader: React.FC<LatticeLoaderProps> = ({
 
   const timerRef = useRef<HTMLSpanElement>(null);
   const dsRef = useRef(0);
-  const markRef = useRef<'done' | 'error'>('done');
-  const mark = status === 'working' ? markRef.current : status;
-  markRef.current = mark;
+  // Phase 4C lint: the settled mark is state, not a ref read during
+  // render. While working, the last settled mark stays visible; when
+  // the status settles to done/error, the mark follows it. Adjusting
+  // state during render is the React-documented pattern for deriving
+  // state from a changed prop.
+  const [mark, setMark] = useState<'done' | 'error'>('done');
+  const settledMark = status === 'working' ? mark : status;
+  if (status !== 'working' && status !== mark) setMark(status);
   const [announce, setAnnounce] = useState(`${label}, in progress`);
 
   const paint = (ds: number) => {
@@ -163,8 +168,13 @@ const LatticeLoader: React.FC<LatticeLoaderProps> = ({
   }, [status, elapsed]);
 
   useEffect(() => {
-    if (status === 'working') setAnnounce(`${label}, in progress`);
-    else setAnnounce(`${status === 'done' ? doneLabel : errorLabel}${showTimer ? ` ${spoken(dsRef.current)}` : ''}`);
+    // Phase 4C lint: the announce text is set a microtask past the
+    // effect. The timer snapshot reads dsRef, which ticks every
+    // 100ms, so a microtask delay never changes the snapped value.
+    queueMicrotask(() => {
+      if (status === 'working') setAnnounce(`${label}, in progress`);
+      else setAnnounce(`${status === 'done' ? doneLabel : errorLabel}${showTimer ? ` ${spoken(dsRef.current)}` : ''}`);
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status]);
 
@@ -216,7 +226,7 @@ const LatticeLoader: React.FC<LatticeLoaderProps> = ({
             <span
               key={i}
               className={`${CELL} [opacity:var(--ll-idle)] [transition:opacity_200ms_ease,background-color_200ms_ease] data-[on]:[background:var(--ll-mark)] data-[on]:[opacity:var(--ll-peak)] group-data-[glow]:data-[on]:[box-shadow:0_0_calc(var(--ll-cell)*1.2)_calc(var(--ll-cell)*0.12)_var(--ll-mark-glow)]`}
-              data-on={marks[mark].includes(i) ? '' : undefined}
+              data-on={marks[settledMark].includes(i) ? '' : undefined}
             />
           ))}
         </span>

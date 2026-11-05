@@ -76,7 +76,12 @@ const StatusMark: React.FC<StatusMarkProps> = ({
   const travel = useMotionValue(0);
   const ringRef = useRef<SVGCircleElement>(null);
   const geo = useRef({ C, P });
-  geo.current = { C, P };
+  // Phase 4C lint: latest-geometry ref synced in an effect. It is read
+  // only from writeDash, which runs from effects and animation
+  // callbacks, after commit.
+  useEffect(() => {
+    geo.current = { C, P };
+  });
   const gen = useRef(0);
 
   const writeDash = () => {

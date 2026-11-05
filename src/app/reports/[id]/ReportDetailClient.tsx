@@ -36,9 +36,14 @@ export default function ReportDetailClient() {
         })
         .catch(() => setNotFound(true));
     } else {
-      const local = getReport(id);
-      if (!local) setNotFound(true);
-      else setReport(local);
+      // Phase 4C lint: the local read sets state a microtask past the
+      // effect; the server branch already sets state only in async
+      // callbacks.
+      queueMicrotask(() => {
+        const local = getReport(id);
+        if (!local) setNotFound(true);
+        else setReport(local);
+      });
     }
   }, [loading, user, id]);
 

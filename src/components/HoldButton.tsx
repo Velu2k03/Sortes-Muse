@@ -134,6 +134,11 @@ const HoldButton: React.FC<HoldButtonProps> = ({
     cancelAnimationFrame(m.raf);
     m.from = m.p;
     m.to = to;
+    // Phase 4C lint: performance.now() is the animation clock here,
+    // called only from pointer handlers, rAF steps, and timers, never
+    // during render. The rule flags the function body because it
+    // cannot trace that call chain, so it is disabled for this line.
+    // eslint-disable-next-line react-hooks/purity
     m.start = performance.now();
     const step = (now: number) => {
       const t = duration > 0 ? Math.min(1, (now - m.start) / duration) : 1;
@@ -151,6 +156,10 @@ const HoldButton: React.FC<HoldButtonProps> = ({
 
   const complete = () => {
     if (phaseRef.current !== 'holding') return;
+    // Phase 4C lint: same animation-clock exception as drive above:
+    // this runs only from an rAF step at full travel or from the
+    // hold-time timeout, never during render.
+    // eslint-disable-next-line react-hooks/purity
     if (performance.now() - gesture.current.start < holdTime - 50) return;
     clearTimers();
     go('done', inputRef.current);
@@ -184,7 +193,11 @@ const HoldButton: React.FC<HoldButtonProps> = ({
     if (!drifted && held < TAP_MS) onTap?.();
   };
   const releaseRef = useRef(release);
-  releaseRef.current = release;
+  // Phase 4C lint: latest-release ref synced in an effect. It is read
+  // only from the pointer-cancel path, after commit.
+  useEffect(() => {
+    releaseRef.current = release;
+  });
 
   const handlePointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
     if (e.button !== 0 || !e.isPrimary || gesture.current.pointerId !== null) return;

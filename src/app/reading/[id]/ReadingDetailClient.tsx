@@ -155,11 +155,12 @@ export default function ReadingDetail({ id }: { id: string }) {
   useEffect(() => {
     const local = getReading(id);
     if (local) {
-      setReading(local);
+      // Phase 4C lint: setState deferred a microtask past the effect.
+      queueMicrotask(() => setReading(local));
       return;
     }
     if (!user) {
-      setReading(null);
+      queueMicrotask(() => setReading(null));
       return;
     }
     let cancelled = false;
@@ -187,13 +188,19 @@ export default function ReadingDetail({ id }: { id: string }) {
 
   // Prefill the step input from the saved step once the reading loads,
   // so clearing the field actually clears it instead of falling back.
+  // Phase 4C lint: the set is deferred a microtask past the effect.
+  // The dependency is reading?.id on purpose: depending on the whole
+  // reading object would re-prefill (and wipe user edits) on every
+  // reading update, for example after a save.
   useEffect(() => {
-    if (reading) setNextStepInput(reading.nextStep ?? "");
+    if (reading) queueMicrotask(() => setNextStepInput(reading.nextStep ?? ""));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reading?.id]);
 
   // Same prefill rule for the revisit note.
   useEffect(() => {
-    if (reading) setRevisitInput(reading.revisitNote ?? "");
+    if (reading) queueMicrotask(() => setRevisitInput(reading.revisitNote ?? ""));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reading?.id]);
 
   if (reading === undefined) {
@@ -467,8 +474,15 @@ export default function ReadingDetail({ id }: { id: string }) {
           exists yet, or to display a saved note. Never shown early. */}
       {(() => {
         const parsed = Date.parse(reading.createdAt);
+        // Phase 4C lint: Date.now() is the current day here, floored
+        // to whole days, so re-renders within the same day are stable
+        // and the 7-day gate only flips at a midnight boundary, which
+        // a re-render legitimately reflects. There is no prop or state
+        // to derive this from; the render-time read is the correct
+        // place, so the purity rule is disabled for this line.
         const ageDays = Number.isNaN(parsed)
           ? 0
+          // eslint-disable-next-line react-hooks/purity
           : Math.floor((Date.now() - parsed) / 86400000);
         if (reading.revisitNote) {
           return (

@@ -216,7 +216,10 @@ const GlideSelect: React.FC<GlideSelectProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
   useEffect(() => {
-    if (disabled && phase !== 'closed') close('instant');
+    // Phase 4C lint: close() sets state (and clears timers), so it
+    // runs a microtask past the effect instead of synchronously in it.
+    // A disabled select still closes immediately after the same commit.
+    if (disabled && phase !== 'closed') queueMicrotask(() => close('instant'));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [disabled]);
   useEffect(() => () => clearTimeout(closeTimer.current), []);

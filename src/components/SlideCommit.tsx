@@ -300,7 +300,11 @@ const SlideCommit: React.FC<SlideCommitProps> = ({
     if (x.get() >= TRAVEL) commit(false);
     else if (g.moved) goHome(velocityOf(g.hist));
   };
-  live.current = { move, up };
+  // Phase 4C lint: latest-handler ref synced in an effect. It is read
+  // only from the window pointer listeners, after commit.
+  useEffect(() => {
+    live.current = { move, up };
+  });
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (disabled || phase === 'pending' || phase === 'done') return;

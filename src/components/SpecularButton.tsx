@@ -268,7 +268,11 @@ const SpecularButton = ({
     disabled
   };
   const settingsRef = useRef(settings);
-  settingsRef.current = settings;
+  // Phase 4C lint: latest-settings ref synced in an effect. It is read
+  // only from the canvas loop and pointer handlers, after commit.
+  useEffect(() => {
+    settingsRef.current = settings;
+  });
 
   useEffect(() => {
     const button = buttonRef.current;

@@ -107,9 +107,14 @@ const SwipeToast: React.FC<SwipeToastProps> = ({
   const reason = useRef<SwipeToastCloseReason>('timeout');
   const leaving = useRef(false);
   const phaseRef = useRef(phase);
-  phaseRef.current = phase;
   const latest = useRef<Latest>({} as Latest);
-  latest.current = { onClose, onAction, slideMs, inline };
+  // Phase 4C lint: latest-phase/callback refs synced in an effect.
+  // They are read only from close/finish/rescue and the open effect,
+  // all after commit.
+  useEffect(() => {
+    phaseRef.current = phase;
+    latest.current = { onClose, onAction, slideMs, inline };
+  });
 
   const y = useMotionValue(0);
   const fade = useMotionValue(1);
@@ -176,7 +181,6 @@ const SwipeToast: React.FC<SwipeToastProps> = ({
       flags.current.hover = false;
       syncFuse();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pauseOnHover]);
   useEffect(() => {
     const onVisibility = () => {
@@ -189,7 +193,6 @@ const SwipeToast: React.FC<SwipeToastProps> = ({
       clearTimeout(closeTimer.current);
       anim.current?.cancel();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const swipeOut = (dy: number, v: number) => {

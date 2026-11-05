@@ -272,6 +272,12 @@ const InfiniteSpiral = ({
       <div className="absolute inset-0 [transform-style:preserve-3d]" role="list" aria-label="Infinite spiral gallery">
         {normalizedItems.map((item, index) => {
           const content = (
+            // Phase 4C lint: next/image wraps the image in a positioned
+            // span, which breaks this 3D helix (the img is the direct
+            // inset-0 child of the transformed track, with its own
+            // eager/lazy split for the first six items). A plain img
+            // is correct here.
+            // eslint-disable-next-line @next/next/no-img-element
             <img
               className="absolute inset-0 block h-full w-full select-none object-center"
               src={item.src}

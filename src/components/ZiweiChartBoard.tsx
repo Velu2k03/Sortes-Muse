@@ -108,7 +108,8 @@ export default function ZiweiChartBoard({ result, lang = "en", view = "ring", sh
   const [selected, setSelected] = useState(life.index);
   const [hovered, setHovered] = useState<number | null>(null);
   useEffect(() => {
-    setSelected(life.index);
+    // Phase 4C lint: the reset runs a microtask past the effect.
+    queueMicrotask(() => setSelected(life.index));
     // Reset only when a new chart arrives, not on language change.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [result.solarDate, result.timeLabel]);

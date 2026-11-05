@@ -30,23 +30,30 @@ export default function ReturnLoop() {
   const [latest, setLatest] = useState<{ id: string; question?: string; spreadName: string; createdAt: string } | null>(null);
 
   useEffect(() => {
-    const daily = getDailyCard();
-    if (daily) {
-      setDailyName(getCard(daily.cardId)?.name ?? null);
-      setDailyReversed(daily.reversed);
-    }
-    setStreak(getDailyStreak());
-    // Codex review on PR 51, correct: signed-in users whose readings
-    // live only on the server got "no readings saved yet" here,
-    // because this read local storage only. Merge server history the
-    // same way the journal page does; GET returns an empty list when
-    // signed out, so this is safe for guests too.
+    // Phase 4C lint: the mount restore sets state a microtask past
+    // the effect. The server fetch stays outside it: it already sets
+    // state only in async callbacks, and it must fire on mount without
+    // waiting for the microtask.
     const local = getHistory();
     const pick = (list: typeof local) => {
       const sorted = [...list].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
       if (sorted.length > 0) setLatest(sorted[0]);
     };
-    pick(local);
+    queueMicrotask(() => {
+      const daily = getDailyCard();
+      if (daily) {
+        setDailyName(getCard(daily.cardId)?.name ?? null);
+        setDailyReversed(daily.reversed);
+      }
+      setStreak(getDailyStreak());
+      // Codex review on PR 51, correct: signed-in users whose readings
+      // live only on the server got "no readings saved yet" here,
+      // because this read local storage only. Merge server history the
+      // same way the journal page does; GET returns an empty list when
+      // signed out, so this is safe for guests too.
+      pick(local);
+      setLoaded(true);
+    });
     fetch("/api/history")
       .then((r) => r.json())
       .then((d) => {
@@ -59,7 +66,6 @@ export default function ReturnLoop() {
         pick(merged);
       })
       .catch(() => {});
-    setLoaded(true);
   }, []);
 
   if (!loaded) return null;

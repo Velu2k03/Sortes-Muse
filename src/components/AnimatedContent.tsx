@@ -86,7 +86,12 @@ const AnimatedContent = ({
 }: AnimatedContentProps) => {
   const ref = useRef<HTMLDivElement>(null);
   const callbacksRef = useRef({ onStart, onComplete, onDisappearanceComplete });
-  callbacksRef.current = { onStart, onComplete, onDisappearanceComplete };
+  // Phase 4C lint: latest-callback ref synced in an effect. The ref is
+  // read only inside gsap callbacks, which fire after commit, so the
+  // effect sync is fresh whenever they run.
+  useEffect(() => {
+    callbacksRef.current = { onStart, onComplete, onDisappearanceComplete };
+  });
 
   useIsomorphicLayoutEffect(() => {
     const el = ref.current;

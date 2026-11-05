@@ -94,15 +94,27 @@ const ThoughtLine: React.FC<ThoughtLineProps> = ({
   const dsRef = useRef(0);
   const prevWorking = useRef(isWorking);
   const latest = useRef<{ onSettle?: (seconds: number) => void }>({});
-  latest.current = { onSettle };
+  // Phase 4C lint: the latest-callback ref is synced in an effect,
+  // the same pattern ChartsClient uses for systemRef, and this effect
+  // is declared before the announce effect below, so the callback is
+  // fresh whenever the announce effect reads it.
+  useEffect(() => {
+    latest.current = { onSettle };
+  }, [onSettle]);
   const [announce, setAnnounce] = useState(label);
 
   useEffect(() => {
-    if (working) setAutoSettled(false);
+    // Phase 4C lint: the reset runs a microtask past the effect.
+    if (working) queueMicrotask(() => setAutoSettled(false));
   }, [working]);
   useEffect(() => {
-    if (isWorking) setOpen(true);
-    else if (collapseOnSettle) setOpen(false);
+    // Phase 4C lint: the open/close runs a microtask past the effect.
+    // The user can still close the trace while working: this only
+    // fires when isWorking or collapseOnSettle changes, as before.
+    queueMicrotask(() => {
+      if (isWorking) setOpen(true);
+      else if (collapseOnSettle) setOpen(false);
+    });
   }, [isWorking, collapseOnSettle]);
 
   useEffect(() => {
@@ -186,12 +198,18 @@ const ThoughtLine: React.FC<ThoughtLineProps> = ({
   }, [isWorking, label, doneText, fontSize, showTimer]);
 
   useEffect(() => {
-    if (isWorking) {
-      setAnnounce(label);
-      return;
-    }
-    setAnnounce(showTimer ? `${doneText} ${spoken(dsRef.current)}` : doneText);
-    latest.current.onSettle?.(dsRef.current / 10);
+    // Phase 4C lint: the announce text (and the settle callback) run
+    // a microtask past the effect. The timer snapshot reads dsRef,
+    // which ticks every 100ms, so a microtask delay never changes the
+    // snapped value.
+    queueMicrotask(() => {
+      if (isWorking) {
+        setAnnounce(label);
+        return;
+      }
+      setAnnounce(showTimer ? `${doneText} ${spoken(dsRef.current)}` : doneText);
+      latest.current.onSettle?.(dsRef.current / 10);
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isWorking]);
 

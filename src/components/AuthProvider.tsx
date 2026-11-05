@@ -53,7 +53,11 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 const MIGRATED_KEY = "sortes-migrated-v1";
 
 /** Parse a JSON response without throwing on empty / non-JSON bodies. */
-async function safeJson(res: Response): Promise<any> {
+interface SafeJsonBody {
+  user?: { id: string; email: string; credits?: number };
+  credits?: number;
+}
+async function safeJson(res: Response): Promise<SafeJsonBody> {
   const text = await res.text();
   if (!text) return {};
   try {
@@ -90,7 +94,7 @@ async function migrateGuestData(): Promise<number> {
     // can retry, and report the server balance (never the local one).
     const me = await fetch("/api/auth/me")
       .then(safeJson)
-      .catch(() => ({}));
+      .catch((): SafeJsonBody => ({}));
     return typeof me.user?.credits === "number" ? me.user.credits : 0;
   }
   const me = await safeJson(await fetch("/api/auth/me"));
@@ -112,7 +116,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const merged = await migrateGuestData();
           setCredits(merged);
         } else {
-          setCredits(data.user.credits);
+          setCredits(data.user.credits ?? null);
         }
       } else {
         setUser(null);

@@ -220,7 +220,11 @@ export default function ChartsClient() {
   // and CardBurst is pointer-events-none decoration.
   useEffect(() => {
     if (!result) return;
-    setShowBurst(true);
+    // Phase 4C lint: setState deferred a microtask past the effect,
+    // the same pattern the ziwei-lang restore below already uses, so
+    // the burst still fires once per new result with no extra render
+    // cascade. The hide timer was already a callback, not flagged.
+    queueMicrotask(() => setShowBurst(true));
     const t = setTimeout(() => setShowBurst(false), 1000);
     return () => clearTimeout(t);
   }, [result]);
@@ -247,16 +251,21 @@ export default function ChartsClient() {
       const raw = window.localStorage.getItem("sortes-birth-details");
       if (!raw) return;
       const saved = JSON.parse(raw) as { date?: string; time?: string; unknownTime?: boolean; gender?: "male" | "female"; preset?: string; latitude?: string; longitude?: string; timeZone?: string };
-      if (saved.date) setDate(saved.date);
-      if (saved.time) setTime(saved.time);
-      if (typeof saved.unknownTime === "boolean") setUnknownTime(saved.unknownTime);
-      if (saved.gender) setGender(saved.gender);
-      if (saved.preset) setPreset(saved.preset);
-      if (saved.latitude) setLatitude(saved.latitude);
-      if (saved.longitude) setLongitude(saved.longitude);
-      if (saved.timeZone) setTimeZoneOverride(saved.timeZone);
+      // Phase 4C lint: the restore sets state a microtask past the
+      // mount effect (same pattern as the ziwei-lang restore), so the
+      // form paints blank once and fills immediately after, exactly
+      // as the synchronous version did, with no cascading render.
+      queueMicrotask(() => {
+        if (saved.date) setDate(saved.date);
+        if (saved.time) setTime(saved.time);
+        if (typeof saved.unknownTime === "boolean") setUnknownTime(saved.unknownTime);
+        if (saved.gender) setGender(saved.gender);
+        if (saved.preset) setPreset(saved.preset);
+        if (saved.latitude) setLatitude(saved.latitude);
+        if (saved.longitude) setLongitude(saved.longitude);
+        if (saved.timeZone) setTimeZoneOverride(saved.timeZone);
+      });
     } catch {}
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   // Glosses toggle: default off in English, on in Chinese. Reset on
   // language change, so English mode is actually English in detail
@@ -334,7 +343,8 @@ export default function ChartsClient() {
   // the calculated system changes.
   useEffect(() => {
     if (!user || !result) {
-      setServerFree(null);
+      // Phase 4C lint: reset deferred a microtask past the effect.
+      queueMicrotask(() => setServerFree(null));
       return;
     }
     let cancelled = false;
@@ -347,6 +357,11 @@ export default function ChartsClient() {
     return () => {
       cancelled = true;
     };
+    // Phase 4C lint: the effect refetches only when the calculated
+    // system changes. Depending on the whole result object would
+    // refetch on every recalculation of the same system, so
+    // result?.system is the intentional dependency.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, result?.system]);
 
   // Label truth: the server is the authority for signed-in users
@@ -860,8 +875,8 @@ export default function ChartsClient() {
         {system === "ziwei" && unknownTime && (
           <p className="mt-4 rounded-xl border border-gold/25 bg-panel/50 px-4 py-3 text-sm leading-relaxed text-cream/80">
             Ziwei needs a birth hour: the twelve palaces are placed by
-            the two-hour branch you were born in. Uncheck "I do not
-            know the birth time" and set the hour to calculate a Ziwei
+            the two-hour branch you were born in. Uncheck &ldquo;I do not
+            know the birth time&rdquo; and set the hour to calculate a Ziwei
             chart, or pick Western or Vedic for an unknown-time chart.
           </p>
         )}

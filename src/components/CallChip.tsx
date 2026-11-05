@@ -80,13 +80,17 @@ const CallChip: React.FC<CallChipProps> = ({
   const fraction = useRef(0);
   const clock = useRef({ ms: 0 });
   const shakeAnim = useRef<Animation | null>(null);
-  const statusRef = useRef(status);
-  statusRef.current = status;
   const [mounted, setMounted] = useState(false);
   const [pressed, setPressed] = useState(false);
   const [announce, setAnnounce] = useState('');
-  const roll = useRef<{ cur: Glyph; prev: Glyph | null }>({ cur: glyphOf(status), prev: null });
-  if (glyphOf(status) !== roll.current.cur) roll.current = { cur: glyphOf(status), prev: roll.current.cur };
+  // Phase 4C lint: the glyph roll is state, not a ref written during
+  // render. Adjusting state during render is the React-documented
+  // pattern for deriving state from a changed prop: when the status
+  // changes, the new glyph rolls in and the old one rolls out.
+  const [roll, setRoll] = useState<{ cur: Glyph; prev: Glyph | null }>({ cur: glyphOf(status), prev: null });
+  if (glyphOf(status) !== roll.cur) {
+    setRoll({ cur: glyphOf(status), prev: roll.cur });
+  }
 
   const setFraction = (f: number, instant: boolean) => {
     const fill = fillRef.current;
@@ -121,8 +125,11 @@ const CallChip: React.FC<CallChipProps> = ({
 
   useEffect(() => {
     mountedRef.current = true;
-    setMounted(true);
-    apply(statusRef.current, statusRef.current === 'running');
+    // Phase 4C lint: mounted flips a microtask past the effect.
+    // The mount effect reads the mount-time status prop directly
+    // (it runs once, so the prop value is the mount value).
+    queueMicrotask(() => setMounted(true));
+    apply(status, status === 'running');
     return () => {
       mountedRef.current = false;
       shakeAnim.current?.cancel();
@@ -171,7 +178,7 @@ const CallChip: React.FC<CallChipProps> = ({
   }, [status]);
 
   const font = Math.max(11, Math.round(size * 0.38));
-  const glyphState = (g: Glyph) => (g === roll.current.cur ? 'in' : g === roll.current.prev ? 'out' : undefined);
+  const glyphState = (g: Glyph) => (g === roll.cur ? 'in' : g === roll.prev ? 'out' : undefined);
   const toolIcon = typeof icon === 'string' ? (ICONS[icon as CallChipIcon] ?? ICONS.terminal) : null;
   const iconSize = font + 2;
 

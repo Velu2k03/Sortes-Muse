@@ -199,24 +199,29 @@ export default function PixelCard({
   const palette = colors ? toList(colors) : preset.colors[tone];
   const focusOff = noFocus ?? preset.noFocus;
 
-  settingsRef.current = {
-    colors: palette.length ? palette : preset.colors[tone],
-    gap: Math.max(2, Number(gap ?? preset.gap) || preset.gap),
-    speed: clamp(Number(speed ?? preset.speed) || 0, 0, 100),
-    pixelSize: Math.max(0.5, pixelSize),
-    shape: SHAPES[shape] ?? 0,
-    origin,
-    revealDuration: Math.max(50, revealDuration),
-    spotlight: clamp(spotlight, 0, 1),
-    glow: clamp(glow, 0, 1),
-    glowColor: toRgb(glowColor || preset.glow[tone]),
-    opacity: clamp(opacity, 0, 1),
-    fade: clamp(fade, 0, 1),
-    trigger: TRIGGERS.includes(trigger) ? trigger : 'hover',
+  // Phase 4C lint: latest-settings ref synced in an effect. It is read
+  // only from the pixel loop, event handlers, and effects, all after
+  // commit.
+  useEffect(() => {
+    settingsRef.current = {
+      colors: palette.length ? palette : preset.colors[tone],
+      gap: Math.max(2, Number(gap ?? preset.gap) || preset.gap),
+      speed: clamp(Number(speed ?? preset.speed) || 0, 0, 100),
+      pixelSize: Math.max(0.5, pixelSize),
+      shape: SHAPES[shape] ?? 0,
+      origin,
+      revealDuration: Math.max(50, revealDuration),
+      spotlight: clamp(spotlight, 0, 1),
+      glow: clamp(glow, 0, 1),
+      glowColor: toRgb(glowColor || preset.glow[tone]),
+      opacity: clamp(opacity, 0, 1),
+      fade: clamp(fade, 0, 1),
+      trigger: TRIGGERS.includes(trigger) ? trigger : 'hover',
     clickPulse,
     intro,
     introDelay: Math.max(0, introDelay)
-  };
+    };
+  });
 
   useEffect(() => {
     const container = containerRef.current;

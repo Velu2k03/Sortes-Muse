@@ -100,14 +100,20 @@ export default function HoloCard({
   const [flipped, setFlipped] = useState(false);
   const flippable = Boolean(backImage);
 
-  settingsRef.current = {
-    intensity: clamp(intensity, 0, 1),
-    foil: foilColor,
-    tiltMax: clamp(tiltMax, 0, 45),
-    hoverScale: clamp(hoverScale, 0.8, 1.3),
-    idle,
-  };
-  flipRef.current = flippable && flipped;
+  // Phase 4C lint: latest settings/flip refs synced in an effect, not
+  // during render. Both are read only from the rAF tick, which runs
+  // after commit, and this effect is declared before the wake effect
+  // below, so the loop starts with fresh values.
+  useEffect(() => {
+    settingsRef.current = {
+      intensity: clamp(intensity, 0, 1),
+      foil: foilColor,
+      tiltMax: clamp(tiltMax, 0, 45),
+      hoverScale: clamp(hoverScale, 0.8, 1.3),
+      idle,
+    };
+    flipRef.current = flippable && flipped;
+  });
 
   useEffect(() => {
     wakeRef.current?.();
@@ -316,11 +322,21 @@ export default function HoloCard({
       ) : null}
       <div ref={rotorRef} className="holo-card__rotor">
         <div className="holo-card__face holo-card__face--front">
-          {image ? <img src={image} alt="" draggable={false} onLoad={onImageLoad} onError={() => setReady(true)} /> : null}
+          {image ? (
+            // Phase 4C lint: next/image wraps the image in a positioned
+            // span, which breaks this 3D face (the img must be the direct
+            // child the rotor transform and sheen overlay expect), and
+            // the onLoad/onError handlers gate the ready state. A plain
+            // img is correct here.
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={image} alt="" draggable={false} onLoad={onImageLoad} onError={() => setReady(true)} />
+          ) : null}
           <span className="holo-card__sheen" aria-hidden="true" />
         </div>
         {flippable && backImage ? (
           <div className="holo-card__face holo-card__face--back">
+            {/* Phase 4C lint: same 3D-face reason as the front image. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={backImage} alt="" draggable={false} />
           </div>
         ) : null}
