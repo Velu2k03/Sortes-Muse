@@ -21,15 +21,41 @@ const nextConfig: NextConfig = {
       { source: "/intake", destination: "/spreads", permanent: false },
     ];
   },
-  // Security headers audit: Vercel only sent HSTS. These are safe,
-  // no content-security-policy here, because a strict CSP could
-  // break Lemon Squeezy checkout and the AI routes, and that
-  // needs its own tested change, not a header added blind.
+  // Security headers audit (Phase 1, 2026-11-05): CSP added and
+  // smoke-tested with `npm run build` + `npm run start` + curl on /
+  // and /credits. Lemon Squeezy checkout is a full-page redirect
+  // (window.location.href), not an iframe or script, so frame-src
+  // 'none' does not block it; Supabase auth runs from the browser
+  // client, so connect-src allows *.supabase.co. Deliberately left
+  // out: script-src 'unsafe-inline' is KEPT because Next.js needs
+  // it for its inline bootstrap scripts (a nonce-based CSP would
+  // need middleware to mint per-request nonces — a follow-up, not
+  // this phase); no 'unsafe-eval'; no third-party script origins
+  // beyond Plausible; frame-ancestors 'none' matches the
+  // X-Frame-Options: DENY below. HSTS is already sent by Vercel
+  // and is not duplicated here.
   async headers() {
+    const csp = [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' https://plausible.io",
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data: blob:",
+      "font-src 'self'",
+      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://plausible.io",
+      "frame-src 'none'",
+      "frame-ancestors 'none'",
+      "form-action 'self'",
+      "object-src 'none'",
+      "base-uri 'self'",
+      "worker-src 'self'",
+      "manifest-src 'self'",
+      "upgrade-insecure-requests",
+    ].join("; ");
     return [
       {
         source: "/:path*",
         headers: [
+          { key: "Content-Security-Policy", value: csp },
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "X-Frame-Options", value: "DENY" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
