@@ -2,82 +2,79 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import CountUp from "@/components/CountUp";
 import Icon, { type IconName } from "@/components/Icon";
+import BranchedMenu, { type BranchedMenuItem } from "@/components/BranchedMenu";
 import { APP_SHORT } from "@/lib/site";
 
-// Phase F: every nav entry carries a one-line plain description. The
-// desktop bar shows the label with the description as a hover title;
-// the mobile menu shows the description under the label, so a
-// first-time user never has to guess what a section does.
-const NAV: { href: string; label: string; icon: IconName; desc: string }[] = [
-  { href: "/", label: "Home", icon: "home", desc: "Start here: daily card, spreads, and charts" },
-  { href: "/deck", label: "Deck", icon: "deck", desc: "All 78 cards, upright and reversed" },
-  { href: "/daily", label: "Daily Card", icon: "sparkle", desc: "Your free card of the day" },
-  { href: "/spreads", label: "Spreads", icon: "search", desc: "Tarot spreads for a question" },
-  { href: "/charts", label: "Charts", icon: "chart", desc: "Birth charts: Western, Vedic, Ziwei" },
-  { href: "/reports", label: "Reports", icon: "briefcase", desc: "Keep-forever reports, 1 Oracle each" },
-  { href: "/horoscope", label: "Horoscope", icon: "globe", desc: "Daily and weekly reflections, free" },
-  { href: "/guides", label: "Guides", icon: "iconoirBook", desc: "How tarot and charts work" },
-  { href: "/history", label: "Journal", icon: "lock", desc: "Your past readings and notes" },
+// Header grouping, 2026-11-05: the desktop bar shows four groups
+// (Tarot, Astrology, Learn, Journal) instead of nine links plus a
+// More menu. Tapping a group opens one React Bits BranchedMenu panel
+// with every destination in that group, the current page traced by
+// the branch line. Home stays on the logo, Oracles stays as the pill
+// plus Top up, and Sign in stays where it was, so buying is never
+// hidden behind a menu. The same BranchedMenu is the mobile menu.
+// About and Methodology live in Learn; they were footer-only before.
+const GROUPS: BranchedMenuItem[] = [
+  { label: "Home", value: "/" },
+  {
+    label: "Tarot",
+    children: [
+      { value: "/daily", label: "Daily Card" },
+      { value: "/spreads", label: "Spreads" },
+      { value: "/deck", label: "Deck" },
+      { value: "/birth-card", label: "Birth Card" },
+    ],
+  },
+  {
+    label: "Astrology",
+    children: [
+      { value: "/charts", label: "Charts" },
+      { value: "/reports", label: "Reports" },
+      { value: "/horoscope", label: "Horoscope" },
+    ],
+  },
+  {
+    label: "Learn",
+    children: [
+      { value: "/guides", label: "Guides" },
+      { value: "/faq", label: "FAQ" },
+      { value: "/about", label: "About Sortes" },
+      { value: "/methodology", label: "Methodology" },
+    ],
+  },
+  { label: "Journal", value: "/history" },
 ];
 
-// Unified names, decided in the post-report review: Spreads (not
-// Readings), Journal (not History), Oracles (not Credits). The same
-// names are used in the desktop bar, the mobile menu, and the footer.
-// Desktop discoverability: Oracles and FAQ are not hidden behind a
-// second tap. They live in the More menu on desktop, so every destination is reachable from the desktop bar without crowding it. Deck stays in the primary bar; More holds Birth Card, Oracles, and FAQ.
-// destinations are reachable from the desktop bar without crowding it.
-const MORE: { href: string; label: string; icon: IconName; desc: string }[] = [
-  { href: "/birth-card", label: "Birth Card", icon: "calendar", desc: "One Major Arcana card from your birth date" },
-  { href: "/credits", label: "Oracles", icon: "coin", desc: "Buy Oracles: 5, 12, and 30 packs" },
-  { href: "/faq", label: "FAQ", icon: "info", desc: "Common questions, answered" },
+// Desktop bar group buttons open the panel with that section open.
+// Journal is a leaf, so its bar button is a plain link.
+const BAR_GROUPS = [
+  { label: "Tarot", index: 1 },
+  { label: "Astrology", index: 2 },
+  { label: "Learn", index: 3 },
 ];
-// Deep UX Batch B: the mobile menu is grouped by job, so a user
-// finds a section by what they want to do, not by guessing a label.
-const MOBILE_GROUPS: { heading: string; items: { href: string; label: string; icon: IconName; desc: string }[] }[] = [
-  { heading: "Reflect", items: [
-    { href: "/", label: "Home", icon: "home", desc: "Start here: daily card, spreads, and charts" },
-    { href: "/daily", label: "Daily Card", icon: "sparkle", desc: "Your free card of the day" },
-    { href: "/spreads", label: "Spreads", icon: "search", desc: "Tarot spreads for a question" },
-  ]},
-  { heading: "Understand", items: [
-    { href: "/charts", label: "Charts", icon: "chart", desc: "Birth charts: Western, Vedic, Ziwei" },
-    { href: "/reports", label: "Reports", icon: "briefcase", desc: "Keep-forever reports, 1 Oracle each" },
-    { href: "/horoscope", label: "Horoscope", icon: "globe", desc: "Daily and weekly reflections, free" },
-  ]},
-  { heading: "Explore", items: [
-    { href: "/deck", label: "Deck", icon: "deck", desc: "All 78 cards, upright and reversed" },
-    { href: "/guides", label: "Guides", icon: "iconoirBook", desc: "How tarot and charts work" },
-    { href: "/birth-card", label: "Birth Card", icon: "calendar", desc: "One Major Arcana card from your birth date" },
-  ]},
-  { heading: "Keep", items: [
-    { href: "/history", label: "Journal", icon: "lock", desc: "Your past readings and notes" },
-    { href: "/credits", label: "Oracles", icon: "coin", desc: "Buy Oracles: 5, 12, and 30 packs" },
-    { href: "/faq", label: "FAQ", icon: "info", desc: "Common questions, answered" },
-  ]},
-];
+
+const ALL_HREFS = ["/", "/daily", "/spreads", "/deck", "/birth-card", "/charts", "/reports", "/horoscope", "/guides", "/faq", "/about", "/methodology", "/history"];
 
 export default function Header() {
   const { credits, user, loading } = useAuth();
   const pathname = usePathname();
-  // Phase F: the current section is marked, on desktop and mobile, so
-  // a user always knows where they are. Deep pages highlight their
-  // parent section: a reading detail highlights Journal, an intake or
-  // spread flow highlights Spreads, a report detail highlights Reports.
-  const isActive = (href: string) => {
-    if (pathname === href) return true;
-    if (href === "/spreads" && (pathname.startsWith("/spreads/") || pathname.startsWith("/intake/"))) return true;
-    if (href === "/history" && pathname.startsWith("/reading/")) return true;
-    if (href === "/reports" && pathname.startsWith("/reports/")) return true;
-    if (href === "/guides" && pathname.startsWith("/guides/")) return true;
-    return false;
-  };
-  const [open, setOpen] = useState(false);
-  const [moreOpen, setMoreOpen] = useState(false);
+  const router = useRouter();
+  // Deep pages highlight their parent section: a reading detail
+  // highlights Journal, an intake or spread flow highlights
+  // Spreads, a report detail highlights Reports.
+  const activeHref = (() => {
+    if (pathname.startsWith("/spreads/") || pathname.startsWith("/intake/")) return "/spreads";
+    if (pathname.startsWith("/reading/")) return "/history";
+    if (pathname.startsWith("/reports/")) return "/reports";
+    if (pathname.startsWith("/guides/")) return "/guides";
+    return ALL_HREFS.includes(pathname) ? pathname : "/";
+  })();
+  const [panel, setPanel] = useState<number | null>(null);
+  const [mobileOpen, setMobileOpen] = useState(false);
   // Theme default is light, persisted in
   // localStorage under sortes-theme, layout's inline script already
   // set data-theme before paint so there is no light flash. The toggle
@@ -104,15 +101,15 @@ export default function Header() {
     window.dispatchEvent(new Event("sortes-theme-change"));
   };
   const initial = user?.email ? user.email.charAt(0).toUpperCase() : "?";
+  const go = (value: string) => {
+    setPanel(null);
+    setMobileOpen(false);
+    router.push(value);
+  };
 
   return (
     <header className="sticky top-0 z-40 border-b border-gold/15 bg-ink/85 backdrop-blur-md">
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
-        {/* Header crowding fix: desktop nav only at lg and up, so the
-            nav plus credit pill, Top up, and Sign in do not
-            collide or wrap at tablet widths (768-1024px). Below lg the
-            hamburger menu carries all nav items. Logo is smaller at
-            small widths to keep it clear of the first nav item. */}
+      <div className="relative mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
         <Link href="/" className="flex shrink-0 items-center gap-2.5">
           <Image
             src="/brand/logo.webp"
@@ -127,56 +124,26 @@ export default function Header() {
         </Link>
 
         <nav className="hidden items-center gap-4 lg:flex" aria-label="Primary">
-          {NAV.map((n) => {
-            const active = isActive(n.href);
-            return (
-              <Link
-                key={n.href}
-                href={n.href}
-                title={n.desc}
-                aria-current={active ? "page" : undefined}
-                className={
-                  active
-                    ? "text-sm font-semibold text-goldbright"
-                    : "text-sm text-cream/80 transition hover:text-goldbright"
-                }
-              >
-                {n.label}
-              </Link>
-            );
-          })}
-          <div className="relative">
+          {BAR_GROUPS.map((g) => (
             <button
+              key={g.label}
               type="button"
-              onClick={() => setMoreOpen((v) => !v)}
-              onKeyDown={(e) => { if (e.key === "Escape") setMoreOpen(false); }}
-              aria-expanded={moreOpen}
+              onClick={() => setPanel((v) => (v === g.index ? null : g.index))}
+              onKeyDown={(e) => { if (e.key === "Escape") setPanel(null); }}
+              aria-expanded={panel === g.index}
               aria-haspopup="true"
-              className="text-sm text-cream/80 transition hover:text-goldbright"
+              className={panel === g.index ? "text-sm font-semibold text-goldbright" : "text-sm text-cream/80 transition hover:text-goldbright"}
             >
-              More
+              {g.label}
             </button>
-            {moreOpen && (
-              <div className="absolute right-0 top-full z-50 mt-2 w-64 rounded-2xl border border-gold/25 bg-navydeep p-2 shadow-2xl">
-                {MORE.map((n) => {
-                  const active = isActive(n.href);
-                  return (
-                    <Link
-                      key={n.href}
-                      href={n.href}
-                      onClick={() => setMoreOpen(false)}
-                      title={n.desc}
-                      aria-current={active ? "page" : undefined}
-                      className={`block rounded-xl px-3 py-2.5 hover:bg-gold/10 ${active ? "font-semibold text-goldbright" : "text-cream/90"}`}
-                    >
-                      <span className="block text-sm">{n.label}</span>
-                      <span className="block text-xs text-mist">{n.desc}</span>
-                    </Link>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+          ))}
+          <Link
+            href="/history"
+            aria-current={activeHref === "/history" ? "page" : undefined}
+            className={activeHref === "/history" ? "text-sm font-semibold text-goldbright" : "text-sm text-cream/80 transition hover:text-goldbright"}
+          >
+            Journal
+          </Link>
         </nav>
 
         <div className="flex shrink-0 items-center gap-3">
@@ -228,59 +195,70 @@ export default function Header() {
           <button
             type="button"
             className="rounded-lg p-3 text-cream/80 lg:hidden"
-            onClick={() => setOpen((v) => !v)}
+            onClick={() => setMobileOpen((v) => !v)}
             aria-label="Toggle menu"
-            aria-expanded={open}
+            aria-expanded={mobileOpen}
           >
-            <Icon name={open ? "close" : "menu"} size={22} />
+            <Icon name={mobileOpen ? "close" : "menu"} size={22} />
           </button>
         </div>
+
+        {panel !== null && (
+          <div
+            className="absolute right-4 top-full z-50 mt-2 hidden w-[300px] rounded-2xl border border-gold/25 bg-navydeep p-4 shadow-2xl lg:block sm:right-6"
+            onKeyDown={(e) => { if (e.key === "Escape") setPanel(null); }}
+          >
+            <BranchedMenu
+              key={`desktop-${panel}-${activeHref}`}
+              items={GROUPS}
+              defaultOpen={panel}
+              defaultActive={activeHref}
+              onSelect={(value) => go(value)}
+              color="#ede6d6"
+              accentColor="#d4af37"
+              lineColor="rgba(212, 175, 55, 0.45)"
+              width={260}
+            />
+          </div>
+        )}
       </div>
 
-      {open && (
+      {panel !== null && (
+        <button
+          type="button"
+          aria-label="Close menu"
+          tabIndex={-1}
+          className="fixed inset-0 z-30 hidden cursor-default bg-transparent lg:block"
+          onClick={() => setPanel(null)}
+        />
+      )}
+
+      {mobileOpen && (
         <nav
           className="max-h-[calc(100dvh-4rem)] overflow-y-auto border-t border-gold/15 bg-ink/95 px-4 py-3 lg:hidden"
           aria-label="Mobile"
         >
-          {MOBILE_GROUPS.map((g) => (
-            <div key={g.heading}>
-              <p className="px-3 pb-1 pt-3 text-xs uppercase tracking-[0.2em] text-gold">{g.heading}</p>
-              {g.items.map((n) => {
-                const active = isActive(n.href);
-                return (
-                  <Link
-                    key={n.href}
-                    href={n.href}
-                    onClick={() => setOpen(false)}
-                    aria-current={active ? "page" : undefined}
-                    className="flex items-start gap-3 rounded-lg px-3 py-2.5 hover:bg-gold/10"
-                  >
-                    <span className="mt-0.5 shrink-0">
-                      <Icon name={n.icon} size={20} />
-                    </span>
-                    <span>
-                      <span
-                        className={`block text-base ${active ? "font-semibold text-goldbright" : "text-cream/90"}`}
-                      >
-                        {n.label}
-                      </span>
-                      <span className="block text-xs text-mist">{n.desc}</span>
-                    </span>
-                  </Link>
-                );
-              })}
-            </div>
-          ))}
+          <BranchedMenu
+            key={`mobile-${activeHref}`}
+            items={GROUPS}
+            defaultOpen={[1, 2, 3]}
+            defaultActive={activeHref}
+            onSelect={(value) => go(value)}
+            color="#ede6d6"
+            accentColor="#d4af37"
+            lineColor="rgba(212, 175, 55, 0.45)"
+            width={320}
+          />
           <Link
             href="/credits"
-            onClick={() => setOpen(false)}
-            className="btn-gold mt-2 block rounded-xl px-3 py-2.5 text-center text-base font-bold"
+            onClick={() => setMobileOpen(false)}
+            className="btn-gold mt-3 block rounded-xl px-3 py-2.5 text-center text-base font-bold"
           >
             Top up Oracles
           </Link>
           <Link
             href="/account"
-            onClick={() => setOpen(false)}
+            onClick={() => setMobileOpen(false)}
             className="mt-2 block rounded-xl border border-gold/30 px-3 py-2.5 text-center text-base font-semibold text-cream/90 hover:bg-gold/10"
           >
             {user ? `Account · ${user.email}` : "Sign in"}
