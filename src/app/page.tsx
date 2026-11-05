@@ -3,17 +3,24 @@
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { MAJORS } from "@/lib/cards";
+import { MAJORS, cardSlug, getCard } from "@/lib/cards";
+import { SPREADS } from "@/lib/tarot";
 import { TAGLINE } from "@/lib/site";
 import StatsStrip from "@/components/StatsStrip";
 import SampleReading from "@/components/SampleReading";
-import TarotFan from "@/components/TarotFan";
-import OrbitImages from "@/components/OrbitImages";
 import ReturnLoop from "@/components/ReturnLoop";
 import Icon from "@/components/Icon";
-import { MagicBento, ShinyText, StarBorder } from "@/components/ReactBits";
-import { GradientText, Magnet, Orb, SpotlightCard } from "@/components/ReactBitsNew";
+import { Orb } from "@/components/ReactBitsNew";
 
+// Phase 4C (4.6): restrained motion. The homepage animation set is
+// now starfield (global, in the layout) + card lift + section reveal
+// only. The competing gimmicks are gone from this page: GradientText
+// and ShinyText sweeps, StarBorder crawling dots, Magnet pull,
+// SpotlightCard and MagicBento cursor glow, the TarotFan scroll fan,
+// and the OrbitImages carousel. Orb stays: it is the slow ambient
+// hero background, not a competing gimmick, and it is static under
+// prefers-reduced-motion. MotionConfig reducedMotion="user" in the
+// MotionProvider still governs the framer-motion reveals below.
 const fadeUp = {
   initial: { opacity: 0, y: 24 },
   whileInView: { opacity: 1, y: 0 },
@@ -21,7 +28,20 @@ const fadeUp = {
   transition: { duration: 0.6, ease: "easeOut" as const },
 };
 
+// Phase 4C (4.6): the orbit carousel is replaced by a static grid of
+// the same six Major Arcana cards, each linking to its own card page.
+const EXPLORE_CARD_IDS = [
+  "major-00",
+  "major-01",
+  "major-02",
+  "major-18",
+  "major-19",
+  "major-17",
+];
+
 export default function Home() {
+  const fanCards = MAJORS.slice(0, 5);
+  const middle = (fanCards.length - 1) / 2;
   return (
     <div>
       {/* HERO */}
@@ -65,17 +85,16 @@ export default function Home() {
           <motion.h1
             initial={false}
             animate={{ opacity: 1, y: 0 }}
-            className="mt-6 font-display text-6xl leading-tight sm:text-7xl md:text-8xl"
+            className="mt-6 font-display text-6xl leading-tight text-goldbright sm:text-7xl md:text-8xl"
           >
-            {/* Phase 4: GradientText, hero word only, gold on the dark hero. */}
-            <GradientText animationSpeed={6}>Sortes</GradientText>
+            Sortes
           </motion.h1>
           <motion.p
             initial={false}
             animate={{ opacity: 1, y: 0 }}
             className="mt-4 font-display text-2xl italic text-goldbright sm:text-3xl"
           >
-            <ShinyText>{TAGLINE}</ShinyText>
+            {TAGLINE}
           </motion.p>
           <motion.p
             initial={false}
@@ -99,21 +118,15 @@ export default function Home() {
             animate={{ opacity: 1, y: 0 }}
             className="mt-10 flex w-full max-w-xl flex-col gap-3 sm:flex-row sm:flex-nowrap sm:justify-center"
           >
-            {/* Phase 4: Magnet, hero primary button only, pointer only. */}
-            <Magnet strength={0.2} className="shrink-0">
-              <StarBorder radius="1rem" className="shrink-0" animated>
-                <Link
-                  href="/daily"
-                  className="btn-gold shrink-0 whitespace-nowrap rounded-2xl px-8 py-4 text-center text-lg font-bold"
-                >
-                  <Icon name="sparkle" size={20} className="mr-2 inline-block align-[-3px]" />Draw a Card
-                </Link>
-              </StarBorder>
-            </Magnet>
-            {/* Phase 2: one dominant action. Draw a Card stays gold
-                with the animated border. Begin a Reading is now a
-                quiet secondary button, same size, no gold fill and
-                no StarBorder, so the first view has one clear
+            <Link
+              href="/daily"
+              className="btn-gold shrink-0 whitespace-nowrap rounded-2xl px-8 py-4 text-center text-lg font-bold"
+            >
+              <Icon name="sparkle" size={20} className="mr-2 inline-block align-[-3px]" />Draw a Card
+            </Link>
+            {/* Phase 2: one dominant action. Draw a Card stays gold.
+                Begin a Reading is now a quiet secondary button, same
+                size, no gold fill, so the first view has one clear
                 primary action instead of two equally strong ones. */}
             <Link
               href="/spreads"
@@ -122,6 +135,12 @@ export default function Home() {
               See all spreads <Icon name="arrowRight" size={20} className="ml-2 inline-block align-[-3px]" />
             </Link>
           </motion.div>
+          {/* Phase 4C (4.6b): the free-reading promise is stated once,
+              here. The repeats are gone: the Quick Insight seek card
+              below now shows its price (1 Oracle), the spreads
+              preview no longer repeats the sentence, and the daily
+              teaser no longer says "Free, every day" (the hero line
+              above already says the daily card is free). */}
           <motion.p
             initial={false}
             animate={{ opacity: 1 }}
@@ -172,18 +191,18 @@ export default function Home() {
             { href: "/spreads/love-insight", label: "Love", text: "You, them, and the connection.", cost: "1 Oracle" },
             { href: "/spreads/career-path", label: "Career", text: "Current, obstacle, and next step.", cost: "1 Oracle" },
             { href: "/spreads/weekly-outlook", label: "The week ahead", text: "Focus, challenge, and opportunity.", cost: "1 Oracle" },
-            { href: "/spreads/quick-insight", label: "A general question", text: "One card, one clear mirror. First reading free.", cost: "First reading free, then 1 Oracle" },
+            { href: "/spreads/quick-insight", label: "A general question", text: "One card, one clear mirror.", cost: "1 Oracle" },
           ].map((s) => (
-            <SpotlightCard
+            <div
               key={s.href}
-              className="rounded-3xl border border-gold/25 bg-panel/70 hover:border-gold/60"
+              className="rounded-3xl border border-gold/25 bg-panel/70 transition-transform duration-300 hover:-translate-y-1 hover:border-gold/60"
             >
               <Link href={s.href} className="block p-6">
                 <p className="font-display text-2xl text-goldbright">{s.label}</p>
                 <p className="mt-2 text-sm leading-relaxed text-cream/75">{s.text}</p>
                 <p className="mt-3 text-xs font-semibold uppercase tracking-[0.2em] text-gold">{s.cost}</p>
               </Link>
-            </SpotlightCard>
+            </div>
           ))}
         </div>
       </section>
@@ -197,18 +216,104 @@ export default function Home() {
             </h2>
             <p className="mx-auto mt-4 max-w-xl text-cream/75">
               The cards above answer by intention. Below, every spread
-              by size, from one card to the full ten-card spread. Your
-              first Quick Insight is free.
+              by size, from one card to the full ten-card spread.
             </p>
             <p className="mx-auto mt-3 max-w-xl text-sm text-cream/60">
               For reflection, not prediction.
             </p>
           </motion.div>
-          <MagicBento />
+          {/* Phase 4C (4.6a): MagicBento's cursor glow is gone. Same
+              spreads, same bento layout, same prices, plain cards
+              with a hover lift instead of a pointer-following glow. */}
+          <div className="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-6">
+            {SPREADS.map((spread) => (
+              <article
+                key={spread.slug}
+                className={`relative overflow-hidden rounded-3xl border border-gold/25 bg-panel/70 p-7 transition-transform duration-300 hover:-translate-y-1 hover:border-gold/60 ${
+                  spread.slug === "quick-insight"
+                    ? "lg:col-span-2 lg:row-span-2"
+                    : spread.slug === "past-present-future"
+                      ? "lg:col-span-4"
+                      : "lg:col-span-2"
+                }`}
+              >
+                {spread.slug === "quick-insight" && (
+                  <span className="absolute right-4 top-4 rounded-full bg-gold px-3 py-1 text-xs font-bold text-ink">
+                    FIRST FREE
+                  </span>
+                )}
+                <p className="text-xs uppercase tracking-[0.25em] text-mist">
+                  {spread.cards} {spread.cards === 1 ? "card" : "cards"}
+                </p>
+                <h3 className="mt-2 font-display text-3xl text-cream">{spread.name}</h3>
+                <p className="mt-3 min-h-[3.5rem] text-sm leading-relaxed text-cream/75">
+                  {spread.description}
+                </p>
+                <p className="mt-4 font-display text-2xl text-goldbright">
+                  {spread.slug === "quick-insight" ? "Free" : (<><span className="font-body">1</span> Oracle</>)}
+                </p>
+                {spread.slug === "quick-insight" ? (
+                  <Link
+                    href={`/spreads/${spread.slug}`}
+                    className="btn-gold mt-5 block rounded-xl px-4 py-3 text-center font-semibold"
+                  >
+                    Start free reading
+                  </Link>
+                ) : (
+                  <Link
+                    href={`/spreads/${spread.slug}`}
+                    className="btn-ghost mt-5 block rounded-xl px-4 py-3 text-center font-semibold"
+                  >
+                    View spread
+                  </Link>
+                )}
+              </article>
+            ))}
+          </div>
         </div>
       </section>
 
-      <OrbitImages />
+      {/* EXPLORE THE DECK */}
+      <section className="border-y border-gold/10 bg-navydeep/40 py-16">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <div className="text-center">
+            <h2 className="font-display text-4xl text-goldbright sm:text-5xl">
+              Explore the deck
+            </h2>
+            <p className="mx-auto mt-4 max-w-xl text-cream/75">
+              Meet a few of the cards and explore the stories held in the deck.
+            </p>
+          </div>
+          {/* Phase 4C (4.6a): the orbit carousel is a static grid of
+              the same six cards, each with a hover lift. */}
+          <div className="mt-8 grid grid-cols-3 gap-4 sm:grid-cols-6">
+            {EXPLORE_CARD_IDS.map((id) => {
+              const card = getCard(id);
+              return (
+                <Link
+                  key={card.id}
+                  href={`/deck/${cardSlug(card.name)}`}
+                  aria-label={`Explore ${card.name} in the deck`}
+                  className="block transition-transform duration-300 hover:-translate-y-1 focus-visible:-translate-y-1"
+                >
+                  <span className="relative block aspect-[3/5] w-full overflow-hidden rounded-lg border border-gold/30 shadow-[0_8px_24px_rgba(0,0,0,0.45)]">
+                    <Image
+                      src={card.image}
+                      alt=""
+                      fill
+                      sizes="(max-width: 640px) 30vw, 160px"
+                      className="object-cover"
+                    />
+                  </span>
+                  <span className="mt-2 block text-center text-xs font-semibold text-cream/80">
+                    {card.name}
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      </section>
 
       {/* WHAT IS TAROT */}
       <section className="mx-auto max-w-4xl px-4 py-16 sm:px-6">
@@ -265,14 +370,43 @@ export default function Home() {
             One card, every morning
           </h2>
           <p className="mx-auto mt-4 max-w-lg text-cream/75">
-            Free, every day. Draw today&apos;s card in seconds.
+            Draw today&apos;s card in seconds.
           </p>
-          {/* Batch 11: the flat 5-card row is now a tarot fan, built
-              as an original component from the fan pattern only.
-              Phone width: 72 + 4 x 48 = 264px, inside a 360px phone's
-              328px content width, so no horizontal scroll. */}
-          <div className="mt-8">
-            <TarotFan cards={MAJORS.slice(0, 5)} />
+          {/* Phase 4C (4.6a): the scroll fan is a static fan. Same
+              five cards, same tilt and curve, same hover lift on the
+              hovered card, no entrance animation. Phone width:
+              72 + 4 x 48 = 264px, inside a 360px phone's 328px
+              content width, so no horizontal scroll. */}
+          <div className="mt-8 flex justify-center" role="list" aria-label="Tarot cards">
+            {fanCards.map((c, i) => {
+              const offset = i - middle;
+              const tilt = offset * 7;
+              const drop = Math.abs(offset) * 6;
+              return (
+                <div
+                  key={c.id}
+                  role="listitem"
+                  style={{ zIndex: 10 - Math.abs(offset), transform: `translateY(${drop}px) rotate(${tilt}deg)` }}
+                  className="-ml-6 first:ml-0 sm:-ml-8 sm:first:ml-0"
+                >
+                  <Link
+                    href="/deck"
+                    aria-label={`See ${c.name} in the deck`}
+                    className="block rounded-lg transition-transform duration-300 hover:-translate-y-3 hover:scale-105 hover:rotate-0 focus-visible:-translate-y-3 focus-visible:scale-105 focus-visible:rotate-0"
+                  >
+                    <div className="relative h-28 w-[4.5rem] overflow-hidden rounded-lg border border-gold/30 shadow-[0_8px_24px_rgba(0,0,0,0.45)] sm:h-36 sm:w-24">
+                      <Image
+                        src={c.image}
+                        alt={c.name}
+                        fill
+                        sizes="96px"
+                        className="object-cover"
+                      />
+                    </div>
+                  </Link>
+                </div>
+              );
+            })}
           </div>
           <Link
             href="/daily"

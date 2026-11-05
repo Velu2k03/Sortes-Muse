@@ -460,9 +460,12 @@ console.log("charts-check: all assertions passed");
   // Hero CTAs: definitive no-wrap, not just whitespace-nowrap.
   const home = fs.readFileSync("src/app/page.tsx", "utf8");
   assert.ok(home.includes("sm:flex-nowrap"), "hero CTA row must be flex-nowrap at sm+");
-  assert.ok(home.includes("TarotFan"), "daily teaser must use the TarotFan component, not the old flat row");
-  const fan = fs.readFileSync("src/components/TarotFan.tsx", "utf8");
-  assert.ok(fan.includes("w-[4.5rem]") && fan.includes("-ml-6"), "fan must be narrow enough for a 360px phone (72 + 4 x 48 = 264px, inside 328px content width)");
+  // Phase 4C (4.6): the TarotFan scroll fan is gone; the daily teaser
+  // is a static fan in the homepage itself, same five cards, same
+  // phone-width geometry (72 + 4 x 48 = 264px, inside 328px content
+  // width), with no TarotFan import. (Comments may still name the
+  // removed component; the import is what matters.)
+  assert.ok(!home.includes('from "@/components/TarotFan"') && home.includes("w-[4.5rem]") && home.includes("-ml-6"), "daily teaser must be a static fan in the homepage, narrow enough for a 360px phone, with no TarotFan import");
   assert.ok(home.includes("shrink-0 whitespace-nowrap") && home.includes("Draw a Card"), "hero CTA links must be shrink-0 and whitespace-nowrap");
   // Chinese Ziwei legend, from ziwei-i18n.ts, not invented in the page.
   const i18n = fs.readFileSync("src/lib/ziwei-i18n.ts", "utf8");
@@ -582,8 +585,9 @@ console.log("charts-check: all assertions passed");
   assert.ok(charts.includes('role="group"'), "chart button groups must carry role=group with their aria-label");
   const css11 = fs.readFileSync("src/app/globals.css", "utf8");
   assert.ok(css11.includes(".alert-error-text") && css11.includes("#991b1b"), "error text must be theme-aware, dark red in light mode for contrast");
-  const fan11 = fs.readFileSync("src/components/TarotFan.tsx", "utf8");
-  assert.ok(fan11.includes("TarotFan") || fan11.includes("fan"), "fan component must exist as original Sortes code");
+  // Phase 4C (4.6): the TarotFan component file is deleted; the static
+  // fan lives in the homepage (asserted above), so there is no fan file
+  // to check here anymore.
   console.log("batch11: validator fixes and tarot fan: all source assertions passed");
   // Batch 14: Lightsite fixes. JSON-LD in layout, credits H1 on server.
   const layout14 = fs.readFileSync("src/app/layout.tsx", "utf8");
@@ -621,7 +625,12 @@ console.log("charts-check: all assertions passed");
   console.log("phase3: skip link, visible search labels, keyboard hints: all source assertions passed");
   // Phase 4: new React Bits patterns, no new dependencies.
   const reactBitsNew = fs.readFileSync("src/components/ReactBitsNew.tsx", "utf8");
-  assert.ok(reactBitsNew.includes("SpotlightCard") && reactBitsNew.includes("Magnet") && reactBitsNew.includes("GradientText") && reactBitsNew.includes("PageTransition"), "ReactBitsNew must export SpotlightCard, Magnet, GradientText, and PageTransition");
+  // Phase 4C (4.6/4.7): GradientText and Magnet were deleted (both were
+  // homepage-only); ReactBitsNew must still export SpotlightCard and
+  // PageTransition, which are used on the journal page and in the layout.
+  // (Comments may still name the removed exports; the export is what
+  // matters.)
+  assert.ok(reactBitsNew.includes("SpotlightCard") && reactBitsNew.includes("PageTransition") && !reactBitsNew.includes("export function GradientText") && !reactBitsNew.includes("export function Magnet"), "ReactBitsNew must export SpotlightCard and PageTransition; GradientText and Magnet were removed in Phase 4C");
   assert.ok(reactBitsNew.includes("prefers-reduced-motion"), "new components must gate on reduced motion");
   const pkg = fs.readFileSync("package.json", "utf8");
   assert.ok(!pkg.includes('"ogl"') && !pkg.includes('"three"') && !pkg.includes('"lenis"'), "Phase 4 must not add ogl, three, or lenis to package.json");
@@ -749,6 +758,10 @@ console.log("charts-check: all assertions passed");
   // focused content at the foot of the page.
   const installBannerD = fs.readFileSync("src/components/InstallBanner.tsx", "utf8");
   assert.ok(installBannerD.includes("ResizeObserver") && installBannerD.includes("document.body.style.paddingBottom"), "InstallBanner must reserve its measured height as body padding while shown so focused content scrolls above it");
+  // Phase 4C (4.6c): the install banner appears only after the seeker
+  // has completed at least one reading, from existing storage state
+  // (journal entries or the free-reading-used flag), never before.
+  assert.ok(installBannerD.includes("hasCompletedReading") && installBannerD.includes("getHistory") && installBannerD.includes("freeReadingUsed"), "InstallBanner must gate on a completed reading (journal or free-reading-used flag) before showing");
   console.log("deep-ux-batch-d: InstallBanner focus-obscured fix: all source assertions passed");
 
 }

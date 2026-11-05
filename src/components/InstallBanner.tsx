@@ -2,11 +2,19 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { dismissInstallBanner, installBannerDismissed, promptShownThisSession, markPromptShownThisSession } from "@/lib/storage";
+import { dismissInstallBanner, installBannerDismissed, promptShownThisSession, markPromptShownThisSession, getHistory, freeReadingUsed } from "@/lib/storage";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
+}
+
+// Phase 4C (4.6c): "completed at least one reading" from existing
+// storage state only. getHistory is the journal (saveReading runs when
+// a generated reading is persisted); freeReadingUsed is the guest flag
+// marked when a generated free reading is consumed. Either one counts.
+function hasCompletedReading(): boolean {
+  return getHistory().length > 0 || freeReadingUsed();
 }
 
 /**
@@ -14,6 +22,16 @@ interface BeforeInstallPromptEvent extends Event {
  * fires beforeinstallprompt (never on first paint), and is easy to dismiss.
  * On iOS Safari (no beforeinstallprompt) shows Share -> Add to Home Screen
  * instructions once, dismissible.
+ *
+ * Phase 4C (4.6c): the banner appears ONLY after the seeker has completed
+ * at least one reading. The signal is the existing storage state, no new
+ * tracking: a journal entry (getHistory, written when a reading is saved)
+ * or the free-reading-used flag (marked when a generated free reading is
+ * consumed). A daily-card-only visitor has done neither, so they see no
+ * prompt. The gate is checked at show time, not at mount, so a reading
+ * completed in this session counts on the next prompt event; the browser
+ * event is always preventDefaulted, so the gate never leaks the browser's
+ * own install UI to a first-time visitor.
  */
 export default function InstallBanner() {
   const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(null);
@@ -31,14 +49,20 @@ export default function InstallBanner() {
       const isStandalone =
         window.matchMedia("(display-mode: standalone)").matches ||
         (navigator as Navigator & { standalone?: boolean }).standalone === true;
-      if (!isStandalone && isIOS && !promptShownThisSession()) {
+      // Phase 4C (4.6c): no prompt before the first completed reading.
+      if (!isStandalone && isIOS && !promptShownThisSession() && hasCompletedReading()) {
         markPromptShownThisSession();
         setShowIOS(true);
       }
     }, 12000);
 
     const onPrompt = (e: Event) => {
+      // Always suppress the browser's own install UI: the gate below
+      // decides whether OUR banner shows, and a first-time visitor
+      // must see neither.
       e.preventDefault();
+      // Phase 4C (4.6c): no prompt before the first completed reading.
+      if (!hasCompletedReading()) return;
       if (promptShownThisSession()) return;
       markPromptShownThisSession();
       setDeferred(e as BeforeInstallPromptEvent);
