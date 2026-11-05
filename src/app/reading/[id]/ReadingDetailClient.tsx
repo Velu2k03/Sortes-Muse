@@ -565,6 +565,7 @@ export default function ReadingDetail({ id }: { id: string }) {
           spreadName={reading.spreadName}
           drawn={reading.cards}
           date={reading.createdAt}
+          interpretation={reading.interpretation}
         />
         {/* Phase 5 (5.4a): heirloom keepsake export (print-to-PDF).
             Only this reading's real content: question, cards,
