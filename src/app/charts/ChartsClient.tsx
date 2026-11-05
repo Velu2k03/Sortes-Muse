@@ -972,6 +972,37 @@ export default function ChartsClient() {
             )}
           </div>
 
+          {/* Chart glossary, 2026-11-05: Western and Vedic charts
+              show positions, aspects, and houses with no beginner
+              glossary, while Ziwei already has its own legend below.
+              Plain definitions, collapsed by default, no new data. */}
+          {result.system !== "ziwei" && (
+            <details className="mt-4 rounded-2xl border border-gold/20 bg-panel/50 p-4">
+              <summary className="cursor-pointer text-sm font-semibold text-goldbright">
+                Terms in this chart
+              </summary>
+              <dl className="mt-3 space-y-2 text-sm leading-relaxed text-cream/85">
+                {result.system === "western" ? (
+                  <>
+                    <div><dt className="font-semibold text-goldbright">Ascendant</dt><dd>Your rising sign: the sign on the eastern horizon at your birth moment. It shapes first impressions and how you meet the world.</dd></div>
+                    <div><dt className="font-semibold text-goldbright">Midheaven</dt><dd>The highest point of the chart. It points to career, reputation, and public direction.</dd></div>
+                    <div><dt className="font-semibold text-goldbright">Houses</dt><dd>Twelve life areas, from self and money to home, work, and relationships. A planet in a house colours that area.</dd></div>
+                    <div><dt className="font-semibold text-goldbright">Aspects</dt><dd>Angles between planets, such as conjunctions and squares. Easy angles flow; hard angles create tension that asks for work.</dd></div>
+                    <div><dt className="font-semibold text-goldbright">Retrograde</dt><dd>A planet that appears to move backwards from Earth. Read it as a time to review, revisit, and redo, not as bad luck.</dd></div>
+                  </>
+                ) : (
+                  <>
+                    <div><dt className="font-semibold text-goldbright">Lagna</dt><dd>The ascendant in Vedic astrology: the sign rising at your birth. It sets the first house and the whole chart.</dd></div>
+                    <div><dt className="font-semibold text-goldbright">Rashi</dt><dd>A zodiac sign. Vedic charts use the sidereal zodiac, so signs sit about 24 degrees behind the Western tropical ones.</dd></div>
+                    <div><dt className="font-semibold text-goldbright">Nakshatra</dt><dd>A lunar mansion: one of 27 star divisions the Moon passes through. It adds a finer layer of meaning to a planet.</dd></div>
+                    <div><dt className="font-semibold text-goldbright">Dasha</dt><dd>A planetary period. Each major period is ruled by one planet and colours the years it runs.</dd></div>
+                    <div><dt className="font-semibold text-goldbright">Bhava</dt><dd>A house. The twelve bhavas cover the same life areas as Western houses, counted from the Lagna.</dd></div>
+                  </>
+                )}
+              </dl>
+            </details>
+          )}
+
           {/* M3.1: transit-to-natal horoscope, Western charts only.
               The natal planets come from the chart just calculated
               in-memory; nothing new is stored for this. */}

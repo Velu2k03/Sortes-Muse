@@ -119,7 +119,7 @@ export default function Home() {
               href="/spreads"
               className="btn-ghost shrink-0 whitespace-nowrap rounded-2xl px-8 py-4 text-center text-lg font-semibold"
             >
-              Begin a Reading <Icon name="arrowRight" size={20} className="ml-2 inline-block align-[-3px]" />
+              See all spreads <Icon name="arrowRight" size={20} className="ml-2 inline-block align-[-3px]" />
             </Link>
           </motion.div>
           <motion.p
@@ -193,11 +193,12 @@ export default function Home() {
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <motion.div {...fadeUp} className="text-center">
             <h2 className="font-display text-4xl text-goldbright sm:text-5xl">
-              Choose your spread
+              All spreads, one Oracle each
             </h2>
             <p className="mx-auto mt-4 max-w-xl text-cream/75">
-              From one card to the full ten-card spread. Your first Quick
-              Insight is free.
+              The cards above answer by intention. Below, every spread
+              by size, from one card to the full ten-card spread. Your
+              first Quick Insight is free.
             </p>
             <p className="mx-auto mt-3 max-w-xl text-sm text-cream/60">
               For reflection, not prediction.

@@ -615,7 +615,7 @@ export default function ReadingDetail({ id }: { id: string }) {
                   </button>
                 </div>
                 {followUpError && (
-                  <p className="text-sm text-red-400">{followUpError}</p>
+                  <p className="text-sm text-danger">{followUpError}</p>
                 )}
                 {followUpFailed && (
                   <div className="space-y-3">

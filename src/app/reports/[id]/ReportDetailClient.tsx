@@ -280,12 +280,12 @@ export default function ReportDetailClient() {
 
       <div className="mt-12 border-t border-gold/20 pt-6">
         {deleteError && (
-          <p className="mb-3 text-sm text-red-200">The report could not be deleted. Please try again.</p>
+          <p className="mb-3 text-sm text-danger">The report could not be deleted. Please try again.</p>
         )}
         <button
           type="button"
           onClick={handleDelete}
-          className="rounded-xl border border-red-400/50 px-4 py-2 text-sm font-semibold text-red-200"
+          className="rounded-xl border border-danger/50 px-4 py-2 text-sm font-semibold text-danger"
         >
           {confirming ? "Tap again to delete this report" : "Delete this report"}
         </button>

@@ -112,7 +112,7 @@ export default function VedicTransits({
           {loading ? "Calculating…" : "Show Gochara"}
         </button>
       </div>
-      {error && <p className="mt-3 text-sm text-red-400">{error}</p>}
+      {error && <p className="mt-3 text-sm text-danger">{error}</p>}
 
       {data && (
         <div className="mt-6">

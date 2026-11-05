@@ -168,6 +168,25 @@ export default function SpreadsPage() {
                   ))}
                 </ul>
               </details>
+              {/* Sample reading, 2026-11-05: a spread showed its
+                  positions but no sample of the output before the
+                  paywall. Template text from real card meanings, no
+                  AI generation, no Oracle spent, clearly labelled. */}
+              <details className="mt-3">
+                <summary className="cursor-pointer text-xs font-semibold text-goldbright">See a sample reading</summary>
+                <div className="mt-2 space-y-2">
+                  <p className="text-xs italic text-mist">Sample, not your reading. Your reading uses your question and your cards.</p>
+                  {s.positions.slice(0, 3).map((p, j) => {
+                    const sample = getCard(["major-17", "major-19", "major-01"][j % 3]);
+                    return (
+                      <p key={p.key} className="text-xs leading-relaxed text-cream/80">
+                        <span className="font-semibold text-goldbright">{p.label}: {sample.name}. </span>
+                        {sample.meaning.upright}
+                      </p>
+                    );
+                  })}
+                </div>
+              </details>
               {locked ? (
                 <>
                   <button
