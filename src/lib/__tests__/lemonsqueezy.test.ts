@@ -84,14 +84,15 @@ describe("lemonsqueezy helpers", () => {
     };
 
     it("returns the parsed order on a 200", async () => {
-      const fetchFn = vi.fn(async () => ({
-        ok: true,
-        json: async () => paidOrder,
-      }));
+      let capturedUrl: unknown;
+      const fetchFn = vi.fn(async (url: unknown) => {
+        capturedUrl = url;
+        return { ok: true, json: async () => paidOrder };
+      });
       const order = await getOrder("ord_1", fetchFn as unknown as typeof fetch);
       expect(order).toEqual(paidOrder);
-      expect(String(fetchFn.mock.calls[0][0])).toContain("/v1/orders/ord_1");
-      expect(String(fetchFn.mock.calls[0][0])).not.toContain("ord_1x");
+      expect(String(capturedUrl)).toContain("/v1/orders/ord_1");
+      expect(String(capturedUrl)).not.toContain("ord_1x");
     });
 
     it("returns null on a non-OK response and never throws", async () => {
