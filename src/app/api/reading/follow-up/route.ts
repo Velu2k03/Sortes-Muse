@@ -2,9 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import {
   getUserById,
-  spendUserCredits,
   getReadingForUser,
-  updateReadingForUser,
+  appendFollowUpWithSpend,
 } from "@/lib/db";
 import type { FollowUp } from "@/lib/types";
 import cardsData from "@/data/cards.json";
@@ -282,6 +281,20 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // Phase 6 (N5): balance check before the model call (signed-in,
+  // non-free follow-ups cost 1 Oracle). Without it a user with 0
+  // credits got a full generation and only then a 402. The spend
+  // after generation stays as the atomic enforcement.
+  if (session && !isFree) {
+    const preUser = await getUserById(session.userId);
+    if (!preUser || preUser.credits < 1) {
+      return NextResponse.json(
+        { error: "You need 1 Oracle for this follow-up. No Oracle was spent." },
+        { status: 402 }
+      );
+    }
+  }
+
   // Phase 5 (5.3): draw 1 real clarifier card server-side, from the
   // cards NOT already in this reading's spread, uniformly at random.
   // The draw happens once per follow-up attempt, before generation,
@@ -357,29 +370,37 @@ export async function POST(req: NextRequest) {
   const updatedFollowUps = [...existingFollowUps, newFollowUp];
 
   if (session) {
-    // Signed-in: spend 1 credit server-side AFTER generation when not free.
-    if (!isFree) {
-      const ok = await spendUserCredits(session.userId, 1);
-      if (!ok) {
+    // Phase 6 (N7): append + spend atomically (see db.ts). The cap is
+    // re-checked inside the transaction, so two concurrent follow-ups
+    // cannot both pass it, and a failed append never spends a credit.
+    // The old code spent first and never checked the update's return.
+    const appended = await appendFollowUpWithSpend(
+      session.userId,
+      body.readingId!,
+      newFollowUp as unknown as Record<string, unknown>,
+      isFree ? 0 : 1
+    );
+    if (!appended.ok) {
+      if (appended.reason === "limit") {
         return NextResponse.json(
-          {
-            error:
-              "You need 1 Oracle for this follow-up. No Oracle was spent.",
-          },
+          { error: "This reading has reached its follow-up limit (3). The thread is complete." },
+          { status: 409 }
+        );
+      }
+      if (appended.reason === "insufficient") {
+        return NextResponse.json(
+          { error: "You need 1 Oracle for this follow-up. No Oracle was spent." },
           { status: 402 }
         );
       }
+      return NextResponse.json({ error: "Reading not found." }, { status: 404 });
     }
-    // Persist the follow-up on the stored reading.
-    await updateReadingForUser(session.userId, body.readingId!, {
-      followUps: updatedFollowUps,
-    });
     const dbUser = await getUserById(session.userId);
     return NextResponse.json({
       answer: finalText,
       free: isFree,
       credits: dbUser?.credits ?? 0,
-      followUps: updatedFollowUps,
+      followUps: appended.followUps ?? updatedFollowUps,
     });
   }
 

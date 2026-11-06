@@ -273,6 +273,23 @@ export async function POST(req: NextRequest) {
     // Unknown slug: keep the raw slug as the label.
   }
 
+  // Phase 6 (N5): check the balance BEFORE calling the model. A
+  // signed-in user with 0 credits and no free use got a full model
+  // call and only then a 402 — wasted quota on every attempt. The
+  // spend after generation stays as the atomic enforcement; this is
+  // the early, quota-saving check. The pre-checked user is reused
+  // for the response below so the balance is read once.
+  let preCheckedUser: Awaited<ReturnType<typeof getUserById>> = null;
+  if (session && !serverFree) {
+    preCheckedUser = await getUserById(session.userId);
+    if (!preCheckedUser || preCheckedUser.credits < 1) {
+      return NextResponse.json(
+        { error: "You need 1 Oracle for this reading. No Oracle was spent." },
+        { status: 402 }
+      );
+    }
+  }
+
   // One shared client (src/lib/ai.ts): the :free chain, per-model
   // timeout, retry across models, and structured failure logging.
   // The grounding validator discards ungrounded text and tries the
@@ -325,7 +342,7 @@ export async function POST(req: NextRequest) {
         );
       }
     }
-    const user = await getUserById(session.userId);
+    const user = preCheckedUser ?? (await getUserById(session.userId));
     return NextResponse.json({
       interpretation: finalText,
       model: generated.model,

@@ -128,6 +128,24 @@ describe("POST /api/reading/generate — first free Quick Insight", () => {
     expect(data.error).toContain("No Oracle was spent");
   });
 
+  // Phase 6 (N5): the 402 above used to come AFTER a full model call.
+  // With a 0 balance the route must refuse before calling the model.
+  it("returns 402 before any model call when the balance is 0", async () => {
+    mockedGetSession.mockResolvedValue({ userId: "u1", email: "a@b.co" });
+    mockedHasUsedFree.mockResolvedValue(true);
+    mockedGetUserById.mockResolvedValue({
+      id: "u1",
+      email: "a@b.co",
+      credits: 0,
+      created_at: "2026-11-05T00:00:00Z",
+    });
+    const res = await POST(req(body("quick-insight"), "10.0.0.7"));
+    expect(res.status).toBe(402);
+    expect((await res.json()).error).toContain("No Oracle was spent");
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+    expect(mockedSpend).not.toHaveBeenCalled();
+  });
+
   it("charges a signed-in first-timer on other spreads: free is Quick Insight only", async () => {
     mockedGetSession.mockResolvedValue({ userId: "u1", email: "a@b.co" });
     const res = await POST(req(body("past-present-future"), "10.0.0.4"));

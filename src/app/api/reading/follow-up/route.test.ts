@@ -3,9 +3,8 @@ import { NextRequest } from "next/server";
 
 vi.mock("@/lib/db", () => ({
   getUserById: vi.fn(),
-  spendUserCredits: vi.fn(),
   getReadingForUser: vi.fn(),
-  updateReadingForUser: vi.fn(),
+  appendFollowUpWithSpend: vi.fn(),
 }));
 vi.mock("@/lib/auth", () => ({
   getSession: vi.fn(),
@@ -13,8 +12,12 @@ vi.mock("@/lib/auth", () => ({
 
 import { POST } from "@/app/api/reading/follow-up/route";
 import { getSession } from "@/lib/auth";
+import { getUserById, getReadingForUser, appendFollowUpWithSpend } from "@/lib/db";
 
 const mockedGetSession = vi.mocked(getSession);
+const mockedGetUserById = vi.mocked(getUserById);
+const mockedGetReading = vi.mocked(getReadingForUser);
+const mockedAppend = vi.mocked(appendFollowUpWithSpend);
 
 // 100+ words so the route's word-count validation accepts it.
 const ANSWER = Array.from({ length: 20 }, (_, i) => `sentence number ${i} adds a little more reflection to this follow-up answer`).join(". ") + ".";
@@ -136,6 +139,71 @@ describe("POST /api/reading/follow-up", () => {
     };
     const res = await POST(
       req({ question: "One more?", reading }, "10.0.3.6")
+    );
+    expect(res.status).toBe(409);
+  });
+
+  // Phase 6 (N5+N7): signed-in follow-ups check the balance BEFORE
+  // the model call and append+spend atomically afterwards.
+  it("charges a signed-in second follow-up via the atomic append", async () => {
+    mockedGetSession.mockResolvedValue({ userId: "u-1", email: "a@example.com" });
+    mockedGetReading.mockResolvedValue({
+      ...GUEST_READING,
+      followUps: [
+        { question: "First?", answer: "First answer.", createdAt: "2026-11-05T00:00:00.000Z", free: true },
+      ],
+    });
+    mockedGetUserById.mockResolvedValue({ id: "u-1", email: "a@example.com", credits: 5, created_at: "" });
+    mockedAppend.mockResolvedValue({
+      ok: true,
+      followUps: [
+        { question: "First?", answer: "First answer.", free: true },
+        { question: "And now?", answer: ANSWER, free: false },
+      ],
+    });
+    const res = await POST(
+      req({ question: "And now?", readingId: "r-1" }, "10.0.4.1")
+    );
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.free).toBe(false);
+    expect(data.followUps).toHaveLength(2);
+    expect(mockedAppend).toHaveBeenCalledWith(
+      "u-1",
+      "r-1",
+      expect.objectContaining({ question: "And now?" }),
+      1
+    );
+  });
+
+  it("returns 402 before generation when a signed-in user has 0 credits", async () => {
+    mockedGetSession.mockResolvedValue({ userId: "u-1", email: "a@example.com" });
+    mockedGetReading.mockResolvedValue({
+      ...GUEST_READING,
+      followUps: [
+        { question: "First?", answer: "First answer.", createdAt: "2026-11-05T00:00:00.000Z", free: true },
+      ],
+    });
+    mockedGetUserById.mockResolvedValue({ id: "u-1", email: "a@example.com", credits: 0, created_at: "" });
+    const res = await POST(
+      req({ question: "And now?", readingId: "r-1" }, "10.0.4.2")
+    );
+    expect(res.status).toBe(402);
+    expect(mockedAppend).not.toHaveBeenCalled();
+  });
+
+  it("maps a failed atomic append (limit) to 409 after generation", async () => {
+    mockedGetSession.mockResolvedValue({ userId: "u-1", email: "a@example.com" });
+    mockedGetReading.mockResolvedValue({
+      ...GUEST_READING,
+      followUps: [
+        { question: "First?", answer: "First answer.", createdAt: "2026-11-05T00:00:00.000Z", free: true },
+      ],
+    });
+    mockedGetUserById.mockResolvedValue({ id: "u-1", email: "a@example.com", credits: 5, created_at: "" });
+    mockedAppend.mockResolvedValue({ ok: false, reason: "limit" });
+    const res = await POST(
+      req({ question: "And now?", readingId: "r-1" }, "10.0.4.3")
     );
     expect(res.status).toBe(409);
   });

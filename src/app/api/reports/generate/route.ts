@@ -141,6 +141,20 @@ export async function POST(req: NextRequest) {
   const systemPrompt = `${spec.system}\n\n${SHARED_RULES}\n\n${spec.structure}`;
   const userPrompt = `Report data (positions and signs only, no birth data):\n${lines}\n\nWrite the report now.`;
 
+  // Phase 6 (N5): check the balance BEFORE calling the model.
+  // Reports cost 1 Oracle with no free use; a signed-in user with 0
+  // credits got a full model call and only then a 402. The spend
+  // after generation stays as the atomic enforcement.
+  if (session) {
+    const preUser = await getUserById(session.userId);
+    if (!preUser || preUser.credits < 1) {
+      return NextResponse.json(
+        { error: "You need 1 Oracle for this report. No Oracle was spent." },
+        { status: 402 }
+      );
+    }
+  }
+
   // One shared client (src/lib/ai.ts): the :free chain, per-model
   // timeout, retry across models, structured failure logging.
   const generated = await generateChat({

@@ -668,6 +668,74 @@ export async function deleteReadingForUser(userId: string, id: string): Promise<
   return true;
 }
 
+// Phase 6 (N7): append a follow-up to a stored reading AND spend its
+// Oracle (when not free) in ONE Postgres transaction. The old route
+// read the followUps array, generated, spent, then updated — two
+// concurrent follow-ups could read the same array and last-write-wins,
+// and the spend happened before an update whose boolean return was
+// unchecked (credit spent, follow-up lost). Here the reading row is
+// locked first, the 3-follow-up cap is re-checked inside the
+// transaction, the spend is conditional (credits >= cost), and the
+// append is a single jsonb operation — so a concurrent second
+// follow-up either waits for the lock and then fails the cap, or
+// fails the spend, and never loses a credit.
+export interface FollowUpAppendResult {
+  ok: boolean;
+  reason?: "not-found" | "limit" | "insufficient";
+  followUps?: unknown[];
+}
+
+export async function appendFollowUpWithSpend(
+  userId: string,
+  readingId: string,
+  followUp: Record<string, unknown>,
+  cost: number,
+  maxFollowUps = 3
+): Promise<FollowUpAppendResult> {
+  await ensureSchema();
+  if (usePostgres) {
+    if (!pg) throw new Error("Database not configured");
+    return await pg.begin(async (tx) => {
+      const rows = await tx`SELECT data FROM readings WHERE id = ${readingId} AND user_id = ${userId} FOR UPDATE`;
+      if (rows.length === 0) return { ok: false, reason: "not-found" as const };
+      const data = (rows[0] as { data: { followUps?: unknown[] } }).data;
+      const existing = Array.isArray(data.followUps) ? data.followUps : [];
+      if (existing.length >= maxFollowUps) return { ok: false, reason: "limit" as const };
+      if (cost > 0) {
+        const spent = await tx`UPDATE users SET credits = credits - ${cost} WHERE id = ${userId} AND credits >= ${cost} RETURNING credits`;
+        if (spent.length === 0) return { ok: false, reason: "insufficient" as const };
+      }
+      const updated = await tx`
+        UPDATE readings
+        SET data = jsonb_set(data, '{followUps}', COALESCE(data->'followUps', '[]'::jsonb) || ${JSON.stringify(followUp)}::jsonb)
+        WHERE id = ${readingId} AND user_id = ${userId}
+        RETURNING data->'followUps' AS follow_ups`;
+      const followUps =
+        (updated[0] as { follow_ups?: unknown[] } | undefined)?.follow_ups ??
+        [...existing, followUp];
+      return { ok: true, followUps };
+    });
+  }
+  // Local JSON branch: single-process dev store, no concurrent writers
+  // in practice. Keep the same ordering (check cap, spend, append);
+  // the spend and the append happen in one read/modify/write here.
+  const db = await readLocal();
+  const row = db.readings.find((r) => r.id === readingId && r.user_id === userId);
+  if (!row) return { ok: false, reason: "not-found" };
+  const data = row.data as { followUps?: unknown[] };
+  const existing = Array.isArray(data.followUps) ? data.followUps : [];
+  if (existing.length >= maxFollowUps) return { ok: false, reason: "limit" };
+  const user = db.users.find((x) => x.id === userId);
+  if (cost > 0) {
+    if (!user || user.credits < cost) return { ok: false, reason: "insufficient" };
+    user.credits -= cost;
+  }
+  const next = [...existing, followUp];
+  row.data = { ...data, followUps: next };
+  await writeLocal(db);
+  return { ok: true, followUps: next };
+}
+
 // M2.1: fetch a single reading by id, scoped to the owning user.
 export async function getReadingForUser(userId: string, id: string): Promise<unknown | null> {
   await ensureSchema();

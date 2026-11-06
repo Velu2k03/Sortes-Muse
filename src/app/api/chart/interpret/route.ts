@@ -243,6 +243,20 @@ Write the personalized chart reflection now.`;
       { status: 503 }
     );
   }
+  // Phase 6 (N5): check the balance BEFORE calling the model. A
+  // signed-in user with 0 credits and no free use got a full model
+  // call and only then a 402 — wasted quota on every attempt. The
+  // spend after generation stays as the atomic enforcement; this is
+  // the early, quota-saving check.
+  if (session && !serverFree) {
+    const preUser = await getUserById(session.userId);
+    if (!preUser || preUser.credits < 1) {
+      return NextResponse.json(
+        { error: "You need 1 Oracle for this interpretation. No Oracle was spent." },
+        { status: 402 }
+      );
+    }
+  }
   // One shared client (src/lib/ai.ts): the :free chain, per-model
   // timeout, retry across models, structured failure logging.
   const generated = await generateChat({
