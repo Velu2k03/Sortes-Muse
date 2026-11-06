@@ -104,6 +104,14 @@ export default function Home() {
             Draw a free daily card, explore 78 card meanings, and get a
             reading for your question.
           </motion.p>
+          {/* Phase E (item 9): one line saying what "sortes" means. */}
+          <motion.p
+            initial={false}
+            animate={{ opacity: 1 }}
+            className="mt-3 text-sm italic text-mist"
+          >
+            Sortes is Latin for lots: the lots cast to decide, and to listen.
+          </motion.p>
           {/* Audit 4: hero CTAs wrapped on the very first load, then
               were single-line on warm reloads, so whitespace-nowrap
               alone did not prove stability. Definitive enforcement:
@@ -191,7 +199,7 @@ export default function Home() {
             { href: "/spreads/love-insight", label: "Love", text: "You, them, and the connection.", cost: "1 Oracle" },
             { href: "/spreads/career-path", label: "Career", text: "Current, obstacle, and next step.", cost: "1 Oracle" },
             { href: "/spreads/weekly-outlook", label: "The week ahead", text: "Focus, challenge, and opportunity.", cost: "1 Oracle" },
-            { href: "/spreads/quick-insight", label: "A general question", text: "One card, one clear mirror.", cost: "1 Oracle" },
+            { href: "/spreads/quick-insight", label: "A general question", text: "One card, one clear mirror.", cost: "First free · then 1 Oracle" },
           ].map((s) => (
             <div
               key={s.href}

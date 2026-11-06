@@ -8,6 +8,7 @@ import { getPurchaseHistory, type Purchase } from "@/lib/storage";
 import { useAuth } from "@/components/AuthProvider";
 import CheckoutModal from "@/components/CheckoutModal";
 import PurchaseConfirmer from "@/components/PurchaseConfirmer";
+import SampleReading from "@/components/SampleReading";
 import Counter from "@/components/Counter";
 import { useSearchParams } from "next/navigation";
 
@@ -305,6 +306,11 @@ export default function CreditsPage() {
         applicable taxes or fees; there are no hidden fees. Secure
         checkout is powered by Lemon Squeezy.
       </p>
+
+      {/* Phase E (item 9): the same full sample reading as the home
+          page, so visitors weighing a pack see exactly what a reading
+          reads like before they spend anything. */}
+      <SampleReading />
 
       <CheckoutModal open={open} onClose={() => setOpen(false)} initialPackId={modalPack} />
     </div>

@@ -11,6 +11,7 @@ import CallChip from "@/components/CallChip";
 import AnimatedContent from "@/components/AnimatedContent";
 import Counter from "@/components/Counter";
 import { getReports, saveReport, spendCredit } from "@/lib/storage";
+import { SAMPLE_TRANSIT_REPORT } from "@/lib/sample-report";
 import BirthProfilePicker from "@/components/BirthProfilePicker";
 import { profileToReportFields } from "@/lib/birth-profiles";
 import type { SavedReport, ReportType } from "@/lib/reports";
@@ -387,6 +388,13 @@ export default function ReportsClient() {
       <p className="mt-3 text-center text-cream/80">
         1 Oracle per report. No free first report. Reports never expire.
       </p>
+      {/* Phase E (item 9): delivery format and length, stated before
+          anyone spends an Oracle. */}
+      <p className="mx-auto mt-2 max-w-xl text-center text-sm text-mist">
+        Delivered on screen as a keep-forever report, printable as PDF:
+        about 350-550 words of interpretation (year-ahead 500-700),
+        plus the tables for your type.
+      </p>
       <p className="mt-2 text-center text-sm text-mist">
         Birth details are used only for this report, never stored, never sent to AI.
       </p>
@@ -421,15 +429,17 @@ export default function ReportsClient() {
       </div>
       <p className="mt-3 text-center text-sm text-cream/75">{TYPE_BLURBS[type]}</p>
       <details className="mx-auto mt-4 max-w-xl rounded-2xl border border-gold/20 bg-panel/60 p-4 text-left">
-        <summary className="cursor-pointer font-semibold text-goldbright">See a sample report layout, before you spend an Oracle</summary>
+        <summary className="cursor-pointer font-semibold text-goldbright">Read a sample report, before you spend an Oracle</summary>
         <p className="mt-2 text-sm text-cream/80">
-          This is the layout, not a personal report. Your generated report fills the same sections with your own positions.
+          A full sample transit report, written for an invented seeker. Your generated report fills the same shape with your own positions.
         </p>
         <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-cream/80">
           <li>Transit report: interpretation, Western transits on your date, Vedic Gochara.</li>
           <li>Year-ahead reading: interpretation, monthly themes, Dasha outlook, Ziwei annual layer.</li>
           <li>Relationship comparison: interpretation, the two charts, cross-aspects.</li>
         </ul>
+        <p className="mt-4 whitespace-pre-line text-sm leading-relaxed text-cream/90">{SAMPLE_TRANSIT_REPORT}</p>
+        <p className="mt-3 text-xs italic text-mist">Sample report, invented seeker, invented positions.</p>
       </details>
       {type === "comparison" && (
         <p className="mt-2 text-center text-sm text-mist">

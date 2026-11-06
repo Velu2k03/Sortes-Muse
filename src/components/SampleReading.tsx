@@ -11,19 +11,30 @@ const SAMPLE_CARDS = [
   { id: "major-17", position: "Future", note: "The star you steer by" },
 ];
 
-const SAMPLE_INTERPRETATION = `Maya, your cards are not arguing with each other. They are telling one story in three beats.
+export const SAMPLE_INTERPRETATION = `Maya, your cards are not arguing with each other. They are telling one story in three beats, and the story is about a decision you have already made in every way except out loud.
 
-The Two of Wands in the Past shows the exact crossroads you described: the safe path you have already mastered, and the wilder one you keep looking at. You have been standing at that window a long time, and the card honors it. Planning is not the same as stalling, but your planning phase is complete.
+The Two of Wands in the Past shows the exact crossroads you described: the safe path you have already mastered, and the wilder one you keep looking at. You have been standing at that window a long time, and the card honors it. Planning is not the same as stalling. You mapped the risks, you priced the leap, you asked everyone you trust. That work counts. But the card is also honest about what it shows: a figure holding the world in one hand and looking out to sea. The planning phase is complete. What remains is not more information. It is a choice.
 
-The Chariot arrives in the Present with unusual force for you. This is the card of taking the reins, and it is upright, which matters: the way forward is not reckless, it is directed. The startup offer is the chariot itself. Fast, a little frightening, and pointed somewhere.
+The Chariot arrives in the Present with unusual force for you. This is the card of taking the reins, and it is upright, which matters. The way forward is not reckless. It is directed. The startup offer is the chariot itself. Fast, a little frightening, and pointed somewhere. Two horses pull in different directions on this card, and the driver does not resolve that tension by picking one horse. He holds both reins. That is the skill this moment asks of you: not certainty, but steering. You can want the stability of the old job and the aliveness of the new one at the same time, and still move.
 
 And then The Star in the Future, the card of quiet, certain hope. Not fireworks, Maya. A steady light. This is the card that appears when the path is right but the timing asks for trust. The real question was never whether you are ready. You are. The question was whether you would let yourself want it.
 
-Sit with The Star this week. Notice where your body leans when you picture saying yes.`;
+What stands out most is how little fear is actually in these cards. There is no Tower here, no Ten of Swords. The fear lives in the story around the cards, not in the cards themselves. The tension is between the part of you that has already decided and the part that wants one more sign. The opportunity is that the decision does not need to be dramatic to be real. A quiet yes counts the same as a loud one.
+
+What you may be overlooking is the cost of staying. You have priced the leap carefully and never priced the standstill. Another year in the mastered role is not neutral. It is a year of the same window, the same looking out to sea.
+
+One practical step: this week, tell one person the answer out loud. Not the pros and cons. The answer. Say, I am taking the offer, or I am staying, and listen to what your body does when the words leave your mouth. That reaction is information your spreadsheets cannot give you.
+
+What would change if you trusted that the steadiness of The Star is already yours, and the only thing left is to walk toward it?`;
 
 /**
  * Sample personalized reading on the home page: shows visitors exactly
  * what they are buying before any paywall. Clearly labeled as a sample.
+ * Phase E (item 9): a full paid-style reading, 505 words in the
+ * 350-550 band, with the same closing structure as a real reading
+ * (what stands out, tension and opportunity, what is overlooked, one
+ * practical step, exactly one reflection question). The word count
+ * and structure are pinned in sample-reading.test.ts.
  */
 export default function SampleReading() {
   return (
