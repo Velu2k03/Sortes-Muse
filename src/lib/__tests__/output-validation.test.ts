@@ -18,12 +18,12 @@ const CARDS = [{ name: "The Fool" }, { name: "The Magician" }, { name: "The High
 const QUESTION = "What should I focus on next in my career?";
 
 function validReading(): string {
-  const para = (card: string, n: number) =>
+  const para = (card: string) =>
     `${card} speaks to the question of what to focus on next in your career, and the card does not answer it alone. ` +
     `It asks you to look at the work in front of you the way a careful craftsperson looks at one tool at a time, ` +
     `noticing which part of the task is yours to shape and which part belongs to timing, other people, or plain luck. ` +
     `That attention is itself the focus your question is reaching for, and it grows steadier the longer you practise it. `;
-  const body = [0, 1, 2].map((i) => para(CARDS[i].name, i)).join("");
+  const body = [0, 1, 2].map((i) => para(CARDS[i].name)).join("");
   const close =
     `What stands out for your question is the movement from openness through skill to stillness, and the tension in this draw ` +
     `is between starting before you feel ready and waiting until the picture is complete. What you may be overlooking is how much ` +
