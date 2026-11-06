@@ -11,6 +11,7 @@ import { SENSITIVE_KEYS } from "@/lib/intake";
 import { getSpread } from "@/lib/tarot";
 import { computeSpreadFacts, type FactCard } from "@/lib/spread-facts";
 import { generateChat } from "@/lib/ai";
+import { checkRateLimit, clientIp, rateLimitExceeded, RATE_LIMITS } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -20,19 +21,6 @@ export const dynamic = "force-dynamic";
 // closing sentence does not depend on the model obeying the prompt.
 const HEALTH_CLOSE =
   "This reflection is not medical advice. Please speak with a licensed professional about any health concern.";
-
-// Simple in-memory rate limit: 20 generations per IP per hour.
-const hits = new Map<string, { count: number; resetAt: number }>();
-function rateLimited(ip: string): boolean {
-  const now = Date.now();
-  const rec = hits.get(ip);
-  if (!rec || now > rec.resetAt) {
-    hits.set(ip, { count: 1, resetAt: now + 60 * 60 * 1000 });
-    return false;
-  }
-  rec.count += 1;
-  return rec.count > 20;
-}
 
 interface ApiCard {
   cardId: string;
@@ -157,13 +145,9 @@ Write the personalized reading now.`;
 }
 
 export async function POST(req: NextRequest) {
-  const ip =
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
-  if (rateLimited(ip)) {
-    return NextResponse.json(
-      { error: "Too many readings right now. Please try again later." },
-      { status: 429 }
-    );
+  // Phase 6: shared limiter (was a per-route map: 20/hr/IP).
+  if (!checkRateLimit(`generate:${clientIp(req)}`, RATE_LIMITS.aiGenerateIp).allowed) {
+    return rateLimitExceeded();
   }
 
   let body: {

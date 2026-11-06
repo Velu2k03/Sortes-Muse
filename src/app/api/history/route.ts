@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { saveReadingForUser, updateReadingForUser, listReadingsForUser, deleteReadingForUser } from "@/lib/db";
+import { checkRateLimit, rateLimitExceeded, RATE_LIMITS } from "@/lib/rateLimit";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +15,12 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
+  // Phase 6 (N3): guest journal sync was unrated — up to 100 readings
+  // per call, unbounded calls, unbounded JSON size. 20/hour per user.
+  // (Per-reading size is still unbounded; the 100-item cap stays.)
+  if (!checkRateLimit(`history:${session.userId}`, RATE_LIMITS.historySyncUser).allowed) {
+    return rateLimitExceeded();
+  }
   let body: { readings?: Array<{ id: string; [k: string]: unknown }> };
   try {
     body = await req.json();

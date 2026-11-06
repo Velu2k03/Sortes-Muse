@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { calculateChart, calculateZiwei } from "@/lib/charts";
 import { calculateVedic } from "@/lib/vedic";
+import { checkRateLimit, clientIp, rateLimitExceeded, RATE_LIMITS } from "@/lib/rateLimit";
 
 // Calculation only: no AI, no credit charge, no storage, no database.
 // Birth data in the request is used in-memory for this calculation only
@@ -8,22 +9,10 @@ import { calculateVedic } from "@/lib/vedic";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const hits = new Map<string, { count: number; resetAt: number }>();
-function rateLimited(ip: string): boolean {
-  const now = Date.now();
-  const rec = hits.get(ip);
-  if (!rec || now > rec.resetAt) {
-    hits.set(ip, { count: 1, resetAt: now + 60 * 60 * 1000 });
-    return false;
-  }
-  rec.count += 1;
-  return rec.count > 20;
-}
-
 export async function POST(req: NextRequest) {
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
-  if (rateLimited(ip)) {
-    return NextResponse.json({ error: "Too many charts right now. Please try again later." }, { status: 429 });
+  // Phase 6: shared limiter (was a per-route map: 20/hr/IP).
+  if (!checkRateLimit(`chart-calc:${clientIp(req)}`, RATE_LIMITS.chartCalcIp).allowed) {
+    return rateLimitExceeded();
   }
   let body: Record<string, unknown>;
   try {

@@ -8,6 +8,7 @@ import {
   markFreeInterpretationUsed,
 } from "@/lib/db";
 import { generateChat } from "@/lib/ai";
+import { checkRateLimit, clientIp, rateLimitExceeded, RATE_LIMITS } from "@/lib/rateLimit";
 
 // Chart interpretation, Phase 2. Reuses the tarot OpenRouter pattern
 // (same model fallback chain, same timeout) but is a separate route
@@ -32,18 +33,6 @@ export const dynamic = "force-dynamic";
 
 const HEALTH_CLOSE =
   "This reflection is not medical advice. Please speak with a licensed professional about any health concern.";
-
-const hits = new Map<string, { count: number; resetAt: number }>();
-function rateLimited(ip: string): boolean {
-  const now = Date.now();
-  const rec = hits.get(ip);
-  if (!rec || now > rec.resetAt) {
-    hits.set(ip, { count: 1, resetAt: now + 60 * 60 * 1000 });
-    return false;
-  }
-  rec.count += 1;
-  return rec.count > 20;
-}
 
 const CATEGORIES = ["general", "love", "career", "finances", "academics", "health"] as const;
 
@@ -179,9 +168,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
-  if (rateLimited(ip)) {
-    return NextResponse.json({ error: "Too many interpretations right now. Please try again later." }, { status: 429 });
+  // Phase 6: shared limiter (was a per-route map: 20/hr/IP).
+  if (!checkRateLimit(`interpret:${clientIp(req)}`, RATE_LIMITS.chartInterpretIp).allowed) {
+    return rateLimitExceeded();
   }
   let body: Record<string, unknown>;
   try {

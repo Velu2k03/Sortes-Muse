@@ -56,6 +56,23 @@ describe("checkRateLimit", () => {
       expect(rule.max).toBeGreaterThan(0);
       expect(rule.windowMs).toBeGreaterThan(0);
     }
-    expect(RATE_LIMITS.claimIp.max).toBeLessThanOrEqual(10);
+  });
+
+  it("Phase 6: the AI/chart budgets match the old per-route maps", () => {
+    // The six deleted per-route maps had these exact budgets; the
+    // shared limiter must not silently tighten or loosen them.
+    expect(RATE_LIMITS.aiGenerateIp).toEqual({ windowMs: 60 * 60_000, max: 20 });
+    expect(RATE_LIMITS.aiFollowUpIp).toEqual({ windowMs: 60 * 60_000, max: 10 });
+    expect(RATE_LIMITS.chartCalcIp).toEqual({ windowMs: 60 * 60_000, max: 20 });
+    expect(RATE_LIMITS.chartGeocodeIp).toEqual({ windowMs: 60 * 60_000, max: 20 });
+    expect(RATE_LIMITS.chartInterpretIp).toEqual({ windowMs: 60 * 60_000, max: 20 });
+    expect(RATE_LIMITS.reportsGenerateIp).toEqual({ windowMs: 60 * 60_000, max: 20 });
+  });
+
+  it("Phase 6: the previously unrated routes have strict budgets", () => {
+    expect(RATE_LIMITS.accountDeleteUser).toEqual({ windowMs: 60 * 60_000, max: 3 });
+    expect(RATE_LIMITS.accountExportUser).toEqual({ windowMs: 60 * 60_000, max: 10 });
+    expect(RATE_LIMITS.historySyncUser).toEqual({ windowMs: 60 * 60_000, max: 20 });
+    expect(RATE_LIMITS.readIp).toEqual({ windowMs: 60_000, max: 60 });
   });
 });

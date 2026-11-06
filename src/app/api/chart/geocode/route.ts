@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { checkRateLimit, clientIp, rateLimitExceeded, RATE_LIMITS } from "@/lib/rateLimit";
 
 // Free, no-key geocoding via OpenStreetMap Nominatim. The place string is
 // used only to look up coordinates in this request: it is never stored,
@@ -9,22 +10,10 @@ import { NextRequest, NextResponse } from "next/server";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const hits = new Map<string, { count: number; resetAt: number }>();
-function rateLimited(ip: string): boolean {
-  const now = Date.now();
-  const rec = hits.get(ip);
-  if (!rec || now > rec.resetAt) {
-    hits.set(ip, { count: 1, resetAt: now + 60 * 60 * 1000 });
-    return false;
-  }
-  rec.count += 1;
-  return rec.count > 20;
-}
-
 export async function GET(req: NextRequest) {
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
-  if (rateLimited(ip)) {
-    return NextResponse.json({ error: "Too many lookups right now. Please try again later." }, { status: 429 });
+  // Phase 6: shared limiter (was a per-route map: 20/hr/IP).
+  if (!checkRateLimit(`geocode:${clientIp(req)}`, RATE_LIMITS.chartGeocodeIp).allowed) {
+    return rateLimitExceeded();
   }
   const q = req.nextUrl.searchParams.get("q")?.trim() ?? "";
   if (q.length < 3 || q.length > 100) {

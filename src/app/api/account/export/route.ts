@@ -6,6 +6,7 @@ import {
   listReadingsForUser,
   listReportsForUser,
 } from "@/lib/db";
+import { checkRateLimit, rateLimitExceeded, RATE_LIMITS } from "@/lib/rateLimit";
 
 // Phase 3 (3.6): self-serve export of everything the account holds:
 // Oracle balance, purchase history, journal readings, and reports.
@@ -18,6 +19,10 @@ export async function GET() {
   const session = await getSession();
   if (!session) {
     return NextResponse.json({ error: "Not signed in." }, { status: 401 });
+  }
+  // Phase 6 (N3): full-data export was unrated. 10/hour per user.
+  if (!checkRateLimit(`export:${session.userId}`, RATE_LIMITS.accountExportUser).allowed) {
+    return rateLimitExceeded();
   }
   const user = await getUserById(session.userId);
   if (!user) {

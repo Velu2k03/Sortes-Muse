@@ -4,6 +4,7 @@ import {
   listReportsForUser,
   saveReportForUser,
 } from "@/lib/db";
+import { checkRateLimit, clientIp, rateLimitExceeded, RATE_LIMITS } from "@/lib/rateLimit";
 
 // M4.1: keep-forever reports, signed-in storage. Guests never call
 // this route; they keep reports in device-local storage. Saving is
@@ -29,9 +30,13 @@ function validReport(r: unknown): r is { id: string; [k: string]: unknown } {
   return true;
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
+  // Phase 6 (N3): report reads were unrated.
+  if (!checkRateLimit(`reports-read:${clientIp(req)}`, RATE_LIMITS.readIp).allowed) {
+    return rateLimitExceeded();
+  }
   const reports = await listReportsForUser(session.userId);
   return NextResponse.json({ reports });
 }
@@ -39,6 +44,10 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
+  // Phase 6 (N3): report saves were unrated.
+  if (!checkRateLimit(`reports-save:${clientIp(req)}`, RATE_LIMITS.readIp).allowed) {
+    return rateLimitExceeded();
+  }
   let body: Record<string, unknown>;
   try {
     body = await req.json();

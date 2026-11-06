@@ -13,6 +13,7 @@ import {
 } from "@/lib/reports";
 import type { ReportType, SavedReport } from "@/lib/reports";
 import { generateChat } from "@/lib/ai";
+import { checkRateLimit, clientIp, rateLimitExceeded, RATE_LIMITS } from "@/lib/rateLimit";
 
 // M4.1: premium keep-forever reports. This route computes and
 // interprets only; it does NOT save. The client saves the returned
@@ -37,18 +38,6 @@ const HEALTH_CLOSE =
   "This reflection is not medical advice. Please speak with a licensed professional about any health concern.";
 const FINANCES_CLOSE =
   "This reflection is not financial advice. Please speak with a licensed professional about any financial decision.";
-
-const hits = new Map<string, { count: number; resetAt: number }>();
-function rateLimited(ip: string): boolean {
-  const now = Date.now();
-  const rec = hits.get(ip);
-  if (!rec || now > rec.resetAt) {
-    hits.set(ip, { count: 1, resetAt: now + 60 * 60 * 1000 });
-    return false;
-  }
-  rec.count += 1;
-  return rec.count > 20;
-}
 
 const TYPES: ReportType[] = ["transit", "year-ahead", "comparison"];
 
@@ -79,9 +68,9 @@ const TYPE_PROMPTS: Record<ReportType, { maxTokens: number; system: string; stru
 };
 
 export async function POST(req: NextRequest) {
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
-  if (rateLimited(ip)) {
-    return NextResponse.json({ error: "Too many reports right now. Please try again later." }, { status: 429 });
+  // Phase 6: shared limiter (was a per-route map: 20/hr/IP).
+  if (!checkRateLimit(`reports-generate:${clientIp(req)}`, RATE_LIMITS.reportsGenerateIp).allowed) {
+    return rateLimitExceeded();
   }
   let body: Record<string, unknown>;
   try {

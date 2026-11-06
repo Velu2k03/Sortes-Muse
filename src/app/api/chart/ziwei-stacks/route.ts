@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { calculateZiweiStacks } from "@/lib/charts";
+import { checkRateLimit, clientIp, rateLimitExceeded, RATE_LIMITS } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -11,6 +12,11 @@ export const dynamic = "force-dynamic";
 // is sent to AI. Birth data itself is never required beyond the
 // inputs the natal chart already needed, and it stays in-memory.
 export async function POST(req: NextRequest) {
+  // Phase 6: this calculation route was unrated (N3). Same budget as
+  // /api/chart/calculate: 20/hr/IP.
+  if (!checkRateLimit(`chart-calc:${clientIp(req)}`, RATE_LIMITS.chartCalcIp).allowed) {
+    return rateLimitExceeded();
+  }
   let body: {
     date?: unknown;
     hour?: unknown;

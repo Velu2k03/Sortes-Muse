@@ -11,6 +11,7 @@ import cardsData from "@/data/cards.json";
 import { generateChat } from "@/lib/ai";
 import { drawClarifierCard } from "@/lib/clarifier";
 import { CARDS } from "@/lib/cards";
+import { checkRateLimit, clientIp, rateLimitExceeded, RATE_LIMITS } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -21,19 +22,6 @@ const HEALTH_CLOSE =
   "This reflection is not medical advice. Please speak with a licensed professional about any health concern.";
 const FINANCES_CLOSE =
   "This reflection is not financial advice. Please speak with a licensed professional about any financial decision.";
-
-// Own in-memory rate bucket, separate from the generate route.
-const hits = new Map<string, { count: number; resetAt: number }>();
-function rateLimited(ip: string): boolean {
-  const now = Date.now();
-  const rec = hits.get(ip);
-  if (!rec || now > rec.resetAt) {
-    hits.set(ip, { count: 1, resetAt: now + 60 * 60 * 1000 });
-    return false;
-  }
-  rec.count += 1;
-  return rec.count > 10;
-}
 
 // Whitelist for guest-sent reading fields. Never trust extra keys.
 const READING_WHITELIST = [
@@ -141,13 +129,9 @@ Answer this follow-up now.`.trim();
 }
 
 export async function POST(req: NextRequest) {
-  const ip =
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
-  if (rateLimited(ip)) {
-    return NextResponse.json(
-      { error: "Too many follow-up requests right now. Please try again later." },
-      { status: 429 }
-    );
+  // Phase 6: shared limiter (was a per-route map: 10/hr/IP).
+  if (!checkRateLimit(`follow-up:${clientIp(req)}`, RATE_LIMITS.aiFollowUpIp).allowed) {
+    return rateLimitExceeded();
   }
 
   let body: {
