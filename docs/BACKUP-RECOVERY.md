@@ -1,163 +1,147 @@
-# Sortes — Backup & Recovery
+# Sortes - Backup & Recovery
 
-Phase 6 (P1b), 2026-11-06. Status of the facts below: **verified live
-2026-11-06** by the Supabase dashboard check (production project,
-FREE plan).
+Updated for Phase C (2026-11-07). Status of the facts below: **verified live 2026-11-06 / 2026-11-07** by the Supabase dashboard check (production project, FREE plan).
 
-## Where we stand (verified)
+## Where we stand (verified facts)
 
-- Production database: Supabase Postgres 17.6.1.166, FREE plan, 27 MB,
-  ~1 user, ~8 transactions, ~1 reading.
-- **No scheduled backups. No PITR. No restore path.** PITR is a Pro
-  add-on (from $100/month) and is not enabled.
-- Pooler: transaction mode port 6543, session mode port 5432, host
-  `aws-0-ap-northeast-1.pooler.supabase.com`, pool size 15, max
-  connections 200.
-- An upgrade to Postgres 17.11.0.018 is offered in the dashboard —
-  **do not apply without Velu's approval** (approval item).
+- Production database: Supabase Postgres 17.6.1.166, FREE plan, ~27 MB, ~1 user, ~8 transactions, ~1 reading. Project ref `adgputwbdtdmgkiswtnz`.
+- **No scheduled backups. No PITR. No restore path.** PITR is a Pro add-on (from $100/month) and is not enabled.
+- Pooler: transaction mode port 6543, session mode port 5432, host `aws-0-ap-northeast-1.pooler.supabase.com`, pool size 15, max connections 200.
+- Production dumps must use the **session pooler (port 5432)**, never the transaction pooler (6543): transaction mode cannot run `pg_dump` reliably (prepared statements and multi-statement dumps are not supported).
+- Target metrics: **RPO:** 24h (daily dumps). **RTO:** under 1h for a logical restore of a 27 MB database (decrypt + restore + verify + point the app at the restored database).
+- An upgrade to Postgres 17.11.0.018 is offered in the dashboard: do not apply without Velu's approval.
 
-Because there is no managed backup, the procedure below is a
-**logical backup with `pg_dump`**, run on a schedule from this VM,
-with dumps stored under the workspace. It does not depend on the Pro
-plan. Upgrading to Pro is documented as the optional alternative.
+## Architecture: Primary (Drive) + Fallback (Actions)
 
-## Backup — exact command (owner approval required before first run)
+1. **Primary runner**: Runtime-managed Muse cron on this VM, daily at 03:00 Asia/Manila, running `scripts/backup-daily.sh`.
+   - `pg_dump` writes custom-format dump to `~/workspace/sortes-backups/sortes-<date>.dump`.
+   - SHA-256 checksum is computed and recorded in `backup.log`.
+   - `age` encrypts the dump with X25519 using the public key from `~/.config/sortes/age-recipient.txt` (or `SORTES_BACKUP_AGE_RECIPIENT_FILE`). Plaintext dump is immediately deleted.
+   - Uploads `.dump.age` to Google Drive folder `Sortes Backups` using `/opt/hatch/bin/hatch_gws_cli` (`scripts/backup-drive-upload.mjs`). Same-day re-uploads replace existing content in place.
+   - Enforces 14-day retention locally and on Google Drive (keeps newest 14 blobs).
+2. **Fallback runner**: GitHub Actions scheduled workflow (template at `docs/github-actions/sortes-backup.yml`; install it as `.github/workflows/sortes-backup.yml` once the pushing token has the `workflow` scope — see the template header), daily at 03:07 Asia/Manila (19:07 UTC).
+   - Independent runner on `ubuntu-latest`.
+   - Secrets: `SORTES_BACKUP_DATABASE_URL` (repository secret), `AGE_PUBLIC_KEY` (repository variable).
+   - Encrypts inside `scripts/backup.mjs` with `SORTES_BACKUP_AGE_RECIPIENT`.
+   - Uploads encrypted artifact `sortes-backup-<run_id>` with 14-day retention.
+   - Fallback only because public repo scheduled workflows auto-disable after 60 days of repo inactivity and have no delivery SLA.
+3. **Working copy**: `~/workspace/sortes-backups/` persists across VM replacements (`~/workspace` persists), providing fast local restore.
 
-Use the **session pooler (port 5432)**, never the transaction pooler
-(6543) for dumps: transaction mode cannot run `pg_dump` reliably
-(prepared statements / multi-statement dumps are not supported).
+## Encryption & Key Ceremony
 
-```bash
-# One-time: the staging/production DB password must come from the
-# Secure Vault, never pasted in chat or committed. The command below
-# reads it from the environment only.
-export PGPASSWORD="<from Secure Vault>"
-pg_dump \
-  "postgres://postgres.<project-ref>:<password>@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres" \
-  --format=custom --no-owner --no-acl \
-  --file "$HOME/workspace/sortes-backups/sortes-$(date +%Y%m%d-%H%M%S).dump"
-unset PGPASSWORD
-```
+Backups contain sensitive application data and credentials. Dumps are encrypted with `age` (X25519 plus ChaCha20-Poly1305 AEAD) using asymmetric key separation:
+- The runner only holds the **public key** (`age1...`), stored in `~/.config/sortes/age-recipient.txt` (mode 644) and the `AGE_PUBLIC_KEY` Actions variable. The runner can encrypt but can NEVER decrypt.
+- The **private key** (`AGE-SECRET-KEY-1...`) is NEVER placed on any runner, never placed in `backup.env`, never put in git, and never printed in chat or logs.
+- Test keys vs production ceremony:
+  - Test keys may be generated ephemerally for local testing and destroyed immediately.
+  - Production key ceremony belongs strictly to Velu:
+    1. Keypair generation: `age-keygen -o ~/.config/sortes/age-key.txt && chmod 600 ~/.config/sortes/age-key.txt`.
+    2. Extract public key to `~/.config/sortes/age-recipient.txt` (mode 644).
+    3. Store private key in Secure Vault via the Vault capture flow (same flow as production `POSTGRES_URL`).
+    4. Velu saves a second copy in his personal password manager (and ideally a physical printed copy).
+    5. Delete private key from VM: `shred -u ~/.config/sortes/age-key.txt`. Verify file is gone.
+  - **CRITICAL WARNING:** Loss of every copy of the private key means all encrypted backups are permanently unrecoverable.
 
-Notes:
+## Alerting & Watchdog
 
-- `--format=custom` keeps the dump compressed and restorable with
-  `pg_restore` (single table, whole DB, or `--data-only`).
-- `--no-owner --no-acl`: the dump is restored into a database owned
-  by a different role, so ownership/ACL lines must not be included.
-- The dump is **read-only against production**: `pg_dump` takes a
-  consistent snapshot and writes nothing. It is still kept out of
-  automated runs in this phase; the first run needs Velu's approval.
-- A backup script that wraps the above (retention: keep 14 daily dumps)
-  lives at `scripts/backup.mjs` — run it as `npm run db:backup` with
-  `SORTES_BACKUP_DATABASE_URL` set. It refuses production-looking runs
-  without `SORTES_BACKUP_PRODUCTION=1` and remote Supabase URLs without
-  `SORTES_BACKUP_ALLOW_REMOTE=1`. Restores use `scripts/restore.mjs`
-  (`npm run db:restore -- --dump <file> --target <url> [--create]`),
-  which verifies row counts per table after restoring. Both scripts
-  were tested end to end on local Postgres 2026-11-06 (Phase 6B):
-  dump of a seeded test database (2 users, 1 transaction, 1 reading,
-  1 report, 1 free reading, 1 free interpretation, 2 migrations)
-  restored into a fresh database with identical counts, and retention
-  pruning was verified (keep 2: oldest dumps deleted, newest kept). A
-  plain-SQL dump of the same test database is saved at
-  `hidden_files/staging-restore-test.sql` for the dashboard task to
-  apply to the empty staging project via the SQL editor.
+- Primary alert: Morning watchdog via the daily mail digest cron (09:00 Asia/Manila).
+  - Watchdog invocation:
+    `node /home/hatch/workspace/sortes/scripts/backup-watchdog.mjs`
+    (or `npm run db:backup:watchdog`, or with `--json`).
+  - Checks `backup.log` for a `backup-ok` event within the last 25 hours.
+  - Exits 0 if healthy, exits 1 if missing or if failures occurred.
+  - Reports newest backup timestamp, age in hours, file size, and any failures in the last 25 hours.
+- Fallback alert: GitHub Actions native email on workflow failure.
+- Weekly restore test: Sunday 04:00 Asia/Manila test restore into local Postgres.
 
-## Schedule (proposed, needs owner approval)
+## Retention Math
 
-| Cadence | What | Where |
-|---|---|---|
-| Daily 03:00 Manila | `pg_dump` (custom format), keep 14 daily dumps | This VM, cron, dumps under `~/workspace/sortes-backups/` |
-| Weekly | Verify the newest dump restores into local Postgres (see below) | This VM |
-| After any migration | `pg_dump` before + after the migration apply | This VM |
+- Database size: ~27 MB (includes catalogs, indexes, free space).
+- Typical production dump: ~200 KB realistic (compressed custom format), ~5 MB conservative, 27 MB absolute ceiling.
+- 14-day retention bounds:
+  - Realistic (~200 KB/day): ~3 MB total (fits Drive 15 GB, fits Actions 500 MB).
+  - Conservative (5 MB/day): ~70 MB total (fits Drive 15 GB, fits Actions 500 MB).
+  - Worst case (27 MB/day): ~378 MB total (fits Drive 15 GB, fits Actions 500 MB with ~122 MB headroom).
+- 14 days is confirmed adequate and fits within free quotas.
 
-### Schedule definition (Phase 7 — not enabled)
+## Restore & Recovery Procedure
 
-Wrapper script: `scripts/backup-daily.sh` (in the repo). It sources
-the production database URL from an env file the owner supplies via
-Secure Vault (`~/.config/sortes/backup.env`, mode 600, containing
-only `SORTES_BACKUP_DATABASE_URL`), then runs `scripts/backup.mjs`
-with retention keep 14. It refuses to run if the env file is missing
-and never prints the URL.
+Restoring into production is a destructive operation that replaces the live database. It requires Velu's explicit approval for that specific incident, and a pre-restore dump of the current production state must be taken first.
 
-Indicative cron entry (the scheduler owns the exact form; creating
-the job needs owner approval, B-U):
-
-```
-0 3 * * *  TZ=Asia/Manila /home/hatch/workspace/sortes/scripts/backup-daily.sh >> /home/hatch/workspace/sortes-backups/cron.log 2>&1
-```
-
-**RPO:** up to 24h of data (daily dumps). **RTO:** under 1h for a
-logical restore of a 27 MB database (restore + verify + point the
-app at the restored database).
-
-## Restore — exact procedure
+### Restoring an encrypted backup (.age)
 
 ```bash
-# 1. Create the target database (local Postgres, or a fresh Supabase project).
-createdb sortes_restore_test   # local example
+# 1. Fetch encrypted backup file (e.g. from Google Drive or ~/workspace/sortes-backups/)
+# 2. Retrieve private key from Secure Vault and save to a temporary mode 600 file:
+cat << 'EOF' > ~/.config/sortes/age-key-restore.txt
+AGE-SECRET-KEY-1...
+EOF
+chmod 600 ~/.config/sortes/age-key-restore.txt
 
-# 2. Restore the dump.
-pg_restore --no-owner --no-acl -d sortes_restore_test \
-  ~/workspace/sortes-backups/sortes-<date>.dump
+# 3. Option A: Automated restore via restore.mjs
+# Decrypts to a temporary plaintext file in the same directory, runs pg_restore,
+# verifies row counts, and deletes the temporary plaintext file:
+node scripts/restore.mjs \
+  --dump ~/workspace/sortes-backups/sortes-<date>.dump.age \
+  --target "postgres://sortes_test:sortes_test_local@localhost:5432/sortes_restore_test" \
+  --age-key-file ~/.config/sortes/age-key-restore.txt \
+  [--create]
 
-# 3. Verify: row counts per table.
-psql -d sortes_restore_test -c \
-  "SELECT 'users', count(*) FROM users UNION ALL \
-   SELECT 'transactions', count(*) FROM transactions UNION ALL \
-   SELECT 'readings', count(*) FROM readings UNION ALL \
-   SELECT 'reports', count(*) FROM reports;"
+# Option B: Manual decrypt and restore
+age -d -i ~/.config/sortes/age-key-restore.txt \
+  ~/workspace/sortes-backups/sortes-<date>.dump.age > ~/workspace/sortes-backups/sortes-<date>.dump
 
-# 4. Only if the counts match the pre-incident counts (recorded in the
-#    backup log), point the app at the restored database:
-#    set DATABASE_URL to the restored project and restart the app.
-#    Never point the app at a restore that has not been verified.
+# Verify integrity: checksum must match backup-checksum event in backup.log
+sha256sum ~/workspace/sortes-backups/sortes-<date>.dump
+pg_restore --list ~/workspace/sortes-backups/sortes-<date>.dump > /dev/null
+
+# Restore into target database:
+pg_restore --no-owner --no-acl -d sortes_restore_test ~/workspace/sortes-backups/sortes-<date>.dump
+
+# Clean up plaintext dump:
+rm -f ~/workspace/sortes-backups/sortes-<date>.dump
+
+# 4. ALWAYS delete the private key file immediately after decryption:
+shred -u ~/.config/sortes/age-key-restore.txt
 ```
 
-Restoring **into production** is a destructive operation: it replaces
-the live database. It requires Velu's explicit approval for that
-specific incident, and the pre-restore dump of the current (broken)
-production state must be taken first.
+### Verification query
 
-## Rollback runbook (bad migration / bad deploy)
+After restoring, verify table counts against source numbers:
 
-1. **Stop the bleeding:** revert the deploy in Vercel (previous
-   deployment) — this takes the broken code offline in minutes.
-2. **Assess the data:** did the bad migration change data, or only
-   schema? `schema_migrations` tells you which versions applied.
-3. **Schema-only break:** apply the inverse migration (a new numbered
-   migration that undoes the change — never edit an applied migration
-   file, never `DROP TABLE` by hand in production).
-4. **Data corruption:** restore the pre-migration dump into a staging
-   database, verify counts, then — with Velu's approval — restore
-   into production and re-apply migrations from the last known-good
-   dump point.
-5. **Record it:** append the incident to the tracker with the dump
-   filename, the migration versions involved, and the restore
-   verification output.
+```sql
+SELECT 'users', count(*) FROM users UNION ALL
+SELECT 'auth_codes', count(*) FROM auth_codes UNION ALL
+SELECT 'transactions', count(*) FROM transactions UNION ALL
+SELECT 'readings', count(*) FROM readings UNION ALL
+SELECT 'reports', count(*) FROM reports UNION ALL
+SELECT 'free_readings', count(*) FROM free_readings UNION ALL
+SELECT 'free_interpretations', count(*) FROM free_interpretations UNION ALL
+SELECT 'schema_migrations', count(*) FROM schema_migrations
+ORDER BY 1;
+```
 
-## Optional alternative: Supabase Pro
+## Scheduler note (Runtime-managed cron)
 
-- Pro plan + PITR add-on: from $100/month. Gives point-in-time
-  recovery (continuous WAL archiving) and scheduled backups with a
-  one-click restore in the dashboard.
-- Decision: **not required at the current size** (27 MB, ~1 user).
-  Revisit when the user base or transaction volume grows, or when
-  Velu approves the spend. No code change is needed either way.
+System `crontab` is NOT installed on this VM. Do not attempt to add crontab entries.
+The scheduler on this VM is the runtime-managed cron (Muse scheduler):
+- Job title: `Sortes daily production backup`
+- Schedule: Daily 03:00 Asia/Manila
+- Command: `/home/hatch/workspace/sortes/scripts/backup-daily.sh >> /home/hatch/workspace/sortes-backups/cron.log 2>&1`
+- Creating or editing this schedule requires Velu's approval.
 
-## What is still unconfirmed / blocked
+## What still needs Velu (pending approvals and items)
 
-- The exact `pg_dump` command above has **not been run against
-  production** in this phase (deliberately — it needs owner approval
-  first, even though it is read-only). The backup/restore cycle itself
-  is proven on local Postgres (Phase 6B, see above); what remains is
-  the first production run and the cron schedule.
-- The staging Supabase project's DB password was generated by
-  Supabase and not recorded; the owner must reset it and share it via
-  Secure Vault before any backup/restore can be exercised against
-  staging (see `docs/STAGING.md`). A plain-SQL test dump is ready at
-  `hidden_files/staging-restore-test.sql` for the SQL-editor path,
-  which needs no password.
-- No cron job has been created for the daily dump yet — that is a
-  scheduled-job change and needs Velu's approval.
+1. **Production POSTGRES_URL (session pooler, port 5432)**: Supplied via Secure Vault into `~/.config/sortes/backup.env` (mode 600, `SORTES_BACKUP_DATABASE_URL` only).
+2. **Age keypair ceremony**: Run generation ceremony, store private key in Secure Vault, save Velu's second copy in his password manager, and place public key in `~/.config/sortes/age-recipient.txt`.
+3. **Google Drive folder creation & approval**: Create the `Sortes Backups` folder in Google Drive and grant connector approval for the first upload.
+4. **Daily cron creation approval**: Approve creation of the runtime-managed daily 03:00 Manila backup job.
+5. **GitHub Actions configuration**: Add repository secret `SORTES_BACKUP_DATABASE_URL` and repository variable `AGE_PUBLIC_KEY` in `Velu2k03/Sortes-Muse` repository settings.
+
+## NPM Scripts
+
+- `npm run db:backup`: Run local logical backup (`scripts/backup.mjs`).
+- `npm run db:backup:daily`: Run full daily cycle including Drive upload (`scripts/backup-daily.sh`).
+- `npm run db:backup:upload`: Upload encrypted backup to Google Drive (`scripts/backup-drive-upload.mjs`).
+- `npm run db:backup:watchdog`: Run backup health watchdog check (`scripts/backup-watchdog.mjs`).
+- `npm run db:restore`: Restore database from dump with row-count verification (`scripts/restore.mjs`).

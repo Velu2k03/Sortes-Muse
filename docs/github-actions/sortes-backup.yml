@@ -1,0 +1,59 @@
+# TEMPLATE — not a live workflow.
+# The GitHub token used to push this branch lacks the `workflow` scope,
+# so this file lives here as a documented template instead of
+# .github/workflows/. To install it as the live daily backup fallback:
+#   1. Grant the `workflow` scope to the pushing token (gh auth refresh -s workflow),
+#   2. Copy this file to .github/workflows/sortes-backup.yml and commit.
+# See docs/BACKUP-RECOVERY.md for the secret/variable it needs.
+name: 'Daily production backup (fallback)'
+
+on:
+  schedule:
+    - cron: '7 19 * * *' # 03:07 Asia/Manila
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq age postgresql-client
+
+      - name: Validate secrets and variables
+        run: |
+          if [ -z "${SORTES_BACKUP_DATABASE_URL:-}" ]; then
+            echo "::error::Secret SORTES_BACKUP_DATABASE_URL is not set or empty."
+            exit 1
+          fi
+          if [ -z "${SORTES_BACKUP_AGE_RECIPIENT:-}" ]; then
+            echo "::error::Variable AGE_PUBLIC_KEY is not set or empty."
+            exit 1
+          fi
+        env:
+          SORTES_BACKUP_DATABASE_URL: ${{ secrets.SORTES_BACKUP_DATABASE_URL }}
+          SORTES_BACKUP_AGE_RECIPIENT: ${{ vars.AGE_PUBLIC_KEY }}
+
+      - name: Run backup
+        env:
+          SORTES_BACKUP_DATABASE_URL: ${{ secrets.SORTES_BACKUP_DATABASE_URL }}
+          SORTES_BACKUP_PRODUCTION: '1'
+          SORTES_BACKUP_ALLOW_REMOTE: '1'
+          SORTES_BACKUP_DIR: ${{ runner.temp }}/sortes-backups
+          SORTES_BACKUP_KEEP: '1'
+          SORTES_BACKUP_AGE_RECIPIENT: ${{ vars.AGE_PUBLIC_KEY }}
+        run: node scripts/backup.mjs
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sortes-backup-${{ github.run_id }}
+          path: ${{ runner.temp }}/sortes-backups/sortes-*.dump.age
+          retention-days: 14

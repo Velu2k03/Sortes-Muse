@@ -1,18 +1,18 @@
 #!/usr/bin/env node
 /**
- * backup.mjs — Phase 6B logical backup wrapper around pg_dump.
+ * backup.mjs - Logical backup wrapper around pg_dump with age encryption.
  *
  * Takes a consistent snapshot of one database (custom format,
  * compressed, restorable with pg_restore) and keeps the newest N
- * dumps (default 14 daily). This is the scheduled-backup procedure
- * for production, because the Supabase FREE plan has no scheduled
- * backups and no PITR (verified live 2026-11-06) — see
- * docs/BACKUP-RECOVERY.md.
+ * dumps (default 14 daily). Encrypts with age (X25519) when a recipient
+ * is configured, then deletes the plaintext dump.
  *
  * Usage:
  *   SORTES_BACKUP_DATABASE_URL=postgres://... \
+ *   [SORTES_BACKUP_AGE_RECIPIENT=age1...] \
+ *   [SORTES_BACKUP_AGE_RECIPIENT_FILE=~/.config/sortes/age-recipient.txt] \
  *   [SORTES_BACKUP_DIR=~/workspace/sortes-backups] [SORTES_BACKUP_KEEP=14] \
- *   node scripts/backup.mjs
+ *   node scripts/backup.mjs [--no-encrypt]
  *
  * Safety: refuses to run when NODE_ENV=production unless
  * SORTES_BACKUP_PRODUCTION=1 is set, and refuses any URL pointing
@@ -23,9 +23,14 @@
  * Secure Vault for a production run).
  */
 import { spawnSync } from "child_process";
-import { mkdirSync, readdirSync, rmSync, appendFileSync } from "fs";
+import { createHash } from "crypto";
+import { mkdirSync, readdirSync, rmSync, appendFileSync, readFileSync, existsSync } from "fs";
 import { homedir } from "os";
 import path from "path";
+
+const noEncrypt = process.argv.includes("--no-encrypt");
+const ageRecipient = process.env.SORTES_BACKUP_AGE_RECIPIENT || "";
+const ageRecipientFile = process.env.SORTES_BACKUP_AGE_RECIPIENT_FILE || "";
 
 const dbUrl = process.env.SORTES_BACKUP_DATABASE_URL || "";
 if (!dbUrl) {
@@ -64,13 +69,64 @@ const res = spawnSync(
   { stdio: "inherit" }
 );
 if (res.status !== 0) {
-  log({ event: "backup-failed", file, status: res.status });
+  log({ event: "backup-failed", step: "pg_dump", file, status: res.status });
   process.exit(1);
 }
 
+// Compute sha256 checksum of plaintext dump before encryption
+const checksum = createHash("sha256").update(readFileSync(file)).digest("hex");
+log({ event: "backup-checksum", file, sha256: checksum });
+
+let shouldEncrypt = false;
+let ageArgs = [];
+
+if (noEncrypt) {
+  shouldEncrypt = false;
+} else if (ageRecipient) {
+  shouldEncrypt = true;
+  ageArgs = ["-r", ageRecipient];
+} else if (ageRecipientFile) {
+  const resolvedRecipientFile = path.resolve(ageRecipientFile.replace(/^~/, homedir()));
+  if (!existsSync(resolvedRecipientFile)) {
+    log({ event: "backup-failed", step: "encrypt", file, error: "recipient file not found" });
+    process.exit(1);
+  }
+  shouldEncrypt = true;
+  ageArgs = ["-R", resolvedRecipientFile];
+} else {
+  log({
+    event: "backup-warning",
+    message: "no age recipient configured and --no-encrypt absent; keeping plaintext dump unencrypted"
+  });
+}
+
+let finalFile = file;
+
+if (shouldEncrypt) {
+  const encryptedFile = `${file}.age`;
+  const ageRes = spawnSync(
+    "age",
+    [...ageArgs, "-o", encryptedFile, file],
+    { stdio: "inherit" }
+  );
+  if (ageRes.status !== 0) {
+    log({ event: "backup-failed", step: "encrypt", file, status: ageRes.status });
+    process.exit(1);
+  }
+
+  rmSync(file);
+  log({ event: "backup-encrypted", file: encryptedFile, plaintextRemoved: true });
+  finalFile = encryptedFile;
+}
+
 // Retention: keep the newest `keep` dumps, delete the rest.
+// Operates on .age files when encrypted, and on .dump files when unencrypted.
+const pattern = shouldEncrypt
+  ? /^sortes-\d{8}-\d{6}\.dump\.age$/
+  : /^sortes-\d{8}-\d{6}\.dump$/;
+
 const dumps = readdirSync(dir)
-  .filter((f) => /^sortes-\d{8}-\d{6}\.dump$/.test(f))
+  .filter((f) => pattern.test(f))
   .sort();
 const pruned = [];
 while (dumps.length > keep) {
@@ -78,4 +134,9 @@ while (dumps.length > keep) {
   rmSync(path.join(dir, old));
   pruned.push(old);
 }
-log({ event: "backup-ok", file, kept: dumps.length, pruned });
+
+if (shouldEncrypt) {
+  log({ event: "backup-ok", file: finalFile, encrypted: true, plaintextRemoved: true, kept: dumps.length, pruned });
+} else {
+  log({ event: "backup-ok", file: finalFile, encrypted: false, kept: dumps.length, pruned });
+}
