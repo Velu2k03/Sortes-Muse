@@ -50,6 +50,18 @@ function req(body: unknown, ip: string): NextRequest {
   });
 }
 
+// A valid chart reflection under the Phase E validator: 300-600
+// words, names placements back from the chart lines (Sun in Aries,
+// Moon in Cancer, Leo rising), and closes with a question. The stub
+// below returns this for every success-path test.
+const CHART_TEXT = [
+  "This chart reflection begins with your Sun in Aries, a placement that wants a clear direction and a first move it can believe in. The Sun in Aries does not ask for permission. It asks for a horizon, and then it walks toward it with the whole body, not only the plan.",
+  "Your Moon in Cancer answers that fire with water. The Moon in Cancer holds the inner weather of the chart, and it asks for shelter before speed. Where Aries wants to decide, Cancer wants to feel whether the decision can be lived in. That is not a contradiction. It is the chart showing you both the engine and the fuel gauge.",
+  "Leo rising gives the whole chart its stage. A Leo rising carries the question of how to be seen without performing, and the Sun in Aries agrees with that question more than it argues with it. The tension in these placements is between moving first and waiting until the feeling catches up, and both placements are right in their own season.",
+  "What stands out for your focus is the movement from fire through water to a rising sign that wants both. What you may be overlooking is how much of the next step is already in your hands, not in a future decision. One practical step you could take is to write down the smallest next move and do it before the week ends, then notice what that finished step teaches you. The Moon in Cancer keeps the record of what the week actually felt like, and that record is worth reading before the next decision.",
+  "This chart reflection closes the way it opened, with the Sun in Aries and the Moon in Cancer in the same room. What would change if you trusted the slower placement first?",
+].join(" ");
+
 describe("POST /api/chart/interpret", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -68,7 +80,7 @@ describe("POST /api/chart/interpret", () => {
       vi.fn().mockResolvedValue({
         ok: true,
         json: async () => ({
-          choices: [{ message: { content: "A warm chart reflection, written for this test." } }],
+          choices: [{ message: { content: CHART_TEXT } }],
           model: "nvidia/nemotron-3-ultra-550b-a55b:free",
         }),
       })

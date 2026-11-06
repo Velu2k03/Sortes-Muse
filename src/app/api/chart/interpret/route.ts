@@ -8,6 +8,7 @@ import {
   markFreeInterpretationUsed,
 } from "@/lib/db";
 import { generateChat } from "@/lib/ai";
+import { validateChartText, anchorTerms } from "@/lib/output-validation";
 import { logGuestGeneration } from "@/lib/guestLogging";
 import { checkRateLimit, clientIp, rateLimitExceeded, RATE_LIMITS } from "@/lib/rateLimit";
 
@@ -260,12 +261,23 @@ Write the personalized chart reflection now.`;
   }
   // One shared client (src/lib/ai.ts): the :free chain, per-model
   // timeout, retry across models, structured failure logging.
+  // Phase E (item 1): the output is validated the same way the tarot
+  // route validates a reading: the prompted 350-550 word band
+  // (accepted 300-600), at least two anchors named back from the
+  // chart lines (a planet, sign, palace, or date), and the closing
+  // question the prompt requires. The guardrail sentence is not
+  // checked here: the route appends it server-side after generation,
+  // so the delivered text always carries it. Invalid text is
+  // discarded and the next model is tried, exactly as in the tarot
+  // route; if no model validates, the route fails honestly with no
+  // spend.
   const generated = await generateChat({
     apiKey,
     system: systemPrompt,
     user: userPrompt,
     temperature: 0.8,
     maxTokens: 1200,
+    validate: (text) => validateChartText(text, { anchors: anchorTerms(lines) }),
     route: "chart/interpret",
   });
 

@@ -11,7 +11,7 @@ vi.mock("@/lib/auth", () => ({
   getSession: vi.fn(),
 }));
 
-import { POST } from "@/app/api/reading/generate/route";
+import { POST, validateReading } from "@/app/api/reading/generate/route";
 import {
   getUserById,
   spendUserCredits,
@@ -26,14 +26,16 @@ const mockedHasUsedFree = vi.mocked(hasUsedFreeReading);
 const mockedMarkFree = vi.mocked(markFreeReadingUsed);
 const mockedGetSession = vi.mocked(getSession);
 
-// A valid reading: 100+ words, names every drawn card, so the
-// route's grounding validation accepts it on the first model.
+// A valid reading under the Phase E validator: 300-600 words, names
+// every drawn card, echoes the question ("What should I focus on
+// next?"), asks one reflection question, and names one practical step.
 const READING_TEXT = [
-  "Dear friend, your question about the road ahead sits at the heart of this reading, and the cards answer it together rather than one by one.",
-  "The Fool opens the draw with a reminder that a beginning does not need a map, only a willing first step and an honest look at what you carry.",
-  "The Magician follows with focus and craft, showing that the tools you need are already in your hands and that the work now is choosing where to aim them.",
-  "The High Priestess closes the draw with quiet counsel: some answers arrive by waiting and listening, not by pushing, and your own attention is the most reliable guide you have.",
-  "What stands out for your question is the movement from openness through skill to stillness, a sequence that asks you to begin, to shape, and then to listen before you judge the result.",
+  "Dear friend, your question about what to focus on next sits at the heart of this reading, and the cards answer it together rather than one by one.",
+  "The Fool opens the draw with a reminder that a beginning does not need a map, only a willing first step and an honest look at what you carry. The road ahead is not asking you to have it all worked out. It is asking you to notice which direction your attention keeps returning to, and to trust that return as information rather than restlessness.",
+  "The Magician follows with focus and craft, showing that the tools you need are already in your hands and that the work now is choosing where to aim them. This is the card of gathering what is scattered and putting it to use. Your next step is smaller than the decision you are afraid of, and the Magician insists that the small step counts as real progress, not as a rehearsal for it.",
+  "The High Priestess closes the draw with quiet counsel: some answers arrive by waiting and listening, not by pushing, and your own attention is the most reliable guide you have. She does not hurry you. She asks you to keep one evening free of noise and notice what surfaces when nothing is demanding an answer from you.",
+  "What stands out for your question is the movement from openness through skill to stillness, a sequence that asks you to begin, to shape, and then to listen before you judge the result. The tension in this draw is between starting before you feel ready and waiting until the picture is complete, and both cards are right in their own season.",
+  "What you may be overlooking is how much of the next step is already in your hands. One practical step you could take this week is to choose a single small task from the change you are weighing and finish it before Friday, then notice what that finished task teaches you about the larger choice. What would change if you treated the next step as an experiment instead of a verdict?",
 ].join(" ");
 
 function req(body: unknown, ip: string): NextRequest {
@@ -323,5 +325,30 @@ describe("POST /api/reading/generate — input validation (Phase 2, 2.4)", () =>
     const res = await POST(req(b, "10.0.1.4"));
     expect(res.status).toBe(400);
     expect((await res.json()).error).toContain("20");
+  });
+});
+
+// Phase E (item 1): the automated swap test. A fixed interpretation
+// with its card names swapped for cards not in the draw must fail
+// validation, so a prompt change that breaks grounding is caught by
+// the suite instead of reaching a paying user. It runs on every
+// prompt change because it lives in this route's suite.
+describe("validateReading — swap test", () => {
+  const cards = [
+    { cardId: "major-00", reversed: false, position: "Present", name: "The Fool" },
+    { cardId: "major-01", reversed: false, position: "Challenge", name: "The Magician" },
+    { cardId: "major-02", reversed: false, position: "Outcome", name: "The High Priestess" },
+  ];
+  const question = "What should I focus on next?";
+
+  it("accepts the fixed interpretation as written", () => {
+    expect(validateReading(READING_TEXT, cards, question)).toBe(true);
+  });
+
+  it("rejects the same interpretation with every card name swapped", () => {
+    const swapped = READING_TEXT.replaceAll("The Fool", "The Tower")
+      .replaceAll("The Magician", "Death")
+      .replaceAll("The High Priestess", "The Devil");
+    expect(validateReading(swapped, cards, question)).toBe(false);
   });
 });

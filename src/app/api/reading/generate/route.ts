@@ -11,6 +11,7 @@ import { SENSITIVE_KEYS } from "@/lib/intake";
 import { getSpread } from "@/lib/tarot";
 import { computeSpreadFacts, type FactCard } from "@/lib/spread-facts";
 import { generateChat } from "@/lib/ai";
+import { validateReadingText } from "@/lib/output-validation";
 import { logGuestGeneration } from "@/lib/guestLogging";
 import { checkRateLimit, clientIp, rateLimitExceeded, RATE_LIMITS } from "@/lib/rateLimit";
 
@@ -61,17 +62,21 @@ function cardById(id: string): DeckCard | undefined {
   return (cardsData as DeckCard[]).find((c) => c.id === id);
 }
 
-// M1.1 output validation: a reading must be substantive and grounded
-// in the actual draw. Invalid text is discarded and the next model is
-// tried; if no model validates, the route fails honestly with no spend
-// (the M0.1 fallback path). The thresholds are deliberately lenient:
-// the goal is to catch generic filler, not to police good prose.
-function isValidReading(text: string, cards: ApiCard[]): boolean {
-  const words = text.split(/\s+/).filter(Boolean).length;
-  if (words < 100 || words > 1200) return false;
-  const lower = text.toLowerCase();
-  const mentioned = cards.filter((c) => lower.includes(c.name.toLowerCase())).length;
-  return mentioned >= Math.ceil(cards.length / 2);
+// M1.1 output validation, Phase E: a reading must be substantive
+// and grounded in the actual draw and question. The shared validator
+// (src/lib/output-validation.ts) requires the prompted word band
+// (350-550, accepted 300-600 with a documented tolerance), at least
+// half the card names, a content word from the question, the one
+// reflection question, and the one practical step. Invalid text is
+// discarded and the next model is tried; if no model validates, the
+// route fails honestly with no spend (the M0.1 fallback path).
+// Exported so the swap test can call it directly.
+export function validateReading(
+  text: string,
+  cards: ApiCard[],
+  question: string
+): boolean {
+  return validateReadingText(text, { cards, question });
 }
 
 function buildSystemPrompt(firstName: string, taglish: boolean, isHealth: boolean): string {
@@ -301,7 +306,7 @@ export async function POST(req: NextRequest) {
     user: buildUserPrompt(cards, intake, spreadLabel, factsSummary),
     temperature: 0.8,
     maxTokens: 1200,
-    validate: (text) => isValidReading(text, cards),
+    validate: (text) => validateReading(text, cards, intake.question),
     route: "reading/generate",
   });
 

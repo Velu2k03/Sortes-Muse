@@ -8,6 +8,7 @@ import {
 import type { FollowUp } from "@/lib/types";
 import cardsData from "@/data/cards.json";
 import { generateChat } from "@/lib/ai";
+import { validateFollowUpText } from "@/lib/output-validation";
 import { logGuestGeneration } from "@/lib/guestLogging";
 import { drawClarifierCard } from "@/lib/clarifier";
 import { CARDS } from "@/lib/cards";
@@ -46,11 +47,6 @@ type DeckCard = {
 
 function cardNameById(id: string): string | undefined {
   return (cardsData as DeckCard[]).find((c) => c.id === id)?.name;
-}
-
-// Word count for lenient validation (20 to 800 words).
-function wordCount(text: string): number {
-  return text.split(/\s+/).filter(Boolean).length;
 }
 
 function buildFollowUpPrompt(
@@ -322,19 +318,32 @@ export async function POST(req: NextRequest) {
     clarifierName
   );
 
-  // One shared client (src/lib/ai.ts). The lenient word-count
-  // validation (20 to 800 words) discards thin or bloated text and
-  // tries the next model, same as before the migration.
+  // One shared client (src/lib/ai.ts). Phase E (item 1): the lenient
+  // word-count validation (20 to 800 words) now also requires the
+  // answer to name at least one card from the original reading or the
+  // clarifier drawn for this follow-up, so a generic answer that
+  // never touches the reading is discarded and the next model is
+  // tried, same as the tarot route. The card names come from the
+  // reading the route already loaded (database for signed-in users,
+  // whitelisted guest object for guests).
+  const originalCardNames = (Array.isArray(readingData.cards) ? readingData.cards : [])
+    .map((c) => {
+      const card = c as { name?: unknown; cardId?: unknown };
+      return typeof card.name === "string" && card.name
+        ? card.name
+        : typeof card.cardId === "string"
+          ? cardNameById(card.cardId) ?? ""
+          : "";
+    })
+    .filter((n): n is string => n.length > 0);
   const generated = await generateChat({
     apiKey,
     system,
     user,
     temperature: 0.8,
     maxTokens: 1200,
-    validate: (text) => {
-      const wc = wordCount(text);
-      return wc >= 20 && wc <= 800;
-    },
+    validate: (text) =>
+      validateFollowUpText(text, { cardNames: originalCardNames, clarifierName: clarifierName }),
     route: "reading/follow-up",
   });
 

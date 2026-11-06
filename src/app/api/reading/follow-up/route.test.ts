@@ -19,8 +19,10 @@ const mockedGetUserById = vi.mocked(getUserById);
 const mockedGetReading = vi.mocked(getReadingForUser);
 const mockedAppend = vi.mocked(appendFollowUpWithSpend);
 
-// 100+ words so the route's word-count validation accepts it.
-const ANSWER = Array.from({ length: 20 }, (_, i) => `sentence number ${i} adds a little more reflection to this follow-up answer`).join(". ") + ".";
+// 100+ words so the route's word-count validation accepts it, and it
+// names The Fool from the test reading so the Phase E grounding check
+// (at least one original card or the clarifier) accepts it too.
+const ANSWER = Array.from({ length: 20 }, (_, i) => `sentence number ${i} adds a little more reflection to this follow-up answer, and The Fool keeps the thread open`).join(". ") + ".";
 
 function req(body: unknown, ip: string): NextRequest {
   return new NextRequest("http://localhost/api/reading/follow-up", {

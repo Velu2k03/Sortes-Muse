@@ -13,6 +13,7 @@ import {
 } from "@/lib/reports";
 import type { ReportType, SavedReport } from "@/lib/reports";
 import { generateChat } from "@/lib/ai";
+import { validateReportText, anchorTerms } from "@/lib/output-validation";
 import { logGuestGeneration } from "@/lib/guestLogging";
 import { checkRateLimit, clientIp, rateLimitExceeded, RATE_LIMITS } from "@/lib/rateLimit";
 
@@ -158,12 +159,25 @@ export async function POST(req: NextRequest) {
 
   // One shared client (src/lib/ai.ts): the :free chain, per-model
   // timeout, retry across models, structured failure logging.
+  // Phase E (item 1): the output is validated the same way the tarot
+  // and chart routes validate theirs: the prompted word band
+  // (transit and comparison 350-550, accepted 300-600; year-ahead
+  // 500-700, accepted 450-750), at least two anchors named back from
+  // the report data (a date, month, planet, or sign), and the closing
+  // question the prompt requires. The health and finances closings
+  // are appended server-side after generation, so they are not
+  // checked here. Invalid text is discarded and the next model is
+  // tried; if no model validates, the route fails honestly with no
+  // spend.
+  const band = reportType === "year-ahead" ? { minWords: 450, maxWords: 750 } : { minWords: 300, maxWords: 600 };
   const generated = await generateChat({
     apiKey,
     system: systemPrompt,
     user: userPrompt,
     temperature: 0.8,
     maxTokens: spec.maxTokens,
+    validate: (text) =>
+      validateReportText(text, { anchors: anchorTerms(lines), ...band }),
     route: "reports/generate",
   });
 
