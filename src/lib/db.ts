@@ -163,18 +163,29 @@ let schemaReady = false;
  * those roles, the app would silently see zero rows on every table
  * (sign-in, balances, readings, everything) with no error to point
  * at. So ensureSchema() asserts the live connection role at first
- * database use and fails loudly instead. Only the two PostgREST
- * roles are denied, plus an empty role (fail closed: a connection
- * that cannot name its role is not a connection to trust). Any other
- * role passes: the owner, the local sortes_test role, and any future
- * dedicated app role.
+ * database use and fails loudly instead.
+ *
+ * Phase G follow-up: this is an ALLOWLIST, not a denylist. Only the
+ * roles the project is known to connect as may run the app:
+ * `postgres` (direct owner), `sortes_test` (local test role), and
+ * `postgres.<ref>` (the Supabase pooler user form). Anything else,
+ * including a hypothetical dedicated app role, throws: a future
+ * dedicated role must be added to this list explicitly, and a silent
+ * role change can no longer pass. A live probe (SELECT from a table)
+ * was considered and rejected as the mechanism: an empty table
+ * returns zero rows legitimately, so a probe cannot distinguish RLS
+ * denial from an empty table. The allowlist fails closed at startup,
+ * which is the behaviour F11 was built for. Matching is
+ * case-insensitive on the trimmed role.
  */
-const RLS_DENIED_ROLES = new Set(["anon", "authenticated"]);
+const APP_DB_ROLES = new Set(["postgres", "sortes_test"]);
 export function assertAppDbRole(role: string): void {
   const normalized = (role ?? "").trim().toLowerCase();
-  if (!normalized || RLS_DENIED_ROLES.has(normalized)) {
+  const allowed =
+    APP_DB_ROLES.has(normalized) || /^postgres\..+/.test(normalized);
+  if (!allowed) {
     throw new Error(
-      `Database role "${role}" must not run the app: RLS denies the anon and authenticated roles, so the app would see zero rows. Connect as the owner (postgres) role.`
+      `Database role "${role}" must not run the app: only the postgres, sortes_test, and postgres.<ref> (Supabase pooler) roles are allowed, because RLS denies every other role and the app would see zero rows. Connect as the owner (postgres) role.`
     );
   }
 }

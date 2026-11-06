@@ -98,6 +98,13 @@ describe.skipIf(SKIP)("money paths on real Postgres (staging only)", () => {
     const [{ current_user }] = (await raw`SELECT current_user`) as Array<{ current_user: string }>;
     expect(current_user).not.toMatch(/^(anon|authenticated)$/i);
     expect(() => db.assertAppDbRole(current_user)).not.toThrow();
+    // Phase G follow-up: F11 is an allowlist, not a denylist. The
+    // live role (sortes_test here) is on it; the Supabase pooler
+    // user form is on it; anything else, including a hypothetical
+    // dedicated app role, is refused.
+    expect(() => db.assertAppDbRole("postgres.abcdefghijklmnop")).not.toThrow();
+    expect(() => db.assertAppDbRole("sortes_app")).toThrow();
+    expect(() => db.assertAppDbRole("app_user")).toThrow();
     expect(() => db.assertAppDbRole("anon")).toThrow();
     expect(() => db.assertAppDbRole("authenticated")).toThrow();
   });

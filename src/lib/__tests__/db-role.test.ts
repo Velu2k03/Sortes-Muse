@@ -10,6 +10,17 @@ import { assertAppDbRole } from "@/lib/db";
 // the live connection role at first database use. These unit tests
 // pin the rule itself; the real-Postgres suite (db-postgres.test.ts)
 // proves the live test-database role passes it.
+//
+// Phase G follow-up: the rule is an ALLOWLIST, not a denylist. Only
+// the roles the project is known to connect as may run the app:
+// postgres (direct owner), sortes_test (local test role), and
+// postgres.<ref> (the Supabase pooler user form). Any other role,
+// including a hypothetical dedicated app role such as sortes_app,
+// throws: a silent role change can no longer pass, and a future
+// dedicated role must be added to the list explicitly. A live probe
+// (SELECT from a table) was considered and rejected: an empty table
+// returns zero rows legitimately, so a probe cannot distinguish RLS
+// denial from an empty table.
 
 describe("assertAppDbRole (F11)", () => {
   it("throws for the anon role", () => {
@@ -32,6 +43,24 @@ describe("assertAppDbRole (F11)", () => {
   it("accepts the owner and test roles", () => {
     expect(() => assertAppDbRole("postgres")).not.toThrow();
     expect(() => assertAppDbRole("sortes_test")).not.toThrow();
-    expect(() => assertAppDbRole("app_user")).not.toThrow();
+  });
+
+  it("accepts the Supabase pooler user form postgres.<ref>", () => {
+    expect(() => assertAppDbRole("postgres.abcdefghijklmnop")).not.toThrow();
+  });
+
+  it("accepts allowlisted roles regardless of case and surrounding space", () => {
+    expect(() => assertAppDbRole("Postgres")).not.toThrow();
+    expect(() => assertAppDbRole("POSTGRES.abcdefghijklmnop")).not.toThrow();
+    expect(() => assertAppDbRole("  sortes_test  ")).not.toThrow();
+  });
+
+  it("throws for any other role, including a hypothetical dedicated app role", () => {
+    expect(() => assertAppDbRole("sortes_app")).toThrow(/must not run the app/);
+    expect(() => assertAppDbRole("app_user")).toThrow(/must not run the app/);
+  });
+
+  it("throws for a malformed pooler form with an empty ref", () => {
+    expect(() => assertAppDbRole("postgres.")).toThrow();
   });
 });
