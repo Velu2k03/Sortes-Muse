@@ -773,7 +773,7 @@ console.log("charts-check: all assertions passed");
   const historyClientB = fs.readFileSync("src/app/journal/HistoryClient.tsx", "utf8");
   assert.ok(historyClientB.includes('id="journal-search"') && historyClientB.includes('id="journal-sort"'), "journal must offer search and sort");
   const reportsClient = fs.readFileSync("src/app/reports/ReportsClient.tsx", "utf8");
-  assert.ok(reportsClient.includes("See a sample report layout"), "reports must show a sample layout before spending");
+  assert.ok(reportsClient.includes("Read a sample report, before you spend an Oracle") && reportsClient.includes("SAMPLE_TRANSIT_REPORT"), "reports must show a full sample report before spending");
   const reportDetail = fs.readFileSync("src/app/reports/[id]/ReportDetailClient.tsx", "utf8");
   assert.ok(reportDetail.includes('tag="h1"'), "report detail must render an h1 via SplitText");
   const readingDetailB = fs.readFileSync("src/app/reading/[id]/ReadingDetailClient.tsx", "utf8");
