@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { getSupabaseBrowser } from "@/lib/supabase-browser";
 import { clearLocalAccountData } from "@/lib/storage";
+import { fetchWithTimeout, withTimeout } from "@/lib/fetch-timeout";
 
 interface ServerTx {
   id: string;
@@ -21,7 +22,10 @@ export default function AccountPage() {
   const [step, setStep] = useState<AuthStep>("email");
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
-  const [busy, setBusy] = useState(false);
+  const [pwBusy, setPwBusy] = useState(false);
+  const [linkBusy, setLinkBusy] = useState(false);
+  const [codeBusy, setCodeBusy] = useState(false);
+  const [savePwBusy, setSavePwBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [devCode, setDevCode] = useState<string | null>(null);
   const [authTab, setAuthTab] = useState<"password" | "link">("password");
@@ -88,10 +92,10 @@ export default function AccountPage() {
 
   const submitPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    setBusy(true);
+    setPwBusy(true);
     setError(null);
     try {
-      const res = await fetch(
+      const res = await fetchWithTimeout(
         mode === "signin" ? "/api/auth/login" : "/api/auth/signup",
         {
           method: "POST",
@@ -106,17 +110,17 @@ export default function AccountPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
     } finally {
-      setBusy(false);
+      setPwBusy(false);
     }
   };
 
   const savePassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    setBusy(true);
+    setSavePwBusy(true);
     setPwNotice(null);
     setError(null);
     try {
-      const res = await fetch("/api/auth/set-password", {
+      const res = await fetchWithTimeout("/api/auth/set-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password: newPassword, currentPassword }),
@@ -129,13 +133,13 @@ export default function AccountPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
     } finally {
-      setBusy(false);
+      setSavePwBusy(false);
     }
   };
 
   const requestCode = async (e?: React.SyntheticEvent) => {
     if (e) e.preventDefault();
-    setBusy(true);
+    setLinkBusy(true);
     setError(null);
     setDevCode(null);
     try {
@@ -144,22 +148,24 @@ export default function AccountPage() {
       // to the local verification code.
       const supabase = getSupabaseBrowser();
       if (supabase) {
-        const { error } = await supabase.auth.signInWithOtp({
-          email: email.trim().toLowerCase(),
-          // Use the origin the visitor is actually on, not the hardcoded
-          // canonical domain: Supabase only allows redirect URLs that are
-          // in its allow list, and the canonical domain was not in it,
-          // which rejected the link request. The visitor's origin must
-          // be in that list (vercel.app already is; resonantatlas.com
-          // must be added in the Supabase dashboard).
-          options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
-        });
+        const { error } = await withTimeout(
+          supabase.auth.signInWithOtp({
+            email: email.trim().toLowerCase(),
+            // Use the origin the visitor is actually on, not the hardcoded
+            // canonical domain: Supabase only allows redirect URLs that are
+            // in its allow list, and the canonical domain was not in it,
+            // which rejected the link request. The visitor's origin must
+            // be in that list (vercel.app already is; resonantatlas.com
+            // must be added in the Supabase dashboard).
+            options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+          })
+        );
         if (error) throw new Error(error.message);
         setStep("sent");
         return;
       }
       // Dev-only fallback: no Supabase browser client configured
-      const res = await fetch("/api/auth/request-code", {
+      const res = await fetchWithTimeout("/api/auth/request-code", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
@@ -171,7 +177,7 @@ export default function AccountPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
     } finally {
-      setBusy(false);
+      setLinkBusy(false);
     }
   };
 
@@ -179,10 +185,10 @@ export default function AccountPage() {
   // when running without Supabase.
   const verifyCode = async (e: React.FormEvent) => {
     e.preventDefault();
-    setBusy(true);
+    setCodeBusy(true);
     setError(null);
     try {
-      const res = await fetch("/api/auth/verify-code", {
+      const res = await fetchWithTimeout("/api/auth/verify-code", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, code }),
@@ -193,7 +199,7 @@ export default function AccountPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
     } finally {
-      setBusy(false);
+      setCodeBusy(false);
     }
   };
 
@@ -430,10 +436,10 @@ export default function AccountPage() {
               </div>
               <button
                 type="submit"
-                disabled={busy}
+                disabled={pwBusy}
                 className="btn-gold w-full rounded-xl px-6 py-3.5 font-bold disabled:opacity-50"
               >
-                {busy
+                {pwBusy
                   ? "Please wait…"
                   : mode === "signin"
                     ? "Sign in"
@@ -474,10 +480,10 @@ export default function AccountPage() {
               )}
               <button
                 type="submit"
-                disabled={busy}
+                disabled={linkBusy}
                 className="btn-gold w-full rounded-xl px-6 py-3.5 font-bold disabled:opacity-50"
               >
-                {busy ? "Sending…" : "Send sign-in link"}
+                {linkBusy ? "Sending…" : "Send sign-in link"}
               </button>
             </form>
           ) : step === "sent" ? (
@@ -490,10 +496,10 @@ export default function AccountPage() {
               <button
                 type="button"
                 onClick={() => void requestCode()}
-                disabled={busy}
+                disabled={linkBusy}
                 className="btn-gold w-full rounded-xl px-6 py-3.5 font-bold disabled:opacity-50"
               >
-                {busy ? "Sending…" : "Send a new link"}
+                {linkBusy ? "Sending…" : "Send a new link"}
               </button>
               <button
                 type="button"
@@ -535,10 +541,10 @@ export default function AccountPage() {
               )}
               <button
                 type="submit"
-                disabled={busy || code.length !== codeLength}
+                disabled={codeBusy || code.length !== codeLength}
                 className="btn-gold w-full rounded-xl px-6 py-3.5 font-bold disabled:opacity-50"
               >
-                {busy ? "Verifying…" : "Sign in"}
+                {codeBusy ? "Verifying…" : "Sign in"}
               </button>
               <button
                 type="button"
@@ -660,10 +666,10 @@ export default function AccountPage() {
               </div>
               <button
                 type="submit"
-                disabled={busy || newPassword.length < 8}
+                disabled={savePwBusy || newPassword.length < 8}
                 className="btn-gold rounded-xl px-6 py-3 font-bold disabled:opacity-50"
               >
-                {busy ? "Saving…" : "Save password"}
+                {savePwBusy ? "Saving…" : "Save password"}
               </button>
               {pwNotice && (
                 <p className="rounded-xl border border-gold/40 bg-gold/10 p-3 text-sm text-goldbright">
