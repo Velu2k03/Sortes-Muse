@@ -3,6 +3,7 @@ import {
   generateChat,
   getModelList,
   OPENROUTER_DEFAULT_MODELS,
+  stripThinking,
 } from "@/lib/ai";
 
 const MODELS = ["model-a:free", "model-b:free", "model-c:free"];
@@ -24,15 +25,44 @@ describe("getModelList", () => {
     else process.env.OPENROUTER_MODEL = OLD;
   });
 
-  it("uses the shipped :free chain in order by default", () => {
+  it("uses the shipped :free chain in exact order by default", () => {
     delete process.env.OPENROUTER_MODEL;
+    expect(getModelList()).toEqual([
+      "nvidia/nemotron-3-ultra-550b-a55b:free",
+      "xingchen-agi/xing4.0-29b-a4b:free",
+      "openrouter/free",
+    ]);
     expect(getModelList()).toEqual(OPENROUTER_DEFAULT_MODELS.split(","));
-    expect(getModelList()[0]).toContain(":free");
   });
 
   it("honours the OPENROUTER_MODEL override", () => {
     process.env.OPENROUTER_MODEL = "custom/one, custom/two ";
     expect(getModelList()).toEqual(["custom/one", "custom/two"]);
+  });
+});
+
+describe("stripThinking", () => {
+  it("removes single-line and multi-line <think>...</think> blocks", () => {
+    expect(stripThinking("<think>internal trace</think>Clean text")).toBe("Clean text");
+    expect(
+      stripThinking("<think>\nline 1\nline 2\n</think>\n\nA thoughtful reading.")
+    ).toBe("A thoughtful reading.");
+  });
+
+  it("removes multiple <think> blocks", () => {
+    expect(
+      stripThinking("<think>first</think>Part 1<think>second</think> Part 2")
+    ).toBe("Part 1 Part 2");
+  });
+
+  it("returns empty string if output was only a thinking block", () => {
+    expect(stripThinking("<think>only thoughts</think>")).toBe("");
+  });
+
+  it("leaves clean text untouched", () => {
+    expect(stripThinking("A clean tarot reading without thinking blocks.")).toBe(
+      "A clean tarot reading without thinking blocks."
+    );
   });
 });
 
@@ -191,5 +221,108 @@ describe("generateChat", () => {
     });
     expect(res).toBeNull();
     expect(fetchFn).not.toHaveBeenCalled();
+  });
+
+  it("sends reasoning: { exclude: true } in OpenRouter request body", async () => {
+    let capturedBody: Record<string, unknown> | undefined;
+    const fetchFn = vi.fn(async (_url: unknown, init: unknown) => {
+      capturedBody = JSON.parse(String((init as { body: string }).body));
+      return okResponse("clean response", "model-a:free");
+    });
+    await generateChat({
+      apiKey: "k",
+      system: "s",
+      user: "u",
+      models: ["model-a:free"],
+      fetchFn: fetchFn as unknown as typeof fetch,
+      retryDelayMs: 0,
+    });
+    expect(capturedBody?.reasoning).toEqual({ exclude: true });
+  });
+
+  it("strips think blocks from returned content before validation", async () => {
+    const fetchFn = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({
+        choices: [
+          {
+            message: {
+              content: "<think>\ninternal reasoning\n</think>\nTrue grounded reading",
+            },
+          },
+        ],
+        model: "nvidia/nemotron-3-ultra-550b-a55b:free",
+      }),
+    }));
+    const res = await generateChat({
+      apiKey: "k",
+      system: "s",
+      user: "u",
+      models: ["nvidia/nemotron-3-ultra-550b-a55b:free"],
+      fetchFn: fetchFn as unknown as typeof fetch,
+      retryDelayMs: 0,
+    });
+    expect(res).toEqual({
+      text: "True grounded reading",
+      model: "nvidia/nemotron-3-ultra-550b-a55b:free",
+    });
+  });
+
+  it("discards responses that contain only think blocks and moves to next model", async () => {
+    const fetchFn = vi.fn(async (_url: unknown, init: unknown) => {
+      const body = JSON.parse(String((init as { body: string }).body));
+      if (body.model === "model-a:free") {
+        return {
+          ok: true,
+          json: async () => ({
+            choices: [{ message: { content: "<think>only thoughts</think>" } }],
+            model: "model-a:free",
+          }),
+        };
+      }
+      return okResponse("clean response from b", "model-b:free");
+    });
+    const res = await generateChat({
+      apiKey: "k",
+      system: "s",
+      user: "u",
+      models: MODELS,
+      fetchFn: fetchFn as unknown as typeof fetch,
+      retryDelayMs: 0,
+    });
+    expect(res).toEqual({
+      text: "clean response from b",
+      model: "model-b:free",
+    });
+    expect(fetchFn).toHaveBeenCalledTimes(2);
+  });
+
+  it("returns content from a reasoning-model-shaped response with message.reasoning present", async () => {
+    const fetchFn = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({
+        choices: [
+          {
+            message: {
+              content: "The High Priestess invites quiet contemplation.",
+              reasoning: "Step 1: interpret card symbolism. Step 2: tone check.",
+            },
+          },
+        ],
+        model: "nvidia/nemotron-3-ultra-550b-a55b:free",
+      }),
+    }));
+    const res = await generateChat({
+      apiKey: "k",
+      system: "s",
+      user: "u",
+      models: ["nvidia/nemotron-3-ultra-550b-a55b:free"],
+      fetchFn: fetchFn as unknown as typeof fetch,
+      retryDelayMs: 0,
+    });
+    expect(res).toEqual({
+      text: "The High Priestess invites quiet contemplation.",
+      model: "nvidia/nemotron-3-ultra-550b-a55b:free",
+    });
   });
 });

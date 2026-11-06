@@ -128,7 +128,7 @@ describe("POST /api/reading/generate — first free Quick Insight", () => {
         ok: true,
         json: async () => ({
           choices: [{ message: { content: READING_TEXT } }],
-          model: "google/gemma-4-26b-a4b-it:free",
+          model: "nvidia/nemotron-3-ultra-550b-a55b:free",
         }),
       })
     );
@@ -251,7 +251,7 @@ describe("POST /api/reading/generate — input validation (Phase 2, 2.4)", () =>
         ok: true,
         json: async () => ({
           choices: [{ message: { content: READING_TEXT } }],
-          model: "google/gemma-4-26b-a4b-it:free",
+          model: "nvidia/nemotron-3-ultra-550b-a55b:free",
         }),
       })
     );

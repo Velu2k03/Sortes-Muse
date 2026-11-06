@@ -19,9 +19,13 @@
 
 export const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 export const OPENROUTER_DEFAULT_MODELS =
-  "google/gemma-4-26b-a4b-it:free,google/gemma-4-31b-it:free,nvidia/nemotron-3.5-lightning:free";
+  "nvidia/nemotron-3-ultra-550b-a55b:free,xingchen-agi/xing4.0-29b-a4b:free,openrouter/free";
 export const AI_TIMEOUT_MS = 25000;
 export const AI_TOTAL_TIMEOUT_MS = 80000;
+
+export function stripThinking(text: string): string {
+  return text.replace(/<think\b[^>]*>[\s\S]*?<\/think>/gi, "").trim();
+}
 
 /** Comma-separated fallback chain: fastest free models first, reliable
     workhorse last. Override with OPENROUTER_MODEL in env. */
@@ -161,12 +165,15 @@ export async function generateChat(
           ],
           temperature: opts.temperature ?? 0.8,
           max_tokens: opts.maxTokens ?? 1200,
+          reasoning: { exclude: true },
         }),
       });
       if (!res.ok) throw new Error(`OpenRouter ${res.status}`);
       const data = await res.json();
-      const text: string | undefined =
-        data?.choices?.[0]?.message?.content?.trim();
+      const rawText: string | undefined =
+        data?.choices?.[0]?.message?.content;
+      const text =
+        typeof rawText === "string" ? stripThinking(rawText) : undefined;
       if (!text) throw new Error("Empty model response");
       if (opts.validate && !opts.validate(text)) {
         throw new Error("Model response failed validation");

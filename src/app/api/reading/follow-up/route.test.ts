@@ -53,7 +53,7 @@ describe("POST /api/reading/follow-up", () => {
         ok: true,
         json: async () => ({
           choices: [{ message: { content: ANSWER } }],
-          model: "google/gemma-4-26b-a4b-it:free",
+          model: "nvidia/nemotron-3-ultra-550b-a55b:free",
         }),
       })
     );
