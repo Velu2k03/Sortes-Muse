@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { CREDIT_PACKS, apiPackId, perReadingPrice } from "@/lib/site";
 import { useAuth } from "@/components/AuthProvider";
 import { trackPurchaseCompleted } from "@/components/Analytics";
+import { useFocusTrap } from "@/components/useFocusTrap";
 
 interface Props {
   open: boolean;
@@ -30,6 +31,10 @@ export default function CheckoutModal({ open, onClose, reason, initialPackId }: 
   const [realCheckout, setRealCheckout] = useState<boolean | null>(null);
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
+  // P0-4: focus moves into the dialog on open, Tab is trapped inside,
+  // Escape closes (this modal had no Escape handler before), and focus
+  // returns to the trigger on close.
+  const dialogRef = useFocusTrap<HTMLDivElement>(open, onClose);
 
   useEffect(() => {
     if (open) {
@@ -93,6 +98,7 @@ export default function CheckoutModal({ open, onClose, reason, initialPackId }: 
           aria-label="Top up Oracles"
         >
           <motion.div
+            ref={dialogRef}
             className="w-full max-w-lg rounded-t-3xl border border-gold/30 bg-navydeep p-6 sm:rounded-3xl sm:p-8"
             initial={{ y: 60, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}

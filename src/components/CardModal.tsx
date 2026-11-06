@@ -1,10 +1,10 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { useEffect } from "react";
 import { getCard, suitLabel } from "@/lib/cards";
 import HoloCard from "@/components/HoloCard";
 import AnimatedContent from "@/components/AnimatedContent";
+import { useFocusTrap } from "@/components/useFocusTrap";
 
 interface Props {
   cardId: string | null;
@@ -16,13 +16,12 @@ interface Props {
  * upright/reversed keyword chips at the top, full story below.
  */
 export default function CardModal({ cardId, onClose }: Props) {
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
-
   const card = cardId ? getCard(cardId) : null;
+  // P0-4: focus moves into the dialog on open, Tab is trapped inside,
+  // Escape closes (the hook owns the Escape handler now; the old
+  // window listener is removed so onClose does not fire twice), and
+  // focus returns to the trigger on close.
+  const dialogRef = useFocusTrap<HTMLDivElement>(card !== null, onClose);
 
   return (
     <AnimatePresence>
@@ -38,6 +37,7 @@ export default function CardModal({ cardId, onClose }: Props) {
           aria-label={card.name}
         >
           <motion.div
+            ref={dialogRef}
             className="relative max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-t-3xl border border-gold/30 bg-navydeep p-6 sm:rounded-3xl sm:p-8"
             initial={{ y: 60, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
