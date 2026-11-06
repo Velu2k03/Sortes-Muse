@@ -97,7 +97,7 @@ async function safeJson(res: Response): Promise<SafeJsonBody> {
   }
 }
 
-async function migrateGuestData(): Promise<number> {
+async function migrateGuestData(deadline: number): Promise<number> {
   const history = getHistory();
   // Phase 1: the guest device wallet is no longer a source of credits.
   // Local credits have no legitimate paid backing: the only way they
@@ -109,11 +109,15 @@ async function migrateGuestData(): Promise<number> {
   // spent later as a guest.
   try {
     if (history.length > 0) {
-      const res = await fetchWithTimeout("/api/history", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ readings: history }),
-      });
+      const res = await fetchWithTimeout(
+        "/api/history",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ readings: history }),
+        },
+        Math.max(0, deadline - Date.now())
+      );
       if (!res.ok) throw new Error("history sync failed");
     }
     setLocalCredits(0);
@@ -123,10 +127,16 @@ async function migrateGuestData(): Promise<number> {
     // Sync failed: keep the guest journal intact so the next refresh
     // can retry, and report the server balance (never the local one).
     // A timeout here propagates to refresh(), which raises loadError.
-    const me = await fetchWithTimeout("/api/auth/me").then(safeJson);
+    const me = await fetchWithTimeout(
+      "/api/auth/me",
+      undefined,
+      Math.max(0, deadline - Date.now())
+    ).then(safeJson);
     return typeof me.user?.credits === "number" ? me.user.credits : 0;
   }
-  const me = await safeJson(await fetchWithTimeout("/api/auth/me"));
+  const me = await safeJson(
+    await fetchWithTimeout("/api/auth/me", undefined, Math.max(0, deadline - Date.now()))
+  );
   return me.user?.credits ?? 0;
 }
 
@@ -137,13 +147,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loadError, setLoadError] = useState(false);
 
   const refresh = useCallback(async () => {
+    const deadline = Date.now() + 10000;
     try {
-      const res = await fetchWithTimeout("/api/auth/me");
+      const res = await fetchWithTimeout(
+        "/api/auth/me",
+        undefined,
+        Math.max(0, deadline - Date.now())
+      );
       const data = await safeJson(res);
       if (data.user) {
         setUser({ id: data.user.id, email: data.user.email });
         if (!localStorage.getItem(MIGRATED_KEY)) {
-          const merged = await migrateGuestData();
+          const merged = await migrateGuestData(deadline);
           setCredits(merged);
         } else {
           setCredits(data.user.credits ?? null);
