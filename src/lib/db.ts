@@ -44,6 +44,38 @@ const usePostgres = Boolean(
 const connectionString =
   process.env.POSTGRES_URL || process.env.DATABASE_URL || "";
 
+/**
+ * Phase 6 (P1a): validate a Supabase pooler connection string.
+ * The app runs against the pooler in transaction mode (port 6543,
+ * `prepare: false`, `max: 1` — see below) or session mode (port
+ * 5432, used for pg_dump and other long-lived sessions). A pooler
+ * host on any other port — or with no explicit port — is a
+ * misconfiguration: reject it loudly here, at import time, instead
+ * of failing later as a mysterious connection error. Non-pooler
+ * hosts (local Postgres, other providers) are not validated.
+ */
+export function validatePostgresUrl(url: string): void {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    throw new Error("POSTGRES_URL/DATABASE_URL is not a valid URL.");
+  }
+  const host = parsed.hostname;
+  const isPooler =
+    host === "pooler.supabase.com" || host.endsWith(".pooler.supabase.com");
+  if (!isPooler) return;
+  const port = parsed.port;
+  if (port !== "6543" && port !== "5432") {
+    throw new Error(
+      `Supabase pooler URL for host ${host} must use port 6543 (transaction mode, which this app requires: prepare:false, max:1) or 5432 (session mode); got port ${port || "(none — an explicit port is required)"}. ` +
+        `Check the connection string in the Supabase dashboard (Database Settings -> Connection string) or Vercel env vars.`
+    );
+  }
+}
+
+if (connectionString) validatePostgresUrl(connectionString);
+
 // postgres.js template tag returns rows directly; wrap it so the rest of
 // this file keeps its existing `{ rows }` shape from @vercel/postgres.
 const pg = usePostgres
@@ -103,7 +135,25 @@ async function writeLocal(db: LocalDb): Promise<void> {
 
 let schemaReady = false;
 export async function ensureSchema(): Promise<void> {
-  if (!usePostgres || schemaReady) return;
+  // Phase 6 (P1a, readiness review N1): production fail-fast guard.
+  // Without a database URL the data layer used to switch silently to
+  // data/local-db.json — on Vercel that is per-instance ephemeral
+  // storage, so accounts, credits, and reading history would be
+  // written per-instance and lost on redeploy/cold start. In
+  // production, refuse to run at all instead. Local development
+  // keeps the JSON fallback (no URL, non-production env).
+  if (!usePostgres) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error(
+        "POSTGRES_URL (or DATABASE_URL) is required in production. " +
+          "Sortes refuses to run on the local JSON store in production, " +
+          "because per-instance files lose customer data. Set POSTGRES_URL " +
+          "in the production environment."
+      );
+    }
+    return;
+  }
+  if (schemaReady) return;
   await sql`
     CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
