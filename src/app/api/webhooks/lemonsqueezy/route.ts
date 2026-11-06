@@ -88,7 +88,12 @@ export async function POST(req: NextRequest) {
       if (refundStoreId === undefined) {
         console.warn(`[webhook] refund for order ${orderId}: no store_id in payload, revoking on HMAC alone.`);
       }
-      const result = await revokeOrder(orderId);
+      // Phase G follow-up: pass the payload email so a refund that
+      // arrives before its fulfilment still leaves a traceable
+      // pending-refund marker (revokeOrder records the email on
+      // the marker row when there is no fulfilment to link to).
+      const refundEmail = (event.data?.attributes?.user_email ?? "").trim().toLowerCase();
+      const result = await revokeOrder(orderId, refundEmail);
       if (!result.revoked) {
         console.warn(`[webhook] refund for order ${orderId}: nothing to revoke (no fulfillment, or already revoked).`);
       } else {

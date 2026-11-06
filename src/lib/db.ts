@@ -600,7 +600,9 @@ async function findFulfillmentByOrderId(orderId: string): Promise<DbTransaction 
  * sql.begin transaction. The user row is locked first, so two
  * concurrent deliveries of the same webhook cannot both pass the
  * duplicate check and double-grant. Returns duplicate: true when
- * this order was already fulfilled (Lemon Squeezy retries webhooks).
+ * this order was already fulfilled (Lemon Squeezy retries webhooks),
+ * or when a refund was already recorded for it (see revokeOrder's
+ * pending-refund marker): a refunded order is never re-granted.
  */
 export async function fulfillOrder(args: {
   userId: string;
@@ -641,6 +643,23 @@ export async function fulfillOrder(args: {
           duplicate: true,
         };
       }
+      // Phase G follow-up: a refund recorded before the fulfilment
+      // (revokeOrder's pending-refund marker, a zero-value refund
+      // row) also blocks the grant. The duplicate check above only
+      // matches the fulfilment row's pack_type shape; the marker
+      // carries the :refund shape, so it needs its own check. The
+      // :refund suffix anchors the pattern, so order-123 never
+      // matches order-1234's marker.
+      const refundMarker = `lemonsqueezy:${args.orderId}:refund`;
+      const refunded = await tx`SELECT id FROM transactions WHERE pack_type LIKE ${"%" + refundMarker + "%"} LIMIT 1`;
+      if (refunded.length > 0) {
+        const cur = await tx`SELECT credits FROM users WHERE id = ${args.userId}`;
+        return {
+          transaction: null,
+          credits: (cur[0] as { credits: number } | undefined)?.credits ?? 0,
+          duplicate: true,
+        };
+      }
       await tx`INSERT INTO transactions (id, user_id, email, pack_type, amount, readings, created_at)
         VALUES (${row.id}, ${row.user_id}, ${row.email}, ${row.pack_type}, ${row.amount}, ${row.readings}, NOW())`;
       const upd = await tx`UPDATE users SET credits = credits + ${args.readings} WHERE id = ${args.userId} RETURNING credits`;
@@ -652,6 +671,12 @@ export async function fulfillOrder(args: {
   // After a refund, a redelivered order_created is treated as a duplicate
   // and is not re-granted (the duplicate check does not exclude refund rows).
   if (db.transactions.some((t) => t.pack_type.includes(marker))) {
+    const u = db.users.find((x) => x.id === args.userId);
+    return { transaction: null, credits: u?.credits ?? 0, duplicate: true };
+  }
+  // Phase G follow-up: same pending-refund marker check as the
+  // Postgres branch above.
+  if (db.transactions.some((t) => t.pack_type.includes(`lemonsqueezy:${args.orderId}:refund`))) {
     const u = db.users.find((x) => x.id === args.userId);
     return { transaction: null, credits: u?.credits ?? 0, duplicate: true };
   }
@@ -671,13 +696,55 @@ export async function fulfillOrder(args: {
  * cannot revoke twice. Returns revoked: false when there was no
  * fulfillment to revoke, or it was already revoked — the caller
  * logs that; it is not an error.
+ *
+ * Phase G follow-up: when there is NO fulfillment yet (the refund
+ * webhook arrived before the order_created webhook), revoked is
+ * still false, but the refund is NOT forgotten: a zero-value refund
+ * row (the pending-refund marker, same pack_type shape as a normal
+ * refund row, amount/readings 0 because nothing was granted to
+ * take back) is recorded, so a later fulfilment sees it and grants
+ * nothing (fulfillOrder checks for it). Without the marker, the
+ * later order_created would grant unrevoked credits. The marker
+ * carries no user (no fulfilment to link it to), so its user_id is
+ * null and it never appears in any user's transaction list; the
+ * email is the refund payload's when the webhook knows it.
+ * The optional email parameter is that payload email; callers that
+ * do not have one pass nothing and the marker records "".
  */
-export async function revokeOrder(orderId: string): Promise<{ revoked: boolean; readings: number }> {
+export async function revokeOrder(orderId: string, email = ""): Promise<{ revoked: boolean; readings: number }> {
   await ensureSchema();
   if (!orderId) return { revoked: false, readings: 0 };
   const refundMarker = `lemonsqueezy:${orderId}:refund`;
   const orig = await findFulfillmentByOrderId(orderId);
-  if (!orig) return { revoked: false, readings: 0 };
+  if (!orig) {
+    // No fulfilment to revoke: record the pending-refund marker.
+    const markerRow: DbTransaction = {
+      id: `t_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`,
+      user_id: null,
+      email,
+      pack_type: `refund (${refundMarker})`,
+      amount: 0,
+      readings: 0,
+      created_at: new Date().toISOString(),
+    };
+    if (usePostgres) {
+      if (!pg) throw new Error("Database not configured");
+      // One atomic statement: concurrent refunds for the same
+      // never-fulfilled order insert exactly one marker row.
+      await pg.begin(async (tx) => {
+        await tx`INSERT INTO transactions (id, user_id, email, pack_type, amount, readings, created_at)
+          SELECT ${markerRow.id}, ${markerRow.user_id}, ${markerRow.email}, ${markerRow.pack_type}, 0, 0, NOW()
+          WHERE NOT EXISTS (SELECT 1 FROM transactions WHERE pack_type LIKE ${"%" + refundMarker + ")%"})`;
+      });
+      return { revoked: false, readings: 0 };
+    }
+    const db = await readLocal();
+    if (!db.transactions.some((t) => t.pack_type.includes(`${refundMarker})`))) {
+      db.transactions.unshift(markerRow);
+      await writeLocal(db);
+    }
+    return { revoked: false, readings: 0 };
+  }
   let userId = orig.user_id;
   if (!userId) {
     const u = await getUserByEmail(orig.email);

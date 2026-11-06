@@ -178,7 +178,7 @@ describe("POST /api/webhooks/lemonsqueezy", () => {
     );
     expect(res.status).toBe(200);
     expect(await res.json()).toMatchObject({ ok: true, refunded: true });
-    expect(mockedRevoke).toHaveBeenCalledWith("ord_1");
+    expect(mockedRevoke).toHaveBeenCalledWith("ord_1", "");
     expect(mockedFulfill).not.toHaveBeenCalled();
   });
 
@@ -298,6 +298,6 @@ describe("POST /api/webhooks/lemonsqueezy", () => {
       })
     );
     expect(res.status).toBe(200);
-    expect(mockedRevoke).toHaveBeenCalledWith("ord_1");
+    expect(mockedRevoke).toHaveBeenCalledWith("ord_1", "");
   });
 });

@@ -171,6 +171,42 @@ describe.skipIf(SKIP)("money paths on real Postgres (staging only)", () => {
     expect(await db.revokeOrder("order-never-existed")).toEqual({ revoked: false, readings: 0 });
   });
 
+  it("Phase G follow-up: refund before fulfilment records a marker; a later fulfilment grants nothing", async () => {
+    // The refund webhook can arrive before the order_created
+    // webhook (out-of-order delivery). The refund must leave a
+    // record even though there is no fulfilment to revoke yet, so
+    // the later fulfilment sees it and grants nothing.
+    const user = await db.createUser("refund-first-a@example.com");
+    const args = {
+      userId: user.id,
+      email: user.email,
+      packType: "pack5 (lemonsqueezy:order-1005)",
+      amount: 3.99,
+      readings: 5,
+      orderId: "order-1005",
+    };
+    // Refund first: nothing to revoke, but the marker is recorded.
+    expect(await db.revokeOrder("order-1005")).toEqual({ revoked: false, readings: 0 });
+    expect((await db.getUserById(user.id))?.credits).toBe(0);
+    // A second refund records no second marker.
+    expect(await db.revokeOrder("order-1005")).toEqual({ revoked: false, readings: 0 });
+    const markerRows = (await raw`
+      SELECT readings FROM transactions WHERE pack_type LIKE '%order-1005%'`) as Array<{ readings: number }>;
+    expect(markerRows).toHaveLength(1);
+    expect(markerRows[0].readings).toBe(0);
+    // The late order_created must NOT grant.
+    const late = await db.fulfillOrder(args);
+    expect(late.duplicate).toBe(true);
+    expect(late.credits).toBe(0);
+    expect((await db.getUserById(user.id))?.credits).toBe(0);
+    // No fulfilment row was written: still exactly the one marker.
+    const afterRows = (await raw`
+      SELECT readings FROM transactions WHERE pack_type LIKE '%order-1005%'`) as Array<{ readings: number }>;
+    expect(afterRows).toHaveLength(1);
+    expect(afterRows[0].readings).toBe(0);
+    expect((await db.listTransactions(user.id)).filter((t) => t.pack_type.includes("order-1005"))).toHaveLength(0);
+  });
+
   it("concurrent double refund: two simultaneous revokes revoke once", async () => {
     // Phase 6B: only sequential double refunds were tested before.
     const user = await db.createUser("refund-b@example.com");
@@ -388,14 +424,9 @@ describe.skipIf(SKIP)("money paths on real Postgres (staging only)", () => {
     expect(first.duplicate).toBe(false);
     expect(first.credits).toBe(5);
 
-    // revokeOrder uses findFulfillmentByOrderId internally.
-    // A prefix orderId ("order-123") must not match "order-1234".
-    const revokePrefix = await db.revokeOrder("order-123");
-    expect(revokePrefix).toEqual({ revoked: false, readings: 0 });
-    expect((await db.getUserById(user.id))?.credits).toBe(5);
-
-    // Now fulfill "order-123" (a strict prefix of "order-1234").
-    // Must NOT be treated as a duplicate; credits granted again.
+    // Fulfilling "order-123" (a strict prefix of "order-1234") is a
+    // distinct order, not a duplicate: the ")" anchor in the LIKE
+    // pattern keeps the two apart.
     const order123 = {
       userId: user.id,
       email: user.email,
@@ -414,7 +445,8 @@ describe.skipIf(SKIP)("money paths on real Postgres (staging only)", () => {
     expect(duplicateDelivery.duplicate).toBe(true);
     expect(duplicateDelivery.credits).toBe(10);
 
-    // Revoking order-123 succeeds and reduces balance.
+    // Revoking order-123 removes only its own grant (5), not
+    // order-1234's: the fulfilment lookup is anchored the same way.
     const revoke123 = await db.revokeOrder("order-123");
     expect(revoke123).toEqual({ revoked: true, readings: 5 });
     expect((await db.getUserById(user.id))?.credits).toBe(5);
@@ -428,6 +460,19 @@ describe.skipIf(SKIP)("money paths on real Postgres (staging only)", () => {
     const redeliveredAfterRefund = await db.fulfillOrder(order123);
     expect(redeliveredAfterRefund.duplicate).toBe(true);
     expect(redeliveredAfterRefund.credits).toBe(5);
+    expect((await db.getUserById(user.id))?.credits).toBe(5);
+
+    // Prefix revoke probe, last: revoking "order-12" (a strict prefix
+    // of both fulfilled orders, itself never fulfilled) revokes
+    // nothing and leaves both grants untouched. It records a
+    // pending-refund marker for order-12 (Phase G follow-up), which
+    // is why this probe runs on an id that is never fulfilled
+    // afterwards: a recorded refund for an order blocks its later
+    // fulfilment by design, so the probe must not name an order
+    // this test still intends to fulfil (see the refund-before-
+    // fulfilment test above).
+    const revokePrefix = await db.revokeOrder("order-12");
+    expect(revokePrefix).toEqual({ revoked: false, readings: 0 });
     expect((await db.getUserById(user.id))?.credits).toBe(5);
   });
 });
