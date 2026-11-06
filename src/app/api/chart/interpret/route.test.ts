@@ -68,7 +68,7 @@ describe("POST /api/chart/interpret", () => {
         ok: true,
         json: async () => ({
           choices: [{ message: { content: "A warm chart reflection, written for this test." } }],
-          model: "google/gemini-2.5-flash-preview:free",
+          model: "google/gemma-4-26b-a4b-it:free",
         }),
       })
     );

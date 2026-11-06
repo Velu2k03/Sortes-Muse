@@ -19,8 +19,9 @@
 
 export const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 export const OPENROUTER_DEFAULT_MODELS =
-  "google/gemini-2.5-flash-preview:free,xiaomi/mimo-v2-flash:free,meta-llama/llama-3.3-70b-instruct:free";
+  "google/gemma-4-26b-a4b-it:free,google/gemma-4-31b-it:free,nvidia/nemotron-3.5-lightning:free";
 export const AI_TIMEOUT_MS = 25000;
+export const AI_TOTAL_TIMEOUT_MS = 80000;
 
 /** Comma-separated fallback chain: fastest free models first, reliable
     workhorse last. Override with OPENROUTER_MODEL in env. */
@@ -41,6 +42,8 @@ export interface GenerateChatOptions {
   validate?: (text: string) => boolean;
   /** Per-model attempt timeout. Defaults to AI_TIMEOUT_MS. */
   timeoutMs?: number;
+  /** Total timeout budget across all models. Defaults to AI_TOTAL_TIMEOUT_MS. */
+  totalTimeoutMs?: number;
   /** Base delay between model attempts (doubles per attempt). 0
       disables backoff; tests pass 0 so they stay fast. */
   retryDelayMs?: number;
@@ -55,12 +58,18 @@ export interface GeneratedChat {
   model: string;
 }
 
-function logFailure(event: string, model: string | null, error: unknown): void {
+function logFailure(
+  event: string,
+  model: string | null,
+  error: unknown,
+  elapsedMs?: number
+): void {
   console.error(
     JSON.stringify({
       source: "sortes-ai",
       event,
       model,
+      ...(elapsedMs !== undefined ? { elapsedMs } : {}),
       error: error instanceof Error ? error.message : String(error),
     })
   );
@@ -79,18 +88,62 @@ export async function generateChat(
   const models = opts.models ?? getModelList();
   const fetchFn = opts.fetchFn ?? fetch;
   const timeoutMs = opts.timeoutMs ?? AI_TIMEOUT_MS;
+  const totalTimeoutMs = opts.totalTimeoutMs ?? AI_TOTAL_TIMEOUT_MS;
   const retryDelayMs = opts.retryDelayMs ?? 250;
+  const chainStart = Date.now();
 
   // Try each model in order; rate-limited or retired free models fail
   // fast and we move to the next one instead of giving up.
   for (let i = 0; i < models.length; i++) {
+    const elapsedBeforeAttempt = Date.now() - chainStart;
+    const remainingBudget = totalTimeoutMs - elapsedBeforeAttempt;
+    if (remainingBudget <= 0) {
+      logFailure(
+        "chain-timeout",
+        null,
+        `AI chain total timeout budget exhausted (${totalTimeoutMs}ms)`,
+        elapsedBeforeAttempt
+      );
+      break;
+    }
+
     const model = models[i];
     if (i > 0 && retryDelayMs > 0) {
-      await sleep(retryDelayMs * 2 ** (i - 1));
+      const delay = Math.min(
+        retryDelayMs * 2 ** (i - 1),
+        Math.max(0, totalTimeoutMs - (Date.now() - chainStart))
+      );
+      if (delay > 0) {
+        await sleep(delay);
+      }
     }
+
+    const attemptStart = Date.now();
+    const remainingAfterDelay = totalTimeoutMs - (attemptStart - chainStart);
+    if (remainingAfterDelay <= 0) {
+      logFailure(
+        "chain-timeout",
+        null,
+        `AI chain total timeout budget exhausted (${totalTimeoutMs}ms)`,
+        attemptStart - chainStart
+      );
+      break;
+    }
+
+    const effectiveTimeoutMs = Math.min(timeoutMs, remainingAfterDelay);
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
-    try {
+    let timer: NodeJS.Timeout | undefined;
+
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => {
+        controller.abort();
+        reject(
+          new Error(`Model attempt timed out after ${effectiveTimeoutMs}ms`)
+        );
+      }, effectiveTimeoutMs);
+    });
+
+    const executionPromise = (async (): Promise<GeneratedChat> => {
       const res = await fetchFn(OPENROUTER_URL, {
         method: "POST",
         signal: controller.signal,
@@ -118,15 +171,29 @@ export async function generateChat(
       if (opts.validate && !opts.validate(text)) {
         throw new Error("Model response failed validation");
       }
-      clearTimeout(timer);
       return { text, model: data?.model ?? model };
+    })();
+
+    // Prevent unhandled rejection if timeoutPromise settles first
+    executionPromise.catch(() => {});
+
+    try {
+      const result = await Promise.race([executionPromise, timeoutPromise]);
+      return result;
     } catch (err) {
-      clearTimeout(timer);
-      logFailure("model-failed", model, err);
+      const elapsedMs = Date.now() - attemptStart;
+      logFailure("model-failed", model, err, elapsedMs);
       // Fall through to the next model in the chain.
+    } finally {
+      clearTimeout(timer);
     }
   }
 
-  logFailure("all-models-failed", null, "every model in the chain failed");
+  logFailure(
+    "all-models-failed",
+    null,
+    "every model in the chain failed",
+    Date.now() - chainStart
+  );
   return null;
 }

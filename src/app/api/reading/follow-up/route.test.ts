@@ -53,7 +53,7 @@ describe("POST /api/reading/follow-up", () => {
         ok: true,
         json: async () => ({
           choices: [{ message: { content: ANSWER } }],
-          model: "google/gemini-2.5-flash-preview:free",
+          model: "google/gemma-4-26b-a4b-it:free",
         }),
       })
     );

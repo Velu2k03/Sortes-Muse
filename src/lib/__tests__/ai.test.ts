@@ -79,8 +79,8 @@ describe("generateChat", () => {
     expect(res).toBeNull();
     expect(fetchFn).toHaveBeenCalledTimes(3);
     const logged = errorSpy.mock.calls.map((c: unknown[]) => String(c[0]));
-    expect(logged.some((l: string) => l.includes("model-failed"))).toBe(true);
-    expect(logged.some((l: string) => l.includes("all-models-failed"))).toBe(true);
+    expect(logged.some((l: string) => l.includes("model-failed") && l.includes("elapsedMs"))).toBe(true);
+    expect(logged.some((l: string) => l.includes("all-models-failed") && l.includes("elapsedMs"))).toBe(true);
   });
 
   it("discards text that fails validation and tries the next model", async () => {
@@ -129,6 +129,54 @@ describe("generateChat", () => {
     });
     expect(res).toEqual({ text: "second model answered", model: "model-b:free" });
     expect(fetchFn).toHaveBeenCalledTimes(2);
+  });
+
+  it("aborts when response-body parsing (res.json) hangs and moves to next model", async () => {
+    const fetchFn = vi.fn(async (_url: unknown, init: unknown) => {
+      const body = JSON.parse(String((init as { body: string }).body));
+      if (body.model === "model-a:free") {
+        return {
+          ok: true,
+          json: () => new Promise(() => {}), // hangs forever
+        };
+      }
+      return okResponse("recovered on second model", "model-b:free");
+    });
+    const res = await generateChat({
+      apiKey: "k",
+      system: "s",
+      user: "u",
+      models: MODELS,
+      fetchFn: fetchFn as unknown as typeof fetch,
+      timeoutMs: 25,
+      retryDelayMs: 0,
+    });
+    expect(res).toEqual({
+      text: "recovered on second model",
+      model: "model-b:free",
+    });
+    expect(fetchFn).toHaveBeenCalledTimes(2);
+  });
+
+  it("stops chain when total timeout budget is exhausted", async () => {
+    const fetchFn = vi.fn(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 30));
+      return { ok: false, status: 500 };
+    });
+    const res = await generateChat({
+      apiKey: "k",
+      system: "s",
+      user: "u",
+      models: MODELS,
+      fetchFn: fetchFn as unknown as typeof fetch,
+      timeoutMs: 50,
+      totalTimeoutMs: 35,
+      retryDelayMs: 0,
+    });
+    expect(res).toBeNull();
+    // After 1st attempt (~30ms), remaining budget is <5ms, so subsequent model attempt times out quickly or chain stops
+    const logged = errorSpy.mock.calls.map((c: unknown[]) => String(c[0]));
+    expect(logged.some((l: string) => l.includes("all-models-failed"))).toBe(true);
   });
 
   it("returns null without calling fetch when no API key is configured", async () => {
