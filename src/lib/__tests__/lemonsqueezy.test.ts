@@ -7,6 +7,8 @@ import {
   verifyOrderAmount,
   verifyWebhookSignature,
   createCheckout,
+  getOrder,
+  verifyApiOrder,
 } from "@/lib/lemonsqueezy";
 
 describe("lemonsqueezy helpers", () => {
@@ -60,6 +62,125 @@ describe("lemonsqueezy helpers", () => {
     expect(verifyWebhookSignature(raw, "deadbeef")).toBe(false);
     expect(verifyWebhookSignature(raw, null)).toBe(false);
     expect(verifyWebhookSignature(raw + "x", good)).toBe(false);
+  });
+
+  // Phase B (R4): the webhook verifies the order against the Lemon
+  // Squeezy API instead of trusting only the signed payload. getOrder
+  // takes an injectable fetch so tests never call live Lemon Squeezy.
+  describe("getOrder", () => {
+    const paidOrder = {
+      data: {
+        id: "ord_1",
+        type: "orders",
+        attributes: {
+          status: "paid",
+          store_id: 42,
+          currency: "USD",
+          total: 399,
+          subtotal: 399,
+          first_order_item: { variant_id: 111 },
+        },
+      },
+    };
+
+    it("returns the parsed order on a 200", async () => {
+      const fetchFn = vi.fn(async () => ({
+        ok: true,
+        json: async () => paidOrder,
+      }));
+      const order = await getOrder("ord_1", fetchFn as unknown as typeof fetch);
+      expect(order).toEqual(paidOrder);
+      expect(String(fetchFn.mock.calls[0][0])).toContain("/v1/orders/ord_1");
+      expect(String(fetchFn.mock.calls[0][0])).not.toContain("ord_1x");
+    });
+
+    it("returns null on a non-OK response and never throws", async () => {
+      const fetchFn = vi.fn(async () => ({ ok: false, status: 404 }));
+      await expect(
+        getOrder("ord_missing", fetchFn as unknown as typeof fetch)
+      ).resolves.toBeNull();
+    });
+
+    it("returns null when the fetch itself fails", async () => {
+      const fetchFn = vi.fn(async () => {
+        throw new Error("network down");
+      });
+      await expect(
+        getOrder("ord_1", fetchFn as unknown as typeof fetch)
+      ).resolves.toBeNull();
+    });
+
+    it("returns null without an API key (fail closed, no unauthenticated call)", async () => {
+      delete process.env.LEMONSQUEEZY_API_KEY;
+      const fetchFn = vi.fn(async () => ({
+        ok: true,
+        json: async () => paidOrder,
+      }));
+      await expect(
+        getOrder("ord_1", fetchFn as unknown as typeof fetch)
+      ).resolves.toBeNull();
+      expect(fetchFn).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("verifyApiOrder", () => {
+    const apiOrder = {
+      data: {
+        id: "ord_1",
+        type: "orders",
+        attributes: {
+          status: "paid",
+          store_id: 42,
+          currency: "USD",
+          total: 399,
+          subtotal: 399,
+          first_order_item: { variant_id: 111 },
+        },
+      },
+    };
+    const expected = { orderId: "ord_1", storeId: "42", variantId: "111" };
+
+    it("accepts a paid order that matches id, store, variant, and amount", () => {
+      expect(verifyApiOrder(apiOrder, expected)).toBe(true);
+    });
+
+    it("accepts a matching subtotal with tax on top", () => {
+      const taxed = structuredClone(apiOrder);
+      taxed.data.attributes.total = 450;
+      expect(verifyApiOrder(taxed, expected)).toBe(true);
+    });
+
+    it("rejects an unpaid order", () => {
+      const unpaid = structuredClone(apiOrder);
+      unpaid.data.attributes.status = "pending";
+      expect(verifyApiOrder(unpaid, expected)).toBe(false);
+    });
+
+    it("rejects a wrong order id, store, or variant", () => {
+      const wrongId = structuredClone(apiOrder);
+      wrongId.data.id = "ord_2";
+      expect(verifyApiOrder(wrongId, expected)).toBe(false);
+      const wrongStore = structuredClone(apiOrder);
+      wrongStore.data.attributes.store_id = 99;
+      expect(verifyApiOrder(wrongStore, expected)).toBe(false);
+      const wrongVariant = structuredClone(apiOrder);
+      wrongVariant.data.attributes.first_order_item.variant_id = 222;
+      expect(verifyApiOrder(wrongVariant, expected)).toBe(false);
+    });
+
+    it("rejects an underpaid order", () => {
+      const cheap = structuredClone(apiOrder);
+      cheap.data.attributes.total = 1;
+      cheap.data.attributes.subtotal = 1;
+      expect(verifyApiOrder(cheap, expected)).toBe(false);
+    });
+
+    it("rejects null, malformed, and missing-attribute payloads", () => {
+      expect(verifyApiOrder(null, expected)).toBe(false);
+      expect(verifyApiOrder({}, expected)).toBe(false);
+      expect(verifyApiOrder({ data: {} }, expected)).toBe(false);
+      expect(verifyApiOrder({ data: { id: "ord_1" } }, expected)).toBe(false);
+    });
   });
 
   describe("createCheckout", () => {

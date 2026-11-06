@@ -1,7 +1,14 @@
 import { createHmac, timingSafeEqual } from "crypto";
 import { CREDIT_PACKS } from "./site";
 
-const API_BASE = "https://api.lemonsqueezy.com/v1";
+// Phase B (R4): the API base is overridable for local testing only
+// (LEMONSQUEEZY_API_BASE, e.g. a mock server on localhost for the
+// webhook simulator). Unset everywhere else: production, staging,
+// and Preview all use the real Lemon Squeezy API. Never set this on
+// Vercel; a wrong value here breaks checkout and webhook
+// verification, it cannot mint credits.
+const API_BASE = (process.env.LEMONSQUEEZY_API_BASE?.trim().replace(/\/+$/, "") ||
+  "https://api.lemonsqueezy.com/v1");
 
 export interface LemonPack {
   id: string;
@@ -162,13 +169,62 @@ export function verifyWebhookSignature(rawBody: string, signature: string | null
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
-export async function getOrder(orderId: string) {
-  const res = await fetch(`${API_BASE}/orders/${orderId}`, {
-    headers: {
-      Authorization: `Bearer ${process.env.LEMONSQUEEZY_API_KEY}`,
-      Accept: "application/vnd.api+json",
-    },
-  });
-  if (!res.ok) return null;
-  return res.json();
+/**
+ * Phase B (R4): fetch one order from the Lemon Squeezy API.
+ * Returns the parsed JSON:API payload, or null when the order cannot
+ * be retrieved (no API key, non-OK status, network failure, bad
+ * JSON). Null means "unverified": the webhook caller must refuse to
+ * fulfil and return 500 so Lemon Squeezy retries. Never throws.
+ * fetchFn is injectable so tests and the local webhook simulator
+ * never call the live API.
+ */
+export async function getOrder(orderId: string, fetchFn: typeof fetch = fetch) {
+  const apiKey = process.env.LEMONSQUEEZY_API_KEY?.trim();
+  if (!apiKey || !orderId) return null;
+  try {
+    const res = await fetchFn(`${API_BASE}/orders/${orderId}`, {
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        Accept: "application/vnd.api+json",
+      },
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Phase B (R4): does the order the API returned match the order the
+ * webhook claims? The order must be paid, belong to the expected
+ * store, be the same order id, and match the variant and amount the
+ * webhook payload named. Any mismatch or malformed payload is false.
+ * The amount check reuses verifyOrderAmount, so tax-on-top is
+ * accepted and discounts/underpayment are rejected, exactly as for
+ * the payload check.
+ */
+export function verifyApiOrder(
+  order: unknown,
+  expected: { orderId: string; storeId: string; variantId: string }
+): boolean {
+  if (!order || typeof order !== "object") return false;
+  const data = (order as { data?: unknown }).data;
+  if (!data || typeof data !== "object") return false;
+  const { id, attributes } = data as { id?: unknown; attributes?: unknown };
+  if (id !== expected.orderId) return false;
+  if (!attributes || typeof attributes !== "object") return false;
+  const attrs = attributes as {
+    status?: unknown;
+    store_id?: unknown;
+    first_order_item?: { variant_id?: unknown };
+  };
+  if (attrs.status !== "paid") return false;
+  if (String(attrs.store_id ?? "") !== expected.storeId) return false;
+  const variantId = String(attrs.first_order_item?.variant_id ?? "");
+  if (variantId !== expected.variantId) return false;
+  return verifyOrderAmount(
+    attrs as { total?: number | string; subtotal?: number | string },
+    expected.variantId
+  );
 }

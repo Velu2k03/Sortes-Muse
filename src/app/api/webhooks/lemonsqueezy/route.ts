@@ -4,6 +4,8 @@ import {
   readingsForVariant,
   packIdForVariant,
   verifyOrderAmount,
+  getOrder,
+  verifyApiOrder,
 } from "@/lib/lemonsqueezy";
 import {
   getUserByEmail,
@@ -17,10 +19,23 @@ export const dynamic = "force-dynamic";
 /**
  * Lemon Squeezy webhook. Verifies the HMAC signature, then:
  * - `order_created`: verifies the store, currency and amount against
- *   the expected pack values, then fulfills atomically (transaction
- *   row + credit grant in one DB transaction, idempotent per order).
- * - `order_refunded`: revokes the granted credits idempotently,
- *   never driving the balance below 0.
+ *   the expected pack values in the signed payload, then confirms
+ *   the order independently against the Lemon Squeezy API (Phase B,
+ *   R4: paid, same order id, same store, same variant and amount)
+ *   before fulfilling atomically (transaction row + credit grant in
+ *   one DB transaction, idempotent per order). An API lookup failure
+ *   or mismatch returns 500 so Lemon Squeezy retries; it never
+ *   fulfils on an unverified order.
+ * - `order_refunded`: verifies the store id in the payload (Phase B,
+ *   R14) before revoking the granted credits idempotently, never
+ *   driving the balance below 0.
+ *
+ * Phase B (R8): the fulfilment/revocation work runs inside a
+ * try/catch. A database error returns a 500 with one structured log
+ * line (source sortes-webhook, event webhook-error) instead of a
+ * bare crash, so the failure is visible in the logs and Lemon
+ * Squeezy retries. Reconciliation (scripts/reconcile.mjs) runs on a
+ * schedule as a Phase H item; see docs/PRODUCTION-CHANGE-PLAN.md.
  */
 export async function POST(req: NextRequest) {
   const raw = await req.text();
@@ -51,63 +66,115 @@ export async function POST(req: NextRequest) {
   }
 
   const eventName = event.meta?.event_name;
-  if (eventName === "order_refunded") {
-    const orderId = event.data?.id ?? "";
-    const result = await revokeOrder(orderId);
-    if (!result.revoked) {
-      console.warn(`[webhook] refund for order ${orderId}: nothing to revoke (no fulfillment, or already revoked).`);
-    } else {
-      console.warn(`[webhook] refund for order ${orderId}: revoked ${result.readings} credits.`);
-    }
-    return NextResponse.json({ ok: true, refunded: result.revoked });
-  }
-
-  if (eventName !== "order_created") {
-    return NextResponse.json({ ok: true, ignored: true });
-  }
-
-  const attrs = event.data?.attributes;
-  const email = (attrs?.user_email ?? "").trim().toLowerCase();
-  const variantId = String(attrs?.first_order_item?.variant_id ?? "");
-  const readings = readingsForVariant(variantId);
-  if (!email || readings === null) {
-    return NextResponse.json({ error: "Unrecognized order." }, { status: 400 });
-  }
-  if (attrs?.status && attrs.status !== "paid") {
-    return NextResponse.json({ ok: true, ignored: "not paid" });
-  }
-
-  // Phase 1 (1.4): the order must be for this store, in USD, and for
-  // the pack's price. A signed webhook is already authentic, so a
-  // mismatch here means the store is misconfigured (wrong variant
-  // price, tax/discount surprise) — refuse to grant, and log it loudly
-  // instead of silently fulfilling the wrong pack.
-  const expectedStoreId = process.env.LEMONSQUEEZY_STORE_ID;
-  if (!expectedStoreId || String(attrs?.store_id ?? "") !== expectedStoreId) {
-    console.error(`[webhook] order ${event.data?.id ?? "?"}: store_id mismatch (got ${attrs?.store_id}, expected ${expectedStoreId ?? "unset"}). Not fulfilling.`);
-    return NextResponse.json({ error: "Store mismatch." }, { status: 400 });
-  }
-  if (attrs?.currency !== "USD") {
-    console.error(`[webhook] order ${event.data?.id ?? "?"}: unexpected currency ${attrs?.currency}. Not fulfilling.`);
-    return NextResponse.json({ error: "Unexpected currency." }, { status: 400 });
-  }
-  if (!verifyOrderAmount(attrs, variantId)) {
-    console.error(`[webhook] order ${event.data?.id ?? "?"}: amount mismatch (total ${attrs?.total}, subtotal ${attrs?.subtotal}) for variant ${variantId}. Not fulfilling.`);
-    return NextResponse.json({ error: "Amount mismatch." }, { status: 400 });
-  }
-
   const orderId = event.data?.id ?? "";
-  const user = (await getUserByEmail(email)) ?? (await createUser(email));
-  const amount = Number(attrs?.total ?? 0) / 100;
-  const result = await fulfillOrder({
-    userId: user.id,
-    email,
-    packType: `${packIdForVariant(variantId)} (lemonsqueezy:${orderId})`,
-    amount,
-    readings,
-    orderId,
-  });
-  if (result.duplicate) return NextResponse.json({ ok: true, duplicate: true });
+  try {
+    if (eventName === "order_refunded") {
+      // R14: the refund branch used to revoke with no store check at
+      // all. A mismatched store id is refused outright. A missing
+      // store_id is tolerated (and logged): older payloads may omit
+      // it, the HMAC signature is still the authentication, and
+      // revocation is idempotent and bounded by the original
+      // fulfilment, so proceeding cannot grant anything.
+      const expectedStoreId = process.env.LEMONSQUEEZY_STORE_ID;
+      const refundStoreId = event.data?.attributes?.store_id;
+      if (refundStoreId !== undefined && expectedStoreId !== undefined && String(refundStoreId) !== expectedStoreId) {
+        console.error(`[webhook] refund for order ${orderId}: store_id mismatch (got ${refundStoreId}, expected ${expectedStoreId}). Not revoking.`);
+        return NextResponse.json({ error: "Store mismatch." }, { status: 400 });
+      }
+      if (refundStoreId === undefined) {
+        console.warn(`[webhook] refund for order ${orderId}: no store_id in payload, revoking on HMAC alone.`);
+      }
+      const result = await revokeOrder(orderId);
+      if (!result.revoked) {
+        console.warn(`[webhook] refund for order ${orderId}: nothing to revoke (no fulfillment, or already revoked).`);
+      } else {
+        console.warn(`[webhook] refund for order ${orderId}: revoked ${result.readings} credits.`);
+      }
+      return NextResponse.json({ ok: true, refunded: result.revoked });
+    }
 
-  return NextResponse.json({ ok: true });
+    if (eventName !== "order_created") {
+      return NextResponse.json({ ok: true, ignored: true });
+    }
+
+    const attrs = event.data?.attributes;
+    const email = (attrs?.user_email ?? "").trim().toLowerCase();
+    const variantId = String(attrs?.first_order_item?.variant_id ?? "");
+    const readings = readingsForVariant(variantId);
+    if (!email || readings === null) {
+      return NextResponse.json({ error: "Unrecognized order." }, { status: 400 });
+    }
+    if (attrs?.status && attrs.status !== "paid") {
+      return NextResponse.json({ ok: true, ignored: "not paid" });
+    }
+
+    // Phase 1 (1.4): the order must be for this store, in USD, and for
+    // the pack's price. A signed webhook is already authentic, so a
+    // mismatch here means the store is misconfigured (wrong variant
+    // price, tax/discount surprise) — refuse to grant, and log it loudly
+    // instead of silently fulfilling the wrong pack.
+    const expectedStoreId = process.env.LEMONSQUEEZY_STORE_ID;
+    if (!expectedStoreId || String(attrs?.store_id ?? "") !== expectedStoreId) {
+      console.error(`[webhook] order ${orderId}: store_id mismatch (got ${attrs?.store_id}, expected ${expectedStoreId ?? "unset"}). Not fulfilling.`);
+      return NextResponse.json({ error: "Store mismatch." }, { status: 400 });
+    }
+    if (attrs?.currency !== "USD") {
+      console.error(`[webhook] order ${orderId}: unexpected currency ${attrs?.currency}. Not fulfilling.`);
+      return NextResponse.json({ error: "Unexpected currency." }, { status: 400 });
+    }
+    if (!verifyOrderAmount(attrs, variantId)) {
+      console.error(`[webhook] order ${orderId}: amount mismatch (total ${attrs?.total}, subtotal ${attrs?.subtotal}) for variant ${variantId}. Not fulfilling.`);
+      return NextResponse.json({ error: "Amount mismatch." }, { status: 400 });
+    }
+
+    // Phase B (R4): confirm the order against the Lemon Squeezy API
+    // before granting anything. The signed payload alone proves the
+    // webhook secret holder sent it; the API lookup proves the order
+    // really exists, is paid, and matches this store, variant, and
+    // amount. A lookup failure (null) or any mismatch returns 500 so
+    // Lemon Squeezy retries: a transient API outage must not drop a
+    // paid order, and a genuinely mismatched order must not be
+    // fulfilled while a human fixes the configuration.
+    const apiOrder = await getOrder(orderId);
+    if (!verifyApiOrder(apiOrder, { orderId, storeId: expectedStoreId, variantId })) {
+      console.error(
+        JSON.stringify({
+          source: "sortes-webhook",
+          event: "order-verify-failed",
+          orderId,
+          variantId,
+        })
+      );
+      return NextResponse.json({ error: "Order could not be verified." }, { status: 500 });
+    }
+
+    const user = (await getUserByEmail(email)) ?? (await createUser(email));
+    const amount = Number(attrs?.total ?? 0) / 100;
+    const result = await fulfillOrder({
+      userId: user.id,
+      email,
+      packType: `${packIdForVariant(variantId)} (lemonsqueezy:${orderId})`,
+      amount,
+      readings,
+      orderId,
+    });
+    if (result.duplicate) return NextResponse.json({ ok: true, duplicate: true });
+
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    // R8: a database error (or any unexpected failure) mid-webhook
+    // is a 500 with one structured log line, not a bare crash. Lemon
+    // Squeezy retries the delivery; the reconcile script (Phase H
+    // schedule) catches anything the retries still miss.
+    console.error(
+      JSON.stringify({
+        source: "sortes-webhook",
+        event: "webhook-error",
+        eventName: eventName ?? null,
+        orderId: orderId || null,
+        error: err instanceof Error ? err.message : String(err),
+      })
+    );
+    return NextResponse.json({ error: "Webhook processing failed." }, { status: 500 });
+  }
 }
