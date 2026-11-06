@@ -450,27 +450,35 @@ describe("generateChat", () => {
   });
 
   it("respects the overall budget: tiny overallTimeoutMs returns null quickly without starting a second pass", async () => {
-    const fetchFn = vi.fn(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 20));
-      return { ok: false, status: 500 };
-    });
+    vi.useFakeTimers();
+    try {
+      const fetchFn = vi.fn(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        return { ok: false, status: 500 };
+      });
 
-    const res = await generateChat({
-      apiKey: "k",
-      system: "s",
-      user: "u",
-      models: ["model-a:free"],
-      fetchFn: fetchFn as unknown as typeof fetch,
-      overallTimeoutMs: 10,
-      retryDelayMs: 0,
-    });
+      const resPromise = generateChat({
+        apiKey: "k",
+        system: "s",
+        user: "u",
+        models: ["model-a:free"],
+        fetchFn: fetchFn as unknown as typeof fetch,
+        overallTimeoutMs: 10,
+        retryDelayMs: 0,
+      });
 
-    expect(res).toBeNull();
-    // Pass 1 ran 1 attempt taking 20ms (> 10ms budget). Before pass 2, overall budget is exhausted.
-    expect(fetchFn).toHaveBeenCalledTimes(1);
-    const logged = errorSpy.mock.calls.map((c: unknown[]) => String(c[0]));
-    expect(logged.some((l: string) => l.includes("chain-timeout"))).toBe(true);
-    expect(logged.some((l: string) => l.includes("chain-retry"))).toBe(false);
+      await vi.advanceTimersByTimeAsync(25);
+      const res = await resPromise;
+
+      expect(res).toBeNull();
+      // Pass 1 ran 1 attempt taking 20ms (> 10ms budget). Before pass 2, overall budget is exhausted.
+      expect(fetchFn).toHaveBeenCalledTimes(1);
+      const logged = errorSpy.mock.calls.map((c: unknown[]) => String(c[0]));
+      expect(logged.some((l: string) => l.includes("chain-timeout"))).toBe(true);
+      expect(logged.some((l: string) => l.includes("chain-retry"))).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("includes detail field truncated to at most 200 chars on non-OK response", async () => {
