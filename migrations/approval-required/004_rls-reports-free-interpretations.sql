@@ -22,10 +22,11 @@
 --
 -- This file enables RLS on exactly the two flagged tables and creates
 -- no policies (deny-by-default). The remaining tables
--- (users, auth_codes, transactions, readings, free_readings) should
--- get the same treatment in a follow-up once their exposure is
--- assessed the same way; they were not flagged by Advisor in this
--- check, so they are not changed here.
+-- (users, auth_codes, transactions, readings, free_readings) are now
+-- covered by 005_rls-remaining-tables.sql in this same directory,
+-- written after this file (Phase B, R1); like this file, 005 is
+-- approval-required and is NOT applied here. They were not flagged
+-- by Advisor in this check, so they are not changed here.
 --
 -- Apply manually after approval, e.g. in the Supabase SQL editor or:
 --   psql "$POSTGRES_URL" -f migrations/approval-required/004_rls-reports-free-interpretations.sql
@@ -49,9 +50,10 @@
 --   connects as a non-owner, non-bypass role, it would see 0 rows and
 --   break — that connection change must be tested against RLS first.
 --   The remaining tables (users, auth_codes, transactions, readings,
---   free_readings) are exposed the same way and are NOT fixed here;
---   they need the same assessment + migration before a public launch
---   (recorded as a remaining risk, not done in this phase).
+--   free_readings) were exposed the same way and are NOT fixed here;
+--   they are covered by 005_rls-remaining-tables.sql (same directory,
+--   also approval-required, also unapplied), so the follow-up
+--   assessment this comment used to call for now exists as that file.
 
 ALTER TABLE public.reports ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.free_interpretations ENABLE ROW LEVEL SECURITY;
