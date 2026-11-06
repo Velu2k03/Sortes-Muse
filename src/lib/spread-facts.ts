@@ -41,6 +41,11 @@ export type SpreadFacts = {
   reversalCount: number;
   repeatedNumbers: Array<{ number: number; count: number; names: string[] }>;
   tensionPair: { a: string; aElement: string; b: string; bElement: string } | null;
+  // Phase E (item 11): every conflicting elemental pair in draw
+  // order, and the count of each suit. The old tensionPair is kept
+  // as the first pair so existing callers do not change.
+  tensionPairs: Array<{ a: string; aElement: string; b: string; bElement: string }>;
+  suitDistribution: Array<{ suit: string; count: number }>;
   summary: string;
 };
 
@@ -92,19 +97,28 @@ export function computeSpreadFacts(cards: FactCard[]): SpreadFacts {
     .filter(([, names]) => names.length >= 2)
     .map(([number, names]) => ({ number, count: names.length, names }));
 
-  // Tension pair: the first pair in draw order whose elements conflict.
-  let tensionPair: SpreadFacts["tensionPair"] = null;
-  outer: for (let i = 0; i < cards.length; i++) {
+  // Tension pairs: every pair in draw order whose elements
+  // conflict, not just the first. Fire and Water weaken each other;
+  // Air and Earth do the same.
+  const tensionPairs: SpreadFacts["tensionPairs"] = [];
+  for (let i = 0; i < cards.length; i++) {
     const ei = elementOf(cards[i]);
     if (!ei) continue;
     for (let j = i + 1; j < cards.length; j++) {
       const ej = elementOf(cards[j]);
       if (ej && CONFLICTS[ei] === ej) {
-        tensionPair = { a: cards[i].name, aElement: ei, b: cards[j].name, bElement: ej };
-        break outer;
+        tensionPairs.push({ a: cards[i].name, aElement: ei, b: cards[j].name, bElement: ej });
       }
     }
   }
+  const tensionPair = tensionPairs[0] ?? null;
+
+  // Suit distribution: all four suits in deck order, zeros included,
+  // so the summary states the spread instead of only the winner.
+  const suitDistribution = ["wands", "cups", "swords", "pentacles"].map((suit) => ({
+    suit,
+    count: suitCounts.get(suit) ?? 0,
+  }));
 
   const parts: string[] = [];
   if (dominantSuit && dominantElement) {
@@ -116,14 +130,19 @@ export function computeSpreadFacts(cards: FactCard[]): SpreadFacts {
   } else {
     parts.push("No dominant suit: the suits are evenly spread.");
   }
+  if (minors.length > 0) {
+    parts.push(
+      `Suits: ${suitDistribution.map((s) => `${s.suit} ${s.count}`).join(", ")}.`
+    );
+  }
   if (courtCount > 0) parts.push(`Court cards: ${courtCount}.`);
   if (reversalCount > 0) parts.push(`Reversed cards: ${reversalCount}.`);
   for (const r of repeatedNumbers) {
     parts.push(`Repeated number ${r.number} (${r.count} cards: ${r.names.join(", ")}).`);
   }
-  if (tensionPair) {
+  for (const pair of tensionPairs) {
     parts.push(
-      `Tension pair: ${tensionPair.a} (${tensionPair.aElement}) pulls against ${tensionPair.b} (${tensionPair.bElement}).`
+      `Tension pair: ${pair.a} (${pair.aElement}) pulls against ${pair.b} (${pair.bElement}).`
     );
   }
   return {
@@ -135,6 +154,8 @@ export function computeSpreadFacts(cards: FactCard[]): SpreadFacts {
     reversalCount,
     repeatedNumbers,
     tensionPair,
+    tensionPairs,
+    suitDistribution,
     summary: parts.join(" "),
   };
 }
