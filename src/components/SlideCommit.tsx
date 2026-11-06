@@ -107,6 +107,22 @@ const SlideCommit: React.FC<SlideCommitProps> = ({
 
   const trackRef = useRef<HTMLDivElement>(null);
   const capsuleRef = useRef<HTMLDivElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const [measured, setMeasured] = useState<number | null>(null);
+
+  useEffect(() => {
+    const el = rootRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver(entries => {
+      const entry = entries[0];
+      if (entry) {
+        setMeasured(entry.contentRect.width);
+      }
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   const grip = useRef<Grip | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const homeTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -115,8 +131,9 @@ const SlideCommit: React.FC<SlideCommitProps> = ({
   const live = useRef<{ move: (e: MoveEvent) => void; up: (e: UpEvent) => void }>({ move: () => {}, up: () => {} });
   const lastPercent = useRef(0);
 
+  const effWidth = measured === null ? width : Math.min(width, measured);
   const GRIP = height - PAD * 2;
-  const INNER = width - PAD * 2;
+  const INNER = effWidth - PAD * 2;
   const TRAVEL = Math.max(1, INNER - GRIP);
   const r = clamp(radius, 0, height / 2);
   const gripR = Math.max(0, r - PAD);
@@ -171,7 +188,7 @@ const SlideCommit: React.FC<SlideCommitProps> = ({
   const local = (clientX: number) => {
     const rect = trackRef.current?.getBoundingClientRect();
     if (!rect) return 0;
-    return (clientX - rect.left) / (rect.width / width || 1);
+    return (clientX - rect.left) / (rect.width / effWidth || 1);
   };
 
   const goHome = (velocity: number) => {
@@ -333,13 +350,15 @@ const SlideCommit: React.FC<SlideCommitProps> = ({
 
   return (
     <div
-      className={`sc-root group relative inline-block align-middle [font-family:inherit] data-[disabled]:pointer-events-none data-[disabled]:opacity-[0.55]${className ? ` ${className}` : ''}`}
+      ref={rootRef}
+      className={`sc-root group relative inline-block align-middle [font-family:inherit] data-[disabled]:pointer-events-none data-[disabled]:saturate-50${className ? ` ${className}` : ''}`}
       data-phase={phase}
       data-held={held ? '' : undefined}
       data-disabled={disabled ? '' : undefined}
       style={
         {
-          width,
+          width: '100%',
+          maxWidth: width,
           height,
           '--sc-track': trackColor,
           '--sc-ink': handleColor,

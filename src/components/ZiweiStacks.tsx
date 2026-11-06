@@ -147,7 +147,12 @@ export default function ZiweiStacks({
               interpretation is attached to it.
             </p>
           </div>
-          <div className="mt-4 overflow-x-auto">
+          <div
+            tabIndex={0}
+            role="region"
+            aria-label="Palace activation stacks table, scroll sideways to see all columns"
+            className="mt-4 overflow-x-auto"
+          >
             <table className="min-w-[560px] w-full text-left text-sm text-cream/85">
               <thead>
                 <tr className="border-b border-gold/25 text-cream/80">
@@ -173,6 +178,7 @@ export default function ZiweiStacks({
               </tbody>
             </table>
           </div>
+          <p className="mt-1 text-right text-xs text-mist sm:hidden">Scroll sideways to see more</p>
           <p className="mt-2 text-xs text-mist">On a narrow screen, scroll the table sideways to see all columns.</p>
           <p className="mt-4 text-xs leading-relaxed text-mist">
             Stacks are computed by the iztro engine from the same natal chart, using its own

@@ -51,7 +51,12 @@ export default function WesternWheel({ result }: { result: WesternResult }) {
       </div>
       <h3 className="mt-6 font-display text-xl text-goldbright">Planet table</h3>
       <p className="mt-1 text-sm text-cream/80">Exact positions, signs, and houses. The wheel below shows the same positions, with clustered labels staggered and leader lines to their true spots.</p>
-      <div className="mt-4 overflow-x-auto">
+      <div
+        tabIndex={0}
+        role="region"
+        aria-label="Planet table, scroll sideways to see all columns"
+        className="mt-4 overflow-x-auto"
+      >
       <table className="min-w-[520px] w-full text-left text-sm text-cream/85">
         <thead>
           <tr className="border-b border-gold/25 text-cream/80">
@@ -78,6 +83,7 @@ export default function WesternWheel({ result }: { result: WesternResult }) {
         </tbody>
       </table>
       </div>
+      <p className="mt-1 text-right text-xs text-mist sm:hidden">Scroll sideways to see more</p>
       {selectedPlanet && (
         <p className="mt-4 text-sm text-goldbright">
           {(() => {
@@ -150,12 +156,16 @@ export default function WesternWheel({ result }: { result: WesternResult }) {
             initial={reduce ? { opacity: 1 } : { opacity: 0, scale: 0.97 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: reduce ? 0 : 0.5, ease: "easeOut" }}
+            tabIndex={0}
+            role="region"
+            aria-label="Wheel overview, scroll sideways to see the full wheel"
             className="mt-6 overflow-x-auto rounded-2xl border border-gold/25 bg-panel/70 p-4"
           >
             <div className="mx-auto w-full overflow-x-auto">
               <CustomWesternWheel result={result} theme={wheelTheme} />
             </div>
           </motion.div>
+          <p className="mt-1 text-right text-xs text-mist sm:hidden">Scroll sideways to see the full wheel</p>
         </>
       ) : (
         <p className="mt-8 rounded-2xl border border-gold/25 bg-panel/70 p-4 text-sm text-cream/80">

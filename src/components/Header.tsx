@@ -343,6 +343,7 @@ export default function Header() {
             onClick={() => setMobileOpen((v) => !v)}
             aria-label="Toggle menu"
             aria-expanded={mobileOpen}
+            aria-controls="mobile-nav"
           >
             <Icon name={mobileOpen ? "close" : "menu"} size={22} />
           </button>
@@ -361,6 +362,7 @@ export default function Header() {
 
       {mobileOpen && (
         <nav
+          id="mobile-nav"
           className="max-h-[calc(100dvh-4rem)] overflow-y-auto border-t border-gold/15 bg-ink/95 px-4 py-3 lg:hidden"
           aria-label="Mobile"
         >

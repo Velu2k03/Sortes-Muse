@@ -148,7 +148,7 @@ export default function ThemedDatePicker({
         <div
           role="dialog"
           aria-label="Choose a birth date"
-          className="calendar-pop absolute left-0 top-full z-30 mt-2 w-[300px] max-w-[calc(100vw-3rem)] rounded-2xl border border-gold/40 bg-panel p-4 shadow-[0_16px_40px_rgba(0,0,0,0.45)]"
+          className="calendar-pop absolute left-0 top-full z-30 mt-2 w-[300px] max-w-[calc(100vw-3rem)] max-h-[calc(100dvh-6rem)] overflow-y-auto rounded-2xl border border-gold/40 bg-panel p-4 shadow-[0_16px_40px_rgba(0,0,0,0.45)]"
         >
           <div className="flex items-center justify-between">
             <button

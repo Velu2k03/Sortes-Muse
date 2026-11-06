@@ -173,6 +173,7 @@ export default function DeckPage() {
 
       {effectiveView === "spiral" ? (
         <div className="mt-6">
+          <p className="mb-3 text-center text-sm text-mist">Spiral is a visual browse. To browse cards by keyboard, switch to Card grid above.</p>
           <p className="text-center text-sm text-cream/75">
             Drag to spin, tap a card to read it.
           </p>
