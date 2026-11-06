@@ -747,7 +747,7 @@ export default function ChartsClient() {
                   key={l}
                   type="button"
                   onClick={() => setZiweiLangSaved(l)}
-                  className={`rounded-full px-4 py-2 text-sm font-bold ${ziweiLang === l ? "btn-gold" : "border border-gold/40 text-goldbright"}`}
+                  className={`rounded-full px-4 py-3 text-sm font-bold ${ziweiLang === l ? "btn-gold" : "border border-gold/40 text-goldbright"}`}
                   aria-pressed={ziweiLang === l}
                 >
                   {l === "en" ? "English" : "中文"}
@@ -795,7 +795,7 @@ export default function ChartsClient() {
                     key={g}
                     type="button"
                     onClick={() => setGender(g)}
-                    className={`rounded-full px-4 py-2 text-sm font-bold ${gender === g ? "btn-gold" : "border border-gold/40 text-goldbright"}`}
+                    className={`rounded-full px-4 py-3 text-sm font-bold ${gender === g ? "btn-gold" : "border border-gold/40 text-goldbright"}`}
                     aria-pressed={gender === g}
                   >
                     {g === "female" ? "Female" : "Male"}
@@ -1001,7 +1001,7 @@ export default function ChartsClient() {
                     key={l}
                     type="button"
                     onClick={() => setZiweiLangSaved(l)}
-                    className={`rounded-full px-4 py-2 text-sm font-bold ${
+                    className={`rounded-full px-4 py-3 text-sm font-bold ${
                       ziweiLang === l ? "btn-gold" : "border border-gold/40 text-goldbright"
                     }`}
                     aria-pressed={ziweiLang === l}
@@ -1025,7 +1025,7 @@ export default function ChartsClient() {
                     key={v}
                     type="button"
                     onClick={() => setZiweiView(v)}
-                    className={`rounded-full px-4 py-2 text-sm font-bold ${
+                    className={`rounded-full px-4 py-3 text-sm font-bold ${
                       ziweiView === v ? "btn-gold" : "border border-gold/40 text-goldbright"
                     }`}
                     aria-pressed={ziweiView === v}

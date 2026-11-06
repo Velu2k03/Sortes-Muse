@@ -933,6 +933,17 @@ console.log("charts-check: all assertions passed");
   assert.ok(intakeFlowSrc.includes("min-h-[44px]"), "IntakeFlow must include min-h-[44px]");
   const rubberSegmentSrc = fs.readFileSync("src/components/RubberSegment.tsx", "utf8");
   assert.ok(rubberSegmentSrc.includes("min-h-[max(44px,calc(var(--rs-h)-var(--rs-inset)*2))]"), "RubberSegment must include 44px min-h");
+  // 5b. No py-2 pill or tab button may remain in the charts, account,
+  // daily, or header files (Phase F correction: Batch A skipped the
+  // charts pills because the brief said py-2.5 and the code said py-2).
+  const chartsSrc = fs.readFileSync("src/app/charts/ChartsClient.tsx", "utf8");
+  assert.ok(!chartsSrc.includes("rounded-full px-4 py-2 "), "charts pills must not keep py-2 (44px touch target)");
+  const accountSrc = fs.readFileSync("src/app/account/AccountClient.tsx", "utf8");
+  assert.ok(!accountSrc.includes("px-4 py-2 "), "account buttons must not keep py-2 (44px touch target)");
+  const dailySrc = fs.readFileSync("src/app/daily/page.tsx", "utf8");
+  assert.ok(!dailySrc.includes("px-4 py-2 "), "daily buttons must not keep py-2 (44px touch target)");
+  const headerSrc = fs.readFileSync("src/components/Header.tsx", "utf8");
+  assert.ok(!headerSrc.includes("px-3 py-1.5 text-sm font-semibold text-goldbright transition hover:border-goldbright"), "header Retry button must not keep py-1.5 (44px touch target)");
 
   // 6. SlideCommit responsive width
   const slideCommitSrc = fs.readFileSync("src/components/SlideCommit.tsx", "utf8");
@@ -1010,7 +1021,6 @@ console.log("charts-check: all assertions passed");
   );
 
   // 13. Drawer link
-  const headerSrc = fs.readFileSync("src/components/Header.tsx", "utf8");
   assert.ok(
     headerSrc.includes('aria-controls="mobile-nav"') &&
     headerSrc.includes('id="mobile-nav"'),

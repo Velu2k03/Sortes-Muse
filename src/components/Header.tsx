@@ -314,7 +314,7 @@ export default function Header() {
               onClick={() => void refresh()}
               aria-label="Retry loading your account"
               title="Couldn't load your account — retry"
-              className="rounded-full border border-gold/40 bg-gold/10 px-3 py-1.5 text-sm font-semibold text-goldbright transition hover:border-goldbright"
+              className="rounded-full border border-gold/40 bg-gold/10 px-3 py-3 text-sm font-semibold text-goldbright transition hover:border-goldbright"
             >
               Retry
             </button>

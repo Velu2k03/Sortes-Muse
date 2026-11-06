@@ -307,7 +307,7 @@ export default function DailyPage() {
                       type="button"
                       onClick={saveReflection}
                       disabled={!reflection.trim()}
-                      className="rounded-xl border border-gold/40 px-4 py-2 text-sm font-bold text-goldbright disabled:opacity-100 disabled:saturate-50"
+                      className="rounded-xl border border-gold/40 px-4 py-3 text-sm font-bold text-goldbright disabled:opacity-100 disabled:saturate-50"
                     >
                       Save to journal
                     </button>

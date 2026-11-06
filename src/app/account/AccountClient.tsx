@@ -338,7 +338,7 @@ export default function AccountPage() {
           <button
             type="button"
             onClick={() => void refresh()}
-            className="mt-3 rounded-lg border border-gold/40 bg-gold/10 px-4 py-2 font-semibold text-goldbright transition hover:border-goldbright"
+            className="mt-3 rounded-lg border border-gold/40 bg-gold/10 px-4 py-3 font-semibold text-goldbright transition hover:border-goldbright"
           >
             Retry
           </button>
@@ -369,7 +369,7 @@ export default function AccountPage() {
                   setError(null);
                   setStep("email");
                 }}
-                className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
+                className={`rounded-lg px-4 py-3 text-sm font-semibold transition ${
                   mode === m
                     ? "bg-gold/20 text-goldbright"
                     : "text-mist hover:text-cream"
@@ -390,7 +390,7 @@ export default function AccountPage() {
                   setError(null);
                   if (t === "link") setStep("email");
                 }}
-                className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
+                className={`rounded-lg px-4 py-3 text-sm font-semibold transition ${
                   authTab === t
                     ? "bg-gold/20 text-goldbright"
                     : "text-mist hover:text-cream"
