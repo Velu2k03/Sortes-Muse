@@ -114,5 +114,33 @@ BEGIN
   END;
 END
 $$;
+
+-- Phase 6 (G2 finding): readings/reports written by the old
+-- \${JSON.stringify(x)}::jsonb pattern were stored as JSON strings,
+-- not objects (postgres.js double-encodes that pattern — proven by
+-- the real-Postgres suite). Re-encode any such rows in place; rows
+-- that are already objects are untouched, and a row whose string is
+-- not valid JSON is skipped with a warning instead of failing the
+-- whole migration.
+DO $$
+DECLARE
+  r RECORD;
+BEGIN
+  FOR r IN SELECT id FROM readings WHERE jsonb_typeof(data) = 'string' LOOP
+    BEGIN
+      UPDATE readings SET data = (data #>> '{}')::jsonb WHERE id = r.id;
+    EXCEPTION WHEN OTHERS THEN
+      RAISE WARNING '002: skipping unparseable reading %', r.id;
+    END;
+  END LOOP;
+  FOR r IN SELECT id FROM reports WHERE jsonb_typeof(data) = 'string' LOOP
+    BEGIN
+      UPDATE reports SET data = (data #>> '{}')::jsonb WHERE id = r.id;
+    EXCEPTION WHEN OTHERS THEN
+      RAISE WARNING '002: skipping unparseable report %', r.id;
+    END;
+  END LOOP;
+END
+$$;
 ` },
 ];

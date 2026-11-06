@@ -1,4 +1,4 @@
-import postgres from "postgres";
+import postgres, { type Parameter } from "postgres";
 import { promises as fs } from "fs";
 import path from "path";
 import { runMigrations } from "./migrations";
@@ -100,6 +100,22 @@ async function sql(
     ...values: unknown[]
   ) => Promise<unknown[]>)(strings, ...values);
   return { rows };
+}
+
+/**
+ * Phase 6 (G2 finding): a JSONB parameter for postgres.js.
+ * `${JSON.stringify(x)}::jsonb` DOUBLE-ENCODES under postgres.js —
+ * it stores a JSON string, not an object (proven by the real-Postgres
+ * suite: readings came back as strings, and jsonb_set failed with
+ * "cannot set path in scalar"). The pattern worked under the old
+ * @vercel/postgres driver and silently broke when the driver changed
+ * (2026-11-02). Always pass JSONB values through here.
+ * The cast is centralised: callers pass app objects that are
+ * JSON-serialisable by construction (they come from JSON input).
+ */
+function jsonbParam(value: unknown): Parameter {
+  if (!pg) throw new Error("Database not configured");
+  return pg.json(value as postgres.JSONValue);
 }
 
 const LOCAL_PATH = path.join(process.cwd(), "data", "local-db.json");
@@ -522,7 +538,12 @@ export async function fulfillOrder(args: {
   if (usePostgres) {
     if (!pg) throw new Error("Database not configured");
     return await pg.begin(async (tx) => {
-      await tx`SELECT id FROM users WHERE id = ${args.userId} FOR UPDATE`;
+      // Phase 6 (G2 finding): check the lock result. The old code
+      // discarded it, so an unknown user failed later at the INSERT
+      // with a raw foreign-key error instead of this clear message.
+      // Either way the transaction rolls back with nothing written.
+      const locked = await tx`SELECT id FROM users WHERE id = ${args.userId} FOR UPDATE`;
+      if (locked.length === 0) throw new Error("User not found during fulfillment");
       const dup = await tx`SELECT id FROM transactions WHERE pack_type LIKE ${"%" + marker + "%"} LIMIT 1`;
       if (dup.length > 0) {
         const cur = await tx`SELECT credits FROM users WHERE id = ${args.userId}`;
@@ -585,7 +606,10 @@ export async function revokeOrder(orderId: string): Promise<{ revoked: boolean; 
   if (usePostgres) {
     if (!pg) throw new Error("Database not configured");
     return await pg.begin(async (tx) => {
-      await tx`SELECT id FROM users WHERE id = ${userId} FOR UPDATE`;
+      // Phase 6 (G2 finding): same guard as fulfillOrder — fail with
+      // a clear error instead of a foreign-key error at the INSERT.
+      const locked = await tx`SELECT id FROM users WHERE id = ${userId} FOR UPDATE`;
+      if (locked.length === 0) throw new Error("User not found during refund");
       const existing = await tx`SELECT id FROM transactions WHERE pack_type LIKE ${"%" + refundMarker + "%"} LIMIT 1`;
       if (existing.length > 0) return { revoked: false, readings: orig.readings };
       await tx`INSERT INTO transactions (id, user_id, email, pack_type, amount, readings, created_at)
@@ -611,7 +635,7 @@ export async function saveReadingForUser(userId: string, reading: { id: string; 
   await ensureSchema();
   if (usePostgres) {
     await sql`INSERT INTO readings (id, user_id, data, created_at)
-      VALUES (${reading.id}, ${userId}, ${JSON.stringify(reading)}::jsonb, NOW())
+      VALUES (${reading.id}, ${userId}, ${jsonbParam(reading)}, NOW())
       ON CONFLICT (id) DO NOTHING`;
     return;
   }
@@ -638,7 +662,7 @@ export async function updateReadingForUser(
   await ensureSchema();
   if (usePostgres) {
     const { rows } = await sql`UPDATE readings
-      SET data = data || ${JSON.stringify(patch)}::jsonb
+      SET data = data || ${jsonbParam(patch)}
       WHERE id = ${id} AND user_id = ${userId}
       RETURNING id`;
     return rows.length > 0;
@@ -707,7 +731,7 @@ export async function appendFollowUpWithSpend(
       }
       const updated = await tx`
         UPDATE readings
-        SET data = jsonb_set(data, '{followUps}', COALESCE(data->'followUps', '[]'::jsonb) || ${JSON.stringify(followUp)}::jsonb)
+        SET data = jsonb_set(data, '{followUps}', COALESCE(data->'followUps', '[]'::jsonb) || ${jsonbParam(followUp)})
         WHERE id = ${readingId} AND user_id = ${userId}
         RETURNING data->'followUps' AS follow_ups`;
       const followUps =
@@ -766,7 +790,7 @@ export async function saveReportForUser(userId: string, report: { id: string; [k
   await ensureSchema();
   if (usePostgres) {
     await sql`INSERT INTO reports (id, user_id, data, created_at)
-      VALUES (${report.id}, ${userId}, ${JSON.stringify(report)}::jsonb, NOW())
+      VALUES (${report.id}, ${userId}, ${jsonbParam(report)}, NOW())
       ON CONFLICT (id) DO NOTHING`;
     return;
   }

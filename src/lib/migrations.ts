@@ -33,18 +33,17 @@ export interface AppliedMigration {
 export async function runMigrations(
   pg: postgres.Sql
 ): Promise<AppliedMigration[]> {
-  // The table name is a hardcoded constant in this file (never user
-  // input), so it is inlined into the SQL text. Values always go
-  // through the template-tag parameters below.
+  // Dynamic identifiers use the postgres.js sql('name') helper
+  // (values always go through template-tag parameters). The CREATE
+  // below is a constant string, so unsafe is fine there.
   await pg.unsafe(`
     CREATE TABLE IF NOT EXISTS ${SCHEMA_MIGRATIONS_TABLE} (
       version TEXT PRIMARY KEY,
       name TEXT NOT NULL,
       applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )`);
-  const applied = (await pg.unsafe(
-    `SELECT version FROM ${SCHEMA_MIGRATIONS_TABLE}`
-  )) as Array<{
+  const applied = (await pg`
+    SELECT version FROM ${pg(SCHEMA_MIGRATIONS_TABLE)}`) as Array<{
     version: string;
   }>;
   const appliedVersions = new Set(applied.map((r) => r.version));
@@ -54,7 +53,7 @@ export async function runMigrations(
     await pg.begin(async (tx) => {
       await tx.unsafe(file.sql);
       await tx`
-        INSERT INTO ${SCHEMA_MIGRATIONS_TABLE} (version, name)
+        INSERT INTO ${tx(SCHEMA_MIGRATIONS_TABLE)} (version, name)
         VALUES (${file.version}, ${file.name})`;
     });
     done.push({ version: file.version, name: file.name });
@@ -66,8 +65,8 @@ export async function runMigrations(
 export async function listAppliedMigrations(
   pg: postgres.Sql
 ): Promise<AppliedMigration[]> {
-  const rows = (await pg.unsafe(
-    `SELECT version, name FROM ${SCHEMA_MIGRATIONS_TABLE} ORDER BY version ASC`
-  )) as AppliedMigration[];
+  const rows = (await pg`
+    SELECT version, name FROM ${pg(SCHEMA_MIGRATIONS_TABLE)}
+    ORDER BY version ASC`) as AppliedMigration[];
   return rows;
 }
