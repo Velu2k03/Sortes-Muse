@@ -21,6 +21,16 @@ export async function POST(req: NextRequest) {
   if (!checkRateLimit(`history:${session.userId}`, RATE_LIMITS.historySyncUser).allowed) {
     return rateLimitExceeded();
   }
+  const contentLengthHeader = req.headers.get("content-length");
+  if (contentLengthHeader) {
+    const parsedLength = parseInt(contentLengthHeader, 10);
+    if (Number.isFinite(parsedLength) && parsedLength > 7 * 1024 * 1024) {
+      return NextResponse.json(
+        { error: "Reading too large (max 64 KB per reading)." },
+        { status: 413 }
+      );
+    }
+  }
   let body: { readings?: Array<{ id: string; [k: string]: unknown }> };
   try {
     body = await req.json();

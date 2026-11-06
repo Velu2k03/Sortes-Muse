@@ -48,6 +48,20 @@ describe("POST /api/history — per-reading byte cap (Phase B, R9)", () => {
     expect(mockedSave).not.toHaveBeenCalled();
   });
 
+  it("rejects when Content-Length header exceeds 7 MB without parsing body", async () => {
+    const jsonFn = vi.fn().mockImplementation(() => {
+      throw new Error("json() should not be called");
+    });
+    const fakeReq = {
+      headers: new Headers({ "content-length": String(8 * 1024 * 1024) }),
+      json: jsonFn,
+    } as unknown as NextRequest;
+    const res = await POST(fakeReq);
+    expect(res.status).toBe(413);
+    expect(jsonFn).not.toHaveBeenCalled();
+    expect(mockedSave).not.toHaveBeenCalled();
+  });
+
   it("accepts a normal reading under the cap", async () => {
     const res = await POST(req("POST", { readings: [{ id: "r-ok", question: "q?" }] }));
     expect(res.status).toBe(200);
