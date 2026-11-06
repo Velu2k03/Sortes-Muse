@@ -15,7 +15,7 @@ export default function PurchaseConfirmer() {
   const [timedOut, setTimedOut] = useState(false);
   const baseline = useRef<number | null>(null);
   const attempts = useRef(0);
-  const mountTime = useRef(Date.now());
+  const mountTime = useRef<number>(0);
 
   const checkTransactions = useCallback(() => {
     if (user === null) return;
@@ -30,6 +30,10 @@ export default function PurchaseConfirmer() {
       })
       .catch(() => null);
   }, [user]);
+
+  useEffect(() => {
+    mountTime.current = Date.now();
+  }, []);
 
   useEffect(() => {
     if (user !== null) {

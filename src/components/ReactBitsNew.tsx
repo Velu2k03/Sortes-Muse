@@ -218,8 +218,7 @@ export function Orb({
         className="absolute right-1/4 top-1/2 h-56 w-56 rounded-full opacity-20 blur-3xl"
         style={{
           background: "radial-gradient(circle, rgba(244,208,63,0.5) 0%, transparent 70%)",
-          x: "var(--orb-x, 0px)",
-          y: "var(--orb-y, 0px)",
+          transform: "translate(var(--orb-x, 0px), var(--orb-y, 0px))",
         }}
       />
     </div>

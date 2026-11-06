@@ -467,7 +467,12 @@ console.log("charts-check: all assertions passed");
   // Visual corrections: the button moved into an mt-auto wrapper so
   // all three buttons sit on one line; the button itself keeps the
   // same solid btn-gold size and weight.
-  assert.ok(credits.includes('className="btn-gold w-full rounded-xl px-4 py-2.5 font-bold disabled:opacity-60"'), "all credits Buy buttons must be solid btn-gold, equal size and weight");
+  // Phase F (P1-2, P1-8): the button is now py-3 (44px touch target)
+  // with an opaque disabled style (opacity-100 + saturate-50) instead
+  // of py-2.5 and disabled:opacity-60. The assertion tracks the new
+  // intended classes exactly; it still pins one shared class string
+  // for all three pack cards, so it is not weakened.
+  assert.ok(credits.includes('className="btn-gold w-full rounded-xl px-4 py-3 font-bold disabled:opacity-100 disabled:saturate-50"'), "all credits Buy buttons must be solid btn-gold, equal size and weight");
   assert.ok(credits.includes("Most popular") || credits.includes("MOST POPULAR") || credits.includes("Most Popular"), "popular pack must still carry its badge distinction");
   const css = fs.readFileSync("src/app/globals.css", "utf8");
   assert.ok(css.includes(".btn-secondary"), "btn-secondary must be defined in globals.css");
@@ -865,4 +870,176 @@ console.log("charts-check: all assertions passed");
   const bannerRR = fs.readFileSync("src/components/InstallBanner.tsx", "utf8");
   assert.ok(bannerRR.includes("rect.left < bannerRect.right"), "InstallBanner focus nudge must check full rectangle overlap, not only vertical");
   console.log("codex re-review follow-ups: all source assertions passed");
+}
+
+// Phase F: touch targets, opaque disabled states, contrast floor,
+// responsive SlideCommit, table affordances, PurchaseConfirmer baseline,
+// Orb single loop, share fonts, HoloCard dead props, PixelCard deleted,
+// reduced-motion guards, Sortes defaults.
+{
+  // 1 & 2: src-wide scans for opaque disabled states and contrast floor
+  const srcFiles = [];
+  function walkDir(dir) {
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      if (entry.name === "node_modules" || entry.name === ".next") {
+        continue;
+      }
+      const fullPath = `${dir}/${entry.name}`;
+      if (entry.isDirectory()) {
+        walkDir(fullPath);
+      } else if (entry.isFile() && (entry.name.endsWith(".ts") || entry.name.endsWith(".tsx"))) {
+        srcFiles.push({ path: fullPath, content: fs.readFileSync(fullPath, "utf8") });
+      }
+    }
+  }
+  walkDir("src");
+
+  // 1. No file under src/ contains disabled:opacity-40, 50, or 60
+  assert.ok(
+    !srcFiles.some(
+      (f) =>
+        f.content.includes("disabled:opacity-40") ||
+        f.content.includes("disabled:opacity-50") ||
+        f.content.includes("disabled:opacity-60")
+    ),
+    "Phase F: no disabled:opacity-* may remain in src (disabled states must stay opaque)"
+  );
+
+  // 2. No file under src/ contains text-cream/60 or text-cream/70
+  assert.ok(
+    !srcFiles.some(
+      (f) =>
+        f.content.includes("text-cream/60") ||
+        f.content.includes("text-cream/70")
+    ),
+    "Phase F: secondary text must use text-cream/75 or higher"
+  );
+
+  // 3. PixelCard stays deleted
+  assert.ok(!fs.existsSync(new URL("../src/components/PixelCard.tsx", import.meta.url)), "PixelCard must stay deleted (Phase F P2-4: zero page use)");
+
+  // 4. FoldText stays live
+  const readingWaitSrc = fs.readFileSync("src/components/ReadingWait.tsx", "utf8");
+  assert.ok(readingWaitSrc.includes('from "@/components/FoldText"'), "ReadingWait must include FoldText");
+
+  // 5. Touch targets
+  const deckPageSrc = fs.readFileSync("src/app/deck/page.tsx", "utf8");
+  assert.ok(deckPageSrc.includes("px-3 py-3"), "deck page filter pills must meet touch targets");
+  assert.ok(deckPageSrc.includes("px-4 py-3"), "deck page view toggle must meet touch targets");
+  const cardModalSrc = fs.readFileSync("src/components/CardModal.tsx", "utf8");
+  assert.ok(cardModalSrc.includes("h-11 w-11"), "CardModal must include h-11 w-11");
+  const intakeFlowSrc = fs.readFileSync("src/app/intake/[slug]/IntakeFlow.tsx", "utf8");
+  assert.ok(intakeFlowSrc.includes("min-h-[44px]"), "IntakeFlow must include min-h-[44px]");
+  const rubberSegmentSrc = fs.readFileSync("src/components/RubberSegment.tsx", "utf8");
+  assert.ok(rubberSegmentSrc.includes("min-h-[max(44px,calc(var(--rs-h)-var(--rs-inset)*2))]"), "RubberSegment must include 44px min-h");
+
+  // 6. SlideCommit responsive width
+  const slideCommitSrc = fs.readFileSync("src/components/SlideCommit.tsx", "utf8");
+  assert.ok(
+    slideCommitSrc.includes("ResizeObserver") &&
+    slideCommitSrc.includes("maxWidth: width") &&
+    slideCommitSrc.includes("width: '100%'") &&
+    !slideCommitSrc.includes("style={\n        {\n          width,"),
+    "SlideCommit must support responsive width and not force fixed root width"
+  );
+
+  // 7. Table affordances
+  const westernWheelSrc = fs.readFileSync("src/components/WesternWheel.tsx", "utf8");
+  const vedicChartSrc = fs.readFileSync("src/components/VedicChart.tsx", "utf8");
+  const ziweiStacksSrc = fs.readFileSync("src/components/ZiweiStacks.tsx", "utf8");
+  const reportDetailSrc = fs.readFileSync("src/app/reports/[id]/ReportDetailClient.tsx", "utf8");
+  assert.ok(westernWheelSrc.includes('role="region"') && westernWheelSrc.includes("tabIndex={0}"), "WesternWheel must include role=region and tabIndex={0}");
+  assert.ok(vedicChartSrc.includes('role="region"') && vedicChartSrc.includes("tabIndex={0}"), "VedicChart must include role=region and tabIndex={0}");
+  assert.ok(ziweiStacksSrc.includes('role="region"') && ziweiStacksSrc.includes("tabIndex={0}"), "ZiweiStacks must include role=region and tabIndex={0}");
+  assert.ok(reportDetailSrc.includes('role="region"') && reportDetailSrc.includes("tabIndex={0}"), "ReportDetailClient must include role=region and tabIndex={0}");
+
+  // 8. PurchaseConfirmer baseline
+  const purchaseConfirmerSrc = fs.readFileSync("src/components/PurchaseConfirmer.tsx", "utf8");
+  assert.ok(
+    purchaseConfirmerSrc.includes("/api/credits/transactions") &&
+    purchaseConfirmerSrc.includes("created_at"),
+    "PurchaseConfirmer must include /api/credits/transactions and created_at"
+  );
+
+  // 9. Orb single loop
+  const reactBitsNewSrc = fs.readFileSync("src/components/ReactBitsNew.tsx", "utf8");
+  assert.ok(!reactBitsNewSrc.includes("rotate: -360"), "ReactBitsNew must drop the second orb continuous loop");
+
+  // 10. Reduced-motion guards
+  const reducedMotionFiles = [
+    "src/components/ReactBits.tsx",
+    "src/components/ReactBitsNew.tsx",
+    "src/components/Starfield.tsx",
+    "src/components/SplitText.tsx",
+    "src/components/Counter.tsx",
+    "src/components/CountUp.tsx",
+    "src/components/HoloCard.tsx",
+    "src/components/MotionProvider.tsx",
+    "src/components/AnimatedContent.tsx",
+    "src/components/FoldText.tsx",
+  ];
+  for (const file of reducedMotionFiles) {
+    const content = fs.readFileSync(file, "utf8");
+    assert.ok(
+      content.includes("useReducedMotion") ||
+      content.includes("prefers-reduced-motion") ||
+      content.includes("reducedMotion"),
+      file + " must guard motion with reduced motion checks"
+    );
+  }
+
+  // 11. Share fonts
+  const shareReadingSrc = fs.readFileSync("src/components/ShareReading.tsx", "utf8");
+  const chartsClientSrc = fs.readFileSync("src/app/charts/ChartsClient.tsx", "utf8");
+  assert.ok(
+    shareReadingSrc.includes("Cormorant Garamond, Georgia, serif") &&
+    chartsClientSrc.includes("Cormorant Garamond, Georgia, serif") &&
+    !shareReadingSrc.includes('fontFamily: "Georgia, serif"') &&
+    !chartsClientSrc.includes('fontFamily: "Georgia, serif"'),
+    "ShareReading and ChartsClient must use Cormorant Garamond and not bare Georgia"
+  );
+
+  // 12. HoloCard dead props gone
+  const holoCardSrc = fs.readFileSync("src/components/HoloCard.tsx", "utf8");
+  assert.ok(
+    !holoCardSrc.includes("edgeSparkle?:") &&
+    !holoCardSrc.includes("void scale;") &&
+    !holoCardSrc.includes("glare?:"),
+    "HoloCard must drop unused props edgeSparkle, scale, glare"
+  );
+
+  // 13. Drawer link
+  const headerSrc = fs.readFileSync("src/components/Header.tsx", "utf8");
+  assert.ok(
+    headerSrc.includes('aria-controls="mobile-nav"') &&
+    headerSrc.includes('id="mobile-nav"'),
+    "Header must connect mobile menu button to drawer via aria-controls and id"
+  );
+
+  // 14. Deck spiral
+  assert.ok(
+    deckPageSrc.includes("switch to Card grid above") &&
+    deckPageSrc.includes('alt: ""'),
+    "deck page must include keyboard hint for spiral and alt: '' for spiral items"
+  );
+
+  // 15. ThemedDatePicker
+  const themedDatePickerSrc = fs.readFileSync("src/components/ThemedDatePicker.tsx", "utf8");
+  assert.ok(
+    themedDatePickerSrc.includes("max-h-[calc(100dvh-6rem)]"),
+    "ThemedDatePicker must include max-h-[calc(100dvh-6rem)]"
+  );
+
+  // 16. Sortes defaults
+  const holdButtonSrc = fs.readFileSync("src/components/HoldButton.tsx", "utf8");
+  const specularButtonSrc = fs.readFileSync("src/components/SpecularButton.tsx", "utf8");
+  const branchedMenuSrc = fs.readFileSync("src/components/BranchedMenu.tsx", "utf8");
+  assert.ok(holdButtonSrc.includes("fillColor = '#d4af37'"), "HoldButton must default fillColor to #d4af37");
+  assert.ok(specularButtonSrc.includes("baseColor = '#1a1f2e'"), "SpecularButton must default baseColor to #1a1f2e");
+  assert.ok(slideCommitSrc.includes("handleColor = '#d4af37'"), "SlideCommit must default handleColor to #d4af37");
+  assert.ok(branchedMenuSrc.includes("accentColor = '#d4af37'"), "BranchedMenu must default accentColor to #d4af37");
+  assert.ok(rubberSegmentSrc.includes("thumbColor = '#d4af37'"), "RubberSegment must default thumbColor to #d4af37");
+
+  console.log("phaseF: touch targets, opaque disabled, contrast floor, SlideCommit width, table affordances, PurchaseConfirmer baseline, Orb single loop, share fonts, HoloCard props, PixelCard deleted, reduced-motion guards: all source assertions passed");
 }
