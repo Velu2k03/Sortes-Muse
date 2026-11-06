@@ -66,7 +66,9 @@ async function handleRequest(req: NextRequest) {
     return NextResponse.json({
       ok: true,
       email,
-      // Only present in local dev without an email provider configured.
+      // Only present when the explicit local-only flag
+      // SORTES_LOCAL_DEV_CODE=1 is set (see src/lib/email.ts).
+      // Never present in production or on Vercel.
       ...(devCode ? { devCode } : {}),
     });
   } catch {

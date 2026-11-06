@@ -68,10 +68,14 @@ describe("OTP flow (local stack, Resend path)", () => {
       credits: 0,
       created_at: "2026-11-05T00:00:00Z",
     });
+    // Phase B (R11): the dev-code path needs the explicit local-only
+    // flag; without it request-code cannot return a code at all.
+    process.env.SORTES_LOCAL_DEV_CODE = "1";
   });
 
   afterEach(() => {
     vi.unstubAllGlobals();
+    delete process.env.SORTES_LOCAL_DEV_CODE;
   });
 
   it("request-code returns a 6-digit dev code in local dev, verify-code signs the user in", async () => {
@@ -79,9 +83,10 @@ describe("OTP flow (local stack, Resend path)", () => {
     expect(r1.status).toBe(200);
     const d1 = await r1.json();
     expect(d1.ok).toBe(true);
-    // Dev only: no email provider configured, so the code comes back
-    // in the response (it is console-logged the same way). Never
-    // present in production with Resend configured.
+    // Dev only, with SORTES_LOCAL_DEV_CODE=1: no email provider
+    // configured, so the code comes back in the response. Never
+    // present in production with Resend configured, and never
+    // present without the explicit flag.
     expect(d1.devCode).toMatch(/^\d{6}$/);
     expect(mockedStore).toHaveBeenCalledTimes(1);
     expect(mockedStore.mock.calls[0][1]).toBe(hashCode(d1.devCode));
@@ -96,6 +101,25 @@ describe("OTP flow (local stack, Resend path)", () => {
     expect(cookie?.httpOnly).toBe(true);
     // Single-use: the code is gone after a successful verify.
     expect(mockedDelete).toHaveBeenCalledWith("otp@test.co");
+  });
+
+  it("without the local-dev flag, no dev code is returned (fail closed)", async () => {
+    delete process.env.SORTES_LOCAL_DEV_CODE;
+    const r1 = await requestCode(req("/api/auth/request-code", { email: "otp@test.co" }));
+    expect(r1.status).toBe(500);
+    const d1 = await r1.json();
+    expect(d1.devCode).toBeUndefined();
+  });
+
+  it("the code value is never written to the log", async () => {
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const r1 = await requestCode(req("/api/auth/request-code", { email: "otp@test.co" }));
+    const { devCode } = await r1.json();
+    expect(devCode).toMatch(/^\d{6}$/);
+    const logged = logSpy.mock.calls.map((c) => String(c[0])).join("\n");
+    expect(logged).not.toContain(devCode);
+    expect(logged).toContain("sign-in code issued");
+    logSpy.mockRestore();
   });
 
   it("a wrong code is rejected and counts an attempt", async () => {

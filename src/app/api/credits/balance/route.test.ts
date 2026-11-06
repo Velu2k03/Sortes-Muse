@@ -1,35 +1,24 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { NextRequest } from "next/server";
-import { resetRateLimits } from "@/lib/rateLimit";
 
 vi.mock("@/lib/db", () => ({
   getUserById: vi.fn(),
-  spendUserCredits: vi.fn(),
 }));
 vi.mock("@/lib/auth", () => ({
   getSession: vi.fn(),
 }));
 
-import { POST } from "@/app/api/credits/balance/route";
-import { getUserById, spendUserCredits } from "@/lib/db";
+// Phase B (R15): the POST handler was deleted. This file now covers
+// the GET-only balance route and asserts POST is gone.
+import * as routeModule from "@/app/api/credits/balance/route";
+import { getUserById } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 
 const mockedGetUserById = vi.mocked(getUserById);
-const mockedSpend = vi.mocked(spendUserCredits);
 const mockedGetSession = vi.mocked(getSession);
 
-function req(body: unknown): NextRequest {
-  return new NextRequest("http://localhost/api/credits/balance", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-}
-
-describe("POST /api/credits/balance", () => {
+describe("GET /api/credits/balance", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    resetRateLimits();
     mockedGetSession.mockResolvedValue({ userId: "u1", email: "a@b.co" });
     mockedGetUserById.mockResolvedValue({
       id: "u1",
@@ -39,34 +28,24 @@ describe("POST /api/credits/balance", () => {
     });
   });
 
-  it("rejects positive deltas: clients can never mint credits", async () => {
-    const res = await POST(req({ delta: 5 }));
-    expect(res.status).toBe(400);
-    expect(mockedSpend).not.toHaveBeenCalled();
-  });
-
-  it("spends on a negative delta", async () => {
-    mockedSpend.mockResolvedValue(true);
-    mockedGetUserById.mockResolvedValueOnce({
-      id: "u1",
-      email: "a@b.co",
-      credits: 4,
-      created_at: "2026-11-05T00:00:00Z",
-    });
-    const res = await POST(req({ delta: -1 }));
+  it("returns the caller's balance", async () => {
+    const res = await routeModule.GET();
     expect(res.status).toBe(200);
-    expect(await res.json()).toMatchObject({ credits: 4 });
-    expect(mockedSpend).toHaveBeenCalledWith("u1", 1);
-  });
-
-  it("returns 402 when the balance cannot cover the spend", async () => {
-    mockedSpend.mockResolvedValue(false);
-    const res = await POST(req({ delta: -99 }));
-    expect(res.status).toBe(402);
+    expect(await res.json()).toMatchObject({ credits: 5 });
+    expect(mockedGetUserById).toHaveBeenCalledWith("u1");
   });
 
   it("requires a session", async () => {
     mockedGetSession.mockResolvedValue(null);
-    expect((await POST(req({ delta: -1 }))).status).toBe(401);
+    expect((await routeModule.GET()).status).toBe(401);
+  });
+
+  it("returns 401 when the session user no longer exists", async () => {
+    mockedGetUserById.mockResolvedValue(null);
+    expect((await routeModule.GET()).status).toBe(401);
+  });
+
+  it("has no POST handler: clients cannot spend via this route", () => {
+    expect((routeModule as { POST?: unknown }).POST).toBeUndefined();
   });
 });

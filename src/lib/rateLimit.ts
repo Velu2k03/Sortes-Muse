@@ -31,6 +31,12 @@ export const RATE_LIMITS = {
   authIp: { windowMs: 15 * 60_000, max: 20 },
   /** Login attempts per email: matches the old login route's 10/15min. */
   loginEmail: { windowMs: 15 * 60_000, max: 10 },
+  /** Phase B (R12): failed logins per IP, in addition to the
+      per-email limit. The per-email bucket alone lets an attacker
+      rotate target emails freely from one IP; 30 failures per 15
+      minutes per IP bounds that. Only failures count, as with the
+      email bucket; a success does not consume the budget. */
+  loginIp: { windowMs: 15 * 60_000, max: 30 },
   /** Sign-in code requests per email: matches the old request-code 5/hr. */
   codeEmail: { windowMs: 60 * 60_000, max: 5 },
   /** Checkout initiation per IP. */
@@ -65,6 +71,13 @@ export const RATE_LIMITS = {
   accountExportUser: { windowMs: 60 * 60_000, max: 10 },
   /** Guest journal sync per user: up to 100 readings per call. */
   historySyncUser: { windowMs: 60 * 60_000, max: 20 },
+  /** Phase B (R9): journal writes per user (PATCH/DELETE), shared
+      bucket. These were the only authenticated write operations
+      with no limit at all. 20/hour matches the sync budget; a user
+      editing notes or deleting readings never legitimately exceeds
+      it, and the sync bucket stays separate so a bulk sync cannot
+      eat the write budget (or vice versa). */
+  historyWriteUser: { windowMs: 60 * 60_000, max: 20 },
 } as const satisfies Record<string, RateLimitRule>;
 
 const buckets = new Map<string, number[]>();

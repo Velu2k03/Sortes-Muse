@@ -1,51 +1,30 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { getUserById, spendUserCredits } from "@/lib/db";
-import { checkRateLimit, clientIp, rateLimitExceeded, RATE_LIMITS } from "@/lib/rateLimit";
+import { getUserById } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
+/**
+ * Read-only Oracle balance for the signed-in user.
+ *
+ * Phase B (R15): the POST handler is deleted. It used to let a
+ * signed-in client spend its own credits, but no UI path uses it
+ * for signed-in users any more: the AI routes spend server-side
+ * after a real generation, and the three AuthProvider.spend callers
+ * (IntakeFlow, ReadingDetailClient, ChartsClient) only ever call
+ * spend() for guests, whose spend never reaches the API. The
+ * endpoint could only drain the caller's own balance (self-harm),
+ * but it was dead surface that contradicted the "credits may only
+ * be granted or spent server-side" story, so it is gone rather than
+ * restricted. AuthProvider.spend/add are guest-local-storage only
+ * now. Any future server-side spend need must go through the AI
+ * routes or a new explicitly-scoped endpoint, not a revival of
+ * this handler.
+ */
 export async function GET() {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
   const user = await getUserById(session.userId);
   if (!user) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
   return NextResponse.json({ credits: user.credits });
-}
-
-/**
- * Spend credits server-side. Body: { delta: number } (negative = spend).
- * Returns the new balance.
- *
- * M0.1 credit authority: positive deltas are rejected. Credits may only
- * be granted by server events (purchase webhook fulfillment, server-side
- * refund inside an AI route), never by a client request, because any
- * signed-in session could otherwise mint credits.
- */
-export async function POST(req: NextRequest) {
-  if (!checkRateLimit(`balance:${clientIp(req)}`, RATE_LIMITS.moneyIp).allowed) {
-    return rateLimitExceeded();
-  }
-  const session = await getSession();
-  if (!session) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
-  let body: { delta?: number };
-  try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid request." }, { status: 400 });
-  }
-  const delta = Math.trunc(Number(body.delta ?? 0));
-  if (!Number.isFinite(delta) || delta === 0 || Math.abs(delta) > 1000) {
-    return NextResponse.json({ error: "Invalid amount." }, { status: 400 });
-  }
-  if (delta > 0) {
-    return NextResponse.json(
-      { error: "Oracles can only be granted by the server (purchases and refunds). Client grants are not accepted." },
-      { status: 400 }
-    );
-  }
-  const ok = await spendUserCredits(session.userId, -delta);
-  if (!ok) return NextResponse.json({ error: "Insufficient Oracles." }, { status: 402 });
-  const user = await getUserById(session.userId);
-  return NextResponse.json({ credits: user?.credits ?? 0 });
 }

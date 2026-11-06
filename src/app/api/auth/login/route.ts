@@ -6,7 +6,7 @@ import {
   SESSION_COOKIE,
   SESSION_MAX_AGE,
   authConfigured,} from "@/lib/auth";
-import { isRateLimited, recordRateLimit, RATE_LIMITS } from "@/lib/rateLimit";
+import { isRateLimited, recordRateLimit, clientIp, RATE_LIMITS } from "@/lib/rateLimit";
 
 export const dynamic = "force-dynamic";
 
@@ -37,6 +37,17 @@ export async function POST(req: NextRequest) {
         { status: 429 }
       );
     }
+    // Phase B (R12): 30 failed logins per IP per 15 minutes, in
+    // addition to the per-email limit, so rotating target emails
+    // from one IP does not bypass the limit. Checked before the
+    // password verification, recorded only on failure.
+    const ipKey = `login-ip:${clientIp(req)}`;
+    if (isRateLimited(ipKey, RATE_LIMITS.loginIp)) {
+      return NextResponse.json(
+        { error: "Too many attempts. Please try again in a few minutes." },
+        { status: 429 }
+      );
+    }
 
     const user = await getUserByEmail(email);
     const ok =
@@ -44,6 +55,7 @@ export async function POST(req: NextRequest) {
       (await verifyPassword(password, user.password_hash));
     if (!ok) {
       recordRateLimit(limitKey, RATE_LIMITS.loginEmail);
+      recordRateLimit(ipKey, RATE_LIMITS.loginIp);
       return NextResponse.json(
         { error: "Email or password is not correct." },
         { status: 401 }

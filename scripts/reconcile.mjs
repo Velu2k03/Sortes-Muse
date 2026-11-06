@@ -10,15 +10,21 @@
  * real API key.
  *
  * Usage:
- *   DATABASE_URL=postgres://... \
+ *   POSTGRES_URL=postgres://... \
  *   LEMONSQUEEZY_API_KEY=<test key for staging, real key for prod> \
  *   node scripts/reconcile.mjs [--days 7]
+ *
+ * Phase B (R13): this script prefers POSTGRES_URL like the app
+ * does (DATABASE_URL is the fallback alias). Setting both variables
+ * to different databases used to point the reconcile script at a
+ * different database than the app; keep the documented rule of
+ * setting exactly one database variable.
  *
  * Output: one line per unmatched order (order id, email, total,
  * date), plus a summary count. Exit 0 when everything reconciles,
  * exit 1 when unmatched orders exist (so a cron wrapper can alert).
  *
- * Safety: refuses to run against a production-looking DATABASE_URL
+ * Safety: refuses to run against a production-looking POSTGRES_URL
  * unless SORTES_RECONCILE_PRODUCTION=1 is set. It only READS: it
  * never grants credits itself — unmatched orders are a human's job
  * (verify in the Lemon Squeezy dashboard, then fulfill manually or
@@ -40,11 +46,11 @@ if (!Number.isFinite(days) || days < 1) {
   console.error("--days must be a positive number of days.");
   process.exit(2);
 }
-const dbUrl = process.env.DATABASE_URL ?? process.env.POSTGRES_URL;
+const dbUrl = process.env.POSTGRES_URL ?? process.env.DATABASE_URL;
 const apiKey = process.env.LEMONSQUEEZY_API_KEY;
 
 if (!dbUrl) {
-  console.error("Set DATABASE_URL (or POSTGRES_URL) to the database to check.");
+  console.error("Set POSTGRES_URL (or DATABASE_URL) to the database to check.");
   process.exit(2);
 }
 if (!apiKey) {

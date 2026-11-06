@@ -28,6 +28,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid request." }, { status: 400 });
   }
   const readings = Array.isArray(body.readings) ? body.readings.slice(0, 100) : [];
+  // Phase B (R9): per-reading byte cap. The 100-item cap bounds the
+  // count, but each reading body was unbounded in size; a single
+  // multi-megabyte reading JSON would be stored as-is. 64 KB per
+  // reading is far above any real reading (interpretations are a few
+  // KB) and keeps one sync call bounded.
+  for (const r of readings) {
+    if (r && typeof r.id === "string" && Buffer.byteLength(JSON.stringify(r), "utf8") > 64 * 1024) {
+      return NextResponse.json(
+        { error: "Reading too large (max 64 KB per reading)." },
+        { status: 413 }
+      );
+    }
+  }
   for (const r of readings) {
     if (r && typeof r.id === "string") {
       await saveReadingForUser(session.userId, r);
@@ -45,6 +58,12 @@ export async function POST(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
+  // Phase B (R9): journal writes are rate-limited per user (shared
+  // PATCH/DELETE bucket, 20/hour). Previously these authenticated
+  // writes had no limit at all.
+  if (!checkRateLimit(`history-write:${session.userId}`, RATE_LIMITS.historyWriteUser).allowed) {
+    return rateLimitExceeded();
+  }
   let body: { id?: unknown; nextStep?: unknown; revisitNote?: unknown; revisitAt?: unknown };
   try {
     body = await req.json();
@@ -83,6 +102,10 @@ export async function PATCH(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
+  // Phase B (R9): same shared per-user write bucket as PATCH.
+  if (!checkRateLimit(`history-write:${session.userId}`, RATE_LIMITS.historyWriteUser).allowed) {
+    return rateLimitExceeded();
+  }
   let body: { id?: unknown };
   try {
     body = await req.json();

@@ -1,17 +1,29 @@
 /**
  * Sends the sign-in code by email.
  * - Production: set RESEND_API_KEY (https://resend.com) and optionally EMAIL_FROM.
- * - Local dev without a key: the code is logged to the server console AND
- *   returned by the API response, so sign-in works end to end with zero setup.
+ * - Local dev without a key: the code is returned by the API response
+ *   ONLY when the explicit local-only flag SORTES_LOCAL_DEV_CODE=1
+ *   is set (Phase B, R11). The flag is never set on Vercel and the
+ *   dev path additionally requires NODE_ENV !== "production", so a
+ *   mis-set NODE_ENV alone can never leak codes into logs or API
+ *   responses. The code value itself is never logged anywhere: the
+ *   log line records only that a code was issued.
  */
+export function localDevCodeEnabled(): boolean {
+  return (
+    process.env.SORTES_LOCAL_DEV_CODE === "1" &&
+    process.env.NODE_ENV !== "production"
+  );
+}
+
 export async function sendSignInCode(
   email: string,
   code: string
 ): Promise<{ delivered: boolean; devCode?: string }> {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
-    if (process.env.NODE_ENV !== "production") {
-      console.log(`[sortes-auth] sign-in code for ${email}: ${code}`);
+    if (localDevCodeEnabled()) {
+      console.log(`[sortes-auth] sign-in code issued for ${email} (local dev code enabled; code value not logged).`);
       return { delivered: false, devCode: code };
     }
     throw new Error("No email provider configured.");

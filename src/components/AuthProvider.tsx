@@ -31,9 +31,17 @@ interface AuthContextValue {
   credits: number | null;
   refresh: () => Promise<void>;
   signOut: () => Promise<void>;
-  /** Spend credits; returns true on success. Uses server wallet when signed in. */
+  /** Spend credits; returns true on success. Guest-local only:
+      signed-in users never spend client-side (Phase B, R15: the AI
+      routes spend server-side after a real generation, and POST
+      /api/credits/balance is deleted). All three callers guard with
+      !user / !signedIn; if spend() is ever called while signed in it
+      is a no-op returning false rather than a server call. */
   spend: (n: number) => Promise<boolean>;
-  /** Add credits; returns the new balance. Uses server wallet when signed in. */
+  /** Add credits; returns the new balance. Guest-local only (see
+      spend): the server never grants credits from a client request.
+      Signed-in callers get the current server balance back with no
+      grant. All call sites are guest refund paths. */
   add: (n: number) => Promise<number>;
   /** Save a reading locally and to the server when signed in. */
   persistReading: (reading: Reading) => Promise<void>;
@@ -161,18 +169,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const spend = useCallback(
     async (n: number): Promise<boolean> => {
-      if (user) {
-        const res = await fetch("/api/credits/balance", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ delta: -n }),
-        });
-        if (!res.ok) return false;
-        const data = await safeJson(res);
-        if (typeof data.credits !== "number") return false;
-        setCredits(data.credits);
-        return true;
-      }
+      // Phase B (R15): guest-local only. Signed-in spend happens
+      // server-side inside the AI routes; there is no client spend
+      // endpoint any more (POST /api/credits/balance deleted).
+      if (user) return false;
       const { spendCredit } = await import("@/lib/storage");
       const ok = spendCredit(n);
       if (ok) {
@@ -186,24 +186,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const add = useCallback(
     async (n: number): Promise<number> => {
-      if (user) {
-        const res = await fetch("/api/credits/balance", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ delta: n }),
-        });
-        if (!res.ok) return 0;
-        const data = await safeJson(res);
-        setCredits(data.credits ?? 0);
-        return data.credits ?? 0;
-      }
+      // Phase B (R15): guest-local only (refund of a guest pre-spend
+      // after a failed generation). Signed-in callers get the current
+      // balance back; the server never grants credits from a client
+      // request (a positive delta used to be rejected server-side).
+      if (user) return credits ?? 0;
       const { addCredits } = await import("@/lib/storage");
       const total = addCredits(n);
       setCredits(total);
       window.dispatchEvent(new Event("sortes:credits-changed"));
       return total;
     },
-    [user]
+    [user, credits]
   );
 
   const persistReading = useCallback(
