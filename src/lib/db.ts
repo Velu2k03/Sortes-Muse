@@ -1,6 +1,7 @@
 import postgres from "postgres";
 import { promises as fs } from "fs";
 import path from "path";
+import { runMigrations } from "./migrations";
 
 /**
  * Database layer.
@@ -14,7 +15,9 @@ import path from "path";
  * - Local dev without a database: a gitignored JSON file store with the same
  *   interface, so auth/credits/transactions work end to end with zero setup.
  *
- * Tables: users, auth_codes, transactions, readings.
+ * Tables: see migrations/001_baseline.sql (versioned migrations,
+ * src/lib/migrations.ts). ensureSchema() below applies pending
+ * migrations; explicit application is `npm run db:migrate`.
  */
 
 export interface DbUser {
@@ -150,74 +153,18 @@ export async function ensureSchema(): Promise<void> {
     return;
   }
   if (schemaReady) return;
-  await sql`
-    CREATE TABLE IF NOT EXISTS users (
-      id TEXT PRIMARY KEY,
-      email TEXT UNIQUE NOT NULL,
-      credits INTEGER NOT NULL DEFAULT 0,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    )`;
-  await sql`
-    CREATE TABLE IF NOT EXISTS auth_codes (
-      email TEXT PRIMARY KEY,
-      code_hash TEXT NOT NULL,
-      expires_at TIMESTAMPTZ NOT NULL,
-      attempts INTEGER NOT NULL DEFAULT 0
-    )`;
-  await sql`
-    CREATE TABLE IF NOT EXISTS transactions (
-      id TEXT PRIMARY KEY,
-      user_id TEXT REFERENCES users(id),
-      email TEXT NOT NULL,
-      pack_type TEXT NOT NULL,
-      amount NUMERIC NOT NULL,
-      readings INTEGER NOT NULL,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    )`;
-  await sql`
-    CREATE TABLE IF NOT EXISTS readings (
-      id TEXT PRIMARY KEY,
-      user_id TEXT REFERENCES users(id),
-      data JSONB NOT NULL,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    )`;
-  // Added later (M4.1): keep-forever reports. Same shape as readings:
-  // one JSON document per report, never updated in place, never
-  // expiring. Birth inputs are never stored here, only positions,
-  // aspects, and the interpretation.
-  await sql`
-    CREATE TABLE IF NOT EXISTS reports (
-      id TEXT PRIMARY KEY,
-      user_id TEXT REFERENCES users(id),
-      data JSONB NOT NULL,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    )`;
-  // Added later: win-back tracking. IF NOT EXISTS keeps old DBs working.
-  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS winback_sent_at TIMESTAMPTZ`;
-  // Added later: password login. IF NOT EXISTS keeps old DBs working.
-  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash TEXT`;
-  // Added later (M0.1 credit authority): server-side record of each
-  // signed-in user's first free chart interpretation per system, so the
-  // free rule is enforced by the server instead of a device-local flag.
-  await sql`
-    CREATE TABLE IF NOT EXISTS free_interpretations (
-      user_id TEXT NOT NULL REFERENCES users(id),
-      system TEXT NOT NULL,
-      used_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-      PRIMARY KEY (user_id, system)
-    )`;
-  // Added later (Phase 2, 2.1): server-side record of each signed-in
-  // user's first free Quick Insight reading. Same shape as
-  // free_interpretations: the FAQ promises the first Quick Insight
-  // free per device, and for signed-in users the server record is
-  // the enforceable half (guests keep the device-local flag, since
-  // guests have no server account to charge). One row per user.
-  await sql`
-    CREATE TABLE IF NOT EXISTS free_readings (
-      user_id TEXT NOT NULL REFERENCES users(id),
-      used_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-      PRIMARY KEY (user_id)
-    )`;
+  // Phase 6: the schema now lives in versioned migration files
+  // (migrations/*.sql) applied by src/lib/migrations.ts. ensureSchema
+  // stays as the single entry point every DB function calls — it is
+  // the dev/staging safety net that applies pending migrations on
+  // first use — but it no longer contains DDL itself. The old
+  // CREATE TABLE IF NOT EXISTS block moved verbatim into
+  // migrations/001_baseline.sql. Explicit application (the
+  // recommended path for staging/production) is:
+  //   npm run db:migrate
+  // which needs Velu's explicit approval for production.
+  if (!pg) throw new Error("Database not configured");
+  await runMigrations(pg);
   schemaReady = true;
 }
 

@@ -8,6 +8,8 @@
     "start": "next start",
     "test": "vitest run",
     "test:watch": "vitest",
+    "db:migrate": "node scripts/migrate.mjs",
+    "db:sync-migrations": "node scripts/sync-migrations.mjs",
     "lint": "eslint"
   },
   "dependencies": {

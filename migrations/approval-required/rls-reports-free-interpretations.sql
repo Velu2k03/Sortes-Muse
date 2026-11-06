@@ -1,0 +1,33 @@
+-- rls-reports-free-interpretations.sql — APPROVAL REQUIRED.
+-- DO NOT move this into migrations/ (the auto-applied set) and do NOT
+-- apply it to production without Velu's explicit approval.
+--
+-- Supabase Advisor (verified 2026-11-06) reports 2 CRITICAL issues:
+-- Row Level Security is disabled on public.reports and
+-- public.free_interpretations.
+--
+-- Assessment: the app connects to Postgres as the `postgres` role
+-- (via the Supabase pooler), which bypasses RLS entirely, so
+-- enabling RLS does not change anything the app does. The risk is
+-- the PostgREST API: with RLS disabled, any table the `anon` or
+-- `authenticated` roles hold a grant on is readable through the
+-- public REST endpoint with the anon key. Enabling RLS with NO
+-- policies denies all access to anon/authenticated by default, which
+-- is the safe posture for tables the browser client never queries
+-- directly (all reads go through the Next.js API routes, which use
+-- the postgres role).
+--
+-- This file enables RLS on exactly the two flagged tables and creates
+-- no policies (deny-by-default). The remaining tables
+-- (users, auth_codes, transactions, readings, free_readings) should
+-- get the same treatment in a follow-up once their exposure is
+-- assessed the same way; they were not flagged by Advisor in this
+-- check, so they are not changed here.
+--
+-- Apply manually after approval, e.g. in the Supabase SQL editor or:
+--   psql "$POSTGRES_URL" -f migrations/approval-required/rls-reports-free-interpretations.sql
+-- (session pooler port 5432 for direct psql, never 6543 for DDL
+-- sessions that must survive; see docs/STAGING.md).
+
+ALTER TABLE public.reports ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.free_interpretations ENABLE ROW LEVEL SECURITY;
