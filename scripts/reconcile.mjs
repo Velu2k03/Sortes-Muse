@@ -109,7 +109,7 @@ let unmatched = 0;
 for (const order of orders) {
   const rows = await sql`
     SELECT id FROM transactions
-    WHERE pack_type LIKE ${`%lemonsqueezy:${order.id}%`}
+    WHERE pack_type LIKE ${`%lemonsqueezy:${order.id})%`}
     LIMIT 1`;
   if (rows.length === 0) {
     unmatched += 1;

@@ -544,7 +544,7 @@ export async function listTransactions(userId: string): Promise<DbTransaction[]>
 async function findFulfillmentByOrderId(orderId: string): Promise<DbTransaction | null> {
   if (!orderId) return null;
   await ensureSchema();
-  const marker = `lemonsqueezy:${orderId}`;
+  const marker = `lemonsqueezy:${orderId})`;
   if (usePostgres) {
     const { rows } = await sql`SELECT * FROM transactions WHERE pack_type LIKE ${"%" + marker + "%"} AND pack_type NOT LIKE ${"%:refund%"} ORDER BY created_at ASC LIMIT 1`;
     return (rows[0] as DbTransaction) ?? null;
@@ -570,7 +570,7 @@ export async function fulfillOrder(args: {
   orderId: string;
 }): Promise<{ transaction: DbTransaction | null; credits: number; duplicate: boolean }> {
   await ensureSchema();
-  const marker = `lemonsqueezy:${args.orderId}`;
+  const marker = `lemonsqueezy:${args.orderId})`;
   const row: DbTransaction = {
     id: `t_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`,
     user_id: args.userId,
@@ -589,6 +589,8 @@ export async function fulfillOrder(args: {
       // Either way the transaction rolls back with nothing written.
       const locked = await tx`SELECT id FROM users WHERE id = ${args.userId} FOR UPDATE`;
       if (locked.length === 0) throw new Error("User not found during fulfillment");
+      // After a refund, a redelivered order_created is treated as a duplicate
+      // and is not re-granted (the duplicate check does not exclude refund rows).
       const dup = await tx`SELECT id FROM transactions WHERE pack_type LIKE ${"%" + marker + "%"} LIMIT 1`;
       if (dup.length > 0) {
         const cur = await tx`SELECT credits FROM users WHERE id = ${args.userId}`;
@@ -606,6 +608,8 @@ export async function fulfillOrder(args: {
     });
   }
   const db = await readLocal();
+  // After a refund, a redelivered order_created is treated as a duplicate
+  // and is not re-granted (the duplicate check does not exclude refund rows).
   if (db.transactions.some((t) => t.pack_type.includes(marker))) {
     const u = db.users.find((x) => x.id === args.userId);
     return { transaction: null, credits: u?.credits ?? 0, duplicate: true };
@@ -655,7 +659,7 @@ export async function revokeOrder(orderId: string): Promise<{ revoked: boolean; 
       // a clear error instead of a foreign-key error at the INSERT.
       const locked = await tx`SELECT id FROM users WHERE id = ${userId} FOR UPDATE`;
       if (locked.length === 0) throw new Error("User not found during refund");
-      const existing = await tx`SELECT id FROM transactions WHERE pack_type LIKE ${"%" + refundMarker + "%"} LIMIT 1`;
+      const existing = await tx`SELECT id FROM transactions WHERE pack_type LIKE ${"%" + refundMarker + ")%"} LIMIT 1`;
       if (existing.length > 0) return { revoked: false, readings: orig.readings };
       await tx`INSERT INTO transactions (id, user_id, email, pack_type, amount, readings, created_at)
         VALUES (${refundRow.id}, ${refundRow.user_id}, ${refundRow.email}, ${refundRow.pack_type}, ${refundRow.amount}, ${refundRow.readings}, NOW())`;
@@ -664,7 +668,7 @@ export async function revokeOrder(orderId: string): Promise<{ revoked: boolean; 
     });
   }
   const db = await readLocal();
-  if (db.transactions.some((t) => t.pack_type.includes(refundMarker))) {
+  if (db.transactions.some((t) => t.pack_type.includes(`${refundMarker})`))) {
     return { revoked: false, readings: orig.readings };
   }
   const u = db.users.find((x) => x.id === userId);

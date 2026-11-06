@@ -315,4 +315,61 @@ describe.skipIf(SKIP)("money paths on real Postgres (staging only)", () => {
     expect(await db.listReadingsForUser(userB.id)).toHaveLength(1);
     expect(await db.deleteUser("u_does-not-exist")).toBe(false);
   });
+
+  it("Phase B (F5): prefix orderId is not treated as a duplicate (anchored pattern)", async () => {
+    const user = await db.createUser("prefix-a@example.com");
+    const order1234 = {
+      userId: user.id,
+      email: user.email,
+      packType: "pack5 (lemonsqueezy:order-1234)",
+      amount: 3.99,
+      readings: 5,
+      orderId: "order-1234",
+    };
+    const first = await db.fulfillOrder(order1234);
+    expect(first.duplicate).toBe(false);
+    expect(first.credits).toBe(5);
+
+    // revokeOrder uses findFulfillmentByOrderId internally.
+    // A prefix orderId ("order-123") must not match "order-1234".
+    const revokePrefix = await db.revokeOrder("order-123");
+    expect(revokePrefix).toEqual({ revoked: false, readings: 0 });
+    expect((await db.getUserById(user.id))?.credits).toBe(5);
+
+    // Now fulfill "order-123" (a strict prefix of "order-1234").
+    // Must NOT be treated as a duplicate; credits granted again.
+    const order123 = {
+      userId: user.id,
+      email: user.email,
+      packType: "pack5 (lemonsqueezy:order-123)",
+      amount: 3.99,
+      readings: 5,
+      orderId: "order-123",
+    };
+    const second = await db.fulfillOrder(order123);
+    expect(second.duplicate).toBe(false);
+    expect(second.credits).toBe(10);
+    expect((await db.getUserById(user.id))?.credits).toBe(10);
+
+    // Actual duplicate delivery of order-123 is rejected.
+    const duplicateDelivery = await db.fulfillOrder(order123);
+    expect(duplicateDelivery.duplicate).toBe(true);
+    expect(duplicateDelivery.credits).toBe(10);
+
+    // Revoking order-123 succeeds and reduces balance.
+    const revoke123 = await db.revokeOrder("order-123");
+    expect(revoke123).toEqual({ revoked: true, readings: 5 });
+    expect((await db.getUserById(user.id))?.credits).toBe(5);
+
+    // Double refund of order-123 is a no-op (anchored refund marker).
+    const revoke123Again = await db.revokeOrder("order-123");
+    expect(revoke123Again.revoked).toBe(false);
+
+    // After a refund, a redelivered order_created is treated as duplicate
+    // and is not re-granted.
+    const redeliveredAfterRefund = await db.fulfillOrder(order123);
+    expect(redeliveredAfterRefund.duplicate).toBe(true);
+    expect(redeliveredAfterRefund.credits).toBe(5);
+    expect((await db.getUserById(user.id))?.credits).toBe(5);
+  });
 });
