@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const token = await createSession(user.id, user.email);
+    const token = await createSession(user.id, user.email, user.pwd_ver ?? 1);
     const res = NextResponse.json({
       ok: true,
       user: { id: user.id, email: user.email, credits: user.credits },

@@ -60,7 +60,7 @@ describe.skipIf(SKIP)("money paths on real Postgres (staging only)", () => {
       ["auth_codes", "free_interpretations", "free_readings", "readings", "reports", "transactions", "users"]
     );
     const ledger = (await raw`SELECT version FROM schema_migrations ORDER BY version`) as Array<{ version: string }>;
-    expect(ledger.map((r) => r.version)).toEqual(["001", "002", "003"]);
+    expect(ledger.map((r) => r.version)).toEqual(["001", "002", "003", "006"]);
     const indexes = (await raw`
       SELECT indexname FROM pg_indexes WHERE schemaname = 'public'
         AND indexname LIKE 'idx\_%'`) as Array<{ indexname: string }>;
@@ -78,6 +78,16 @@ describe.skipIf(SKIP)("money paths on real Postgres (staging only)", () => {
     await expect(
       raw.unsafe(`UPDATE users SET credits = -1 WHERE id = '${user.id}'`)
     ).rejects.toThrow(/users_credits_nonnegative/);
+    // Phase B (R5): migration 006 added the session-version column;
+    // a new user starts at version 1, which is also the value a
+    // legacy token (no pwdVer claim) is read as.
+    const cols = (await raw`
+      SELECT column_name, column_default FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = 'users' AND column_name = 'pwd_ver'`) as Array<{ column_name: string; column_default: string }>;
+    expect(cols).toHaveLength(1);
+    expect(cols[0].column_default).toBe("1");
+    const ver = (await raw`SELECT pwd_ver FROM users WHERE id = ${user.id}`) as Array<{ pwd_ver: number }>;
+    expect(ver[0].pwd_ver).toBe(1);
   });
 
   it("fulfillOrder grants once; duplicate delivery is a no-op", async () => {
@@ -239,6 +249,45 @@ describe.skipIf(SKIP)("money paths on real Postgres (staging only)", () => {
     expect((await db.getUserById(user.id))?.credits).toBe(1);
     const stored = (await db.getReadingForUser(user.id, "r-race-1")) as { followUps?: unknown[] };
     expect(stored.followUps).toHaveLength(3);
+  });
+
+  it("Phase B (R10): spendUserCredits rejects zero and negative amounts on Postgres", async () => {
+    const user = await db.createUser("spend-guard-a@example.com");
+    await db.addUserCredits(user.id, 3);
+    await expect(db.spendUserCredits(user.id, 0)).rejects.toThrow(/positive/);
+    await expect(db.spendUserCredits(user.id, -5)).rejects.toThrow(/positive/);
+    // A negative spend would have ADDED credits; the balance is untouched.
+    expect((await db.getUserById(user.id))?.credits).toBe(3);
+    expect(await db.spendUserCredits(user.id, 1)).toBe(true);
+    expect((await db.getUserById(user.id))?.credits).toBe(2);
+  });
+
+  it("Phase B (R7): concurrent free-use claims grant exactly once", async () => {
+    const user = await db.createUser("race-free-a@example.com");
+    const readingClaims = await Promise.all(
+      Array.from({ length: 5 }, () => db.markFreeReadingUsed(user.id))
+    );
+    expect(readingClaims.filter(Boolean)).toHaveLength(1);
+    expect(await db.hasUsedFreeReading(user.id)).toBe(true);
+    expect(await db.markFreeReadingUsed(user.id)).toBe(false);
+    const interpClaims = await Promise.all(
+      Array.from({ length: 5 }, () => db.markFreeInterpretationUsed(user.id, "western"))
+    );
+    expect(interpClaims.filter(Boolean)).toHaveLength(1);
+    expect(await db.hasUsedFreeInterpretation(user.id, "western")).toBe(true);
+    // A different system is an independent claim.
+    expect(await db.markFreeInterpretationUsed(user.id, "vedic")).toBe(true);
+  });
+
+  it("Phase B (R5): setUserPassword bumps the session version", async () => {
+    const user = await db.createUserWithPassword("pwdver-a@example.com", "salt:hash");
+    expect(user?.pwd_ver).toBe(1);
+    expect(await db.setUserPassword(user!.id, "salt:hash2")).toBe(2);
+    expect((await db.getUserById(user!.id))?.pwd_ver).toBe(2);
+    expect(await db.setUserPassword(user!.id, "salt:hash3")).toBe(3);
+    // A passwordless account also starts at version 1.
+    const plain = await db.createUser("pwdver-b@example.com");
+    expect(plain.pwd_ver).toBe(1);
   });
 
   it("deleteUser removes everything on Postgres and leaves other users alone", async () => {

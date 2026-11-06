@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUserById, setUserPassword } from "@/lib/db";
-import { getSession, hashPassword, verifyPassword } from "@/lib/auth";
+import {
+  getSession,
+  hashPassword,
+  verifyPassword,
+  createSession,
+  SESSION_COOKIE,
+  SESSION_MAX_AGE,
+} from "@/lib/auth";
 import { checkRateLimit, clientIp, rateLimitExceeded, RATE_LIMITS } from "@/lib/rateLimit";
 
 export const dynamic = "force-dynamic";
@@ -44,8 +51,23 @@ export async function POST(req: NextRequest) {
         );
       }
     }
-    await setUserPassword(user.id, await hashPassword(password));
-    return NextResponse.json({ ok: true });
+    // Phase B (R5): setUserPassword bumps the session version in the
+    // same statement, so every token issued before this change is
+    // dead from the next request on. The device that changed the
+    // password gets a fresh session with the new version, so it
+    // stays signed in; every other device (and any stolen token)
+    // is signed out. Logout itself stays cookie-clear only.
+    const newVersion = await setUserPassword(user.id, await hashPassword(password));
+    const token = await createSession(user.id, user.email, newVersion);
+    const res = NextResponse.json({ ok: true });
+    res.cookies.set(SESSION_COOKIE, token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: SESSION_MAX_AGE,
+    });
+    return res;
   } catch (err) {
     console.error("set-password failed:", err);
     return NextResponse.json(

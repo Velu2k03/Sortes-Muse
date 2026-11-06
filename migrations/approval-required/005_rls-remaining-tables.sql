@@ -1,0 +1,62 @@
+-- 005_rls-remaining-tables.sql — APPROVAL REQUIRED.
+-- DO NOT move this into migrations/ (the auto-applied set) and do NOT
+-- apply it to production without Velu's explicit approval.
+-- Numbered 005 so it promotes cleanly into migrations/ after approval
+-- (it must apply after 003; it is idempotent — ALTER TABLE ... ENABLE
+-- ROW LEVEL SECURITY is a no-op when already enabled).
+--
+-- Phase B (R1): the five app tables not covered by migration 004
+-- (reports + free_interpretations) get the same zero-policy RLS
+-- treatment. Phase A security audit (2026-11-07, R1, HIGH): with RLS
+-- disabled, anyone holding the public Supabase anon key can read
+-- emails and password hashes (users) and code hashes (auth_codes)
+-- through the public PostgREST endpoint, and read private readings
+-- and purchase history. Supabase grants anon/authenticated
+-- SELECT/INSERT/UPDATE/DELETE on all public tables by default.
+--
+-- Assessment: the app connects to Postgres as the `postgres` role
+-- (via the Supabase pooler), which bypasses RLS entirely, so
+-- enabling RLS does not change anything the app does. The browser
+-- Supabase client is auth-only and never queries these tables
+-- directly (all reads go through the Next.js API routes, which use
+-- the postgres role). Enabling RLS with NO policies denies all
+-- access to anon/authenticated by default.
+--
+-- Apply manually after approval, e.g. in the Supabase SQL editor or:
+--   psql "$POSTGRES_URL" -f migrations/approval-required/005_rls-remaining-tables.sql
+-- (session pooler port 5432 for direct psql, never 6543 for DDL
+-- sessions that must survive; see docs/STAGING.md).
+--
+-- TESTED on local Postgres 16.15, 2026-11-07 (Phase B), against a
+-- database built by migrations 001+002+003+006 with Supabase-default
+-- grants (anon/authenticated hold SELECT/INSERT/UPDATE/DELETE on all
+-- public tables, as Supabase grants by default). See
+-- src/lib/__tests__/rls-005.test.ts for the automated version:
+--   BEFORE: anon SELECT returned a victim user's email, password
+--     hash, code hash, transaction row, and reading JSON.
+--   AFTER:  anon SELECT on all five tables returns 0 rows; anon
+--     INSERT fails "new row violates row-level security policy";
+--     authenticated SELECT also returns 0 rows; the postgres
+--     superuser (the role the app connects as in production) still
+--     reads every row; the table owner also bypasses RLS (Postgres
+--     rule: owners bypass unless FORCE ROW LEVEL SECURITY is set).
+--   The app's own code paths were exercised against the RLS-enabled
+--     database: sign-up (createUserWithPassword), login
+--     (getUserByEmail + verifyPassword), password change
+--     (setUserPassword), and delete (deleteUser) all still work.
+--   Consequence: this migration is safe ONLY because the app connects
+--   as the postgres role (superuser + table owner). If the app ever
+--   connects as a non-owner, non-bypass role, it would see 0 rows and
+--   break — that connection change must be tested against RLS first.
+--   The `users` table holds password hashes: after enabling, verify
+--   sign-up, login, and delete end to end on staging before applying
+--   to production (see docs/PRODUCTION-CHANGE-PLAN.md section 6).
+--
+-- Rollback: ALTER TABLE public.<table> DISABLE ROW LEVEL SECURITY;
+-- for each table below. Instant, no data loss.
+
+ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.auth_codes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.transactions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.readings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.free_readings ENABLE ROW LEVEL SECURITY;

@@ -79,7 +79,7 @@ async function handleVerify(req: NextRequest) {
 
   await deleteAuthCode(email);
   const user = (await getUserByEmail(email)) ?? (await createUser(email));
-  const token = await createSession(user.id, user.email);
+  const token = await createSession(user.id, user.email, user.pwd_ver ?? 1);
 
   const res = NextResponse.json({
     ok: true,

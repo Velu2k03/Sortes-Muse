@@ -11,8 +11,8 @@ import { checkRateLimit, clientIp, rateLimitExceeded, RATE_LIMITS } from "@/lib/
 
 export const dynamic = "force-dynamic";
 
-function signInResponse(user: { id: string; email: string; credits: number }) {
-  return createSession(user.id, user.email).then((token) => {
+function signInResponse(user: { id: string; email: string; credits: number; pwd_ver?: number | null }) {
+  return createSession(user.id, user.email, user.pwd_ver ?? 1).then((token) => {
     const res = NextResponse.json({
       ok: true,
       user: { id: user.id, email: user.email, credits: user.credits },

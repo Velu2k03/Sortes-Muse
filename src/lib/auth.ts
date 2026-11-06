@@ -2,6 +2,7 @@ import { SignJWT, jwtVerify } from "jose";
 import { createHash, randomInt, timingSafeEqual, scrypt, randomBytes } from "crypto";
 import { promisify } from "util";
 import { cookies } from "next/headers";
+import { getUserById } from "./db";
 
 const COOKIE_NAME = "sortes_session";
 const SESSION_DAYS = 30;
@@ -44,8 +45,18 @@ export function codesMatch(a: string, b: string): boolean {
   return ba.length === bb.length && timingSafeEqual(ba, bb);
 }
 
-export async function createSession(userId: string, email: string): Promise<string> {
-  return new SignJWT({ sub: userId, email })
+/**
+ * Phase B (R5): sessions are revocable. The JWT carries a `pwdVer`
+ * claim (the user's session version, column `users.pwd_ver`,
+ * migration 006). Callers that sign a user in pass the user's
+ * current version; a fresh account is version 1, which is also the
+ * column DEFAULT and the value assumed for legacy tokens issued
+ * before this change (they carry no claim). Changing the password
+ * bumps the column (setUserPassword), so every token issued before
+ * the change fails the check in getSession below.
+ */
+export async function createSession(userId: string, email: string, pwdVer = 1): Promise<string> {
+  return new SignJWT({ sub: userId, email, pwdVer })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime(`${SESSION_DAYS}d`)
@@ -56,15 +67,28 @@ export async function getSession(): Promise<{ userId: string; email: string } | 
   const jar = await cookies();
   const token = jar.get(COOKIE_NAME)?.value;
   if (!token) return null;
+  let payload: { sub?: unknown; email?: unknown; pwdVer?: unknown };
   try {
-    const { payload } = await jwtVerify(token, secret());
-    if (typeof payload.sub !== "string" || typeof payload.email !== "string") {
-      return null;
-    }
-    return { userId: payload.sub, email: payload.email };
+    ({ payload } = await jwtVerify(token, secret()));
   } catch {
+    // Bad signature, expired token, wrong secret: a dead session.
     return null;
   }
+  if (typeof payload.sub !== "string" || typeof payload.email !== "string") {
+    return null;
+  }
+  // Session-version check: a token whose pwdVer does not match the
+  // user's current version is dead (password changed since it was
+  // issued). A missing claim reads as 1 (legacy token); a missing
+  // column value reads as 1 (row written before migration 006).
+  // A database error here is NOT an auth failure: it propagates so
+  // the caller returns an honest 500 instead of silently reporting
+  // the user as signed out.
+  const tokenVer = typeof payload.pwdVer === "number" ? payload.pwdVer : 1;
+  const user = await getUserById(payload.sub);
+  if (!user) return null;
+  if (tokenVer !== (user.pwd_ver ?? 1)) return null;
+  return { userId: payload.sub, email: payload.email };
 }
 
 /** True when a session can actually be signed. In production this

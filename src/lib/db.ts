@@ -27,6 +27,11 @@ export interface DbUser {
   created_at: string;
   winback_sent_at?: string | null;
   password_hash?: string | null;
+  // Phase B (R5): session version, carried in the JWT as the `pwdVer`
+  // claim and checked in getSession. Bumped on every password set or
+  // change, so a stolen token dies when the owner changes password.
+  // DEFAULT 1 (migration 006); legacy rows/tokens without it read as 1.
+  pwd_ver?: number | null;
 }
 
 export interface DbTransaction {
@@ -220,6 +225,7 @@ export async function createUser(email: string): Promise<DbUser> {
     email,
     credits: 0,
     created_at: new Date().toISOString(),
+    pwd_ver: 1,
   };
   if (usePostgres) {
     await sql`INSERT INTO users (id, email, credits, password_hash, created_at) VALUES (${user.id}, ${user.email}, 0, ${null}, NOW()) ON CONFLICT (email) DO NOTHING`;
@@ -255,6 +261,7 @@ export async function createUserWithPassword(
     credits: 0,
     created_at: new Date().toISOString(),
     password_hash: passwordHash,
+    pwd_ver: 1,
   };
   if (usePostgres) {
     const { rows } = await sql`INSERT INTO users (id, email, credits, password_hash, created_at)
@@ -269,18 +276,32 @@ export async function createUserWithPassword(
   return user;
 }
 
-export async function setUserPassword(userId: string, passwordHash: string): Promise<void> {
+/**
+ * Phase B (R5): set (or change) a password AND bump the session
+ * version in the same statement, so the password change and the
+ * revocation of all previously issued tokens commit together.
+ * Returns the new session version (1 when the user row is missing,
+ * which callers treat as "no user" via their own check first).
+ * Requires migration 006 (pwd_ver column); the set-password route
+ * re-issues the caller's own session with the new version, so the
+ * device that changed the password stays signed in while every
+ * other token dies.
+ */
+export async function setUserPassword(userId: string, passwordHash: string): Promise<number> {
   await ensureSchema();
   if (usePostgres) {
-    await sql`UPDATE users SET password_hash = ${passwordHash} WHERE id = ${userId}`;
-    return;
+    const { rows } = await sql`UPDATE users SET password_hash = ${passwordHash}, pwd_ver = pwd_ver + 1 WHERE id = ${userId} RETURNING pwd_ver`;
+    return (rows[0] as { pwd_ver: number } | undefined)?.pwd_ver ?? 1;
   }
   const db = await readLocal();
   const u = db.users.find((x) => x.id === userId);
   if (u) {
     u.password_hash = passwordHash;
+    u.pwd_ver = (u.pwd_ver ?? 1) + 1;
     await writeLocal(db);
+    return u.pwd_ver;
   }
+  return 1;
 }
 
 // Phase 3 (3.6): delete an account and ALL its data. The foreign
@@ -348,6 +369,14 @@ export async function addUserCredits(userId: string, n: number): Promise<number>
 }
 
 export async function spendUserCredits(userId: string, n: number): Promise<boolean> {
+  // Phase B (R10): a negative spend would ADD credits (credits - (-5)
+  // with the guard credits >= -5 passes trivially). No caller passes
+  // a negative value today, but this function is exported and one
+  // call site passes a computed value, so fail loudly instead of
+  // minting. Both branches share this one check.
+  if (!Number.isFinite(n) || n <= 0) {
+    throw new Error("spendUserCredits: n must be a positive number of Oracles.");
+  }
   await ensureSchema();
   if (usePostgres) {
     const { rows } = await sql`UPDATE users SET credits = credits - ${n} WHERE id = ${userId} AND credits >= ${n} RETURNING credits`;
@@ -373,18 +402,28 @@ export async function hasUsedFreeReading(userId: string): Promise<boolean> {
   return (db.freeReadings ?? []).some((x) => x.user_id === userId);
 }
 
-export async function markFreeReadingUsed(userId: string): Promise<void> {
+// Phase B (R7): the claim is atomic. INSERT ... ON CONFLICT DO
+// NOTHING RETURNING user_id succeeds for exactly one caller: the
+// return is true only when THIS call inserted the row. A concurrent
+// second free use gets zero rows back (false) and must spend instead
+// (or get a 402) — the callers in the AI routes apply that fallback
+// once 8A A2 lands (see the decision log; the route files are
+// excluded until then). The old void return let two concurrent free
+// uses both succeed.
+export async function markFreeReadingUsed(userId: string): Promise<boolean> {
   await ensureSchema();
   if (usePostgres) {
-    await sql`INSERT INTO free_readings (user_id) VALUES (${userId}) ON CONFLICT DO NOTHING`;
-    return;
+    const { rows } = await sql`INSERT INTO free_readings (user_id) VALUES (${userId}) ON CONFLICT DO NOTHING RETURNING user_id`;
+    return rows.length > 0;
   }
   const db = await readLocal();
   const list = db.freeReadings ?? (db.freeReadings = []);
   if (!list.some((x) => x.user_id === userId)) {
     list.push({ user_id: userId, used_at: new Date().toISOString() });
     await writeLocal(db);
+    return true;
   }
+  return false;
 }
 
 // Free chart interpretations (server-side, signed-in users only).
@@ -399,18 +438,20 @@ export async function hasUsedFreeInterpretation(userId: string, system: string):
   return (db.freeInterpretations ?? []).some((x) => x.user_id === userId && x.system === system);
 }
 
-export async function markFreeInterpretationUsed(userId: string, system: string): Promise<void> {
+export async function markFreeInterpretationUsed(userId: string, system: string): Promise<boolean> {
   await ensureSchema();
   if (usePostgres) {
-    await sql`INSERT INTO free_interpretations (user_id, system) VALUES (${userId}, ${system}) ON CONFLICT DO NOTHING`;
-    return;
+    const { rows } = await sql`INSERT INTO free_interpretations (user_id, system) VALUES (${userId}, ${system}) ON CONFLICT DO NOTHING RETURNING user_id`;
+    return rows.length > 0;
   }
   const db = await readLocal();
   const list = db.freeInterpretations ?? (db.freeInterpretations = []);
   if (!list.some((x) => x.user_id === userId && x.system === system)) {
     list.push({ user_id: userId, system, used_at: new Date().toISOString() });
     await writeLocal(db);
+    return true;
   }
+  return false;
 }
 
 // Auth codes

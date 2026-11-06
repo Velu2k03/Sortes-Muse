@@ -157,4 +157,36 @@ $$;
 
 DROP TABLE IF EXISTS checkout_nonces;
 ` },
+  { version: "006", name: "session_version", sql: `-- 006_session_version.sql — Phase B (R5).
+-- Session revocation: a per-user session version that is carried in
+-- the JWT as the \`pwdVer\` claim (src/lib/auth.ts) and checked on
+-- every getSession call. A mismatch means the session is dead.
+-- The version is bumped whenever the password is set or changed
+-- (src/lib/db.ts setUserPassword), so a stolen token stops working
+-- as soon as the owner changes their password. Logout stays
+-- cookie-clear only (single-device logout is the current behaviour;
+-- "sign out everywhere" would be a new feature — see the decision
+-- log, it is recorded as a follow-up, not built here).
+--
+-- Column name: \`pwd_ver\` (the JWT claim is \`pwdVer\`; one name root,
+-- documented in src/lib/auth.ts). DEFAULT 1 matches the claim value
+-- assumed for legacy tokens issued before this migration, so
+-- sessions issued before the deploy keep working until the first
+-- password change bumps the version to 2.
+--
+-- Idempotent (ADD COLUMN IF NOT EXISTS) and purely additive: no
+-- rows are modified, only the column (default 1) is added.
+-- Applies in version order after 003 via the normal runner
+-- (migrations.generated.ts); production application follows the
+-- deploy-order hard gate in docs/PRODUCTION-CHANGE-PLAN.md:
+-- apply 001-003 AND 006 to production BEFORE merge/deploy.
+--
+-- Rollback: ALTER TABLE users DROP COLUMN IF EXISTS pwd_ver;
+-- (sessions issued after the migration carry a pwdVer claim the old
+-- code ignores, so rollback is safe; tokens issued while the column
+-- existed keep working because getSession treats a missing column
+-- as version 1.)
+
+ALTER TABLE users ADD COLUMN IF NOT EXISTS pwd_ver INTEGER NOT NULL DEFAULT 1;
+` },
 ];
