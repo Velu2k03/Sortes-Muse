@@ -72,6 +72,17 @@ export async function POST(req: NextRequest) {
     eventName = event.meta?.event_name ?? null;
     orderId = event.data?.id ?? "";
 
+    // Phase G follow-up: a handled event with no order id can never
+    // verify (getOrder("") returns null, which is the 500 path below)
+    // and can never revoke anything. A 500 would make Lemon Squeezy
+    // retry a payload that can never succeed, so a missing id is a
+    // malformed payload: 400. Unknown event names keep the 200
+    // ignored path below; only order_created and order_refunded
+    // need an order id.
+    if (!orderId && (eventName === "order_created" || eventName === "order_refunded")) {
+      return NextResponse.json({ error: "Missing order id." }, { status: 400 });
+    }
+
     if (eventName === "order_refunded") {
       // R14: the refund branch used to revoke with no store check at
       // all. A mismatched store id is refused outright. A missing

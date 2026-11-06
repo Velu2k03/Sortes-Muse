@@ -300,4 +300,31 @@ describe("POST /api/webhooks/lemonsqueezy", () => {
     expect(res.status).toBe(200);
     expect(mockedRevoke).toHaveBeenCalledWith("ord_1", "");
   });
+
+  // Phase G follow-up: an order_created with no order id can never
+  // verify (getOrder("") returns null, which is the 500 path), and
+  // a 500 makes Lemon Squeezy retry a payload that can never
+  // succeed. A missing id is a malformed payload: 400, no lookup.
+  it("returns 400 when order_created has no order id (no API lookup, no retry)", async () => {
+    const res = await POST(
+      signedReq({
+        meta: { event_name: "order_created" },
+        data: { attributes: { user_email: "buyer@example.com", status: "paid", store_id: 42, currency: "USD", total: 399, subtotal: 399, first_order_item: { variant_id: 111 } } },
+      })
+    );
+    expect(res.status).toBe(400);
+    expect(mockedGetOrder).not.toHaveBeenCalled();
+    expect(mockedFulfill).not.toHaveBeenCalled();
+  });
+
+  it("returns 400 when order_refunded has no order id (nothing to revoke)", async () => {
+    const res = await POST(
+      signedReq({
+        meta: { event_name: "order_refunded" },
+        data: { attributes: { store_id: 42 } },
+      })
+    );
+    expect(res.status).toBe(400);
+    expect(mockedRevoke).not.toHaveBeenCalled();
+  });
 });
