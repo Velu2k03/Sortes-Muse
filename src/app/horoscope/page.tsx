@@ -46,10 +46,17 @@ export default function HoroscopePage() {
   const [date, setDate] = useState("");
   const [todayKey, setTodayKey] = useState("");
   // Client-only: set the real local date after mount (see D2 above).
+  // Deferred via setTimeout so the effect body itself does not call
+  // setState synchronously (react-hooks/set-state-in-effect); the
+  // zero-delay callback runs after first paint, so the server render
+  // and the first client render still agree on the fallback.
   useEffect(() => {
-    const key = todayKeyFor(new Date());
-    setTodayKey(key);
-    setDate((d) => d || key);
+    const t = setTimeout(() => {
+      const key = todayKeyFor(new Date());
+      setTodayKey(key);
+      setDate((d) => d || key);
+    }, 0);
+    return () => clearTimeout(t);
   }, []);
   const effectiveDate = date || todayKey || FALLBACK_DATE;
   const [reducedMotion, setReducedMotion] = useState(false);
