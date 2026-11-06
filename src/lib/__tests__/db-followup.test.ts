@@ -98,4 +98,43 @@ describe.skipIf(hasPostgres)("appendFollowUpWithSpend (local JSON branch)", () =
     expect(res.reason).toBe("not-found");
     expect((await getUserById(user.id))?.credits).toBe(1);
   });
+
+  it("Phase B (F4): first claimedFree append is free and second claimedFree append is charged", async () => {
+    const user = await createUser("followup-f4@example.com");
+    await addUserCredits(user.id, 1);
+    await saveReadingForUser(user.id, { id: "r-f4", question: "q?" });
+
+    const first = await appendFollowUpWithSpend(
+      user.id,
+      "r-f4",
+      { question: "q1", answer: "a1", free: true },
+      0,
+      3,
+      true
+    );
+    expect(first.ok).toBe(true);
+    expect(first.free).toBe(true);
+    expect((await getUserById(user.id))?.credits).toBe(1);
+
+    const callerObj = { question: "q2", answer: "a2", free: true };
+    const second = await appendFollowUpWithSpend(
+      user.id,
+      "r-f4",
+      callerObj,
+      0,
+      3,
+      true
+    );
+    expect(second.ok).toBe(true);
+    expect(second.free).toBe(false);
+    expect((await getUserById(user.id))?.credits).toBe(0);
+    expect(callerObj.free).toBe(true);
+
+    const stored = (await getReadingForUser(user.id, "r-f4")) as {
+      followUps?: Array<{ question: string; answer: string; free: boolean }>;
+    };
+    expect(stored.followUps).toHaveLength(2);
+    expect(stored.followUps?.[0].free).toBe(true);
+    expect(stored.followUps?.[1].free).toBe(false);
+  });
 });

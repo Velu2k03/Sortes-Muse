@@ -756,6 +756,7 @@ export interface FollowUpAppendResult {
   ok: boolean;
   reason?: "not-found" | "limit" | "insufficient";
   followUps?: unknown[];
+  free?: boolean;
 }
 
 export async function appendFollowUpWithSpend(
@@ -763,7 +764,8 @@ export async function appendFollowUpWithSpend(
   readingId: string,
   followUp: Record<string, unknown>,
   cost: number,
-  maxFollowUps = 3
+  maxFollowUps = 3,
+  claimedFree = false
 ): Promise<FollowUpAppendResult> {
   await ensureSchema();
   if (usePostgres) {
@@ -774,19 +776,25 @@ export async function appendFollowUpWithSpend(
       const data = (rows[0] as { data: { followUps?: unknown[] } }).data;
       const existing = Array.isArray(data.followUps) ? data.followUps : [];
       if (existing.length >= maxFollowUps) return { ok: false, reason: "limit" as const };
-      if (cost > 0) {
-        const spent = await tx`UPDATE users SET credits = credits - ${cost} WHERE id = ${userId} AND credits >= ${cost} RETURNING credits`;
+      let effectiveCost = cost;
+      let followUpToStore = followUp;
+      if (claimedFree && existing.length > 0) {
+        effectiveCost = 1;
+        followUpToStore = { ...followUp, free: false };
+      }
+      if (effectiveCost > 0) {
+        const spent = await tx`UPDATE users SET credits = credits - ${effectiveCost} WHERE id = ${userId} AND credits >= ${effectiveCost} RETURNING credits`;
         if (spent.length === 0) return { ok: false, reason: "insufficient" as const };
       }
       const updated = await tx`
         UPDATE readings
-        SET data = jsonb_set(data, '{followUps}', COALESCE(data->'followUps', '[]'::jsonb) || ${jsonbParam(followUp)})
+        SET data = jsonb_set(data, '{followUps}', COALESCE(data->'followUps', '[]'::jsonb) || ${jsonbParam(followUpToStore)})
         WHERE id = ${readingId} AND user_id = ${userId}
         RETURNING data->'followUps' AS follow_ups`;
       const followUps =
         (updated[0] as { follow_ups?: unknown[] } | undefined)?.follow_ups ??
-        [...existing, followUp];
-      return { ok: true, followUps };
+        [...existing, followUpToStore];
+      return { ok: true, followUps, free: effectiveCost === 0 };
     });
   }
   // Local JSON branch: single-process dev store, no concurrent writers
@@ -798,15 +806,21 @@ export async function appendFollowUpWithSpend(
   const data = row.data as { followUps?: unknown[] };
   const existing = Array.isArray(data.followUps) ? data.followUps : [];
   if (existing.length >= maxFollowUps) return { ok: false, reason: "limit" };
-  const user = db.users.find((x) => x.id === userId);
-  if (cost > 0) {
-    if (!user || user.credits < cost) return { ok: false, reason: "insufficient" };
-    user.credits -= cost;
+  let effectiveCost = cost;
+  let followUpToStore = followUp;
+  if (claimedFree && existing.length > 0) {
+    effectiveCost = 1;
+    followUpToStore = { ...followUp, free: false };
   }
-  const next = [...existing, followUp];
+  const user = db.users.find((x) => x.id === userId);
+  if (effectiveCost > 0) {
+    if (!user || user.credits < effectiveCost) return { ok: false, reason: "insufficient" };
+    user.credits -= effectiveCost;
+  }
+  const next = [...existing, followUpToStore];
   row.data = { ...data, followUps: next };
   await writeLocal(db);
-  return { ok: true, followUps: next };
+  return { ok: true, followUps: next, free: effectiveCost === 0 };
 }
 
 // M2.1: fetch a single reading by id, scoped to the owning user.

@@ -372,15 +372,18 @@ export async function POST(req: NextRequest) {
   const updatedFollowUps = [...existingFollowUps, newFollowUp];
 
   if (session) {
-    // Phase 6 (N7): append + spend atomically (see db.ts). The cap is
-    // re-checked inside the transaction, so two concurrent follow-ups
-    // cannot both pass it, and a failed append never spends a credit.
+    // Phase 6 (N7) + Phase B (F4): append + spend atomically (see db.ts).
+    // The cap and the free grant are re-checked inside the transaction,
+    // so two concurrent follow-ups cannot both pass the cap or both
+    // claim the free grant, and a failed append never spends a credit.
     // The old code spent first and never checked the update's return.
     const appended = await appendFollowUpWithSpend(
       session.userId,
       body.readingId!,
       newFollowUp as unknown as Record<string, unknown>,
-      isFree ? 0 : 1
+      isFree ? 0 : 1,
+      MAX_FOLLOWUPS,
+      isFree
     );
     if (!appended.ok) {
       if (appended.reason === "limit") {
@@ -400,7 +403,7 @@ export async function POST(req: NextRequest) {
     const dbUser = await getUserById(session.userId);
     return NextResponse.json({
       answer: finalText,
-      free: isFree,
+      free: appended.free ?? isFree,
       credits: dbUser?.credits ?? 0,
       followUps: appended.followUps ?? updatedFollowUps,
     });

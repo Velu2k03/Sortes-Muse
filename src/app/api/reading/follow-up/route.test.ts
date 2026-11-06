@@ -172,7 +172,40 @@ describe("POST /api/reading/follow-up", () => {
       "u-1",
       "r-1",
       expect.objectContaining({ question: "And now?" }),
-      1
+      1,
+      3,
+      false
+    );
+  });
+
+  it("Phase B (F4): when concurrent first follow-up loses the free claim, route returns free: false from appended.free", async () => {
+    mockedGetSession.mockResolvedValue({ userId: "u-1", email: "a@example.com" });
+    mockedGetReading.mockResolvedValue({
+      ...GUEST_READING,
+      followUps: [],
+    });
+    mockedGetUserById.mockResolvedValue({ id: "u-1", email: "a@example.com", credits: 2, created_at: "" });
+    mockedAppend.mockResolvedValue({
+      ok: true,
+      free: false,
+      followUps: [
+        { question: "First?", answer: "First answer.", free: true },
+        { question: "Concurrent?", answer: ANSWER, free: false },
+      ],
+    });
+    const res = await POST(
+      req({ question: "Concurrent?", readingId: "r-1" }, "10.0.4.4")
+    );
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.free).toBe(false);
+    expect(mockedAppend).toHaveBeenCalledWith(
+      "u-1",
+      "r-1",
+      expect.objectContaining({ question: "Concurrent?" }),
+      0,
+      3,
+      true
     );
   });
 

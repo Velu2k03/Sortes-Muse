@@ -251,6 +251,45 @@ describe.skipIf(SKIP)("money paths on real Postgres (staging only)", () => {
     expect(stored.followUps).toHaveLength(3);
   });
 
+  it("Phase B (F4): concurrent first follow-up appends: one is free, one is charged", async () => {
+    const user = await db.createUser("race-f4@example.com");
+    await db.addUserCredits(user.id, 1);
+    await db.saveReadingForUser(user.id, { id: "r-race-f4", question: "q?" });
+    const results = await Promise.all([
+      db.appendFollowUpWithSpend(
+        user.id,
+        "r-race-f4",
+        { question: "q1", answer: "a1", free: true },
+        0,
+        3,
+        true
+      ),
+      db.appendFollowUpWithSpend(
+        user.id,
+        "r-race-f4",
+        { question: "q2", answer: "a2", free: true },
+        0,
+        3,
+        true
+      ),
+    ]);
+    expect(results[0].ok).toBe(true);
+    expect(results[1].ok).toBe(true);
+    const freeResults = results.filter((r) => r.free === true);
+    const chargedResults = results.filter((r) => r.free === false);
+    expect(freeResults).toHaveLength(1);
+    expect(chargedResults).toHaveLength(1);
+    const stored = (await db.getReadingForUser(user.id, "r-race-f4")) as {
+      followUps?: Array<{ question: string; answer: string; free: boolean }>;
+    };
+    expect(stored.followUps).toHaveLength(2);
+    const storedFreeCount = (stored.followUps ?? []).filter((f) => f.free === true).length;
+    const storedChargedCount = (stored.followUps ?? []).filter((f) => f.free === false).length;
+    expect(storedFreeCount).toBe(1);
+    expect(storedChargedCount).toBe(1);
+    expect((await db.getUserById(user.id))?.credits).toBe(0);
+  });
+
   it("Phase B (R10): spendUserCredits rejects zero and negative amounts on Postgres", async () => {
     const user = await db.createUser("spend-guard-a@example.com");
     await db.addUserCredits(user.id, 3);
