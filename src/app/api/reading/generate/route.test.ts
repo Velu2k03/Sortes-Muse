@@ -122,6 +122,7 @@ describe("POST /api/reading/generate — first free Quick Insight", () => {
     });
     mockedSpend.mockResolvedValue(true);
     mockedHasUsedFree.mockResolvedValue(false);
+    mockedMarkFree.mockResolvedValue(true);
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue({
@@ -158,6 +159,31 @@ describe("POST /api/reading/generate — first free Quick Insight", () => {
     expect((await res.json()).free).toBe(false);
     expect(mockedSpend).toHaveBeenCalledWith("u1", 1);
     expect(mockedMarkFree).not.toHaveBeenCalled();
+  });
+
+  // Phase B (R7): the free claim is atomic. When a concurrent
+  // request claims the free use first, this request spends one
+  // Oracle instead of serving a second free reading, and the
+  // response reports free: false because the reading was paid for.
+  it("spends when the free claim loses the race (mark returns false)", async () => {
+    mockedGetSession.mockResolvedValue({ userId: "u1", email: "a@b.co" });
+    mockedMarkFree.mockResolvedValue(false);
+    const res = await POST(req(body("quick-insight"), "10.0.0.5"));
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.free).toBe(false);
+    expect(data.interpretation).toContain("The Fool");
+    expect(mockedMarkFree).toHaveBeenCalledWith("u1");
+    expect(mockedSpend).toHaveBeenCalledWith("u1", 1);
+  });
+
+  it("returns 402 when the lost-race spend cannot be covered", async () => {
+    mockedGetSession.mockResolvedValue({ userId: "u1", email: "a@b.co" });
+    mockedMarkFree.mockResolvedValue(false);
+    mockedSpend.mockResolvedValue(false);
+    const res = await POST(req(body("quick-insight"), "10.0.0.6"));
+    expect(res.status).toBe(402);
+    expect((await res.json()).interpretation).toBeUndefined();
   });
 
   // Phase 6B regression: the response used to reuse the pre-check

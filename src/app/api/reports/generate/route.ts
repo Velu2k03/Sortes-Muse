@@ -13,6 +13,7 @@ import {
 } from "@/lib/reports";
 import type { ReportType, SavedReport } from "@/lib/reports";
 import { generateChat } from "@/lib/ai";
+import { logGuestGeneration } from "@/lib/guestLogging";
 import { checkRateLimit, clientIp, rateLimitExceeded, RATE_LIMITS } from "@/lib/rateLimit";
 
 // M4.1: premium keep-forever reports. This route computes and
@@ -220,6 +221,9 @@ export async function POST(req: NextRequest) {
     });
   }
 
+  // Phase B (R6): the successful guest generation is logged so
+  // abuse is visible per route in the log drain.
+  logGuestGeneration("reports/generate");
   return NextResponse.json({
     report,
     model: generated.model,

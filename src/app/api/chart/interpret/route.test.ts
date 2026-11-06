@@ -62,6 +62,7 @@ describe("POST /api/chart/interpret", () => {
     });
     mockedSpend.mockResolvedValue(true);
     mockedHasUsedFree.mockResolvedValue(false);
+    mockedMarkFree.mockResolvedValue(true);
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue({
@@ -107,5 +108,21 @@ describe("POST /api/chart/interpret", () => {
     expect(data.interpretation).toContain("chart reflection");
     expect(mockedSpend).not.toHaveBeenCalled();
     expect(mockedMarkFree).toHaveBeenCalledWith("u1", "western");
+  });
+
+  // Phase B (R7): when the atomic free claim loses the race, the
+  // request spends one Oracle instead of serving a second free
+  // interpretation, and reports free: false.
+  it("spends when the free claim loses the race (mark returns false)", async () => {
+    mockedGetSession.mockResolvedValue({ userId: "u1", email: "a@b.co" });
+    mockedMarkFree.mockResolvedValue(false);
+    const res = await POST(
+      req({ system: "western", chart: CHART, category: "general" }, "10.0.2.4")
+    );
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.free).toBe(false);
+    expect(mockedMarkFree).toHaveBeenCalledWith("u1", "western");
+    expect(mockedSpend).toHaveBeenCalledWith("u1", 1);
   });
 });

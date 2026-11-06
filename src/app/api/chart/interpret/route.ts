@@ -8,6 +8,7 @@ import {
   markFreeInterpretationUsed,
 } from "@/lib/db";
 import { generateChat } from "@/lib/ai";
+import { logGuestGeneration } from "@/lib/guestLogging";
 import { checkRateLimit, clientIp, rateLimitExceeded, RATE_LIMITS } from "@/lib/rateLimit";
 
 // Chart interpretation, Phase 2. Reuses the tarot OpenRouter pattern
@@ -289,9 +290,26 @@ Write the personalized chart reflection now.`;
   // Spend or mark free only after a real generation, so a failed
   // generation can never cost a credit or consume the free use. If
   // the spend fails, the text is withheld rather than delivered unpaid.
+  //
+  // Phase B (R7): the free claim is atomic. markFreeInterpretationUsed
+  // returns false when a concurrent request claimed the free use
+  // first; that request spends one Oracle instead of serving a
+  // second free interpretation, and the response reports free: false
+  // because the interpretation was paid for.
+  let freeGranted = serverFree;
   if (session) {
     if (serverFree) {
-      await markFreeInterpretationUsed(session.userId, system);
+      const claimed = await markFreeInterpretationUsed(session.userId, system);
+      if (!claimed) {
+        freeGranted = false;
+        const ok = await spendUserCredits(session.userId, 1);
+        if (!ok) {
+          return NextResponse.json(
+            { error: "You need 1 Oracle for this interpretation. No Oracle was spent." },
+            { status: 402 }
+          );
+        }
+      }
     } else {
       const ok = await spendUserCredits(session.userId, 1);
       if (!ok) {
@@ -306,11 +324,15 @@ Write the personalized chart reflection now.`;
       interpretation: finalText,
       model: generated.model,
       fallback: false,
-      free: serverFree,
+      free: freeGranted,
       credits: user?.credits ?? 0,
     });
   }
 
+  // Phase B (R6): guest generation is free by design (top of
+  // funnel); the successful generation is logged so abuse is
+  // visible per route in the log drain.
+  logGuestGeneration("chart/interpret");
   return NextResponse.json({
     interpretation: finalText,
     model: generated.model,

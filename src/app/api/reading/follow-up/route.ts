@@ -8,6 +8,7 @@ import {
 import type { FollowUp } from "@/lib/types";
 import cardsData from "@/data/cards.json";
 import { generateChat } from "@/lib/ai";
+import { logGuestGeneration } from "@/lib/guestLogging";
 import { drawClarifierCard } from "@/lib/clarifier";
 import { CARDS } from "@/lib/cards";
 import { checkRateLimit, clientIp, rateLimitExceeded, RATE_LIMITS } from "@/lib/rateLimit";
@@ -406,6 +407,9 @@ export async function POST(req: NextRequest) {
   }
 
   // Guest: no server spend, return data for client-side save.
+  // Phase B (R6): the successful guest generation is logged so
+  // abuse is visible per route in the log drain.
+  logGuestGeneration("reading/follow-up");
   return NextResponse.json({
     answer: finalText,
     free: isFree,

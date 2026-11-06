@@ -11,6 +11,7 @@ import { SENSITIVE_KEYS } from "@/lib/intake";
 import { getSpread } from "@/lib/tarot";
 import { computeSpreadFacts, type FactCard } from "@/lib/spread-facts";
 import { generateChat } from "@/lib/ai";
+import { logGuestGeneration } from "@/lib/guestLogging";
 import { checkRateLimit, clientIp, rateLimitExceeded, RATE_LIMITS } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
@@ -330,9 +331,26 @@ export async function POST(req: NextRequest) {
   // (credits >= 1 checked in the update); if it fails, the text is
   // withheld rather than delivered unpaid. A first free Quick Insight
   // marks the server record instead of spending.
+  //
+  // Phase B (R7): the free claim is atomic. markFreeReadingUsed
+  // returns false when a concurrent request claimed the free use
+  // first; that request spends one Oracle instead of serving a
+  // second free reading, and the response reports free: false
+  // because the reading was paid for.
+  let freeGranted = serverFree;
   if (session) {
     if (serverFree) {
-      await markFreeReadingUsed(session.userId);
+      const claimed = await markFreeReadingUsed(session.userId);
+      if (!claimed) {
+        freeGranted = false;
+        const ok = await spendUserCredits(session.userId, 1);
+        if (!ok) {
+          return NextResponse.json(
+            { error: "You need 1 Oracle for this reading. No Oracle was spent." },
+            { status: 402 }
+          );
+        }
+      }
     } else {
       const ok = await spendUserCredits(session.userId, 1);
       if (!ok) {
@@ -351,11 +369,15 @@ export async function POST(req: NextRequest) {
       interpretation: finalText,
       model: generated.model,
       fallback: false,
-      free: serverFree,
+      free: freeGranted,
       credits: user?.credits ?? 0,
     });
   }
 
+  // Phase B (R6): guest generation is free by design (top of
+  // funnel); the successful generation is logged so abuse is
+  // visible per route in the log drain.
+  logGuestGeneration("reading/generate");
   return NextResponse.json({
     interpretation: finalText,
     model: generated.model,
