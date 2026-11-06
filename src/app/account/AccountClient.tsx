@@ -41,6 +41,13 @@ export default function AccountPage() {
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [deleted, setDeleted] = useState(false);
+  // Phase 6 (N4): deletion needs re-authentication — the account
+  // password, or a fresh 6-digit email code (Resend path, same as
+  // sign-in). A session cookie alone is no longer enough.
+  const [deletePassword, setDeletePassword] = useState("");
+  const [deleteCode, setDeleteCode] = useState("");
+  const [deleteCodeSent, setDeleteCodeSent] = useState(false);
+  const [deleteCodeBusy, setDeleteCodeBusy] = useState(false);
   // Supabase sends an 8 digit code in production; the local fallback
   // sends a 6 digit code. The UI follows whichever sender is active.
   const codeLength = getSupabaseBrowser() ? 8 : 6;
@@ -237,7 +244,28 @@ export default function AccountPage() {
   // first tap arms, the second confirms. The route deletes the user
   // and all server data; the device copies of the same data go too,
   // and the Supabase session is signed out so it cannot re-establish
-  // a Sortes session on the next visit.
+  // a Sortes session on the next visit. Phase 6 (N4): the confirm
+  // tap must also carry the account password or a fresh sign-in code.
+  const requestDeleteCode = async () => {
+    if (!user?.email || deleteCodeBusy) return;
+    setDeleteCodeBusy(true);
+    setDeleteError(null);
+    try {
+      const res = await fetch("/api/auth/request-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: user.email }),
+      });
+      const data = await parseJson(res);
+      if (!res.ok) throw new Error(data.error ?? "Could not send a code.");
+      setDeleteCodeSent(true);
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : "Could not send a code.");
+    } finally {
+      setDeleteCodeBusy(false);
+    }
+  };
+
   const deleteAccount = async () => {
     if (!deleteArmed) {
       setDeleteArmed(true);
@@ -247,7 +275,14 @@ export default function AccountPage() {
     setDeleting(true);
     setDeleteError(null);
     try {
-      const res = await fetch("/api/account/delete", { method: "DELETE" });
+      const res = await fetch("/api/account/delete", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...(deletePassword ? { password: deletePassword } : {}),
+          ...(deleteCode.trim() ? { code: deleteCode.trim() } : {}),
+        }),
+      });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error ?? "Could not delete your account.");
@@ -646,13 +681,65 @@ export default function AccountPage() {
               </button>
             </div>
             {deleteArmed && !deleting && (
-              <p role="alert" className="mt-3 text-sm text-danger">
-                This permanently deletes your account, Oracles, journal,
-                reports, and purchase history, including the copies on
-                this device. This cannot be undone. Tap &ldquo;Confirm
-                delete account?&rdquo; again to go ahead, or leave this
-                page to cancel.
-              </p>
+              <div role="alert" className="mt-3">
+                <p className="text-sm text-danger">
+                  This permanently deletes your account, Oracles, journal,
+                  reports, and purchase history, including the copies on
+                  this device. This cannot be undone.
+                </p>
+                <p className="mt-2 text-sm text-cream/75">
+                  Confirm it is you: enter your account password, or a
+                  fresh 6-digit sign-in code.
+                </p>
+                <label htmlFor="delete-password" className="mt-3 block text-sm font-medium text-cream">
+                  Account password
+                </label>
+                <input
+                  id="delete-password"
+                  type="password"
+                  autoComplete="current-password"
+                  value={deletePassword}
+                  onChange={(e) => setDeletePassword(e.target.value)}
+                  placeholder="Your password"
+                  className="mt-1 w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-2.5 text-base text-cream focus:border-gold/60 focus:outline-none"
+                />
+                <div className="mt-3 flex flex-wrap items-end gap-3">
+                  <div className="min-w-44 flex-1">
+                    <label htmlFor="delete-code" className="block text-sm font-medium text-cream">
+                      Or a fresh sign-in code
+                    </label>
+                    <input
+                      id="delete-code"
+                      type="text"
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                      value={deleteCode}
+                      onChange={(e) => setDeleteCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                      placeholder="6-digit code"
+                      className="mt-1 w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-2.5 text-base text-cream focus:border-gold/60 focus:outline-none"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => void requestDeleteCode()}
+                    disabled={deleteCodeBusy || deleteCodeSent}
+                    className="btn-ghost rounded-xl px-4 py-2.5 font-semibold disabled:opacity-50"
+                  >
+                    {deleteCodeBusy ? "Sending…" : deleteCodeSent ? "Code sent" : "Send me a code"}
+                  </button>
+                </div>
+                {deleteCodeSent && (
+                  <p className="mt-2 text-sm text-goldbright">
+                    Code sent to {user?.email}. It expires in 10 minutes.
+                  </p>
+                )}
+                <p className="mt-2 text-sm text-cream/60">
+                  No password set on this account? Send a code, or set a
+                  password above first. Tap &ldquo;Confirm delete
+                  account?&rdquo; again to go ahead, or leave this page
+                  to cancel.
+                </p>
+              </div>
             )}
             {exportDone && (
               <p className="mt-3 text-sm text-goldbright">

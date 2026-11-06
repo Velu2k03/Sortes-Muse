@@ -113,6 +113,16 @@ html {
   scroll-behavior: smooth;
 }
 
+/* Phase 6 (D3): no page may scroll sideways. The header row was
+   ~10px too wide at 390px (logo + Oracles pill + theme + menu).
+   The header itself is fixed by tighter mobile spacing; this clip
+   is the backstop for any other stray wide element. `clip`, not
+   `hidden`, so sticky positioning keeps working. */
+html,
+body {
+  overflow-x: clip;
+}
+
 /* Sticky header (64px) used to cover the tops of cards while scrolling
    on /spreads: give sections and articles a scroll margin so anchor
    and programmatic scrolling land below the header, not under it. */

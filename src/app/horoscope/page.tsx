@@ -24,13 +24,34 @@ import { ClickSpark, StarBorder } from "@/components/ReactBits";
 // local and already computed, and the status line says unveiling, never
 // calculating. Under reduced motion the reveal is instant. Changing the
 // sign, date, or view resets to unrevealed.
-const MODULE_TODAY = new Date();
-const MODULE_TODAY_KEY = `${MODULE_TODAY.getFullYear()}-${String(MODULE_TODAY.getMonth() + 1).padStart(2, "0")}-${String(MODULE_TODAY.getDate()).padStart(2, "0")}`;
+// Phase 6 (D2): the date used to be computed at module level
+// (`new Date()` at import time). The server rendered one day, the
+// client hydrated with another across midnight/zone boundaries, and
+// React threw hydration error #418. The date is now computed
+// client-only after mount: the server renders with the deterministic
+// fallback "2000-01-01" (same on both sides), and the effect
+// replaces it with the real local date once mounted. The fallback
+// is a real calendar date, so dayOfYear and weekStartMonday never
+// see an empty string.
+function todayKeyFor(d: Date): string {
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${mm}-${dd}`;
+}
+
+const FALLBACK_DATE = "2000-01-01";
 
 export default function HoroscopePage() {
-  const todayKey = MODULE_TODAY_KEY;
   const [sign, setSign] = useState<SunSign>("Aries");
-  const [date, setDate] = useState(todayKey);
+  const [date, setDate] = useState("");
+  const [todayKey, setTodayKey] = useState("");
+  // Client-only: set the real local date after mount (see D2 above).
+  useEffect(() => {
+    const key = todayKeyFor(new Date());
+    setTodayKey(key);
+    setDate((d) => d || key);
+  }, []);
+  const effectiveDate = date || todayKey || FALLBACK_DATE;
   const [reducedMotion, setReducedMotion] = useState(false);
   useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -78,8 +99,8 @@ export default function HoroscopePage() {
       setRevealed(true);
     }, 1200);
   };
-  const h = dailyHoroscope(sign, date || todayKey);
-  const w = weeklyHoroscope(sign, date || todayKey);
+  const h = dailyHoroscope(sign, effectiveDate);
+  const w = weeklyHoroscope(sign, effectiveDate);
   const signLine = view === "daily" ? `${h.sign} · ${h.date}` : `${w.sign} · Week starting ${w.weekStart}`;
 
   return (
