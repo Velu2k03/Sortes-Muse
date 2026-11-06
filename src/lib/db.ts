@@ -1,7 +1,6 @@
 import postgres from "postgres";
 import { promises as fs } from "fs";
 import path from "path";
-import { randomBytes } from "crypto";
 
 /**
  * Database layer.
@@ -114,9 +113,6 @@ interface LocalDb {
   // M4.1: optional because local files written before M4.1 have no
   // reports key; report functions fall back to an empty list.
   reports?: Array<{ id: string; user_id: string; data: unknown; created_at: string }>;
-  // Phase 1: checkout nonces (1.3). Optional for the same reason:
-  // local files written before Phase 1 have no nonces key.
-  nonces?: Array<{ nonce: string; email: string; pack_id: string; created_at: string; used_at: string | null }>;
 }
 
 async function readLocal(): Promise<LocalDb> {
@@ -221,19 +217,6 @@ export async function ensureSchema(): Promise<void> {
       user_id TEXT NOT NULL REFERENCES users(id),
       used_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       PRIMARY KEY (user_id)
-    )`;
-  // Added later (Phase 1, 1.3): one-time checkout nonces. A nonce is
-  // created when a checkout starts and stored in an httpOnly cookie;
-  // the post-payment claim must present the matching unused nonce,
-  // so knowing a paid order id alone can no longer claim someone
-  // else's purchase.
-  await sql`
-    CREATE TABLE IF NOT EXISTS checkout_nonces (
-      nonce TEXT PRIMARY KEY,
-      email TEXT NOT NULL,
-      pack_id TEXT NOT NULL,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-      used_at TIMESTAMPTZ
     )`;
   schemaReady = true;
 }
@@ -354,7 +337,6 @@ export async function deleteUser(userId: string): Promise<boolean> {
       if (found.length === 0) return false;
       const email = (found[0] as { email: string }).email;
       await tx`DELETE FROM auth_codes WHERE email = ${email}`;
-      await tx`DELETE FROM checkout_nonces WHERE email = ${email}`;
       await tx`DELETE FROM free_readings WHERE user_id = ${userId}`;
       await tx`DELETE FROM free_interpretations WHERE user_id = ${userId}`;
       await tx`DELETE FROM readings WHERE user_id = ${userId}`;
@@ -378,7 +360,6 @@ export async function deleteUser(userId: string): Promise<boolean> {
     (x) => x.user_id !== userId
   );
   delete db.codes[user.email];
-  db.nonces = (db.nonces ?? []).filter((n) => n.email !== user.email);
   await writeLocal(db);
   return true;
 }
@@ -511,48 +492,6 @@ export async function deleteAuthCode(email: string) {
   const db = await readLocal();
   delete db.codes[email];
   await writeLocal(db);
-}
-
-// Checkout nonces (Phase 1, 1.3): single-use proof that this browser
-// started the checkout being claimed.
-export const CHECKOUT_NONCE_TTL_MS = 2 * 60 * 60_000;
-
-export async function createCheckoutNonce(email: string, packId: string): Promise<string> {
-  await ensureSchema();
-  const nonce = randomBytes(32).toString("hex");
-  if (usePostgres) {
-    await sql`INSERT INTO checkout_nonces (nonce, email, pack_id) VALUES (${nonce}, ${email}, ${packId})`;
-    return nonce;
-  }
-  const db = await readLocal();
-  const list = db.nonces ?? (db.nonces = []);
-  list.push({ nonce, email, pack_id: packId, created_at: new Date().toISOString(), used_at: null });
-  await writeLocal(db);
-  return nonce;
-}
-
-/**
- * Consumes a nonce: true only when it exists, matches the email, is
- * still unused, and is under CHECKOUT_NONCE_TTL_MS old. The Postgres
- * update is atomic (one statement, one row), so two concurrent claims
- * cannot both consume the same nonce.
- */
-export async function consumeCheckoutNonce(nonce: string, email: string): Promise<boolean> {
-  await ensureSchema();
-  if (usePostgres) {
-    const { rows } = await sql`UPDATE checkout_nonces SET used_at = NOW()
-      WHERE nonce = ${nonce} AND email = ${email} AND used_at IS NULL
-        AND created_at > NOW() - INTERVAL '2 hours'
-      RETURNING nonce`;
-    return rows.length > 0;
-  }
-  const db = await readLocal();
-  const row = (db.nonces ?? []).find((n) => n.nonce === nonce);
-  if (!row || row.email !== email || row.used_at) return false;
-  if (Date.now() - new Date(row.created_at).getTime() > CHECKOUT_NONCE_TTL_MS) return false;
-  row.used_at = new Date().toISOString();
-  await writeLocal(db);
-  return true;
 }
 
 // Transactions

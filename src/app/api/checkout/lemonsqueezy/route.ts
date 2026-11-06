@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { createCheckout, lemonConfigured, CHECKOUT_NONCE_COOKIE, CHECKOUT_NONCE_MAX_AGE } from "@/lib/lemonsqueezy";
-import { getUserById, createCheckoutNonce } from "@/lib/db";
+import { createCheckout, lemonConfigured } from "@/lib/lemonsqueezy";
+import { getUserById } from "@/lib/db";
 import { checkRateLimit, clientIp, rateLimitExceeded, RATE_LIMITS } from "@/lib/rateLimit";
 
 export const dynamic = "force-dynamic";
@@ -43,20 +43,12 @@ export async function POST(req: NextRequest) {
 
   try {
     const url = await createCheckout({ packId, email: email || undefined });
-    const res = NextResponse.json({ url });
-    // Phase 1 (1.3): bind the post-payment claim to this browser.
-    // The nonce is stored server-side and in an httpOnly cookie; the
-    // claim route consumes it once, so a paid order id alone can no
-    // longer claim someone else's purchase.
-    const nonce = await createCheckoutNonce(email, packId);
-    res.cookies.set(CHECKOUT_NONCE_COOKIE, nonce, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      path: "/",
-      maxAge: CHECKOUT_NONCE_MAX_AGE,
-    });
-    return res;
+    // Phase 6: no claim nonce is created here. The post-payment claim
+    // endpoint (/api/checkout/claim) was deleted — it had no client
+    // callers, and PurchaseConfirmer polls the balance instead. The
+    // webhook grants credits to the checkout email, and the buyer
+    // signs in with that email (OTP) to see them.
+    return NextResponse.json({ url });
   } catch {
     return NextResponse.json(
       { error: "Could not start checkout. Please try again." },

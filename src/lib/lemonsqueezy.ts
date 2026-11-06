@@ -3,11 +3,6 @@ import { CREDIT_PACKS } from "./site";
 
 const API_BASE = "https://api.lemonsqueezy.com/v1";
 
-/** httpOnly cookie holding the checkout nonce created at checkout
- * initiation (Phase 1, 1.3). The claim route requires it. */
-export const CHECKOUT_NONCE_COOKIE = "sortes_checkout_nonce";
-export const CHECKOUT_NONCE_MAX_AGE = 2 * 60 * 60; // seconds
-
 export interface LemonPack {
   id: string;
   readings: number;

@@ -4,10 +4,10 @@ import { deleteUser } from "@/lib/db";
 
 // Phase 3 (3.6): self-serve account deletion. Destructive and
 // final: deleteUser removes the user row and every dependent row
-// (readings, reports, transactions, free-use records, auth codes,
-// checkout nonces) in one transaction. The session cookie is cleared
-// here, and the client also signs out of Supabase and clears the
-// device copies of the same data.
+// (readings, reports, transactions, free-use records, auth codes)
+// in one transaction. The session cookie is cleared here, and the
+// client also signs out of Supabase and clears the device copies
+// of the same data.
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 

@@ -16,14 +16,12 @@ import {
   hasUsedFreeInterpretation,
   storeAuthCode,
   getAuthCode,
-  createCheckoutNonce,
-  consumeCheckoutNonce,
   deleteUser,
 } from "@/lib/db";
 
 // Phase 3 (3.6): deleting an account must delete the user and ALL
 // their data — readings, reports, transactions, free-use records,
-// auth codes, and checkout nonces — and must not touch anyone else.
+// and auth codes — and must not touch anyone else.
 // Live Postgres cannot be verified from this environment, so these
 // tests run against the local JSON branch only and skip when a
 // Postgres URL is configured. The test backs up data/local-db.json
@@ -67,7 +65,6 @@ describe.skipIf(hasPostgres)("deleteUser (local JSON branch)", () => {
     await markFreeReadingUsed(userA.id);
     await markFreeInterpretationUsed(userA.id, "western");
     await storeAuthCode(userA.email, "hash-a", new Date(Date.now() + 600000));
-    const nonce = await createCheckoutNonce(userA.email, "pack-5");
 
     expect(await listReadingsForUser(userA.id)).toHaveLength(1);
     expect(await listReportsForUser(userA.id)).toHaveLength(1);
@@ -85,7 +82,6 @@ describe.skipIf(hasPostgres)("deleteUser (local JSON branch)", () => {
     expect(await hasUsedFreeReading(userA.id)).toBe(false);
     expect(await hasUsedFreeInterpretation(userA.id, "western")).toBe(false);
     expect(await getAuthCode(userA.email)).toBeNull();
-    expect(await consumeCheckoutNonce(nonce, userA.email)).toBe(false);
 
     // The other user's data is untouched.
     expect(await getUserById(userB.id)).not.toBeNull();
