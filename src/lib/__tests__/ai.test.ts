@@ -2,7 +2,10 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import {
   generateChat,
   getModelList,
+  getModelTimeoutMs,
   OPENROUTER_DEFAULT_MODELS,
+  AI_TIMEOUT_MS,
+  AI_NEMOTRON_TIMEOUT_MS,
   stripThinking,
 } from "@/lib/ai";
 
@@ -25,12 +28,12 @@ describe("getModelList", () => {
     else process.env.OPENROUTER_MODEL = OLD;
   });
 
-  it("uses the shipped :free chain in exact order by default", () => {
+  it("uses the shipped :free chain in exact order by default (router first)", () => {
     delete process.env.OPENROUTER_MODEL;
     expect(getModelList()).toEqual([
+      "openrouter/free",
       "nvidia/nemotron-3-ultra-550b-a55b:free",
       "xingchen-agi/xing4.0-29b-a4b:free",
-      "openrouter/free",
     ]);
     expect(getModelList()).toEqual(OPENROUTER_DEFAULT_MODELS.split(","));
   });
@@ -545,5 +548,127 @@ describe("generateChat", () => {
 
     const parsed = JSON.parse(failedLog!);
     expect(parsed.detail).toBe("Too Many Requests");
+  });
+
+  // Phase D: router-first chain + per-model timeouts
+  describe("Phase D per-model timeouts", () => {
+    it("gives Nemotron Ultra 60 s and every other model 25 s", () => {
+      expect(AI_NEMOTRON_TIMEOUT_MS).toBe(60000);
+      expect(AI_TIMEOUT_MS).toBe(25000);
+      expect(getModelTimeoutMs("nvidia/nemotron-3-ultra-550b-a55b:free")).toBe(60000);
+      expect(getModelTimeoutMs("xingchen-agi/xing4.0-29b-a4b:free")).toBe(25000);
+      expect(getModelTimeoutMs("openrouter/free")).toBe(25000);
+      expect(getModelTimeoutMs("some/future-model:free")).toBe(25000);
+    });
+
+    it("first fetch call uses openrouter/free under the default chain", async () => {
+      const OLD = process.env.OPENROUTER_MODEL;
+      delete process.env.OPENROUTER_MODEL;
+      try {
+        const calls: string[] = [];
+        const fetchFn = vi.fn(async (_url: unknown, init: unknown) => {
+          const body = JSON.parse(String((init as { body: string }).body));
+          calls.push(body.model);
+          return okResponse("router answered", body.model);
+        });
+        const res = await generateChat({
+          apiKey: "k",
+          system: "s",
+          user: "u",
+          fetchFn: fetchFn as unknown as typeof fetch,
+          retryDelayMs: 0,
+        });
+        expect(res?.model).toBe("openrouter/free");
+        expect(calls[0]).toBe("openrouter/free");
+      } finally {
+        if (OLD === undefined) delete process.env.OPENROUTER_MODEL;
+        else process.env.OPENROUTER_MODEL = OLD;
+      }
+    });
+
+    it("Nemotron answers a 40 s call inside its 60 s timeout", async () => {
+      vi.useFakeTimers();
+      try {
+        const fetchFn = vi.fn(async () => {
+          await new Promise((resolve) => setTimeout(resolve, 40000));
+          return okResponse("slow but real reading", "nvidia/nemotron-3-ultra-550b-a55b:free");
+        });
+        const resPromise = generateChat({
+          apiKey: "k",
+          system: "s",
+          user: "u",
+          models: ["nvidia/nemotron-3-ultra-550b-a55b:free"],
+          fetchFn: fetchFn as unknown as typeof fetch,
+          retryDelayMs: 0,
+        });
+        await vi.advanceTimersByTimeAsync(45000);
+        const res = await resPromise;
+        expect(res).toEqual({
+          text: "slow but real reading",
+          model: "nvidia/nemotron-3-ultra-550b-a55b:free",
+        });
+        expect(fetchFn).toHaveBeenCalledTimes(1);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it("an unlisted model still times out at 25 s on a 30 s call", async () => {
+      vi.useFakeTimers();
+      try {
+        const fetchFn = vi.fn(async () => {
+          await new Promise((resolve) => setTimeout(resolve, 30000));
+          return okResponse("too late", "other-model:free");
+        });
+        const resPromise = generateChat({
+          apiKey: "k",
+          system: "s",
+          user: "u",
+          models: ["other-model:free"],
+          fetchFn: fetchFn as unknown as typeof fetch,
+          retryDelayMs: 0,
+        });
+        await vi.advanceTimersByTimeAsync(60000);
+        const res = await resPromise;
+        expect(res).toBeNull();
+        // Two passes, one timed-out attempt each.
+        expect(fetchFn).toHaveBeenCalledTimes(2);
+        const logged = errorSpy.mock.calls.map((c: unknown[]) => String(c[0]));
+        expect(
+          logged.some((l: string) => l.includes("timed out after 25000ms"))
+        ).toBe(true);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it("an explicit timeoutMs option overrides the per-model map", async () => {
+      vi.useFakeTimers();
+      try {
+        const fetchFn = vi.fn(async () => {
+          await new Promise((resolve) => setTimeout(resolve, 40000));
+          return okResponse("too late", "nvidia/nemotron-3-ultra-550b-a55b:free");
+        });
+        const resPromise = generateChat({
+          apiKey: "k",
+          system: "s",
+          user: "u",
+          models: ["nvidia/nemotron-3-ultra-550b-a55b:free"],
+          fetchFn: fetchFn as unknown as typeof fetch,
+          timeoutMs: 20,
+          retryDelayMs: 0,
+        });
+        await vi.advanceTimersByTimeAsync(60000);
+        const res = await resPromise;
+        expect(res).toBeNull();
+        expect(fetchFn).toHaveBeenCalledTimes(2);
+        const logged = errorSpy.mock.calls.map((c: unknown[]) => String(c[0]));
+        expect(
+          logged.some((l: string) => l.includes("timed out after 20ms"))
+        ).toBe(true);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
   });
 });

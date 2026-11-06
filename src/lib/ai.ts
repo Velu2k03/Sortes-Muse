@@ -7,10 +7,21 @@
  *
  * Free models only: the chain stays on :free models (flat 1 Oracle
  * per reading/report is a pricing rule, not a model choice).
- * Models: nvidia/nemotron-3-ultra-550b-a55b:free, xingchen-agi/xing4.0-29b-a4b:free, openrouter/free.
+ * Models (Phase D order): openrouter/free, nvidia/nemotron-3-ultra-550b-a55b:free, xingchen-agi/xing4.0-29b-a4b:free.
  *
- * Reliability & retry (Phase 8A, Task A2):
- * - Per-model timeout is 25 s (AI_TIMEOUT_MS).
+ * Reliability & retry (Phase 8A, Task A2; Phase D rework 2026-11-07):
+ * - Chain order (Phase D): openrouter/free FIRST, then Nemotron Ultra,
+ *   then Xing4.0. The router was the only model that ever answered in
+ *   the Phase 7 E2E (3/3 on retry, 0/3 for the other two on first
+ *   attempts), and independent sweeps (ayautomate, 2026-11-03) show it
+ *   answering 3/3 on both test days. Leading with it stops every
+ *   generation from first burning a 25 s Nemotron timeout.
+ * - Per-model timeout (Phase D): Nemotron Ultra gets 60 s
+ *   (AI_NEMOTRON_TIMEOUT_MS); every other model keeps 25 s
+ *   (AI_TIMEOUT_MS). A 550B model needs 40-90 s for long-form prose
+ *   (WebBrain p95 40.6 s; ShelraCode live test 80-87 s; OpenRouter p50
+ *   throughput 25-119 tok/s means 1200 tokens take 10-48 s plus TTFB),
+ *   so the old flat 25 s cut it off almost every time.
  * - Per-pass budget is 80 s (AI_TOTAL_TIMEOUT_MS), measured from each pass start.
  * - Overall wall-clock cap across both passes is 170 s (AI_RETRY_TOTAL_TIMEOUT_MS),
  *   comfortably within the empirically verified 300 s Vercel function limit.
@@ -18,6 +29,24 @@
  *   models in the chain fail on the first pass.
  * - Spend safety: callers pre-check balance, call generateChat, and only spend
  *   after acceptable text is returned. Retry happens before any database write.
+ *
+ * Phase D budget arithmetic (worst case per pass, new order):
+ * router 25 s + Nemotron 60 s + Xing4.0 ~5 s (429s are fast) = ~90 s,
+ * which exceeds the 80 s per-pass budget, so the per-attempt timeout is
+ * clamped to the remaining pass budget: when the router hangs its full
+ * 25 s, Nemotron effectively gets ~54 s in that pass. In the typical
+ * case the router fails fast (empty/429 in seconds), so Nemotron gets
+ * its full 60 s. Two passes are at most 160 s plus retry delays
+ * (~1 s), inside the 170 s overall cap and far inside the 300 s
+ * Vercel limit. Typical success path after the reorder: router answers
+ * in pass 1 (~5-15 s), or pass 1 costs ~69 s (router fast-fail +
+ * Nemotron 60 s + Xing fast 429) and the router answers in pass 2
+ * (~10 s), totalling ~80 s, under the ~115 s proxied-request watch item.
+ * Worst-case full failure is still ~161 s, past that watch item; if
+ * the 120 s proxied timeout proves real, a total failure would fail at
+ * the proxy rather than at our cap, which is a failure-mode question
+ * for the E2E measurement, not a reason to shrink the cap (shrinking
+ * it would only turn slow successes into failures).
  *
  * Logging:
  * - Failures logged as structured JSON to console.error ("model-failed",
@@ -29,18 +58,55 @@
  *   elapsedMs, attemptIndex, pass, and caller route (when provided).
  *   Never logs API keys, prompt text, or response content.
  *
- * Investigation findings (2026-11-07):
+ * Investigation findings (2026-11-07, Phase D re-verification):
  * - Nemotron Ultra 550B: long-form p95 latency is 80-87 s on prose; 25 s timeout
- *   explains timeouts on long outputs. Scoped retry preserves the model for now.
+ *   explains timeouts on long outputs. Phase D raises its timeout to 60 s
+ *   (covers WebBrain p95 40.6 s and the throughput-math worst case of
+ *   ~58 s for 1200 tokens; ShelraCode 80-87 s stays out of reach inside
+ *   two passes, documented in the decision log).
  * - Xing4.0: 429s are upstream provider (Phala) saturation, not account limits.
+ *   Fresh evidence is mixed (ayautomate 2026-11-03: 0/3, worse than 2/3 on
+ *   Oct 29; klymentiev daily test checked 2026-11-06: 3 of 7 days answered),
+ *   so it stays LAST in the chain, not dropped. Re-evaluate if the Phase D
+ *   E2E shows 0/X again.
  * - openrouter/free: dynamic router pool; retrying re-draws an available free model.
+ *   Moved FIRST in Phase D: it was the only model that ever answered in the
+ *   Phase 7 E2E. Caveat (ayautomate 2026-11-03): the router can draw a
+ *   content-safety classifier that does not follow chat instructions; the
+ *   prose validator discards such draws and the chain moves on.
+ * - Gemma 4 free models (31B, 26B): 0/3 with 429 every time on both Oct 29
+ *   and Nov 3 sweeps, so they were NOT added to the chain.
+ * - Nemotron 3.5 Super VL / Lightning / Nano Omni Reasoning: 3/3 on tiny
+ *   32-token probes (Nov 3), but no long-prose evidence for our workload,
+ *   so NOT added; Phase D2 candidates after the E2E measures the new chain.
+ * - Free-tier caps re-confirmed (OpenRouter limits docs; klymentiev checked
+ *   2026-11-06; ayautomate 2026-11-03): one shared daily counter, 50/day
+ *   under $10 lifetime purchases, 1,000/day after, 20/min, reset midnight UTC.
+ *   Correction to the 8A note: ayautomate's Nov 3 run sent 78 requests and
+ *   its key counter read 22 used of 1,000, exactly the count of successful
+ *   answers, so rejected requests (404/403/429/503) appear NOT to count
+ *   against the daily counter. OpenRouter's limits page does not state this
+ *   either way; the E2E plan records the counter before/after to confirm
+ *   on our own key.
  * - Vercel limit is 300 s (Fluid Compute default), allowing two full passes.
  */
 
 export const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 export const OPENROUTER_DEFAULT_MODELS =
-  "nvidia/nemotron-3-ultra-550b-a55b:free,xingchen-agi/xing4.0-29b-a4b:free,openrouter/free";
+  "openrouter/free,nvidia/nemotron-3-ultra-550b-a55b:free,xingchen-agi/xing4.0-29b-a4b:free";
 export const AI_TIMEOUT_MS = 25000;
+/** Nemotron Ultra 550B needs longer for long-form prose (see header). */
+export const AI_NEMOTRON_TIMEOUT_MS = 60000;
+/** Per-model attempt timeouts (ms). Models not listed use AI_TIMEOUT_MS. */
+export const AI_MODEL_TIMEOUTS_MS: Readonly<Record<string, number>> = {
+  "nvidia/nemotron-3-ultra-550b-a55b:free": AI_NEMOTRON_TIMEOUT_MS,
+};
+
+/** Attempt timeout for one model: the per-model value, or AI_TIMEOUT_MS. */
+export function getModelTimeoutMs(model: string): number {
+  return AI_MODEL_TIMEOUTS_MS[model] ?? AI_TIMEOUT_MS;
+}
+
 export const AI_TOTAL_TIMEOUT_MS = 80000;
 export const AI_RETRY_TOTAL_TIMEOUT_MS = 170000;
 
@@ -48,8 +114,10 @@ export function stripThinking(text: string): string {
   return text.replace(/<think\b[^>]*>[\s\S]*?<\/think>/gi, "").trim();
 }
 
-/** Comma-separated fallback chain: fastest free models first, reliable
-    workhorse last. Override with OPENROUTER_MODEL in env. */
+/** Comma-separated fallback chain: the free router first (it was the only
+    model that ever answered in the Phase 7 E2E), Nemotron Ultra second with
+    a longer timeout, Xing4.0 last (chronic upstream 429s). Override with
+    OPENROUTER_MODEL in env. */
 export function getModelList(): string[] {
   return (process.env.OPENROUTER_MODEL || OPENROUTER_DEFAULT_MODELS)
     .split(",")
@@ -65,7 +133,9 @@ export interface GenerateChatOptions {
   maxTokens?: number;
   /** Return false to discard the text and try the next model. */
   validate?: (text: string) => boolean;
-  /** Per-model attempt timeout. Defaults to AI_TIMEOUT_MS. */
+  /** Per-model attempt timeout. Defaults to the per-model map
+      (getModelTimeoutMs): 60 s for Nemotron Ultra, 25 s otherwise.
+      An explicit value wins for every model. */
   timeoutMs?: number;
   /** Total timeout budget per pass. Defaults to AI_TOTAL_TIMEOUT_MS. */
   totalTimeoutMs?: number;
@@ -149,7 +219,6 @@ export async function generateChat(
   }
   const models = opts.models ?? getModelList();
   const fetchFn = opts.fetchFn ?? fetch;
-  const timeoutMs = opts.timeoutMs ?? AI_TIMEOUT_MS;
   const totalTimeoutMs = opts.totalTimeoutMs ?? AI_TOTAL_TIMEOUT_MS;
   const overallTimeoutMs = opts.overallTimeoutMs ?? AI_RETRY_TOTAL_TIMEOUT_MS;
   const maxPasses = opts.maxPasses ?? 2;
@@ -225,7 +294,7 @@ export async function generateChat(
       }
 
       const effectiveTimeoutMs = Math.min(
-        timeoutMs,
+        opts.timeoutMs ?? getModelTimeoutMs(model),
         remainingPassAfterDelay,
         remainingOverallAfterDelay
       );
