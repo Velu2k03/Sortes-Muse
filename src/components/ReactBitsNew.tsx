@@ -213,15 +213,14 @@ export function Orb({
         animate={{ rotate: 360, scale: [1, 1.15, 1] }}
         transition={{ rotate: { duration: 40, repeat: Infinity, ease: "linear" }, scale: { duration: 12, repeat: Infinity, ease: "easeInOut" } }}
       />
-      <motion.div
+      {/* Phase F (P2-1): second orb is static; one slow loop plus the starfield is the ambient motion. */}
+      <div
         className="absolute right-1/4 top-1/2 h-56 w-56 rounded-full opacity-20 blur-3xl"
         style={{
           background: "radial-gradient(circle, rgba(244,208,63,0.5) 0%, transparent 70%)",
           x: "var(--orb-x, 0px)",
           y: "var(--orb-y, 0px)",
         }}
-        animate={{ rotate: -360, scale: [1, 1.1, 1] }}
-        transition={{ rotate: { duration: 55, repeat: Infinity, ease: "linear" }, scale: { duration: 15, repeat: Infinity, ease: "easeInOut" } }}
       />
     </div>
   );

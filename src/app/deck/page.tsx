@@ -211,7 +211,7 @@ export default function DeckPage() {
               items={cards.map((c) => ({
                 id: c.id,
                 src: c.image,
-                alt: c.name,
+                alt: "",
                 label: c.name,
               }))}
               animationMode="all"

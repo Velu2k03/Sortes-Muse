@@ -119,7 +119,7 @@ export default function ShareReading({
             flexDirection: "column",
             alignItems: "center",
             padding: "110px 80px 70px",
-            fontFamily: "Georgia, serif",
+            fontFamily: "Cormorant Garamond, Georgia, serif",
             border: "3px solid #d4af37",
             boxSizing: "border-box",
           }}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/components/AuthProvider";
 
@@ -15,6 +15,27 @@ export default function PurchaseConfirmer() {
   const [timedOut, setTimedOut] = useState(false);
   const baseline = useRef<number | null>(null);
   const attempts = useRef(0);
+  const mountTime = useRef(Date.now());
+
+  const checkTransactions = useCallback(() => {
+    if (user === null) return;
+    fetch("/api/credits/transactions")
+      .then((r) => r.json())
+      .then((d) => {
+        const list: Array<{ id: string; created_at: string }> = d?.transactions ?? [];
+        const threshold = mountTime.current - 10 * 60 * 1000;
+        if (list.some((t) => Date.parse(t.created_at) >= threshold)) {
+          setConfirmed(true);
+        }
+      })
+      .catch(() => null);
+  }, [user]);
+
+  useEffect(() => {
+    if (user !== null) {
+      checkTransactions();
+    }
+  }, [user, checkTransactions]);
 
   useEffect(() => {
     if (baseline.current === null && credits !== null) {
@@ -32,9 +53,10 @@ export default function PurchaseConfirmer() {
     const t = setTimeout(() => {
       attempts.current += 1;
       void refresh();
+      checkTransactions();
     }, 2000);
     return () => clearTimeout(t);
-  }, [credits, confirmed, timedOut, refresh]);
+  }, [credits, confirmed, timedOut, refresh, checkTransactions]);
 
   if (confirmed) {
     return (

@@ -14,8 +14,9 @@ import "./HoloCard.css";
 // The component API is unchanged, so the daily page and CardModal
 // callers did not change: preset, foilColor and intensity still
 // accepted, but every preset now renders the same warm gold light
-// (foilColor tints it, intensity scales it); scale, edgeSparkle,
-// frame and glare are accepted and ignored.
+// (foilColor tints it, intensity scales it). Phase F: the four
+// accepted-and-ignored props (scale, edgeSparkle, frame, glare) were
+// removed; callers never passed them.
 export type HoloPreset =
   | "bursts"
   | "stars"
@@ -39,10 +40,6 @@ interface HoloCardProps {
   preset?: HoloPreset;
   foilColor?: string;
   intensity?: number;
-  scale?: number;
-  edgeSparkle?: number;
-  frame?: number;
-  glare?: number;
   tiltMax?: number;
   hoverScale?: number;
   radius?: number;
@@ -67,10 +64,6 @@ export default function HoloCard({
   alt = "",
   preset = "bursts",
   intensity = 0.85,
-  scale = 1,
-  edgeSparkle = 0.8,
-  frame = 4,
-  glare = 0.5,
   foilColor = "#d4af37",
   width = 320,
   radius = 14,
@@ -84,10 +77,6 @@ export default function HoloCard({
   // Accepted for API compatibility; the rainbow presets no longer
   // change the look. Referenced so the props are not silently dead.
   void preset;
-  void scale;
-  void edgeSparkle;
-  void frame;
-  void glare;
   const rootRef = useRef<HTMLDivElement>(null);
   const rotorRef = useRef<HTMLDivElement>(null);
   const shadowRef = useRef<HTMLSpanElement>(null);
