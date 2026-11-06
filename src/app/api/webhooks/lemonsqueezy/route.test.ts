@@ -99,6 +99,20 @@ describe("POST /api/webhooks/lemonsqueezy", () => {
     expect(mockedFulfill).not.toHaveBeenCalled();
   });
 
+  it("rejects invalid JSON payload", async () => {
+    const raw = "not-json";
+    const sig = createHmac("sha256", SECRET).update(raw).digest("hex");
+    const req = new NextRequest("http://localhost/api/webhooks/lemonsqueezy", {
+      method: "POST",
+      headers: { "x-signature": sig, "Content-Type": "application/json" },
+      body: raw,
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: "Invalid payload." });
+    expect(mockedFulfill).not.toHaveBeenCalled();
+  });
+
   it("rejects a wrong store id", async () => {
     const res = await POST(signedReq(orderCreated({ store_id: 99 })));
     expect(res.status).toBe(400);
@@ -232,6 +246,28 @@ describe("POST /api/webhooks/lemonsqueezy", () => {
     expect(
       errorSpy.mock.calls.some((c) =>
         String(c[0]).includes("sortes-webhook") && String(c[0]).includes("webhook-error")
+      )
+    ).toBe(true);
+    errorSpy.mockRestore();
+  });
+
+  it("returns 400 when fulfilment throws non-transient User not found error", async () => {
+    mockedGetUserByEmail.mockResolvedValue(null);
+    mockedCreateUser.mockResolvedValue({
+      id: "u1",
+      email: "buyer@example.com",
+      credits: 0,
+      created_at: "2026-11-05T00:00:00Z",
+    });
+    mockedFulfill.mockRejectedValue(new Error("User not found during fulfillment"));
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const res = await POST(signedReq(orderCreated()));
+    expect(res.status).toBe(400);
+    expect(
+      errorSpy.mock.calls.some((c) =>
+        String(c[0]).includes("sortes-webhook") &&
+        String(c[0]).includes("webhook-error") &&
+        String(c[0]).includes("User not found during fulfillment")
       )
     ).toBe(true);
     errorSpy.mockRestore();

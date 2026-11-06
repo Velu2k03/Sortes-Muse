@@ -38,36 +38,40 @@ export const dynamic = "force-dynamic";
  * schedule as a Phase H item; see docs/PRODUCTION-CHANGE-PLAN.md.
  */
 export async function POST(req: NextRequest) {
-  const raw = await req.text();
-  const signature = req.headers.get("x-signature");
-  if (!verifyWebhookSignature(raw, signature)) {
-    return NextResponse.json({ error: "Invalid signature." }, { status: 401 });
-  }
+  let eventName: string | null = null;
+  let orderId = "";
 
-  let event: {
-    meta?: { event_name?: string; custom_data?: { pack_id?: string } };
-    data?: {
-      id?: string;
-      attributes?: {
-        user_email?: string;
-        total?: number;
-        subtotal?: number;
-        currency?: string;
-        store_id?: number;
-        status?: string;
-        first_order_item?: { variant_id?: number };
+  try {
+    const raw = await req.text();
+    const signature = req.headers.get("x-signature");
+    if (!verifyWebhookSignature(raw, signature)) {
+      return NextResponse.json({ error: "Invalid signature." }, { status: 401 });
+    }
+
+    let event: {
+      meta?: { event_name?: string; custom_data?: { pack_id?: string } };
+      data?: {
+        id?: string;
+        attributes?: {
+          user_email?: string;
+          total?: number;
+          subtotal?: number;
+          currency?: string;
+          store_id?: number;
+          status?: string;
+          first_order_item?: { variant_id?: number };
+        };
       };
     };
-  };
-  try {
-    event = JSON.parse(raw);
-  } catch {
-    return NextResponse.json({ error: "Invalid payload." }, { status: 400 });
-  }
+    try {
+      event = JSON.parse(raw);
+    } catch {
+      return NextResponse.json({ error: "Invalid payload." }, { status: 400 });
+    }
 
-  const eventName = event.meta?.event_name;
-  const orderId = event.data?.id ?? "";
-  try {
+    eventName = event.meta?.event_name ?? null;
+    orderId = event.data?.id ?? "";
+
     if (eventName === "order_refunded") {
       // R14: the refund branch used to revoke with no store check at
       // all. A mismatched store id is refused outright. A missing
@@ -162,19 +166,22 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true });
   } catch (err) {
-    // R8: a database error (or any unexpected failure) mid-webhook
-    // is a 500 with one structured log line, not a bare crash. Lemon
-    // Squeezy retries the delivery; the reconcile script (Phase H
-    // schedule) catches anything the retries still miss.
+    const errMsg = err instanceof Error ? err.message : String(err);
     console.error(
       JSON.stringify({
         source: "sortes-webhook",
         event: "webhook-error",
         eventName: eventName ?? null,
         orderId: orderId || null,
-        error: err instanceof Error ? err.message : String(err),
+        error: errMsg,
       })
     );
-    return NextResponse.json({ error: "Webhook processing failed." }, { status: 500 });
+    const isNonTransient =
+      errMsg.includes("User not found during fulfillment") ||
+      errMsg.includes("User not found during refund");
+    return NextResponse.json(
+      { error: "Webhook processing failed." },
+      { status: isNonTransient ? 400 : 500 }
+    );
   }
 }
