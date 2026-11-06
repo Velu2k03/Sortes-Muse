@@ -265,6 +265,7 @@ Write the personalized chart reflection now.`;
     user: userPrompt,
     temperature: 0.8,
     maxTokens: 1200,
+    route: "chart/interpret",
   });
 
   // Every model failed: fail honestly. A paying user must never pay

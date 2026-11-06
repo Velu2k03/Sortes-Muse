@@ -96,7 +96,7 @@ describe("generateChat", () => {
     expect(fetchFn).toHaveBeenCalledTimes(2);
   });
 
-  it("returns null when every model fails, and logs each failure", async () => {
+  it("returns null when every model fails across two passes, and logs each failure", async () => {
     const fetchFn = vi.fn(async () => ({ ok: false, status: 503 }));
     const res = await generateChat({
       apiKey: "k",
@@ -107,7 +107,7 @@ describe("generateChat", () => {
       retryDelayMs: 0,
     });
     expect(res).toBeNull();
-    expect(fetchFn).toHaveBeenCalledTimes(3);
+    expect(fetchFn).toHaveBeenCalledTimes(2 * MODELS.length);
     const logged = errorSpy.mock.calls.map((c: unknown[]) => String(c[0]));
     expect(logged.some((l: string) => l.includes("model-failed") && l.includes("elapsedMs"))).toBe(true);
     expect(logged.some((l: string) => l.includes("all-models-failed") && l.includes("elapsedMs"))).toBe(true);
@@ -324,5 +324,218 @@ describe("generateChat", () => {
       text: "The High Priestess invites quiet contemplation.",
       model: "nvidia/nemotron-3-ultra-550b-a55b:free",
     });
+  });
+
+  // Phase 8A (A2) tests
+  it("emits success log with model, elapsedMs, attemptIndex, pass, and route without secret or prompt", async () => {
+    const fetchFn = vi.fn(async () => okResponse("grounded response", "model-b:free"));
+    const apiKey = "secret-key-12345";
+    const userPrompt = "deep-secret-user-prompt-content";
+    const systemPrompt = "deep-secret-system-prompt-content";
+
+    const res = await generateChat({
+      apiKey,
+      system: systemPrompt,
+      user: userPrompt,
+      models: ["model-b:free"],
+      fetchFn: fetchFn as unknown as typeof fetch,
+      retryDelayMs: 0,
+      route: "reading/generate",
+    });
+
+    expect(res).toEqual({ text: "grounded response", model: "model-b:free" });
+    const logged = errorSpy.mock.calls.map((c: unknown[]) => String(c[0]));
+    const successLog = logged.find((l: string) => l.includes("model-succeeded"));
+    expect(successLog).toBeDefined();
+
+    const parsed = JSON.parse(successLog!);
+    expect(parsed).toMatchObject({
+      source: "sortes-ai",
+      event: "model-succeeded",
+      model: "model-b:free",
+      attemptIndex: 0,
+      pass: 1,
+      route: "reading/generate",
+    });
+    expect(typeof parsed.elapsedMs).toBe("number");
+
+    // Must NEVER log prompt text, api key, or model response text
+    expect(successLog).not.toContain(apiKey);
+    expect(successLog).not.toContain(userPrompt);
+    expect(successLog).not.toContain(systemPrompt);
+    expect(successLog).not.toContain("grounded response");
+  });
+
+  it("retries exactly once after all models fail once, then stops on success", async () => {
+    let callCount = 0;
+    const fetchFn = vi.fn(async () => {
+      callCount++;
+      if (callCount <= 3) {
+        return { ok: false, status: 500 };
+      }
+      return okResponse("pass 2 answered", "model-a:free");
+    });
+
+    const res = await generateChat({
+      apiKey: "k",
+      system: "s",
+      user: "u",
+      models: MODELS,
+      fetchFn: fetchFn as unknown as typeof fetch,
+      retryDelayMs: 0,
+    });
+
+    expect(res).toEqual({ text: "pass 2 answered", model: "model-a:free" });
+    expect(fetchFn).toHaveBeenCalledTimes(4);
+
+    const logged = errorSpy.mock.calls.map((c: unknown[]) => String(c[0]));
+    const retryLog = logged.find((l: string) => l.includes("chain-retry"));
+    expect(retryLog).toBeDefined();
+    const parsedRetry = JSON.parse(retryLog!);
+    expect(parsedRetry).toMatchObject({
+      source: "sortes-ai",
+      event: "chain-retry",
+      pass: 2,
+    });
+    expect(typeof parsedRetry.elapsedMs).toBe("number");
+
+    const successLog = logged.find((l: string) => l.includes("model-succeeded"));
+    expect(successLog).toBeDefined();
+    const parsedSuccess = JSON.parse(successLog!);
+    expect(parsedSuccess).toMatchObject({
+      source: "sortes-ai",
+      event: "model-succeeded",
+      model: "model-a:free",
+      attemptIndex: 0,
+      pass: 2,
+    });
+  });
+
+  it("does not start a second pass when pass 1 succeeds", async () => {
+    const fetchFn = vi.fn(async () => okResponse("immediate success", "model-a:free"));
+    const res = await generateChat({
+      apiKey: "k",
+      system: "s",
+      user: "u",
+      models: MODELS,
+      fetchFn: fetchFn as unknown as typeof fetch,
+      retryDelayMs: 0,
+    });
+
+    expect(res).toEqual({ text: "immediate success", model: "model-a:free" });
+    expect(fetchFn).toHaveBeenCalledTimes(1);
+
+    const logged = errorSpy.mock.calls.map((c: unknown[]) => String(c[0]));
+    expect(logged.some((l: string) => l.includes("chain-retry"))).toBe(false);
+  });
+
+  it("returns null after total failure across exactly two passes (2 x models.length)", async () => {
+    const fetchFn = vi.fn(async () => ({ ok: false, status: 503 }));
+    const res = await generateChat({
+      apiKey: "k",
+      system: "s",
+      user: "u",
+      models: MODELS,
+      fetchFn: fetchFn as unknown as typeof fetch,
+      retryDelayMs: 0,
+    });
+
+    expect(res).toBeNull();
+    expect(fetchFn).toHaveBeenCalledTimes(2 * MODELS.length);
+
+    const logged = errorSpy.mock.calls.map((c: unknown[]) => String(c[0]));
+    expect(logged.some((l: string) => l.includes("chain-retry"))).toBe(true);
+    const allFailedLog = logged.find((l: string) => l.includes("all-models-failed"));
+    expect(allFailedLog).toBeDefined();
+  });
+
+  it("respects the overall budget: tiny overallTimeoutMs returns null quickly without starting a second pass", async () => {
+    const fetchFn = vi.fn(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      return { ok: false, status: 500 };
+    });
+
+    const res = await generateChat({
+      apiKey: "k",
+      system: "s",
+      user: "u",
+      models: ["model-a:free"],
+      fetchFn: fetchFn as unknown as typeof fetch,
+      overallTimeoutMs: 10,
+      retryDelayMs: 0,
+    });
+
+    expect(res).toBeNull();
+    // Pass 1 ran 1 attempt taking 20ms (> 10ms budget). Before pass 2, overall budget is exhausted.
+    expect(fetchFn).toHaveBeenCalledTimes(1);
+    const logged = errorSpy.mock.calls.map((c: unknown[]) => String(c[0]));
+    expect(logged.some((l: string) => l.includes("chain-timeout"))).toBe(true);
+    expect(logged.some((l: string) => l.includes("chain-retry"))).toBe(false);
+  });
+
+  it("includes detail field truncated to at most 200 chars on non-OK response", async () => {
+    const longErrorMessage = "Provider returned error: model is temporarily rate-limited upstream. ".repeat(10);
+    expect(longErrorMessage.length).toBeGreaterThan(200);
+
+    const fetchFn = vi.fn(async () => ({
+      ok: false,
+      status: 429,
+      json: async () => ({
+        error: {
+          message: longErrorMessage,
+        },
+      }),
+    }));
+
+    const res = await generateChat({
+      apiKey: "k",
+      system: "s",
+      user: "u",
+      models: ["xingchen-agi/xing4.0-29b-a4b:free"],
+      fetchFn: fetchFn as unknown as typeof fetch,
+      retryDelayMs: 0,
+      maxPasses: 1,
+    });
+
+    expect(res).toBeNull();
+    const logged = errorSpy.mock.calls.map((c: unknown[]) => String(c[0]));
+    const failedLog = logged.find((l: string) => l.includes("model-failed"));
+    expect(failedLog).toBeDefined();
+
+    const parsed = JSON.parse(failedLog!);
+    expect(parsed.event).toBe("model-failed");
+    expect(parsed.error).toBe("OpenRouter 429");
+    expect(parsed.detail).toBeDefined();
+    expect(parsed.detail.length).toBe(200);
+    expect(parsed.detail).toBe(longErrorMessage.slice(0, 200));
+  });
+
+  it("falls back to statusText for detail when error.message is not parseable", async () => {
+    const fetchFn = vi.fn(async () => ({
+      ok: false,
+      status: 429,
+      statusText: "Too Many Requests",
+      json: async () => {
+        throw new Error("Invalid JSON");
+      },
+    }));
+
+    const res = await generateChat({
+      apiKey: "k",
+      system: "s",
+      user: "u",
+      models: ["model-a:free"],
+      fetchFn: fetchFn as unknown as typeof fetch,
+      retryDelayMs: 0,
+      maxPasses: 1,
+    });
+
+    expect(res).toBeNull();
+    const logged = errorSpy.mock.calls.map((c: unknown[]) => String(c[0]));
+    const failedLog = logged.find((l: string) => l.includes("model-failed"));
+    expect(failedLog).toBeDefined();
+
+    const parsed = JSON.parse(failedLog!);
+    expect(parsed.detail).toBe("Too Many Requests");
   });
 });

@@ -334,6 +334,7 @@ export async function POST(req: NextRequest) {
       const wc = wordCount(text);
       return wc >= 20 && wc <= 800;
     },
+    route: "reading/follow-up",
   });
 
   // Every model failed: fail honestly with no spend.

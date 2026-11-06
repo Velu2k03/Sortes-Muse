@@ -301,6 +301,7 @@ export async function POST(req: NextRequest) {
     temperature: 0.8,
     maxTokens: 1200,
     validate: (text) => isValidReading(text, cards),
+    route: "reading/generate",
   });
 
   // Every model failed (slow, rate-limited, or erroring): fail honestly.

@@ -163,6 +163,7 @@ export async function POST(req: NextRequest) {
     user: userPrompt,
     temperature: 0.8,
     maxTokens: spec.maxTokens,
+    route: "reports/generate",
   });
 
   if (!generated) {
