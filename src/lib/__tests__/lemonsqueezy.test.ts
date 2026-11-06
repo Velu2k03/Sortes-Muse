@@ -122,6 +122,30 @@ describe("lemonsqueezy helpers", () => {
       ).resolves.toBeNull();
       expect(fetchFn).not.toHaveBeenCalled();
     });
+
+    it("returns null within budget when the fetch hangs and times out", async () => {
+      const fetchFn = vi.fn(async (_url: unknown, init?: RequestInit) => {
+        const signal = init?.signal;
+        await new Promise((_resolve, reject) => {
+          if (signal?.aborted) {
+            reject(new DOMException("Aborted", "AbortError"));
+            return;
+          }
+          signal?.addEventListener("abort", () =>
+            reject(new DOMException("Aborted", "AbortError"))
+          );
+        });
+        return { ok: true, json: async () => paidOrder };
+      });
+
+      const start = Date.now();
+      const order = await getOrder("ord_1", fetchFn as unknown as typeof fetch, 50);
+      const elapsed = Date.now() - start;
+
+      expect(order).toBeNull();
+      expect(elapsed).toBeLessThan(1000);
+      expect(fetchFn).toHaveBeenCalledTimes(1);
+    }, 1500);
   });
 
   describe("verifyApiOrder", () => {
@@ -263,5 +287,43 @@ describe("lemonsqueezy helpers", () => {
         )
       ).toBe(true);
     });
+
+    it("throws within budget when the fetch hangs and times out", async () => {
+      const fetchFn = vi.fn(async (_url: unknown, init?: RequestInit) => {
+        const signal = init?.signal;
+        await new Promise((_resolve, reject) => {
+          if (signal?.aborted) {
+            reject(new DOMException("Aborted", "AbortError"));
+            return;
+          }
+          signal?.addEventListener("abort", () =>
+            reject(new DOMException("Aborted", "AbortError"))
+          );
+        });
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              type: "checkouts",
+              id: "co_123",
+              attributes: { url: "https://test.lemonsqueezy.com/checkout/123" },
+            },
+          }),
+        };
+      });
+
+      const start = Date.now();
+      await expect(
+        createCheckout({
+          packId: "pack5",
+          fetchFn: fetchFn as unknown as typeof fetch,
+          timeoutMs: 50,
+        })
+      ).rejects.toThrow();
+      const elapsed = Date.now() - start;
+
+      expect(elapsed).toBeLessThan(1000);
+      expect(fetchFn).toHaveBeenCalledTimes(1);
+    }, 1500);
   });
 });

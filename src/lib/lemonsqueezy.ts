@@ -89,6 +89,7 @@ export async function createCheckout(args: {
   packId: string;
   email?: string;
   fetchFn?: typeof fetch;
+  timeoutMs?: number;
 }): Promise<string> {
   const variantId = variantIdForPack(args.packId);
   const readings =
@@ -104,6 +105,7 @@ export async function createCheckout(args: {
   ).replace(/\/+$/, "");
 
   const fetchFn = args.fetchFn ?? fetch;
+  const timeoutMs = args.timeoutMs ?? 10000;
   const res = await fetchFn(`${API_BASE}/checkouts`, {
     method: "POST",
     headers: {
@@ -111,6 +113,7 @@ export async function createCheckout(args: {
       "Content-Type": "application/vnd.api+json",
       Accept: "application/vnd.api+json",
     },
+    signal: AbortSignal.timeout(timeoutMs),
     body: JSON.stringify({
       data: {
         type: "checkouts",
@@ -178,7 +181,11 @@ export function verifyWebhookSignature(rawBody: string, signature: string | null
  * fetchFn is injectable so tests and the local webhook simulator
  * never call the live API.
  */
-export async function getOrder(orderId: string, fetchFn: typeof fetch = fetch) {
+export async function getOrder(
+  orderId: string,
+  fetchFn: typeof fetch = fetch,
+  timeoutMs = 8000
+) {
   const apiKey = process.env.LEMONSQUEEZY_API_KEY?.trim();
   if (!apiKey || !orderId) return null;
   try {
@@ -187,6 +194,7 @@ export async function getOrder(orderId: string, fetchFn: typeof fetch = fetch) {
         Authorization: `Bearer ${apiKey}`,
         Accept: "application/vnd.api+json",
       },
+      signal: AbortSignal.timeout(timeoutMs),
     });
     if (!res.ok) return null;
     return await res.json();
