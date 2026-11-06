@@ -34,7 +34,10 @@ export async function GET(req: NextRequest) {
     if (error || !data.user?.email) return fail;
     const email = data.user.email.trim().toLowerCase();
     const user = (await getUserByEmail(email)) ?? (await createUser(email));
-    const token = await createSession(user.id, user.email);
+    // Phase B (R5): pass the user's current session version so a
+    // magic-link sign-in after a password change issues a live token
+    // instead of one that getSession rejects on version mismatch.
+    const token = await createSession(user.id, user.email, user.pwd_ver ?? 1);
     const res = NextResponse.redirect(`${base}/account?auth=ok`);
     res.cookies.set(SESSION_COOKIE, token, {
       httpOnly: true,
