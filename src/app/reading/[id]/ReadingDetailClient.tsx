@@ -475,7 +475,7 @@ export default function ReadingDetail({ id }: { id: string }) {
                 setNextStepSaved(true);
               }
             }}
-            className="btn-gold rounded-xl px-6 py-3 font-bold disabled:opacity-40"
+            className="btn-gold rounded-xl px-6 py-3 font-bold disabled:opacity-100 disabled:saturate-50"
           >
             {nextStepSaving ? "Saving…" : "Save step"}
           </button>
@@ -521,7 +521,7 @@ export default function ReadingDetail({ id }: { id: string }) {
                 setNoteSaved(true);
               }
             }}
-            className="btn-gold self-start rounded-xl px-6 py-3 font-bold disabled:opacity-40"
+            className="btn-gold self-start rounded-xl px-6 py-3 font-bold disabled:opacity-100 disabled:saturate-50"
           >
             {noteSaving ? "Saving…" : reading.note ? "Update note" : "Save note"}
           </button>
@@ -584,7 +584,7 @@ export default function ReadingDetail({ id }: { id: string }) {
                       setRevisitSaved(true);
                     }
                   }}
-                  className="btn-gold self-start rounded-xl px-6 py-3 font-bold disabled:opacity-40"
+                  className="btn-gold self-start rounded-xl px-6 py-3 font-bold disabled:opacity-100 disabled:saturate-50"
                 >
                   {revisitSaving ? "Saving…" : "Update revisit note"}
                 </button>
@@ -646,7 +646,7 @@ export default function ReadingDetail({ id }: { id: string }) {
                     setRevisitSaved(true);
                   }
                 }}
-                className="btn-gold self-start rounded-xl px-6 py-3 font-bold disabled:opacity-40"
+                className="btn-gold self-start rounded-xl px-6 py-3 font-bold disabled:opacity-100 disabled:saturate-50"
               >
                 {revisitSaving ? "Saving…" : "Save revisit note"}
               </button>
@@ -777,7 +777,7 @@ export default function ReadingDetail({ id }: { id: string }) {
                     type="button"
                     disabled={followUpLoading || !followUpQ.trim()}
                     onClick={askFollowUp}
-                    className="btn-gold whitespace-nowrap rounded-xl px-6 py-3 font-bold disabled:opacity-40"
+                    className="btn-gold whitespace-nowrap rounded-xl px-6 py-3 font-bold disabled:opacity-100 disabled:saturate-50"
                   >
                     {followUpLoading
                       ? "Writing your follow-up…"
@@ -815,7 +815,7 @@ export default function ReadingDetail({ id }: { id: string }) {
                       type="button"
                       onClick={askFollowUp}
                       disabled={followUpLoading}
-                      className="w-full rounded-xl border border-gold/40 px-4 py-3 text-sm font-semibold text-goldbright hover:bg-gold/15 disabled:opacity-50"
+                      className="w-full rounded-xl border border-gold/40 px-4 py-3 text-sm font-semibold text-goldbright hover:bg-gold/15 disabled:opacity-100 disabled:saturate-50"
                     >
                       Try again
                     </button>

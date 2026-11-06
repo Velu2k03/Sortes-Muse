@@ -640,7 +640,7 @@ export default function ChartsClient() {
               key={s}
               type="button"
               onClick={() => selectSystem(s)}
-              className={`flex-1 rounded-full px-4 py-2.5 text-sm font-bold ${
+              className={`flex-1 rounded-full px-4 py-3 text-sm font-bold ${
                 system === s ? "btn-gold" : "border border-gold/40 text-goldbright"
               }`}
               aria-pressed={system === s}
@@ -697,7 +697,7 @@ export default function ChartsClient() {
             setInterpretation("");
             setSaved(false);
           }}
-          className="rounded-xl border border-gold/30 px-4 py-2 text-xs font-semibold text-cream/90 hover:bg-gold/10"
+          className="rounded-xl border border-gold/30 px-4 py-3 text-xs font-semibold text-cream/90 hover:bg-gold/10"
         >
           Clear remembered birth details
         </button>
@@ -899,11 +899,11 @@ export default function ChartsClient() {
                 placeholder="e.g. Santa Rosa City, Laguna"
                 className={inputClass}
               />
-              <button type="button" onClick={lookupPlace} disabled={placeBusy} className="shrink-0 rounded-xl border border-gold/40 px-4 py-3 text-sm font-bold text-goldbright disabled:opacity-50">
+              <button type="button" onClick={lookupPlace} disabled={placeBusy} className="shrink-0 rounded-xl border border-gold/40 px-4 py-3 text-sm font-bold text-goldbright disabled:opacity-100 disabled:saturate-50">
                 {placeBusy ? "Searching…" : "Find"}
               </button>
             </div>
-            {placeStatus && <p className="mt-2 text-sm text-cream/70">{placeStatus}</p>}
+            {placeStatus && <p className="mt-2 text-sm text-cream/75">{placeStatus}</p>}
             <p className="mt-1 text-xs text-cream/80">
               The place name is used only for this lookup. Only its coordinates are kept for the calculation, and the
               place name is never stored and never sent to AI. Calculate chart also resolves a typed place first.
@@ -928,7 +928,7 @@ export default function ChartsClient() {
           </p>
         )}
         <div className="mt-6 flex flex-wrap gap-3">
-          <button type="submit" disabled={loading || (system === "ziwei" && unknownTime)} className="btn-gold rounded-full px-6 py-3 text-sm font-bold disabled:opacity-50">
+          <button type="submit" disabled={loading || (system === "ziwei" && unknownTime)} className="btn-gold rounded-full px-6 py-3 text-sm font-bold disabled:opacity-100 disabled:saturate-50">
             {loading ? "Calculating…" : (<span className="inline-flex items-center gap-2"><Icon name="chart" size={18} />Calculate chart</span>)}
           </button>
         </div>
@@ -981,12 +981,12 @@ export default function ChartsClient() {
               resolved, so the time was converted by longitude only,
               and the timezone field above is how to correct it. */}
           {result.timeZone ? (
-            <p className="mt-3 text-sm text-cream/70">
+            <p className="mt-3 text-sm text-cream/75">
               Timezone used: {result.timeZone} ({formatUtcOffset(result.utcOffsetMinutes ?? 0)}), with daylight saving for the birth date.
               {result.system === "ziwei" ? " Solar time is then set by longitude." : ""}
             </p>
           ) : (
-            <p className="mt-3 text-sm text-cream/70">
+            <p className="mt-3 text-sm text-cream/75">
               No timezone could be resolved for these coordinates, so the birth time was converted by longitude only
               ({formatUtcOffset(result.utcOffsetMinutes ?? 0)}). If this is wrong, enter the IANA timezone in the
               form above and recalculate.
@@ -1015,7 +1015,7 @@ export default function ChartsClient() {
                 Show Chinese glosses (default off in English, on in Chinese)
               </label>
               <div className="mt-3 flex flex-wrap gap-3">
-                <button type="button" onClick={onShareChart} disabled={shareBusy} className="rounded-full border border-gold/40 px-5 py-2.5 text-sm font-bold text-goldbright disabled:opacity-50">
+                <button type="button" onClick={onShareChart} disabled={shareBusy} className="rounded-full border border-gold/40 px-5 py-3 text-sm font-bold text-goldbright disabled:opacity-100 disabled:saturate-50">
                   {shareBusy ? "Creating image…" : (<span className="inline-flex items-center gap-2"><Icon name="share" size={16} />Share chart as image</span>)}
                 </button>
               </div>
@@ -1035,7 +1035,7 @@ export default function ChartsClient() {
                 ))}
               </div>
               {result.solarCorrectionMinutes !== 0 && (
-                <p className="mt-3 text-sm text-cream/70">
+                <p className="mt-3 text-sm text-cream/75">
                   {result.timeBasis === "iana"
                     ? `Timezone ${result.timeZone ?? ""} (${formatUtcOffset(result.utcOffsetMinutes ?? 0)}) applied, then longitude correction to solar time: ${result.solarCorrectionMinutes > 0 ? "+" : ""}${result.solarCorrectionMinutes} minutes, corrected time ${result.solarCorrectedTime}. Equation of time is not applied.`
                     : `Longitude correction applied: ${result.solarCorrectionMinutes > 0 ? "+" : ""}${result.solarCorrectionMinutes} minutes, corrected time ${result.solarCorrectedTime}. No timezone could be resolved, so DST and historical timezones are not applied; equation of time is not applied either.`}
@@ -1045,7 +1045,7 @@ export default function ChartsClient() {
           )}
           {result.system !== "ziwei" && (
             <div className="mt-3 flex flex-wrap gap-3">
-              <button type="button" onClick={onShareChart} disabled={shareBusy} className="rounded-full border border-gold/40 px-5 py-2.5 text-sm font-bold text-goldbright disabled:opacity-50">
+              <button type="button" onClick={onShareChart} disabled={shareBusy} className="rounded-full border border-gold/40 px-5 py-3 text-sm font-bold text-goldbright disabled:opacity-100 disabled:saturate-50">
                 {shareBusy ? "Creating image…" : (<span className="inline-flex items-center gap-2"><Icon name="share" size={16} />Share chart as image</span>)}
               </button>
             </div>
@@ -1236,7 +1236,7 @@ export default function ChartsClient() {
                       key={f}
                       type="button"
                       onClick={() => setFocus(f)}
-                      className={`rounded-full px-3 py-1.5 text-sm font-bold ${focus === f ? "btn-gold" : "border border-gold/40 text-goldbright"}`}
+                      className={`rounded-full px-3 py-2.5 min-h-[44px] text-sm font-bold ${focus === f ? "btn-gold" : "border border-gold/40 text-goldbright"}`}
                       aria-pressed={focus === f}
                     >
                       {f}
@@ -1275,13 +1275,13 @@ export default function ChartsClient() {
                   type="button"
                   onClick={onInterpret}
                   disabled={interpLoading}
-                  className="w-full rounded-xl border border-gold/40 px-4 py-3 text-sm font-semibold text-goldbright hover:bg-gold/15 disabled:opacity-50"
+                  className="w-full rounded-xl border border-gold/40 px-4 py-3 text-sm font-semibold text-goldbright hover:bg-gold/15 disabled:opacity-100 disabled:saturate-50"
                 >
                   Try again
                 </button>
               </div>
             )}
-            <button type="button" onClick={onInterpret} disabled={interpLoading} className="btn-gold mt-5 rounded-full px-6 py-3 text-sm font-bold disabled:opacity-50">
+            <button type="button" onClick={onInterpret} disabled={interpLoading} className="btn-gold mt-5 rounded-full px-6 py-3 text-sm font-bold disabled:opacity-100 disabled:saturate-50">
               {interpLoading ? "Interpreting…" : displayFree ? "Get interpretation (free)" : "Get interpretation (1 Oracle)"}
             </button>
             {interpretation && (
@@ -1293,14 +1293,14 @@ export default function ChartsClient() {
                 </p>
                 <p className="mt-3 whitespace-pre-wrap leading-relaxed text-cream/90">{interpretation}</p>
                 <div className="mt-5 flex flex-wrap gap-3">
-                  <button type="button" onClick={onSaveChart} disabled={saved} className="rounded-full border border-gold/40 px-5 py-2.5 text-sm font-bold text-goldbright disabled:opacity-50">
+                  <button type="button" onClick={onSaveChart} disabled={saved} className="rounded-full border border-gold/40 px-5 py-3 text-sm font-bold text-goldbright disabled:opacity-100 disabled:saturate-50">
                     {saved ? "Saved to journal" : "Save to journal"}
                   </button>
-                  <button type="button" onClick={onShareChart} disabled={shareBusy} className="rounded-full border border-gold/40 px-5 py-2.5 text-sm font-bold text-goldbright disabled:opacity-50">
+                  <button type="button" onClick={onShareChart} disabled={shareBusy} className="rounded-full border border-gold/40 px-5 py-3 text-sm font-bold text-goldbright disabled:opacity-100 disabled:saturate-50">
                     {shareBusy ? "Creating image…" : (<span className="inline-flex items-center gap-2"><Icon name="share" size={16} />Share chart as image</span>)}
                   </button>
                 </div>
-                {saved && <p className="mt-3 text-sm text-cream/70">Saved as positions only, never birth data. See your journal.</p>}
+                {saved && <p className="mt-3 text-sm text-cream/75">Saved as positions only, never birth data. See your journal.</p>}
                 {/* Phase 5 (5.4a): heirloom keepsake export
                     (print-to-PDF) of this chart's real summary and
                     interpretation. */}

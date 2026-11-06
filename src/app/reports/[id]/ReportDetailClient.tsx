@@ -305,7 +305,7 @@ export default function ReportDetailClient() {
         <button
           type="button"
           onClick={handleDelete}
-          className="rounded-xl border border-danger/50 px-4 py-2 text-sm font-semibold text-danger"
+          className="rounded-xl border border-danger/50 px-4 py-3 text-sm font-semibold text-danger"
         >
           {confirming ? "Tap again to delete this report" : "Delete this report"}
         </button>

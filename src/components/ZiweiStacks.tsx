@@ -119,7 +119,7 @@ export default function ZiweiStacks({
           type="button"
           onClick={onShow}
           disabled={loading || !Number.isInteger(year)}
-          className="btn-gold rounded-xl px-6 py-3 font-bold disabled:opacity-40"
+          className="btn-gold rounded-xl px-6 py-3 font-bold disabled:opacity-100 disabled:saturate-50"
         >
           {loading ? "Calculating…" : "Show stacks"}
         </button>

@@ -169,7 +169,7 @@ export default function CheckoutModal({ open, onClose, reason, initialPackId }: 
                         type="button"
                         disabled={processing !== null || realCheckout !== true}
                         onClick={() => void buyReal(p.id)}
-                        className="btn-gold rounded-xl px-5 py-2.5 text-sm font-bold disabled:opacity-60"
+                        className="btn-gold rounded-xl px-5 py-3 text-sm font-bold disabled:opacity-100 disabled:saturate-50"
                       >
                         {processing === p.id ? "…" : "Checkout"}
                       </button>

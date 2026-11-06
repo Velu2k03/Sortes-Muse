@@ -501,7 +501,7 @@ export default function HistoryPage() {
                 a.click();
                 URL.revokeObjectURL(url);
               }}
-              className="btn-ghost rounded-xl px-4 py-2.5 text-sm font-semibold"
+              className="btn-ghost rounded-xl px-4 py-3 text-sm font-semibold"
             >
               Export journal as Markdown
             </button>
@@ -516,7 +516,7 @@ export default function HistoryPage() {
                 a.click();
                 URL.revokeObjectURL(url);
               }}
-              className="btn-ghost rounded-xl px-4 py-2.5 text-sm font-semibold"
+              className="btn-ghost rounded-xl px-4 py-3 text-sm font-semibold"
             >
               Export journal as JSON
             </button>
@@ -583,18 +583,18 @@ export default function HistoryPage() {
                             {r.spreadName}
                           </h2>
                           {r.question && (
-                            <p className="mt-1 truncate text-sm italic text-cream/70">
+                            <p className="mt-1 truncate text-sm italic text-cream/75">
                               “{r.question}”
                             </p>
                           )}
                           {r.chartSummary && (
-                            <p className="mt-1 text-sm text-cream/70">{r.chartSummary}</p>
+                            <p className="mt-1 text-sm text-cream/75">{r.chartSummary}</p>
                           )}
                         </div>
                         <div className="flex shrink-0 flex-wrap gap-2">
                           <Link
                             href={`/reading/${r.id}`}
-                            className="btn-ghost rounded-xl px-4 py-2.5 text-sm font-semibold"
+                            className="btn-ghost rounded-xl px-4 py-3 text-sm font-semibold"
                           >
                             Open reading
                           </Link>
@@ -603,7 +603,7 @@ export default function HistoryPage() {
                             !r.chartSummary && (
                               <Link
                                 href={`/reading/${r.id}`}
-                                className="btn-gold rounded-xl px-4 py-2.5 text-sm font-bold"
+                                className="btn-gold rounded-xl px-4 py-3 text-sm font-bold"
                                 title="Continue the follow-up thread on this reading"
                               >
                                 Follow-up

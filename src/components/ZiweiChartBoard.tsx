@@ -124,32 +124,32 @@ export default function ZiweiChartBoard({ result, lang = "en", view = "ring", sh
         <span>
           {t.lunar}:{" "}
           <strong className="text-cream">{en ? (lunarEn ?? result.lunarDate) : result.lunarDate}</strong>{" "}
-          {glosses && <span className="text-cream/60">{en ? `(${result.lunarDate})` : lunarEn ? `(${lunarEn})` : ""}</span>}
+          {glosses && <span className="text-cream/75">{en ? `(${result.lunarDate})` : lunarEn ? `(${lunarEn})` : ""}</span>}
         </span>
         <span>
           {t.chineseDate}:{" "}
           <strong className="text-cream">{en ? formatChineseDateEn(result.chineseDate) : result.chineseDate}</strong>{" "}
-          {glosses && <span className="text-cream/60">{en ? `(${result.chineseDate})` : `(${formatChineseDateEn(result.chineseDate)})`}</span>}
+          {glosses && <span className="text-cream/75">{en ? `(${result.chineseDate})` : `(${formatChineseDateEn(result.chineseDate)})`}</span>}
         </span>
         <span>
           {t.zodiac}:{" "}
           <strong className="text-cream">{en ? zodiacEn(result.zodiac) : result.zodiac}</strong>{" "}
-          {glosses && <span className="text-cream/60">{en ? `(${result.zodiac})` : `(${zodiacEn(result.zodiac)})`}</span>}
+          {glosses && <span className="text-cream/75">{en ? `(${result.zodiac})` : `(${zodiacEn(result.zodiac)})`}</span>}
         </span>
         <span>
           {t.sign}:{" "}
           <strong className="text-cream">{en ? signEn(result.sign) : result.sign}</strong>{" "}
-          {glosses && <span className="text-cream/60">{en ? `(${result.sign})` : `(${signEn(result.sign)})`}</span>}
+          {glosses && <span className="text-cream/75">{en ? `(${result.sign})` : `(${signEn(result.sign)})`}</span>}
         </span>
         <span>
           {t.time}:{" "}
           <strong className="text-cream">{en ? formatTimeLabelEn(result.timeLabel) : result.timeLabel}</strong>{" "}
-          {glosses && <span className="text-cream/60">{en ? `(${result.timeLabel})` : `(${formatTimeLabelEn(result.timeLabel)})`}</span>}
+          {glosses && <span className="text-cream/75">{en ? `(${result.timeLabel})` : `(${formatTimeLabelEn(result.timeLabel)})`}</span>}
         </span>
         {result.unknownTime && <span className="text-goldbright">{t.unknown}</span>}
       </div>
 
-      <p className="mt-4 text-sm text-cream/60">{t.tap}</p>
+      <p className="mt-4 text-sm text-cream/75">{t.tap}</p>
       {view === "square" && (
         <div className="mx-auto mt-4 grid w-full max-w-[640px] grid-cols-4 gap-1.5" role="grid" aria-label={en ? "Ziwei square chart" : "紫微斗数方盘"}>
           {result.palaces.map((p) => {
@@ -313,18 +313,18 @@ export default function ZiweiChartBoard({ result, lang = "en", view = "ring", sh
         >
           <h3 className="font-display text-xl text-goldbright">
             {en ? current.name : current.chineseName}{" "}
-            {glosses && <span className="text-base text-cream/60">({en ? current.chineseName : current.name})</span>}
+            {glosses && <span className="text-base text-cream/75">({en ? current.chineseName : current.name})</span>}
             {/* Life palace needs only the star marker: its name already
                 is "Life" (命宫), so adding "Life palace" after it read
                 as "Life (命宫) ✦ Life palace". */}
             {current.isLifePalace && <span className="ml-2 text-sm" aria-hidden="true">✦</span>}
           </h3>
-          <p className="mt-1 text-sm text-cream/70">
+          <p className="mt-1 text-sm text-cream/75">
             {en
               ? `${STEM_PINYIN[current.heavenlyStem] ?? current.heavenlyStem} ${BRANCH_INFO[current.earthlyBranch]?.pinyin ?? current.earthlyBranch}`
               : `${current.heavenlyStem} ${current.earthlyBranch}`}{" "}
             {glosses && (
-              <span className="text-cream/60">
+              <span className="text-cream/75">
                 ({en ? `${current.heavenlyStem} ${current.earthlyBranch}` : `${STEM_PINYIN[current.heavenlyStem] ?? current.heavenlyStem} ${BRANCH_INFO[current.earthlyBranch]?.pinyin ?? current.earthlyBranch}`})
               </span>
             )}
@@ -341,7 +341,7 @@ export default function ZiweiChartBoard({ result, lang = "en", view = "ring", sh
               : t.noMajor}
           </p>
           {current.majorStarsDetail.length > 0 && (
-            <p className="mt-1 text-xs text-cream/60">
+            <p className="mt-1 text-xs text-cream/75">
               {current.majorStarsDetail
                 .map((s) => {
                   const l = localizeStar(s.name);
@@ -356,7 +356,7 @@ export default function ZiweiChartBoard({ result, lang = "en", view = "ring", sh
             </p>
           )}
           {current.minorStars.length > 0 && (
-            <p className="mt-1 text-xs text-cream/60">
+            <p className="mt-1 text-xs text-cream/75">
               {current.minorStars
                 .map((s) => {
                   const l = localizeMinorStar(s);
@@ -368,7 +368,7 @@ export default function ZiweiChartBoard({ result, lang = "en", view = "ring", sh
           )}
         </motion.article>
       </AnimatePresence>
-      <p className="mt-4 text-sm text-cream/60">{t.note}</p>
+      <p className="mt-4 text-sm text-cream/75">{t.note}</p>
     </div>
   );
 }

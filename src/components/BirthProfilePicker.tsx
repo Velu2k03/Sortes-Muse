@@ -139,7 +139,7 @@ export default function BirthProfilePicker({
                         value={editName}
                         onChange={(e) => setEditName(e.target.value)}
                         maxLength={60}
-                        className="min-w-0 flex-1 rounded-lg border border-gold/25 bg-panel/70 px-3 py-1.5 text-sm text-cream"
+                        className="min-w-0 flex-1 rounded-lg border border-gold/25 bg-panel/70 px-3 py-2.5 min-h-[44px] text-sm text-cream"
                       />
                       <button
                         type="button"
@@ -147,14 +147,14 @@ export default function BirthProfilePicker({
                           persist(updateBirthProfile(profiles, p.id, { name: editName }));
                           setEditingId(null);
                         }}
-                        className="rounded-lg border border-gold/40 px-3 py-1.5 text-xs font-semibold text-goldbright"
+                        className="rounded-lg border border-gold/40 px-3 py-2.5 min-h-[44px] text-xs font-semibold text-goldbright"
                       >
                         Save name
                       </button>
                       <button
                         type="button"
                         onClick={() => setEditingId(null)}
-                        className="rounded-lg border border-gold/25 px-3 py-1.5 text-xs text-cream/80"
+                        className="rounded-lg border border-gold/25 px-3 py-2.5 min-h-[44px] text-xs text-cream/80"
                       >
                         Cancel
                       </button>
@@ -171,7 +171,7 @@ export default function BirthProfilePicker({
                           setEditingId(p.id);
                           setEditName(p.name);
                         }}
-                        className="rounded-lg border border-gold/40 px-3 py-1.5 text-xs font-semibold text-goldbright"
+                        className="rounded-lg border border-gold/40 px-3 py-2.5 min-h-[44px] text-xs font-semibold text-goldbright"
                       >
                         Rename
                       </button>
@@ -186,7 +186,7 @@ export default function BirthProfilePicker({
                           setArmedDeleteId(null);
                           if (selectedId === p.id) setSelectedId("");
                         }}
-                        className="rounded-lg border border-danger/30 px-3 py-1.5 text-xs font-semibold text-danger"
+                        className="rounded-lg border border-danger/30 px-3 py-2.5 min-h-[44px] text-xs font-semibold text-danger"
                       >
                         {armedDeleteId === p.id ? "Confirm delete?" : "Delete"}
                       </button>

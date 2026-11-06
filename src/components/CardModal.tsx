@@ -49,7 +49,7 @@ export default function CardModal({ cardId, onClose }: Props) {
               type="button"
               onClick={onClose}
               aria-label="Close card details"
-              className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-gold/40 bg-navydeep/90 text-xl leading-none text-goldbright hover:border-gold hover:bg-gold/20"
+              className="absolute right-3 top-3 z-10 flex h-11 w-11 items-center justify-center rounded-full border border-gold/40 bg-navydeep/90 text-xl leading-none text-goldbright hover:border-gold hover:bg-gold/20"
             >
               ×
             </button>

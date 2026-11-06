@@ -211,7 +211,7 @@ export default function CreditsPage() {
                   type="button"
                   disabled={directProcessing !== null}
                   onClick={() => void buyDirect(p.id)}
-                  className="btn-gold w-full rounded-xl px-4 py-2.5 font-bold disabled:opacity-60"
+                  className="btn-gold w-full rounded-xl px-4 py-3 font-bold disabled:opacity-100 disabled:saturate-50"
                 >
                   {directProcessing === p.id ? "…" : "Checkout"}
                 </button>

@@ -127,7 +127,7 @@ export default function DeckPage() {
                 type="button"
                 aria-pressed={filter === f.key}
                 onClick={() => setFilter(f.key)}
-                className={`rounded-full px-3 py-2 text-sm font-semibold transition ${
+                className={`rounded-full px-3 py-3 text-sm font-semibold transition ${
                   filter === f.key
                     ? "bg-gold text-ink"
                     : "border border-gold/30 text-cream/80 hover:border-gold/60 hover:text-goldbright"
@@ -142,7 +142,7 @@ export default function DeckPage() {
               type="button"
               aria-pressed={effectiveView === "grid"}
               onClick={() => setView("grid")}
-              className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+              className={`rounded-full px-4 py-3 text-sm font-semibold transition ${
                 effectiveView === "grid"
                   ? "bg-gold text-ink"
                   : "border border-gold/30 text-cream/80 hover:border-gold/60 hover:text-goldbright"
@@ -154,7 +154,7 @@ export default function DeckPage() {
               type="button"
               aria-pressed={effectiveView === "spiral"}
               onClick={() => setView("spiral")}
-              className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+              className={`rounded-full px-4 py-3 text-sm font-semibold transition ${
                 effectiveView === "spiral"
                   ? "bg-gold text-ink"
                   : "border border-gold/30 text-cream/80 hover:border-gold/60 hover:text-goldbright"
@@ -241,7 +241,7 @@ export default function DeckPage() {
               <button
                 type="button"
                 onClick={() => { setQuery(""); setFilter("all"); }}
-                className="mt-3 rounded-full border border-gold/30 px-4 py-2 text-sm font-semibold text-goldbright hover:border-gold/60"
+                className="mt-3 rounded-full border border-gold/30 px-4 py-3 text-sm font-semibold text-goldbright hover:border-gold/60"
               >
                 Reset filters
               </button>
@@ -295,7 +295,7 @@ export default function DeckPage() {
           <button
             type="button"
             onClick={() => { setQuery(""); setFilter("all"); }}
-            className="mt-3 rounded-full border border-gold/30 px-4 py-2 text-sm font-semibold text-goldbright hover:border-gold/60"
+            className="mt-3 rounded-full border border-gold/30 px-4 py-3 text-sm font-semibold text-goldbright hover:border-gold/60"
           >
             Reset filters
           </button>

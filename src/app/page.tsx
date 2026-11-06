@@ -226,7 +226,7 @@ export default function Home() {
               The cards above answer by intention. Below, every spread
               by size, from one card to the full ten-card spread.
             </p>
-            <p className="mx-auto mt-3 max-w-xl text-sm text-cream/60">
+            <p className="mx-auto mt-3 max-w-xl text-sm text-cream/75">
               For reflection, not prediction.
             </p>
           </motion.div>

@@ -102,7 +102,7 @@ export default function SampleReading() {
           </div>
 
           <div className="px-6 py-8 sm:px-10">
-            <p className="text-center text-sm italic text-cream/70">
+            <p className="text-center text-sm italic text-cream/75">
               “Should I take the new job offer, or stay where I am?”
             </p>
             <div className="mx-auto mt-6 max-w-2xl whitespace-pre-line text-[15px] leading-relaxed text-cream/90">

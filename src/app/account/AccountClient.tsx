@@ -437,7 +437,7 @@ export default function AccountPage() {
               <button
                 type="submit"
                 disabled={pwBusy}
-                className="btn-gold w-full rounded-xl px-6 py-3.5 font-bold disabled:opacity-50"
+                className="btn-gold w-full rounded-xl px-6 py-3.5 font-bold disabled:opacity-100 disabled:saturate-50"
               >
                 {pwBusy
                   ? "Please wait…"
@@ -481,7 +481,7 @@ export default function AccountPage() {
               <button
                 type="submit"
                 disabled={linkBusy}
-                className="btn-gold w-full rounded-xl px-6 py-3.5 font-bold disabled:opacity-50"
+                className="btn-gold w-full rounded-xl px-6 py-3.5 font-bold disabled:opacity-100 disabled:saturate-50"
               >
                 {linkBusy ? "Sending…" : "Send sign-in link"}
               </button>
@@ -497,7 +497,7 @@ export default function AccountPage() {
                 type="button"
                 onClick={() => void requestCode()}
                 disabled={linkBusy}
-                className="btn-gold w-full rounded-xl px-6 py-3.5 font-bold disabled:opacity-50"
+                className="btn-gold w-full rounded-xl px-6 py-3.5 font-bold disabled:opacity-100 disabled:saturate-50"
               >
                 {linkBusy ? "Sending…" : "Send a new link"}
               </button>
@@ -542,7 +542,7 @@ export default function AccountPage() {
               <button
                 type="submit"
                 disabled={codeBusy || code.length !== codeLength}
-                className="btn-gold w-full rounded-xl px-6 py-3.5 font-bold disabled:opacity-50"
+                className="btn-gold w-full rounded-xl px-6 py-3.5 font-bold disabled:opacity-100 disabled:saturate-50"
               >
                 {codeBusy ? "Verifying…" : "Sign in"}
               </button>
@@ -630,7 +630,7 @@ export default function AccountPage() {
 
           <div className="mt-6 rounded-3xl border border-gold/20 bg-panel/60 p-6 sm:p-8">
             <p className="font-display text-xl text-cream">Password</p>
-            <p className="mt-1 text-sm text-cream/70">
+            <p className="mt-1 text-sm text-cream/75">
               Set a password so you can sign in with email + password instead
               of a link each time.
             </p>
@@ -667,7 +667,7 @@ export default function AccountPage() {
               <button
                 type="submit"
                 disabled={savePwBusy || newPassword.length < 8}
-                className="btn-gold rounded-xl px-6 py-3 font-bold disabled:opacity-50"
+                className="btn-gold rounded-xl px-6 py-3 font-bold disabled:opacity-100 disabled:saturate-50"
               >
                 {savePwBusy ? "Saving…" : "Save password"}
               </button>
@@ -686,7 +686,7 @@ export default function AccountPage() {
               purchase history, including the copies on this device. */}
           <div className="mt-6 rounded-3xl border border-gold/20 bg-panel/60 p-6 sm:p-8">
             <p className="font-display text-xl text-cream">Your data</p>
-            <p className="mt-1 text-sm text-cream/70">
+            <p className="mt-1 text-sm text-cream/75">
               Download everything this account holds, or delete the
               account entirely.
             </p>
@@ -695,7 +695,7 @@ export default function AccountPage() {
                 type="button"
                 onClick={() => void exportAccount()}
                 disabled={exportBusy}
-                className="btn-ghost rounded-xl px-6 py-3 font-semibold disabled:opacity-50"
+                className="btn-ghost rounded-xl px-6 py-3 font-semibold disabled:opacity-100 disabled:saturate-50"
               >
                 {exportBusy ? "Exporting…" : "Export all data"}
               </button>
@@ -703,7 +703,7 @@ export default function AccountPage() {
                 type="button"
                 onClick={() => void deleteAccount()}
                 disabled={deleting}
-                className="rounded-xl border border-danger/40 px-6 py-3 font-semibold text-danger hover:bg-danger/10 disabled:opacity-50"
+                className="rounded-xl border border-danger/40 px-6 py-3 font-semibold text-danger hover:bg-danger/10 disabled:opacity-100 disabled:saturate-50"
               >
                 {deleting
                   ? "Deleting…"
@@ -755,7 +755,7 @@ export default function AccountPage() {
                     type="button"
                     onClick={() => void requestDeleteCode()}
                     disabled={deleteCodeBusy || deleteCodeSent}
-                    className="btn-ghost rounded-xl px-4 py-2.5 font-semibold disabled:opacity-50"
+                    className="btn-ghost rounded-xl px-4 py-2.5 font-semibold disabled:opacity-100 disabled:saturate-50"
                   >
                     {deleteCodeBusy ? "Sending…" : deleteCodeSent ? "Code sent" : "Send me a code"}
                   </button>
@@ -765,7 +765,7 @@ export default function AccountPage() {
                     Code sent to {user?.email}. It expires in 10 minutes.
                   </p>
                 )}
-                <p className="mt-2 text-sm text-cream/60">
+                <p className="mt-2 text-sm text-cream/75">
                   No password set on this account? Send a code, or set a
                   password above first. Tap &ldquo;Confirm delete
                   account?&rdquo; again to go ahead, or leave this page

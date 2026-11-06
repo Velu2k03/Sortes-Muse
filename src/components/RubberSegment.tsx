@@ -352,7 +352,7 @@ const RubberSegment: React.FC<RubberSegmentProps> = ({
       // spilled out of their equal slots into each other on a phone.
       // Full width with equal slots gives each label its own third,
       // and the wrapping labels below fit inside that slot.
-      className={`group relative grid w-full max-w-full grid-flow-col auto-cols-auto align-middle select-none touch-pan-y [font-family:inherit] [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] p-[var(--rs-inset)] rounded-[var(--rs-radius)] [background:var(--rs-track)] data-[equal]:auto-cols-[minmax(0,1fr)] data-[held]:cursor-grabbing aria-disabled:pointer-events-none aria-disabled:opacity-50${className ? ` ${className}` : ''}`}
+      className={`group relative grid w-full max-w-full grid-flow-col auto-cols-auto align-middle select-none touch-pan-y [font-family:inherit] [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] p-[var(--rs-inset)] rounded-[var(--rs-radius)] [background:var(--rs-track)] data-[equal]:auto-cols-[minmax(0,1fr)] data-[held]:cursor-grabbing aria-disabled:pointer-events-none aria-disabled:saturate-50${className ? ` ${className}` : ''}`}
       style={
         {
           '--rs-track': trackColor,
@@ -385,7 +385,7 @@ const RubberSegment: React.FC<RubberSegmentProps> = ({
           aria-checked={i === index}
           tabIndex={i === index ? 0 : -1}
           disabled={disabled}
-          className="inline-flex min-h-[calc(var(--rs-h)-var(--rs-inset)*2)] min-w-0 items-center justify-center gap-1.5 m-0 border-0 bg-transparent px-[var(--rs-pad)] py-1 rounded-[var(--rs-thumb-radius)] [font:inherit] text-[length:var(--rs-font)] font-medium leading-[1.25] text-center outline-none [transition:opacity_160ms_ease,transform_160ms_var(--rs-ease-out)] motion-reduce:[transition:opacity_160ms_ease] cursor-pointer [color:var(--rs-ink)] opacity-70 aria-checked:cursor-default group-data-[draggable]:aria-checked:cursor-grab group-data-[held]:cursor-grabbing data-[pressed]:[transform:scale(0.96)] focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:[outline-color:var(--rs-thumb)] [@media(hover:hover)_and_(pointer:fine)]:[&[aria-checked=false]:hover]:opacity-90"
+          className="inline-flex min-h-[max(44px,calc(var(--rs-h)-var(--rs-inset)*2))] min-w-0 items-center justify-center gap-1.5 m-0 border-0 bg-transparent px-[var(--rs-pad)] py-1 rounded-[var(--rs-thumb-radius)] [font:inherit] text-[length:var(--rs-font)] font-medium leading-[1.25] text-center outline-none [transition:opacity_160ms_ease,transform_160ms_var(--rs-ease-out)] motion-reduce:[transition:opacity_160ms_ease] cursor-pointer [color:var(--rs-ink)] opacity-70 aria-checked:cursor-default group-data-[draggable]:aria-checked:cursor-grab group-data-[held]:cursor-grabbing data-[pressed]:[transform:scale(0.96)] focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:[outline-color:var(--rs-thumb)] [@media(hover:hover)_and_(pointer:fine)]:[&[aria-checked=false]:hover]:opacity-90"
           onPointerDown={e => handlePointerDown(e, i)}
           onKeyDown={handleKeyDown}
         >
@@ -401,7 +401,7 @@ const RubberSegment: React.FC<RubberSegmentProps> = ({
         {list.map(item => (
           <span
             key={item.value}
-            className="inline-flex min-h-[calc(var(--rs-h)-var(--rs-inset)*2)] min-w-0 items-center justify-center gap-1.5 m-0 border-0 bg-transparent px-[var(--rs-pad)] py-1 rounded-[var(--rs-thumb-radius)] [font:inherit] text-[length:var(--rs-font)] font-medium leading-[1.25] text-center outline-none [transition:opacity_160ms_ease,transform_160ms_var(--rs-ease-out)] motion-reduce:[transition:opacity_160ms_ease] cursor-default [color:inherit]"
+            className="inline-flex min-h-[max(44px,calc(var(--rs-h)-var(--rs-inset)*2))] min-w-0 items-center justify-center gap-1.5 m-0 border-0 bg-transparent px-[var(--rs-pad)] py-1 rounded-[var(--rs-thumb-radius)] [font:inherit] text-[length:var(--rs-font)] font-medium leading-[1.25] text-center outline-none [transition:opacity_160ms_ease,transform_160ms_var(--rs-ease-out)] motion-reduce:[transition:opacity_160ms_ease] cursor-default [color:inherit]"
           >
             {item.icon}
             {item.label}

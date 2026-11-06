@@ -529,7 +529,7 @@ export default function ReportsClient() {
             type="button"
             onClick={generate}
             disabled={generating}
-            className="w-full rounded-xl border border-gold/40 px-4 py-3 text-sm font-semibold text-goldbright hover:bg-gold/15 disabled:opacity-50"
+            className="w-full rounded-xl border border-gold/40 px-4 py-3 text-sm font-semibold text-goldbright hover:bg-gold/15 disabled:opacity-100 disabled:saturate-50"
           >
             Try again
           </button>

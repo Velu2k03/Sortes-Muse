@@ -25,7 +25,7 @@ export default function StatsStrip() {
 
   return (
     <div className="border-y border-gold/10 bg-navydeep/50">
-      <p className="mx-auto max-w-6xl px-4 py-4 text-center text-sm text-cream/70">
+      <p className="mx-auto max-w-6xl px-4 py-4 text-center text-sm text-cream/75">
         <span className="font-display text-2xl text-goldbright">
           {n.toLocaleString()}
         </span>{" "}

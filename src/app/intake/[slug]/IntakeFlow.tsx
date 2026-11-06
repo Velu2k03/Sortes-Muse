@@ -434,7 +434,7 @@ export default function IntakeFlow({ slug }: { slug: string }) {
                     "What is blocking my relationship right now?",
                     "What should I focus on this week?",
                   ].map((ex) => (
-                    <button key={ex} type="button" onClick={() => setQuestion(ex)} className="rounded-full border border-gold/30 px-3 py-1.5 text-xs text-cream/90 hover:bg-gold/10">
+                    <button key={ex} type="button" onClick={() => setQuestion(ex)} className="rounded-full border border-gold/30 px-3 py-2.5 min-h-[44px] text-xs text-cream/90 hover:bg-gold/10">
                       {ex}
                     </button>
                   ))}
@@ -458,7 +458,7 @@ export default function IntakeFlow({ slug }: { slug: string }) {
                   setSuggestionDismissed(false);
                   setStep("confirm");
                 }}
-                className="btn-gold flex-1 rounded-xl px-6 py-3.5 font-bold disabled:cursor-not-allowed disabled:opacity-40"
+                className="btn-gold flex-1 rounded-xl px-6 py-3.5 font-bold disabled:cursor-not-allowed disabled:opacity-100 disabled:saturate-50"
               >
                 Review my reading
               </button>
@@ -546,14 +546,14 @@ export default function IntakeFlow({ slug }: { slug: string }) {
                   <button
                     type="button"
                     onClick={() => setQuestion(questionSuggestion)}
-                    className="btn-gold rounded-xl px-4 py-2 text-sm font-bold"
+                    className="btn-gold rounded-xl px-4 py-3 text-sm font-bold"
                   >
                     Use suggestion
                   </button>
                   <button
                     type="button"
                     onClick={() => setSuggestionDismissed(true)}
-                    className="btn-ghost rounded-xl px-4 py-2 text-sm font-semibold"
+                    className="btn-ghost rounded-xl px-4 py-3 text-sm font-semibold"
                   >
                     Keep mine
                   </button>
@@ -578,7 +578,7 @@ export default function IntakeFlow({ slug }: { slug: string }) {
               <button
                 type="button"
                 onClick={beginDraw}
-                className="btn-gold flex-1 rounded-xl px-6 py-3.5 text-lg font-bold disabled:cursor-wait disabled:opacity-60"
+                className="btn-gold flex-1 rounded-xl px-6 py-3.5 text-lg font-bold disabled:cursor-wait disabled:opacity-100 disabled:saturate-50"
               >
                 ✦ Continue · draw the cards
               </button>
@@ -671,7 +671,7 @@ export default function IntakeFlow({ slug }: { slug: string }) {
                   type="button"
                   onClick={retryGeneration}
                   disabled={busy}
-                  className="w-full rounded-xl border border-gold/40 px-4 py-3 text-sm font-semibold text-goldbright hover:bg-gold/15 disabled:opacity-50"
+                  className="w-full rounded-xl border border-gold/40 px-4 py-3 text-sm font-semibold text-goldbright hover:bg-gold/15 disabled:opacity-100 disabled:saturate-50"
                 >
                   Try again
                 </button>

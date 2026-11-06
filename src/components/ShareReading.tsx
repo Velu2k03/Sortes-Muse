@@ -92,7 +92,7 @@ export default function ShareReading({
         type="button"
         onClick={share}
         disabled={busy}
-        className="btn-ghost rounded-xl px-6 py-3 font-semibold disabled:opacity-60"
+        className="btn-ghost rounded-xl px-6 py-3 font-semibold disabled:opacity-100 disabled:saturate-50"
       >
         {busy ? "Creating image…" : "⤴ Share as story (9:16)"}
       </button>

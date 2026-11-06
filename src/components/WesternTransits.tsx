@@ -99,7 +99,7 @@ export default function WesternTransits({
           type="button"
           onClick={onShow}
           disabled={loading || !date}
-          className="btn-gold rounded-xl px-6 py-3 font-bold disabled:opacity-40"
+          className="btn-gold rounded-xl px-6 py-3 font-bold disabled:opacity-100 disabled:saturate-50"
         >
           {loading ? "Calculating…" : "Show transits"}
         </button>

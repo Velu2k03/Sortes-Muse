@@ -193,7 +193,7 @@ export default function HoroscopePage() {
           Unveiling your reflection…
         </p>
       ) : !revealed ? (
-        <p className="mt-6 text-center text-sm text-cream/60">
+        <p className="mt-6 text-center text-sm text-cream/75">
           Choose your sign and date, then reveal your reflection. Nothing is charged, and nothing is saved.
         </p>
       ) : (
@@ -214,8 +214,6 @@ export default function HoroscopePage() {
               <p className="mt-3 leading-relaxed text-cream/85">{view === "daily" ? h.reflection : w.reflection}</p>
             </AnimatedContent>
           )}
-          <p className="mt-4 text-sm text-cream/60">
-          </p>
           <p className="mt-3 text-sm text-cream/75">
             Want transits computed from your own chart?{" "}
             <Link href="/charts" className="font-semibold text-goldbright underline">

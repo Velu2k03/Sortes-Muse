@@ -61,7 +61,7 @@ export default function BirthCardPage() {
             Please choose a date in the past. A birth date cannot be in the future.
           </p>
         )}
-        <p className="mt-3 text-sm text-cream/70">
+        <p className="mt-3 text-sm text-cream/75">
           Method: add the digits of your birth date; if the total is
           over 22, add the digits of that total, and repeat until it
           is 22 or less (22 is The Fool). That is your Personality
@@ -86,7 +86,7 @@ export default function BirthCardPage() {
                 meet the world: the lesson you work with in daily life.
               </p>
               <p className="mt-3 leading-relaxed text-cream/85">{personalityCard.meaning.upright}</p>
-              <p className="mt-3 text-sm text-cream/70">
+              <p className="mt-3 text-sm text-cream/75">
                 Keywords: {personalityCard.keywords.upright.join(", ")}.
               </p>
             </article>
@@ -100,13 +100,13 @@ export default function BirthCardPage() {
                 your life keeps teaching you, underneath the day to day.
               </p>
               <p className="mt-3 leading-relaxed text-cream/85">{soulCard.meaning.upright}</p>
-              <p className="mt-3 text-sm text-cream/70">
+              <p className="mt-3 text-sm text-cream/75">
                 Keywords: {soulCard.keywords.upright.join(", ")}.
               </p>
             </article>
           </div>
           {pair.personality === pair.soul && (
-            <p className="mt-4 text-center text-sm text-cream/70">
+            <p className="mt-4 text-center text-sm text-cream/75">
               Your Personality and Soul cards are the same card: the
               outer lesson and the inner lesson point the same way.
             </p>

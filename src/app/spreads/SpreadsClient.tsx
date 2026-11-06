@@ -96,7 +96,7 @@ export default function SpreadsPage() {
             type="button"
             onClick={() => pickSpread(o.slug)}
             aria-pressed={pickedSlug === o.slug}
-            className={`rounded-full px-4 py-2 text-sm font-semibold transition ${pickedSlug === o.slug ? "bg-gold text-ink" : "border border-gold/30 text-cream/90 hover:bg-gold/10"}`}
+            className={`rounded-full px-4 py-3 text-sm font-semibold transition ${pickedSlug === o.slug ? "bg-gold text-ink" : "border border-gold/30 text-cream/90 hover:bg-gold/10"}`}
           >
             {o.label}
           </button>
@@ -224,7 +224,7 @@ export default function SpreadsPage() {
         <button
           type="button"
           onClick={() => setCheckoutOpen(true)}
-          className="btn-ghost mt-4 rounded-xl px-6 py-2.5 text-sm font-semibold"
+          className="btn-ghost mt-4 rounded-xl px-6 py-3 text-sm font-semibold"
         >
           View Oracle packs
         </button>
