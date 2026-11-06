@@ -73,6 +73,11 @@ INSERT INTO readings (id, user_id, data)
 -- was unproven until Phase 6B): same bug, same fix, other table.
 INSERT INTO reports (id, user_id, data)
   VALUES ('rep_old', 'u_old', '"{\\"id\\":\\"rep_old\\",\\"title\\":\\"old report\\"}"'::jsonb);
+-- A reading whose data is a JSON string that is NOT valid JSON when
+-- unwrapped (a double-encoded scalar string): migration 002 must
+-- skip it with a warning, not fail the migration.
+INSERT INTO readings (id, user_id, data)
+  VALUES ('r_unparseable', 'u_old', '"not json at all"'::jsonb);
 -- The orphan nonce table a pre-Phase-6 ensureSchema() left behind.
 -- Migration 003 must drop it.
 CREATE TABLE checkout_nonces (
@@ -130,6 +135,13 @@ describe.skipIf(SKIP)("migrations on real Postgres (staging only)", () => {
     const repairedReport = (await raw`SELECT data FROM reports WHERE id = 'rep_old'`) as Array<{ data: unknown }>;
     expect(repairedReport).toHaveLength(1);
     expect(repairedReport[0].data).toEqual({ id: "rep_old", title: "old report" });
+    // Phase G follow-up: the unparseable double-encoded scalar was
+    // skipped with a warning, not repaired and not fatal. The row
+    // survives with its data untouched, and the migration still
+    // applied (asserted above via the ledger output).
+    const skipped = (await raw`SELECT data FROM readings WHERE id = 'r_unparseable'`) as Array<{ data: unknown }>;
+    expect(skipped).toHaveLength(1);
+    expect(skipped[0].data).toBe("not json at all");
     // The orphan nonce table is gone (003).
     const nonce = (await raw`
       SELECT table_name FROM information_schema.tables
