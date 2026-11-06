@@ -156,4 +156,17 @@ describe("buildJournalMarkdown", () => {
     expect(md).toContain("And then?");
     expect(md).toContain("A short answer.");
   });
+
+  it("names the serving model for AI readings that carry one, and nothing for older readings", () => {
+    const readings = [
+      reading("r1", "2026-11-05T10:00:00.000Z", ["major-00"], {
+        aiGenerated: true,
+        model: "openrouter/free",
+      }),
+      reading("r2", "2026-11-04T10:00:00.000Z", ["major-01"], { aiGenerated: true }),
+    ];
+    const md = buildJournalMarkdown(readings, (id) => id);
+    expect(md).toContain("Written with openrouter/free.");
+    expect(md.match(/Written with/g)?.length).toBe(1);
+  });
 });

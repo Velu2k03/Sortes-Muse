@@ -213,6 +213,9 @@ export default function IntakeFlow({ slug }: { slug: string }) {
         cards,
         interpretation,
         aiGenerated: true,
+        // Phase E (item 2): keep the serving model the API returned,
+        // so the reading page can label it instead of discarding it.
+        model: typeof data.model === "string" && data.model ? data.model : undefined,
         category: category.name,
         question: question.trim(),
         // M1.1: keep the first-written question when the confirm step

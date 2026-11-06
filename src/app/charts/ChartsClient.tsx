@@ -104,6 +104,11 @@ export default function ChartsClient() {
   const [question, setQuestion] = useState("");
   const [interpretation, setInterpretation] = useState("");
   const [interpFallback, setInterpFallback] = useState(false);
+  // Phase E (item 2): the serving model the API returned for this
+  // interpretation, so the label and the saved reading can name it
+  // instead of discarding it. Null until an AI interpretation arrives;
+  // the deterministic standard fallback has no model.
+  const [interpModel, setInterpModel] = useState<string | null>(null);
   const [interpLoading, setInterpLoading] = useState(false);
   const [interpError, setInterpError] = useState("");
   // Phase D: interpFailed marks a genuine call failure (not a balance
@@ -164,7 +169,7 @@ export default function ChartsClient() {
   // too. Without them in the snapshot, switching from a failed
   // system to a cached successful one left a stale Retry action
   // that could spend an Oracle on an already-successful chart.
-  const systemCache = useRef<Record<string, { result: ChartResult | null; interpretation: string; interpError: string; saved: boolean; fingerprint: string; interpFree: boolean; interpFallback: boolean; interpFailed: boolean; interpToastOpen: boolean }>>({});
+  const systemCache = useRef<Record<string, { result: ChartResult | null; interpretation: string; interpError: string; saved: boolean; fingerprint: string; interpFree: boolean; interpFallback: boolean; interpFailed: boolean; interpToastOpen: boolean; interpModel: string | null }>>({});
   const selectSystem = (s: ChartSystem) => {
     const cached = systemCache.current[s];
     setSystem(s);
@@ -181,6 +186,7 @@ export default function ChartsClient() {
       setInterpFallback(cached.interpFallback);
       setInterpFailed(cached.interpFailed);
       setInterpToastOpen(cached.interpToastOpen);
+      setInterpModel(cached.interpModel);
       calcFingerprintRef.current = cached.fingerprint;
     } else {
       setResult(null);
@@ -189,6 +195,7 @@ export default function ChartsClient() {
       setSaved(false);
       setInterpFailed(false);
       setInterpToastOpen(false);
+      setInterpModel(null);
     }
     // Picking a system brings the form up into view, so the fields
     // for the new system are right there instead of leaving the
@@ -205,8 +212,8 @@ export default function ChartsClient() {
   // so TypeScript does not flag use before assignment.
   useEffect(() => {
     if (inputFingerprint !== calcFingerprintRef.current) return;
-    systemCache.current[system] = { result, interpretation, interpError, saved, fingerprint: inputFingerprint, interpFree, interpFallback, interpFailed, interpToastOpen };
-  }, [system, result, interpretation, interpError, saved, inputFingerprint, interpFree, interpFallback, interpFailed, interpToastOpen]);
+    systemCache.current[system] = { result, interpretation, interpError, saved, fingerprint: inputFingerprint, interpFree, interpFallback, interpFailed, interpToastOpen, interpModel };
+  }, [system, result, interpretation, interpError, saved, inputFingerprint, interpFree, interpFallback, interpFailed, interpToastOpen, interpModel]);
   const [showBurst, setShowBurst] = useState(false);
   const resultRef = useRef<HTMLElement | null>(null);
   // Auto-scroll to the result after Calculate: it used to appear below
@@ -408,6 +415,10 @@ export default function ChartsClient() {
       if (!res.ok) throw new Error(data.error || "Could not interpret this chart.");
       setInterpretation(data.interpretation as string);
       setInterpFallback(Boolean(data.fallback));
+      // Phase E (item 2): keep the serving model; the fallback has none.
+      setInterpModel(
+        !data.fallback && typeof data.model === "string" && data.model ? data.model : null
+      );
       // The server is the authority for signed-in free status; guests
       // keep their device-local flag.
       const wasFree = signedIn ? Boolean(data.free) : guestFree;
@@ -444,6 +455,7 @@ export default function ChartsClient() {
         // retry stays free when it was. The retry UI stays live.
         setInterpretation(buildStaticChartInterpretation(result, focus));
         setInterpFallback(true);
+        setInterpModel(null);
       }
     } finally {
       setInterpLoading(false);
@@ -458,6 +470,10 @@ export default function ChartsClient() {
       cards: [],
       interpretation,
       aiGenerated: !interpFallback,
+      // Phase E (item 2): the serving model for an AI interpretation;
+      // the standard fallback has none, so the reading page labels it
+      // by its aiGenerated flag instead.
+      model: !interpFallback && interpModel ? interpModel : undefined,
       category: focus,
       question: question.trim() || undefined,
       free: interpFree,
@@ -489,6 +505,7 @@ export default function ChartsClient() {
     setError("");
     setResult(null);
     setInterpretation("");
+    setInterpModel(null);
     setInterpError("");
     setSaved(false);
     if (!date) {
@@ -1272,7 +1289,7 @@ export default function ChartsClient() {
                 <p className="text-xs uppercase tracking-widest text-gold">
                   {interpFallback
                     ? "Standard interpretation · prepared from your chart positions, not AI-generated"
-                    : `${interpFree ? "Free interpretation" : "1 Oracle interpretation"} · Personalized`}
+                    : `${interpFree ? "Free interpretation" : "1 Oracle interpretation"} · Personalized · AI-generated${interpModel ? ` · Written with ${interpModel}` : ""}`}
                 </p>
                 <p className="mt-3 whitespace-pre-wrap leading-relaxed text-cream/90">{interpretation}</p>
                 <div className="mt-5 flex flex-wrap gap-3">

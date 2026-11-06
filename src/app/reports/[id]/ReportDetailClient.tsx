@@ -105,6 +105,10 @@ export default function ReportDetailClient() {
       </p>
 
       <p className="mt-6 whitespace-pre-wrap leading-relaxed text-cream/90">{report.interpretation}</p>
+      <p className="mt-3 text-xs text-mist">
+        AI-generated
+        {report.model ? ` · Written with ${report.model}` : ""}
+      </p>
 
       {/* Phase 5 (5.4a): heirloom keepsake export (print-to-PDF) of
           this report's real interpretation. */}

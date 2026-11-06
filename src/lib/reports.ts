@@ -391,6 +391,9 @@ export interface SavedReport {
   createdAt: string;
   data: TransitReportData | YearAheadReportData | ComparisonReportData;
   interpretation: string;
+  // Phase E (item 2): the serving model that wrote the interpretation,
+  // as returned by the API. Older reports have none.
+  model?: string;
 }
 
 export function reportTitle(type: ReportType, targetLabel: string): string {

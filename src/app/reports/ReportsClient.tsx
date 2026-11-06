@@ -358,6 +358,9 @@ export default function ReportsClient() {
         return;
       }
       const report = data.report as SavedReport;
+      // Phase E (item 2): keep the serving model the API returned, so
+      // the report view can label it instead of discarding it.
+      if (typeof data.model === "string" && data.model) report.model = data.model;
       if (!user) {
         if (!spendCredit(1)) {
           setError("Your device wallet could not cover this report. Please top up and try again. No Oracle was spent.");
@@ -578,6 +581,10 @@ export default function ReportsClient() {
             </p>
           )}
           <p className="mt-4 whitespace-pre-wrap leading-relaxed text-cream/90">{result.interpretation}</p>
+          <p className="mt-3 text-xs text-mist">
+            AI-generated
+            {result.model ? ` · Written with ${result.model}` : ""}
+          </p>
         </div>
         </AnimatedContent>
       )}

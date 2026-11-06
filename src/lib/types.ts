@@ -49,6 +49,11 @@ export interface Reading {
   cards: DrawnCard[];
   interpretation: string | null;
   aiGenerated: boolean;
+  // Phase E (item 2): the serving model that wrote the interpretation,
+  // as returned by the API (for example "openrouter/free"). Older
+  // readings saved before this field existed have none, and the UI
+  // labels those "AI-generated" without a model name.
+  model?: string;
   category?: string;
   question?: string;
   // M1.1: the question as first written, when the confirm-step rewrite

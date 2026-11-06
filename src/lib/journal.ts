@@ -179,6 +179,7 @@ export function buildJournalMarkdown(
     }
     if (r.chartSummary) lines.push(r.chartSummary, "");
     if (r.interpretation) lines.push(r.interpretation, "");
+    if (r.aiGenerated && r.model) lines.push(`Written with ${r.model}.`, "");
     if (r.firstImpression) lines.push(`**First impression:** ${r.firstImpression}`, "");
     if (r.nextStep) lines.push(`**Next step:** ${r.nextStep}`, "");
     for (const fu of r.followUps ?? []) {

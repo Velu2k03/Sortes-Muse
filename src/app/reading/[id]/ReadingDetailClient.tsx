@@ -406,6 +406,10 @@ export default function ReadingDetail({ id }: { id: string }) {
             <p className="text-xs uppercase tracking-[0.25em] text-gold">
               Personalized interpretation
             </p>
+            <p className="mt-1 text-xs text-mist">
+              AI-generated
+              {reading.model ? ` · Written with ${reading.model}` : ""}
+            </p>
             <TypewriterText
               text={reading.interpretation}
               className="mt-3 whitespace-pre-line leading-relaxed text-cream/90"
