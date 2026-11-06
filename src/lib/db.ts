@@ -154,6 +154,31 @@ async function writeLocal(db: LocalDb): Promise<void> {
 }
 
 let schemaReady = false;
+
+/**
+ * Phase G (F11): the RLS role startup assertion. The app connects to
+ * Postgres as the owner (postgres) role, which bypasses RLS; the
+ * anon and authenticated roles are denied by the zero-policy RLS
+ * migrations (004, 005). If POSTGRES_URL ever pointed at one of
+ * those roles, the app would silently see zero rows on every table
+ * (sign-in, balances, readings, everything) with no error to point
+ * at. So ensureSchema() asserts the live connection role at first
+ * database use and fails loudly instead. Only the two PostgREST
+ * roles are denied, plus an empty role (fail closed: a connection
+ * that cannot name its role is not a connection to trust). Any other
+ * role passes: the owner, the local sortes_test role, and any future
+ * dedicated app role.
+ */
+const RLS_DENIED_ROLES = new Set(["anon", "authenticated"]);
+export function assertAppDbRole(role: string): void {
+  const normalized = (role ?? "").trim().toLowerCase();
+  if (!normalized || RLS_DENIED_ROLES.has(normalized)) {
+    throw new Error(
+      `Database role "${role}" must not run the app: RLS denies the anon and authenticated roles, so the app would see zero rows. Connect as the owner (postgres) role.`
+    );
+  }
+}
+
 export async function ensureSchema(): Promise<void> {
   // Phase 6 (P1a, readiness review N1): production fail-fast guard.
   // Without a database URL the data layer used to switch silently to
@@ -190,6 +215,11 @@ export async function ensureSchema(): Promise<void> {
   // which needs Velu's explicit approval for production.
   if (!pg) throw new Error("Database not configured");
   await runMigrations(pg);
+  // Phase G (F11): assert the connection role is not one RLS denies.
+  // Runs once per instance (schemaReady caches below). The query is
+  // one cheap SELECT; current_user is always readable.
+  const { rows: roleRows } = await sql`SELECT current_user AS role`;
+  assertAppDbRole(String((roleRows[0] as { role: string } | undefined)?.role ?? ""));
   schemaReady = true;
 }
 

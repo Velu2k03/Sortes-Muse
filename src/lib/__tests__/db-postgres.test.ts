@@ -90,6 +90,18 @@ describe.skipIf(SKIP)("money paths on real Postgres (staging only)", () => {
     expect(ver[0].pwd_ver).toBe(1);
   });
 
+  it("Phase G (F11): the live app role passes the RLS role assertion", async () => {
+    // beforeAll already ran ensureSchema(), which now asserts the
+    // role itself; this test pins the live role explicitly so the
+    // assertion is proven against a real connection, not only by
+    // the suite not failing.
+    const [{ current_user }] = (await raw`SELECT current_user`) as Array<{ current_user: string }>;
+    expect(current_user).not.toMatch(/^(anon|authenticated)$/i);
+    expect(() => db.assertAppDbRole(current_user)).not.toThrow();
+    expect(() => db.assertAppDbRole("anon")).toThrow();
+    expect(() => db.assertAppDbRole("authenticated")).toThrow();
+  });
+
   it("fulfillOrder grants once; duplicate delivery is a no-op", async () => {
     const user = await db.createUser("fulfill-a@example.com");
     const args = {
