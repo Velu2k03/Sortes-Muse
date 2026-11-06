@@ -511,7 +511,7 @@ console.log("charts-check: all assertions passed");
 }
 
 // Audit 6 batch (PR #8): wheel label separation, list intro reword,
-// code-step preview, collapsed charts intro with Use example on top.
+// sign-in link copy + dev code fallback, collapsed charts intro with Use example on top.
 {
   const custom = fs.readFileSync("src/components/CustomWesternWheel.tsx", "utf8");
   assert.ok(custom.includes("MIN_LABEL_SEP = 12"), "custom wheel must enforce a 12-degree minimum label separation");
@@ -523,7 +523,8 @@ console.log("charts-check: all assertions passed");
   assert.ok(wheel.includes("Read them here too, in longitude order"), "staggered list intro must say 'here too', not 'instead of from the wheel'");
   assert.ok(!wheel.includes("instead of from the wheel"), "old contradictory list intro must be gone");
   const account = fs.readFileSync("src/app/account/AccountClient.tsx", "utf8");
-  assert.ok(account.includes("{codeLength}-digit code will be sent"), "account page must preview the code step before sending a code");
+  assert.ok(account.includes("We will send a sign-in link"), "account page must indicate that a sign-in link will be sent");
+  assert.ok(account.includes("We sent a {codeLength}-digit code to"), "account page dev fallback must indicate that a code was sent");
   assert.ok(!account.includes("Code field preview"), "account page must not show a dead code-field preview (removed Phase 3.2)");
   const auth = fs.readFileSync("src/lib/auth.ts", "utf8");
   assert.ok(auth.includes('padStart(6, "0")'), "code length preview must match auth.ts: 6 digits");
@@ -533,7 +534,7 @@ console.log("charts-check: all assertions passed");
   const useExampleIdx = charts.indexOf("Use example: 1990-01-01, 08:00, Manila");
   const birthDateIdx = charts.indexOf('id="chart-date"');
   assert.ok(useExampleIdx > 0 && useExampleIdx < birthDateIdx, "Use example must sit at the top of the form, before the first field, so it is visible without scrolling");
-  console.log("audit6: wheel 12-degree separation, As in from rim, Mc tangent nudge, list intro reworded, code-step preview, collapsed charts intro, Use example on top: all source assertions passed");
+  console.log("audit6: wheel 12-degree separation, As in from rim, Mc tangent nudge, list intro reworded, sign-in link copy + dev code fallback, collapsed charts intro, Use example on top: all source assertions passed");
 }
 
 // Batch 9 (PR #9): themed calendar + visible magic. The native date
