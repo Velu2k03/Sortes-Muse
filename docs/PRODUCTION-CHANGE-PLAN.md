@@ -133,7 +133,7 @@ empty table with the old definition (it is not needed by any code).
 
 **Risk: NEGLIGIBLE in production.**
 
-## 4. How migrations 001–003 are applied (procedure, not yet run)
+## 4. How migrations 001–003 and 006 are applied (procedure, not yet run)
 
 ```bash
 # 1. pg_dump production first (see docs/BACKUP-RECOVERY.md).
@@ -143,8 +143,8 @@ SORTES_MIGRATE_PRODUCTION=1 \
 DATABASE_URL="postgres://postgres.<prod-ref>:<password>@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres" \
   npm run db:migrate
 # 3. Verify with the queries in docs/STAGING.md (ledger shows
-#    001, 002, 003; 7 tables; 4 secondary indexes; CHECK exists;
-#    zero double-encoded JSONB rows).
+#    001, 002, 003, 006; 7 tables; 4 secondary indexes; CHECK exists;
+#    users.pwd_ver exists with default 1; zero double-encoded JSONB rows).
 # 4. pg_dump again after the apply.
 ```
 
@@ -153,6 +153,19 @@ The migrate CLI refuses a production-looking run without
 auto-applies pending migrations in production (verify-only). The
 database password comes from Secure Vault, never from chat or a
 committed file.
+
+**Migration 006 — session version (`migrations/006_session_version.sql`, Phase B R5):**
+one statement, `ALTER TABLE users ADD COLUMN IF NOT EXISTS pwd_ver
+INTEGER NOT NULL DEFAULT 1`. It is in the auto-applied set (the app
+applies it on first DB use in non-production), but in production the
+in-app runner is verify-only and REFUSES to apply it — so 006 must
+be applied by the procedure above, BEFORE the merge/deploy (see §8:
+deploy-order hard gate). Idempotent; rollback is `ALTER TABLE users
+DROP COLUMN IF EXISTS pwd_ver` (only after confirming no code
+depends on it; the JWT claim reads a missing column as 1, so
+dropping it degrades to pre-R5 behaviour, not a break). Risk: LOW.
+It applies after 003 in version order; 004/005 (approval-required)
+promote into the set between 003 and 006 when approved.
 
 ## 5. RLS migration 004 — reports + free_interpretations (`migrations/approval-required/004_rls-reports-free-interpretations.sql`)
 
@@ -195,36 +208,64 @@ and the same for `free_interpretations`. Instant, no data loss.
 **Risk: LOW** (given the postgres-role connection; see the caveat
 above).
 
-## 6. Remaining RLS-disabled tables — assessment (no migration written yet)
+## 6. RLS migration 005 — remaining five tables (`migrations/approval-required/005_rls-remaining-tables.sql`)
 
-The other five app tables are exposed the same way as the two in
-§5 (Supabase grants `anon`/`authenticated` SELECT/INSERT/UPDATE/
-DELETE on all public tables by default), but Advisor did not flag
-them in the 2026-11-06 check. Each needs the same assessment +
-migration before a public launch (owner item B-W). The pattern is
-identical to 004: `ENABLE ROW LEVEL SECURITY` with zero policies,
-deny-by-default, app (postgres role) unaffected.
+**Exact effect:** five statements, nothing else:
 
-| Table | Data it holds | Exposure if left open | Risk of enabling (zero policies) |
-|---|---|---|---|
-| `users` | id, email, Oracle balance, password_hash, winback timestamp | **Highest.** Email addresses + password hashes readable via PostgREST anon key; balance tampering if anon holds UPDATE. | LOW for the app (postgres role bypasses). Same future-role caveat as §5. |
-| `auth_codes` | email, code hash, expiry, attempts | **High.** Code hashes + attempt counts; an attacker could enumerate which emails have live codes. | LOW for the app. |
-| `transactions` | order ids, user ids, emails, pack types, amounts | **Medium.** Purchase history + emails readable. | LOW for the app. |
-| `readings` | user ids + full reading JSONB | **High.** Private readings readable. | LOW for the app. |
-| `free_readings` | user ids + used_at | **Low.** Only user ids + a timestamp. | LOW for the app. |
+```sql
+ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.auth_codes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.transactions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.readings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.free_readings ENABLE ROW LEVEL SECURITY;
+```
 
-**Recommendation:** apply the same zero-policy RLS enablement to
-all five, as a follow-up migration `005_rls-remaining-tables.sql`,
-tested on local Postgres the same way 004 was (anon 0 rows, app
-role reads). The one table to treat with extra care is `users`:
+No policies are created (deny-by-default for `anon` and
+`authenticated`). Same pattern as 004 (§5).
+
+**Tables/rows affected:** 5 tables, ~1 user row, ~1 auth-code row,
+~8 transaction rows, ~1 reading, ~0 free_reading rows. No rows are
+modified, only the access rule changes. The exposure it closes is
+the one this section used to list per table: `users` holds emails +
+`password_hash` (highest), `auth_codes` holds code hashes (high),
+`readings` holds private reading JSONB (high), `transactions` holds
+purchase history + emails (medium), `free_readings` holds user ids +
+a timestamp (low).
+
+**What breaks if it goes wrong:** nothing for the app — it connects
+as the `postgres` role, which bypasses RLS entirely (superuser +
+table owner). The one table to treat with extra care is `users`:
 because it holds `password_hash`, verify after enabling that the
 sign-up/login/delete flows still work end to end on staging before
 applying to production.
 
-**Risk if left undone at launch: HIGH** for `users` and
+**Staging verification (done, Phase B, local Postgres 16):**
+`src/lib/__tests__/rls-005.test.ts`, 6/6 pass
+(`SORTES_TEST_DATABASE_URL_RLS`, dedicated database
+`sortes_pgtest_rls`, Supabase-default grants to `anon` /
+`authenticated`). RLS enabled on all five tables with zero
+policies; anon SELECT returns 0 rows on each (victim rows exist);
+authenticated SELECT returns 0 rows on each; anon INSERT fails
+"new row violates row-level security policy"; the table owner still
+reads/writes every row; and the app's own code paths were exercised
+against the RLS-enabled database — sign-up
+(`createUserWithPassword`), login (`getUserByEmail` +
+`verifyPassword`), password change (`setUserPassword`, pwd_ver
+1 to 2), free-reading claim, delete (`deleteUser`) — all still work.
+The failure mode to watch is a future connection change: if the app
+ever connects as a non-owner, non-bypass role, it would see 0 rows
+and break. That change would need its own test against RLS first.
+
+**Idempotency:** `ENABLE ROW LEVEL SECURITY` is a no-op when already
+enabled.
+
+**Rollback:** `ALTER TABLE public.<table> DISABLE ROW LEVEL
+SECURITY;` for each of the five tables. Instant, no data loss.
+
+**Risk: LOW** (given the postgres-role connection; see the caveat
+above). **Risk if left undone at launch: HIGH** for `users` and
 `auth_codes` (credential material), **MEDIUM** for `readings` /
-`transactions`, **LOW** for `free_readings`. Risk of enabling:
-**LOW** (same mechanics as 004, already proven).
+`transactions`, **LOW** for `free_readings`.
 
 ## 7. AUTH_SECRET — production environment variable
 
@@ -272,11 +313,73 @@ the same time.
 (key reuse across two systems; a Supabase rotation silently logs
 everyone out).
 
-## 8. Approval checklist (one line per decision)
+## 8. Deploy-order hard gate (Phase B, R2) — migrations BEFORE merge/deploy
 
-- [ ] Apply migrations 001–003 to production (procedure §4).
+**The rule:** migrations 001, 002, 003 AND 006 MUST be applied to
+production (procedure §4, with a `pg_dump` before AND after) BEFORE
+the release-candidate branch is merged and deployed. This is a hard
+gate on the launch checklist, not a nice-to-have.
+
+**Why:** production has no `schema_migrations` table and no
+`free_readings` table, and its `users` table has no `pwd_ver`
+column. The deployed code depends on all of them: `ensureSchema()`
+verifies the ledger on the first DB call and, in production, the
+verify-only guard THROWS instead of applying anything. A deploy
+before the migrations therefore bricks the app on the first database
+call (every signed-in page, every webhook, every AI generation).
+Applying the migrations first is a no-op for the running old code
+(all additive: one empty table, two nullable columns, one
+default-1 column, indexes, a CHECK) and makes the new code safe to
+deploy.
+
+**Manual gate (Phase H, no new script in this pass):** `scripts/`
+is owned by Phase C in this pass, so no dedicated
+`scripts/check-deploy-migrations.mjs` was added; the gate is run by
+hand with existing tools before the merge:
+
+```bash
+# Against the PRODUCTION database URL (from Secure Vault):
+# 1. Ledger must already list every auto-applied migration:
+psql "$PROD_URL" -c "SELECT version FROM schema_migrations ORDER BY version;"
+#    Expect: 001, 002, 003, 006. If any is missing, STOP and run §4.
+# 2. The new columns/tables the code needs must exist:
+psql "$PROD_URL" -c "SELECT column_name FROM information_schema.columns WHERE table_name='users' AND column_name='pwd_ver';"
+psql "$PROD_URL" -c "SELECT table_name FROM information_schema.tables WHERE table_name='free_readings';"
+#    Expect one row each. Zero rows means STOP and run §4.
+# 3. Only then merge + deploy. pg_dump again after the deploy.
+```
+
+A `docs/production-schema-state.json` record file (applied list)
+was considered for this gate and NOT created: it would be a second
+source of truth that drifts from the ledger, and the ledger query
+above is the authoritative check. If Phase H wants an automated
+pre-deploy script later, it can add
+`scripts/check-deploy-migrations.mjs` (read the ledger via
+`POSTGRES_URL`, exit 1 on any pending migration) once the scripts
+freeze lifts.
+
+## 9. Reconcile schedule (Phase B, R8) — Phase H item, do not create yet
+
+`scripts/reconcile.mjs` compares Lemon Squeezy orders against the
+local `transactions` table and reports unmatched orders (paid but
+not fulfilled, or fulfilled but not in Lemon Squeezy). It is a
+manual script today. As a Phase H item: run it on a schedule (the
+exact scheduler is Phase H's choice — Vercel Cron or an external
+runner) and alert on any unmatched order (email or chat alert; the
+alert channel is Phase H's choice). The webhook now verifies every
+order against the Lemon Squeezy API before fulfilling (§R4/R14),
+so reconcile is a backstop for missed webhooks and refunds, not the
+primary control. Do NOT create the schedule or the alert in this
+pass: scheduling and alerting are production-affecting changes that
+need Velu's per-item approval.
+
+## 10. Approval checklist (one line per decision)
+
+- [ ] Apply migrations 001–003 AND 006 to production (procedure §4) — BEFORE merge/deploy (§8 hard gate).
 - [ ] Apply RLS 004 to production.
-- [ ] Write + test + apply RLS 005 for the remaining five tables.
+- [ ] Deploy-order hard gate (§8) verified: ledger shows 001, 002, 003, 006 and pwd_ver + free_readings exist, before merge.
+- [ ] Reconcile schedule + alert on unmatched orders (Phase H item, §9) — do not create in this pass.
+- [ ] Apply RLS 005 for the remaining five tables (written + tested 6/6, §6).
 - [ ] Add `AUTH_SECRET` to Vercel Production.
 - [ ] Add `RESEND_API_KEY` + `EMAIL_FROM` to Vercel Production
       (only if the Resend code path / deletion-by-code is wanted).
