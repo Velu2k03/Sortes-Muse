@@ -67,6 +67,49 @@ function body(spreadSlug: string, claimFree = false) {
   };
 }
 
+describe("POST /api/reading/generate — no provider key (Phase 6 AI fallback)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    // Deliberately NO OPENROUTER_API_KEY: this is the production
+    // misconfiguration case. The route must fail honestly (503) and
+    // deterministically, never call the provider, and never spend.
+    delete process.env.OPENROUTER_API_KEY;
+    mockedGetUserById.mockResolvedValue({
+      id: "u1",
+      email: "a@b.co",
+      credits: 5,
+      created_at: "2026-11-05T00:00:00Z",
+    });
+    mockedSpend.mockResolvedValue(true);
+    mockedHasUsedFree.mockResolvedValue(false);
+    vi.stubGlobal("fetch", vi.fn());
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("returns 503 with fallback:true, calls no model, spends nothing", async () => {
+    mockedGetSession.mockResolvedValue({ userId: "u1", email: "a@b.co" });
+    const res = await POST(req(body("quick-insight"), "10.0.0.9"));
+    expect(res.status).toBe(503);
+    const data = await res.json();
+    expect(data.fallback).toBe(true);
+    expect(data.error).toContain("No Oracle was spent");
+    expect(data.interpretation).toBeUndefined();
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+    expect(mockedSpend).not.toHaveBeenCalled();
+  });
+
+  it("is deterministic: two identical calls return the same body", async () => {
+    mockedGetSession.mockResolvedValue({ userId: "u1", email: "a@b.co" });
+    const a = await POST(req(body("quick-insight"), "10.0.0.9"));
+    const b = await POST(req(body("quick-insight"), "10.0.0.9"));
+    expect(a.status).toBe(b.status);
+    expect(await a.json()).toEqual(await b.json());
+  });
+});
+
 describe("POST /api/reading/generate — first free Quick Insight", () => {
   beforeEach(() => {
     vi.clearAllMocks();
