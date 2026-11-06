@@ -25,12 +25,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid pack." }, { status: 400 });
   }
 
-  // Prefer the signed-in user's email; guests may type theirs (email-only checkout).
-  let email = (body.email ?? "").trim();
+  // Phase G follow-up (F1): when a session exists, the session email
+  // is the buyer and body.email is ignored. Letting a signed-in user
+  // supply an arbitrary body.email pre-created a passwordless account
+  // for that address and forced its owner into the OTP path (a 409
+  // on password signup). Guests have no session, so body.email is
+  // their only address and is kept.
   const session = await getSession();
-  if (!email && session) {
+  let email = "";
+  if (session) {
     const user = await getUserById(session.userId);
     email = user?.email ?? "";
+  } else {
+    email = (body.email ?? "").trim();
   }
   // Guests must supply an email: the webhook delivers credits to that
   // address and it becomes their account on sign-in.

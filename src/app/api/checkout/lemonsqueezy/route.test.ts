@@ -17,6 +17,11 @@ vi.mock("@/lib/lemonsqueezy", () => ({
 const mockedCreateCheckout = vi.mocked(createCheckout);
 
 import { POST } from "@/app/api/checkout/lemonsqueezy/route";
+import { getSession } from "@/lib/auth";
+import { getUserById } from "@/lib/db";
+
+const mockedGetSession = vi.mocked(getSession);
+const mockedGetUserById = vi.mocked(getUserById);
 
 function req(body: unknown): NextRequest {
   return new NextRequest("http://localhost/api/checkout/lemonsqueezy", {
@@ -46,6 +51,28 @@ describe("POST /api/checkout/lemonsqueezy", () => {
     expect(await res.json()).toMatchObject({
       url: "https://lemonsqueezy.test/checkout",
     });
+  });
+
+  it("guest checkout uses the supplied body email", async () => {
+    mockedGetSession.mockResolvedValue(null);
+    const res = await POST(req({ packId: "pack5", email: "guest@example.com" }));
+    expect(res.status).toBe(200);
+    expect(mockedCreateCheckout).toHaveBeenCalledWith({ packId: "pack5", email: "guest@example.com" });
+  });
+
+  it("signed-in checkout ignores body.email and uses the session email", async () => {
+    // Phase G follow-up (F1): a signed-in buyer used to be able to
+    // supply an arbitrary body.email, which pre-created a
+    // passwordless account for that address and forced its owner
+    // into the OTP path. The session email is the buyer now.
+    mockedGetSession.mockResolvedValue({ userId: "u-1", email: "session@example.com" });
+    mockedGetUserById.mockResolvedValue({ id: "u-1", email: "session@example.com", credits: 0, created_at: "2026-11-05T00:00:00Z" });
+    const res = await POST(req({ packId: "pack5", email: "someone-else@example.com" }));
+    expect(res.status).toBe(200);
+    expect(mockedCreateCheckout).toHaveBeenCalledWith({ packId: "pack5", email: "session@example.com" });
+    expect(mockedCreateCheckout).not.toHaveBeenCalledWith(
+      expect.objectContaining({ email: "someone-else@example.com" })
+    );
   });
 
   it("rejects an unknown pack", async () => {
