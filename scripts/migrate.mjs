@@ -47,6 +47,10 @@ const sql = postgres(connectionString, {
   prepare: false,
   max: 1,
   connect_timeout: 10,
+  // Phase 6: CREATE TABLE/INDEX IF NOT EXISTS emits NOTICE objects
+  // ("relation already exists, skipping") that postgres.js prints
+  // raw — they look like errors and add no information, so drop them.
+  onnotice: () => {},
 });
 
 try {

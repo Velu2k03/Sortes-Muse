@@ -43,8 +43,15 @@
 import { createHmac, randomBytes } from "node:crypto";
 
 const args = process.argv.slice(2);
-const urlArg = args.find((a) => a.startsWith("--url="))?.slice(6) ?? "http://localhost:3000";
-const emailArg = args.find((a) => a.startsWith("--email="))?.slice(8) ?? "webhook-test@example.com";
+function flagValue(name, def) {
+  const eq = args.find((a) => a.startsWith(`${name}=`));
+  if (eq) return eq.slice(name.length + 1);
+  const i = args.indexOf(name);
+  if (i >= 0 && args[i + 1]) return args[i + 1];
+  return def;
+}
+const urlArg = flagValue("--url", "http://localhost:3000");
+const emailArg = flagValue("--email", "webhook-test@example.com");
 
 const secret = process.env.LEMONSQUEEZY_WEBHOOK_SECRET;
 const storeId = process.env.LEMONSQUEEZY_STORE_ID;

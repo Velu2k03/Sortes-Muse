@@ -270,13 +270,13 @@ export default function Header() {
           </Link>
         </nav>
 
-        <div className="flex min-w-0 shrink-0 items-center gap-1.5 sm:gap-3">
+        <div className="flex min-w-0 shrink-0 items-center gap-3">
           <button
             type="button"
             onClick={toggleTheme}
             aria-label={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
             title={theme === "dark" ? "Light theme" : "Dark theme"}
-            className="rounded-lg p-2 text-cream/80 transition hover:text-goldbright sm:p-3"
+            className="rounded-lg p-3 text-cream/80 transition hover:text-goldbright"
           >
             <Icon name={theme === "dark" ? "sun" : "moon"} size={20} />
           </button>
@@ -293,7 +293,12 @@ export default function Header() {
             <span className="num">
               <CountUp value={credits ?? 0} />
             </span>
-            <span>Oracles</span>
+            {/* Phase 6 (D3): the word "Oracles" hides below 420px so the
+                header row fits at 390px. The coin + count stay, and the
+                aria-label still reads the full balance. The buttons
+                keep p-3 (44px touch targets, asserted by charts-check)
+                — the pill is the flexible part, not the buttons. */}
+            <span className="hidden min-[420px]:inline">Oracles</span>
             <span className="hidden border-l border-gold/40 pl-1.5 sm:inline">Top up</span>
           </Link>
           {!loading &&
@@ -316,7 +321,7 @@ export default function Header() {
             ))}
           <button
             type="button"
-            className="rounded-lg p-2 text-cream/80 lg:hidden sm:p-3"
+            className="rounded-lg p-3 text-cream/80 lg:hidden"
             onClick={() => setMobileOpen((v) => !v)}
             aria-label="Toggle menu"
             aria-expanded={mobileOpen}
