@@ -1,0 +1,57 @@
+-- 003_rls-reports-free-interpretations.sql — APPROVAL REQUIRED.
+-- DO NOT move this into migrations/ (the auto-applied set) and do NOT
+-- apply it to production without Velu's explicit approval.
+-- Numbered 003 so it promotes cleanly into migrations/ after approval
+-- (it must apply after 002; it is idempotent — ALTER TABLE ... ENABLE
+-- ROW LEVEL SECURITY is a no-op when already enabled).
+--
+-- Supabase Advisor (verified 2026-11-06) reports 2 CRITICAL issues:
+-- Row Level Security is disabled on public.reports and
+-- public.free_interpretations.
+--
+-- Assessment: the app connects to Postgres as the `postgres` role
+-- (via the Supabase pooler), which bypasses RLS entirely, so
+-- enabling RLS does not change anything the app does. The risk is
+-- the PostgREST API: with RLS disabled, any table the `anon` or
+-- `authenticated` roles hold a grant on is readable through the
+-- public REST endpoint with the anon key. Enabling RLS with NO
+-- policies denies all access to anon/authenticated by default, which
+-- is the safe posture for tables the browser client never queries
+-- directly (all reads go through the Next.js API routes, which use
+-- the postgres role).
+--
+-- This file enables RLS on exactly the two flagged tables and creates
+-- no policies (deny-by-default). The remaining tables
+-- (users, auth_codes, transactions, readings, free_readings) should
+-- get the same treatment in a follow-up once their exposure is
+-- assessed the same way; they were not flagged by Advisor in this
+-- check, so they are not changed here.
+--
+-- Apply manually after approval, e.g. in the Supabase SQL editor or:
+--   psql "$POSTGRES_URL" -f migrations/approval-required/003_rls-reports-free-interpretations.sql
+-- (session pooler port 5432 for direct psql, never 6543 for DDL
+-- sessions that must survive; see docs/STAGING.md).
+--
+-- TESTED on local Postgres 16.15, 2026-11-06 (Phase 6B), against a
+-- database built by migrations 001+002 with Supabase-default grants
+-- (anon/authenticated hold SELECT/INSERT/UPDATE/DELETE on all public
+-- tables, as Supabase grants by default):
+--   BEFORE: anon SELECT returned a victim user's report text and
+--     free_interpretations row (exposure proven, RLS off).
+--   AFTER:  anon SELECT on both tables returns 0 rows; anon INSERT
+--     fails "new row violates row-level security policy";
+--     authenticated SELECT also returns 0 rows; the postgres
+--     superuser (the role the app connects as in production) still
+--     reads the row; the table owner also bypasses RLS (Postgres
+--     rule: owners bypass unless FORCE ROW LEVEL SECURITY is set).
+--   Consequence: this migration is safe ONLY because the app connects
+--   as the postgres role (superuser + table owner). If the app ever
+--   connects as a non-owner, non-bypass role, it would see 0 rows and
+--   break — that connection change must be tested against RLS first.
+--   The remaining tables (users, auth_codes, transactions, readings,
+--   free_readings) are exposed the same way and are NOT fixed here;
+--   they need the same assessment + migration before a public launch
+--   (recorded as a remaining risk, not done in this phase).
+
+ALTER TABLE public.reports ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.free_interpretations ENABLE ROW LEVEL SECURITY;

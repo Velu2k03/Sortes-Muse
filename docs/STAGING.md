@@ -148,8 +148,11 @@ WHERE schemaname = 'public';
 
 - Production migrations (needs Velu's explicit approval per run).
 - RLS enablement on `reports` / `free_interpretations` — migration
-  prepared at `migrations/approval-required/rls-reports-free-interpretations.sql`,
-  needs approval.
+  prepared at `migrations/approval-required/003_rls-reports-free-interpretations.sql`,
+  needs approval. Tested on local Postgres (Phase 6B): anon/authenticated
+  read 0 rows after, app (postgres) role unaffected. The other five
+  tables are exposed the same way and are NOT yet fixed — see the
+  migration header.
 - Postgres 17.11.0.018 upgrade offered on production — needs approval.
 - Lemon Squeezy test-mode checkout — needs a deployed preview +
   test-mode dashboard access (not authorized here).

@@ -10,7 +10,9 @@
     "test:watch": "vitest",
     "db:migrate": "node scripts/migrate.mjs",
     "db:sync-migrations": "node scripts/sync-migrations.mjs",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db:backup": "node scripts/backup.mjs",
+    "db:restore": "node scripts/restore.mjs"
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",
