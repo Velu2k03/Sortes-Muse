@@ -1,8 +1,8 @@
--- 003_rls-reports-free-interpretations.sql — APPROVAL REQUIRED.
+-- 004_rls-reports-free-interpretations.sql — APPROVAL REQUIRED.
 -- DO NOT move this into migrations/ (the auto-applied set) and do NOT
 -- apply it to production without Velu's explicit approval.
--- Numbered 003 so it promotes cleanly into migrations/ after approval
--- (it must apply after 002; it is idempotent — ALTER TABLE ... ENABLE
+-- Numbered 004 so it promotes cleanly into migrations/ after approval
+-- (it must apply after 003; it is idempotent — ALTER TABLE ... ENABLE
 -- ROW LEVEL SECURITY is a no-op when already enabled).
 --
 -- Supabase Advisor (verified 2026-11-06) reports 2 CRITICAL issues:
@@ -28,7 +28,7 @@
 -- check, so they are not changed here.
 --
 -- Apply manually after approval, e.g. in the Supabase SQL editor or:
---   psql "$POSTGRES_URL" -f migrations/approval-required/003_rls-reports-free-interpretations.sql
+--   psql "$POSTGRES_URL" -f migrations/approval-required/004_rls-reports-free-interpretations.sql
 -- (session pooler port 5432 for direct psql, never 6543 for DDL
 -- sessions that must survive; see docs/STAGING.md).
 --

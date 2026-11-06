@@ -47,7 +47,15 @@ function flagValue(name, def) {
   const eq = args.find((a) => a.startsWith(`${name}=`));
   if (eq) return eq.slice(name.length + 1);
   const i = args.indexOf(name);
-  if (i >= 0 && args[i + 1]) return args[i + 1];
+  // Phase 6B: a bare "--url" with no following value used to fall
+  // back to the default silently. That is an error now.
+  if (i >= 0) {
+    if (!args[i + 1] || args[i + 1].startsWith("--")) {
+      console.error(`${name} needs a value (e.g. ${name} http://127.0.0.1:3101).`);
+      process.exit(2);
+    }
+    return args[i + 1];
+  }
   return def;
 }
 const urlArg = flagValue("--url", "http://localhost:3000");

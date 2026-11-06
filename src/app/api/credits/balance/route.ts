@@ -18,9 +18,9 @@ export async function GET() {
  * Returns the new balance.
  *
  * M0.1 credit authority: positive deltas are rejected. Credits may only
- * be granted by server events (purchase webhook fulfillment, verified
- * claim, server-side refund inside an AI route), never by a client
- * request, because any signed-in session could otherwise mint credits.
+ * be granted by server events (purchase webhook fulfillment, server-side
+ * refund inside an AI route), never by a client request, because any
+ * signed-in session could otherwise mint credits.
  */
 export async function POST(req: NextRequest) {
   if (!checkRateLimit(`balance:${clientIp(req)}`, RATE_LIMITS.moneyIp).allowed) {

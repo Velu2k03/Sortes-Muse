@@ -37,17 +37,27 @@ async function verifyReAuth(
   user: { id: string; email: string; password_hash?: string | null },
   body: { password?: unknown; code?: unknown }
 ): Promise<{ ok: boolean; error?: string }> {
-  if (typeof body.password === "string" && body.password) {
+  // Phase 6B: supplying both used to silently prefer the password
+  // and leave the code unconsumed. Reject the ambiguous request.
+  // Typed locals (not just booleans) so the branches below keep
+  // TypeScript narrowing on body.password / body.code.
+  const password = typeof body.password === "string" ? body.password : "";
+  const code = typeof body.code === "string" ? body.code.trim() : "";
+  const hasPassword = password.length > 0;
+  const hasCode = code.length > 0;
+  if (hasPassword && hasCode) {
+    return { ok: false, error: "Provide either your password or a sign-in code, not both." };
+  }
+  if (hasPassword) {
     if (!user.password_hash) {
       return { ok: false, error: "This account has no password set. Request a sign-in code instead, or set a password first." };
     }
-    const ok = await verifyPassword(body.password, user.password_hash);
+    const ok = await verifyPassword(password, user.password_hash);
     return ok
       ? { ok: true }
       : { ok: false, error: "That password is not correct." };
   }
-  if (typeof body.code === "string" && body.code.trim()) {
-    const code = body.code.trim();
+  if (hasCode) {
     if (!/^\d{6}$/.test(code)) {
       return { ok: false, error: "That code must be 6 digits." };
     }

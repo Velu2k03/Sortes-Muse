@@ -61,7 +61,7 @@ describe.skipIf(SKIP)("money paths on real Postgres (staging only)", () => {
       ["auth_codes", "free_interpretations", "free_readings", "readings", "reports", "transactions", "users"]
     );
     const ledger = (await raw`SELECT version FROM schema_migrations ORDER BY version`) as Array<{ version: string }>;
-    expect(ledger.map((r) => r.version)).toEqual(["001", "002"]);
+    expect(ledger.map((r) => r.version)).toEqual(["001", "002", "003"]);
     const indexes = (await raw`
       SELECT indexname FROM pg_indexes WHERE schemaname = 'public'
         AND indexname LIKE 'idx\_%'`) as Array<{ indexname: string }>;
@@ -101,6 +101,26 @@ describe.skipIf(SKIP)("money paths on real Postgres (staging only)", () => {
     expect((await db.getUserById(user.id))?.credits).toBe(5);
   });
 
+  it("concurrent duplicate fulfilment: two simultaneous deliveries grant once", async () => {
+    // Phase 6B: only sequential duplicates were tested before. Two
+    // identical webhook deliveries arriving at the same time must
+    // still grant exactly once (row lock + in-transaction dup check).
+    const user = await db.createUser("fulfill-b@example.com");
+    const args = {
+      userId: user.id,
+      email: user.email,
+      packType: "pack5 (lemonsqueezy:order-1001b)",
+      amount: 3.99,
+      readings: 5,
+      orderId: "order-1001b",
+    };
+    const results = await Promise.all([db.fulfillOrder(args), db.fulfillOrder(args)]);
+    expect(results.filter((r) => !r.duplicate)).toHaveLength(1);
+    expect(results.filter((r) => r.duplicate)).toHaveLength(1);
+    expect((await db.getUserById(user.id))?.credits).toBe(5);
+    expect((await db.listTransactions(user.id)).filter((t) => t.pack_type.includes("order-1001b"))).toHaveLength(1);
+  });
+
   it("revokeOrder revokes once; a double refund is a no-op", async () => {
     const user = await db.createUser("refund-a@example.com");
     await db.fulfillOrder({
@@ -121,6 +141,26 @@ describe.skipIf(SKIP)("money paths on real Postgres (staging only)", () => {
     expect((await db.getUserById(user.id))?.credits).toBe(0);
     // Refund of an order that was never fulfilled revokes nothing.
     expect(await db.revokeOrder("order-never-existed")).toEqual({ revoked: false, readings: 0 });
+  });
+
+  it("concurrent double refund: two simultaneous revokes revoke once", async () => {
+    // Phase 6B: only sequential double refunds were tested before.
+    const user = await db.createUser("refund-b@example.com");
+    await db.fulfillOrder({
+      userId: user.id,
+      email: user.email,
+      packType: "pack12 (lemonsqueezy:order-1002b)",
+      amount: 7.99,
+      readings: 12,
+      orderId: "order-1002b",
+    });
+    const results = await Promise.all([db.revokeOrder("order-1002b"), db.revokeOrder("order-1002b")]);
+    expect(results.filter((r) => r.revoked)).toHaveLength(1);
+    expect(results.filter((r) => !r.revoked)).toHaveLength(1);
+    expect((await db.getUserById(user.id))?.credits).toBe(0);
+    const refundRows = (await raw`
+      SELECT id FROM transactions WHERE pack_type LIKE '%order-1002b:refund%'`) as unknown as unknown[];
+    expect(refundRows).toHaveLength(1);
   });
 
   it("a failed fulfilment rolls back fully; retry after the failure succeeds", async () => {

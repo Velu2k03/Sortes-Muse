@@ -18,8 +18,9 @@ npm run dev        # http://localhost:3000
 Everything works out of the box with **zero configuration**: auth, credits,
 and the database fall back to a local JSON store (`data/local-db.json`,
 gitignored), sign-in codes print to the server console in dev, checkout
-returns 503 until Lemon Squeezy keys are set, and AI readings fall back to rich static
-interpretations when no API key is set. Production does not fall back to the
+returns 503 until Lemon Squeezy keys are set, and AI readings return an
+honest 503 with no Oracle spent when no API key is set (no static text
+is ever served as a personal reading). Production does not fall back to the
 JSON store: the app throws at boot when neither `POSTGRES_URL` nor
 `DATABASE_URL` is set.
 
@@ -86,8 +87,9 @@ cp .env.example .env.local
   story essentials are sent to the model — birthdays and sensitive fields are
   stripped before the request leaves the server. Language matches the user
   (English default, Tagalog/Taglish when detected). Any provider failure,
-  timeout (25s), or missing key falls back instantly to a rich static
-  interpretation. Rate-limited to 20 generations per IP per hour.
+  timeout (25s), or missing key fails honestly with a 503 and no Oracle
+  spent — no static text is ever served as a personal reading.
+  Rate-limited to 20 generations per IP per hour.
 - **Payments.** With Lemon Squeezy env vars set, checkout redirects to Lemon
   Squeezy (guests check out with email only). The webhook
   (`/api/webhooks/lemonsqueezy`) verifies the HMAC signature, auto-creates

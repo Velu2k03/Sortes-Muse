@@ -69,6 +69,16 @@ describe("DELETE /api/account/delete (Phase 6 N4 re-auth)", () => {
     expect(mockedDeleteUser).not.toHaveBeenCalled();
   });
 
+  // Phase 6B: supplying both used to silently prefer the password
+  // and leave the code unconsumed.
+  it("refuses when both password and code are supplied", async () => {
+    const res = await DELETE(req({ password: "correct horse", code: "123456" }));
+    expect(res.status).toBe(401);
+    expect((await res.json()).error).toContain("not both");
+    expect(mockedDeleteUser).not.toHaveBeenCalled();
+    expect(mockedDeleteAuthCode).not.toHaveBeenCalled();
+  });
+
   it("refuses a wrong password and does not delete", async () => {
     mockedVerifyPassword.mockResolvedValue(false);
     const res = await DELETE(req({ password: "nope" }));

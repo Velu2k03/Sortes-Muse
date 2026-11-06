@@ -69,6 +69,17 @@ INSERT INTO transactions (id, user_id, email, pack_type, amount, readings)
 -- stored as a JSON string, not an object. Migration 002 must repair it.
 INSERT INTO readings (id, user_id, data)
   VALUES ('r_old', 'u_old', '"{\\"id\\":\\"r_old\\",\\"question\\":\\"old?\\"}"'::jsonb);
+-- A double-encoded REPORT too (migration 002's reports repair loop
+-- was unproven until Phase 6B): same bug, same fix, other table.
+INSERT INTO reports (id, user_id, data)
+  VALUES ('rep_old', 'u_old', '"{\\"id\\":\\"rep_old\\",\\"title\\":\\"old report\\"}"'::jsonb);
+-- The orphan nonce table a pre-Phase-6 ensureSchema() left behind.
+-- Migration 003 must drop it.
+CREATE TABLE checkout_nonces (
+  nonce TEXT PRIMARY KEY,
+  email TEXT NOT NULL,
+  expires_at TIMESTAMPTZ NOT NULL
+);
 `;
 
 describe.skipIf(SKIP)("migrations on real Postgres (staging only)", () => {
@@ -94,10 +105,11 @@ describe.skipIf(SKIP)("migrations on real Postgres (staging only)", () => {
     });
   }
 
-  it("CLI applies 001+002 to the production-like schema, keeps data, re-runs as a no-op", async () => {
+  it("CLI applies 001+002+003 to the production-like schema, keeps data, re-runs as a no-op", async () => {
     const first = runCli();
     expect(first).toContain("001 baseline — applied");
     expect(first).toContain("002 indexes_constraints — applied");
+    expect(first).toContain("003 drop_checkout_nonces — applied");
     // Existing data survived the migration.
     const user = (await raw`SELECT credits FROM users WHERE id = 'u_old'`) as Array<{ credits: number }>;
     expect(user[0].credits).toBe(7);
@@ -112,6 +124,16 @@ describe.skipIf(SKIP)("migrations on real Postgres (staging only)", () => {
     const repaired = (await raw`SELECT data FROM readings WHERE id = 'r_old'`) as Array<{ data: unknown }>;
     expect(repaired).toHaveLength(1);
     expect(repaired[0].data).toEqual({ id: "r_old", question: "old?" });
+    // The double-encoded REPORT was repaired too (Phase 6B: the
+    // reports loop was previously unexercised).
+    const repairedReport = (await raw`SELECT data FROM reports WHERE id = 'rep_old'`) as Array<{ data: unknown }>;
+    expect(repairedReport).toHaveLength(1);
+    expect(repairedReport[0].data).toEqual({ id: "rep_old", title: "old report" });
+    // The orphan nonce table is gone (003).
+    const nonce = (await raw`
+      SELECT table_name FROM information_schema.tables
+      WHERE table_schema = 'public' AND table_name = 'checkout_nonces'`) as unknown as unknown[];
+    expect(nonce).toHaveLength(0);
     // Second CLI run: nothing new to apply.
     const second = runCli();
     expect(second).toContain("already applied");
@@ -123,13 +145,36 @@ describe.skipIf(SKIP)("migrations on real Postgres (staging only)", () => {
     (process.env as Record<string, string | undefined>).POSTGRES_URL = TEST_URL;
     const db = (await import("@/lib/db")) as typeof import("@/lib/db");
     // ensureSchema is the in-app trigger; the ledger already has
-    // both versions, so this must be a no-op, not an error.
+    // all three versions, so this must be a no-op, not an error.
     await expect(db.ensureSchema()).resolves.toBeUndefined();
     const ledger = (await raw`SELECT version FROM schema_migrations ORDER BY version`) as Array<{ version: string }>;
-    expect(ledger.map((r) => r.version)).toEqual(["001", "002"]);
+    expect(ledger.map((r) => r.version)).toEqual(["001", "002", "003"]);
     // The app works against the migrated schema.
     const user = await db.getUserByEmail("old@example.com");
     expect(user?.credits).toBe(7);
     expect(await db.hasUsedFreeReading("u_old")).toBe(false);
+  });
+
+  it("in-app runner REFUSES to apply a pending migration in production", async () => {
+    // Phase 6B: ensureSchema() used to auto-apply pending migrations
+    // on first DB use with no approval gate, bypassing the
+    // SORTES_MIGRATE_PRODUCTION=1 rule that scripts/migrate.mjs
+    // enforces. In production it must now throw and apply nothing.
+    await raw`DELETE FROM schema_migrations WHERE version = '002'`;
+    vi.resetModules();
+    const env = process.env as Record<string, string | undefined>;
+    env.POSTGRES_URL = TEST_URL;
+    env.NODE_ENV = "production";
+    delete env.VERCEL_ENV;
+    const db = (await import("@/lib/db")) as typeof import("@/lib/db");
+    await expect(db.ensureSchema()).rejects.toThrow(/Pending database migrations.*002/);
+    // Nothing was applied: the ledger still lacks 002 (003 stays).
+    const ledger = (await raw`SELECT version FROM schema_migrations ORDER BY version`) as Array<{ version: string }>;
+    expect(ledger.map((r) => r.version)).toEqual(["001", "003"]);
+    // Restore the ledger via the CLI (NODE_ENV=test) so later tests
+    // see the fully migrated schema again.
+    env.NODE_ENV = "test";
+    const out = runCli();
+    expect(out).toContain("002 indexes_constraints — applied");
   });
 });

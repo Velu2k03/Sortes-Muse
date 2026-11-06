@@ -138,9 +138,9 @@ WHERE schemaname = 'public';
       order_created, order_refunded, duplicate delivery.
 - [ ] Reconciliation script runs against staging
       (`scripts/reconcile.mjs`) and reports zero unmatched orders.
-- [ ] AI fallback: with no provider key, generate returns the
-      deterministic static interpretation (never a crash, never a
-      charge) — covered by `src/lib/__tests__/ai-fallback.test.ts`.
+- [ ] AI fallback: with no provider key, generate returns an honest
+      503 with no model call and no charge — covered by the no-key
+      tests in `src/app/api/reading/generate/route.test.ts`.
 - [ ] 390px screenshot: no horizontal scroll on home, /deck,
       /spreads, /account. 1440px screenshot: header, hero, cards.
 
@@ -148,7 +148,7 @@ WHERE schemaname = 'public';
 
 - Production migrations (needs Velu's explicit approval per run).
 - RLS enablement on `reports` / `free_interpretations` — migration
-  prepared at `migrations/approval-required/003_rls-reports-free-interpretations.sql`,
+  prepared at `migrations/approval-required/004_rls-reports-free-interpretations.sql`,
   needs approval. Tested on local Postgres (Phase 6B): anon/authenticated
   read 0 rows after, app (postgres) role unaffected. The other five
   tables are exposed the same way and are NOT yet fixed — see the

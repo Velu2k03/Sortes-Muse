@@ -19,8 +19,12 @@ import { MIGRATION_FILES } from "./migrations.generated";
  *   from migrations/*.sql by scripts/sync-migrations.mjs.
  * - Production application still needs Velu's explicit approval:
  *   apply with `npm run db:migrate` (scripts/migrate.mjs) against
- *   the target database, or let ensureSchema() apply pending files
- *   on first DB use in a staging/preview environment.
+ *   the target database. The in-app runner (ensureSchema) applies
+ *   pending files on first DB use in development, test, and Vercel
+ *   Preview — but NEVER in production: there it only verifies that
+ *   nothing is pending and throws naming the pending versions
+ *   (Phase 6B — the runner used to auto-apply in production too,
+ *   which bypassed the approval gate).
  */
 export const SCHEMA_MIGRATIONS_TABLE = "schema_migrations";
 
@@ -29,24 +33,57 @@ export interface AppliedMigration {
   name: string;
 }
 
-/** Apply every pending migration, in order. Returns what was applied. */
-export async function runMigrations(
-  pg: postgres.Sql
-): Promise<AppliedMigration[]> {
-  // Dynamic identifiers use the postgres.js sql('name') helper
-  // (values always go through template-tag parameters). The CREATE
-  // below is a constant string, so unsafe is fine there.
-  await pg.unsafe(`
+async function readAppliedVersions(
+  pg: postgres.Sql,
+  createLedger: boolean
+): Promise<Set<string>> {
+  if (createLedger) {
+    await pg.unsafe(`
     CREATE TABLE IF NOT EXISTS ${SCHEMA_MIGRATIONS_TABLE} (
       version TEXT PRIMARY KEY,
       name TEXT NOT NULL,
       applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )`);
+  }
+  const exists = await pg`
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = ${SCHEMA_MIGRATIONS_TABLE}`;
+  if (exists.length === 0) return new Set();
   const applied = (await pg`
     SELECT version FROM ${pg(SCHEMA_MIGRATIONS_TABLE)}`) as Array<{
     version: string;
   }>;
-  const appliedVersions = new Set(applied.map((r) => r.version));
+  return new Set(applied.map((r) => r.version));
+}
+
+/** Apply every pending migration, in order. Returns what was applied. */
+export async function runMigrations(
+  pg: postgres.Sql,
+  opts?: { allowApply?: boolean }
+): Promise<AppliedMigration[]> {
+  // Phase 6B production gate: the running app must never apply a
+  // migration to production by itself. Vercel Preview/Development
+  // still auto-apply (they point at staging, never production), and
+  // an operator can opt in explicitly with SORTES_MIGRATE_PRODUCTION=1
+  // (the same flag scripts/migrate.mjs uses).
+  const allowApply =
+    opts?.allowApply ??
+    (process.env.SORTES_MIGRATE_PRODUCTION === "1" ||
+      process.env.NODE_ENV !== "production" ||
+      process.env.VERCEL_ENV === "preview" ||
+      process.env.VERCEL_ENV === "development");
+  const appliedVersions = await readAppliedVersions(pg, allowApply);
+  if (!allowApply) {
+    const pending = MIGRATION_FILES.filter((f) => !appliedVersions.has(f.version));
+    if (pending.length > 0) {
+      throw new Error(
+        `Pending database migrations must be applied by an operator, not by the running app: ${pending
+          .map((f) => `${f.version} ${f.name}`)
+          .join(", ")}. Apply with \`npm run db:migrate\` (production needs SORTES_MIGRATE_PRODUCTION=1 and Velu's explicit approval).`
+      );
+    }
+    return [];
+  }
   const done: AppliedMigration[] = [];
   for (const file of MIGRATION_FILES) {
     if (appliedVersions.has(file.version)) continue;

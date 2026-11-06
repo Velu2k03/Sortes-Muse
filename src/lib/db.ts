@@ -157,8 +157,12 @@ export async function ensureSchema(): Promise<void> {
   // written per-instance and lost on redeploy/cold start. In
   // production, refuse to run at all instead. Local development
   // keeps the JSON fallback (no URL, non-production env).
+  // Phase 6B: fail CLOSED, not on an exact NODE_ENV match — an
+  // unset, empty, or misspelled NODE_ENV in a real deployment must
+  // not silently re-enable the JSON store. Only "development" and
+  // "test" get the fallback.
   if (!usePostgres) {
-    if (process.env.NODE_ENV === "production") {
+    if (process.env.NODE_ENV !== "development" && process.env.NODE_ENV !== "test") {
       throw new Error(
         "POSTGRES_URL (or DATABASE_URL) is required in production. " +
           "Sortes refuses to run on the local JSON store in production, " +
@@ -172,11 +176,11 @@ export async function ensureSchema(): Promise<void> {
   // Phase 6: the schema now lives in versioned migration files
   // (migrations/*.sql) applied by src/lib/migrations.ts. ensureSchema
   // stays as the single entry point every DB function calls — it is
-  // the dev/staging safety net that applies pending migrations on
-  // first use — but it no longer contains DDL itself. The old
-  // CREATE TABLE IF NOT EXISTS block moved verbatim into
-  // migrations/001_baseline.sql. Explicit application (the
-  // recommended path for staging/production) is:
+  // the dev/staging/Preview safety net that applies pending
+  // migrations on first use — but it no longer contains DDL itself.
+  // Phase 6B: in production runMigrations only VERIFIES (it throws
+  // naming any pending migration); it never applies. Explicit
+  // application (the recommended path for staging/production) is:
   //   npm run db:migrate
   // which needs Velu's explicit approval for production.
   if (!pg) throw new Error("Database not configured");

@@ -49,8 +49,16 @@ const sql = postgres(connectionString, {
   connect_timeout: 10,
   // Phase 6: CREATE TABLE/INDEX IF NOT EXISTS emits NOTICE objects
   // ("relation already exists, skipping") that postgres.js prints
-  // raw — they look like errors and add no information, so drop them.
-  onnotice: () => {},
+  // raw — they look like errors and add no information, so drop
+  // exactly those. Phase 6B: the old handler swallowed ALL notices,
+  // including migration 002's RAISE WARNING when it skips an
+  // unparseable row — that warning must stay visible, so anything
+  // else is printed.
+  onnotice: (notice) => {
+    const msg = typeof notice === "string" ? notice : (notice?.message ?? "");
+    if (/already exists, skipping/i.test(msg)) return;
+    console.warn(`[migrate notice] ${msg}`);
+  },
 });
 
 try {

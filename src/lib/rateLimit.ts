@@ -41,8 +41,10 @@ export const RATE_LIMITS = {
   aiGenerateIp: { windowMs: 60 * 60_000, max: 20 },
   /** AI follow-ups per IP (was the follow-up route's own map). */
   aiFollowUpIp: { windowMs: 60 * 60_000, max: 10 },
-  /** Chart calculation per IP: calculate, transits, vedic-transits,
-      ziwei-stacks (was calculate's own map; the other three were
+  /** Chart calculation per IP — SHARED bucket: calculate, transits,
+      vedic-transits, ziwei-stacks all use the same `chart-calc:`
+      key, so the 20/hour budget is COMBINED across the four routes,
+      not 20 each (was calculate's own map; the other three were
       unrated). Calculation is free and unsaved, so the budget is
       generous, but unbounded POSTs are still abuse surface. */
   chartCalcIp: { windowMs: 60 * 60_000, max: 20 },
@@ -52,7 +54,10 @@ export const RATE_LIMITS = {
   chartInterpretIp: { windowMs: 60 * 60_000, max: 20 },
   /** Report generation per IP (was the reports/generate own map). */
   reportsGenerateIp: { windowMs: 60 * 60_000, max: 20 },
-  /** Generic signed-in reads per IP (report/journal lists, stats). */
+  /** Generic signed-in reads per IP (report/journal lists, stats) —
+      SHARED bucket: reports GET, reports/[id] GET/DELETE all use the
+      same `reports-read:` key, so the 60/minute budget is combined
+      across those routes, not 60 each. */
   readIp: { windowMs: 60_000, max: 60 },
   /** Account deletion per user: destructive, so 3/hour is plenty. */
   accountDeleteUser: { windowMs: 60 * 60_000, max: 3 },

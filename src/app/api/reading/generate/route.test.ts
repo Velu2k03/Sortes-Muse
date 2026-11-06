@@ -160,6 +160,31 @@ describe("POST /api/reading/generate — first free Quick Insight", () => {
     expect(mockedMarkFree).not.toHaveBeenCalled();
   });
 
+  // Phase 6B regression: the response used to reuse the pre-check
+  // user (read before generation and the spend), so a paid reading
+  // reported a balance 1 higher than the real post-spend balance.
+  // The route must re-fetch after the spend.
+  it("reports the post-spend balance, not the pre-check balance", async () => {
+    mockedGetSession.mockResolvedValue({ userId: "u1", email: "a@b.co" });
+    mockedHasUsedFree.mockResolvedValue(true);
+    mockedGetUserById
+      .mockResolvedValueOnce({
+        id: "u1",
+        email: "a@b.co",
+        credits: 5,
+        created_at: "2026-11-05T00:00:00Z",
+      })
+      .mockResolvedValueOnce({
+        id: "u1",
+        email: "a@b.co",
+        credits: 4,
+        created_at: "2026-11-05T00:00:00Z",
+      });
+    const res = await POST(req(body("quick-insight"), "10.0.0.4"));
+    expect(res.status).toBe(200);
+    expect((await res.json()).credits).toBe(4);
+  });
+
   it("blocks the second Quick Insight with 402 when the balance cannot cover it", async () => {
     mockedGetSession.mockResolvedValue({ userId: "u1", email: "a@b.co" });
     mockedHasUsedFree.mockResolvedValue(true);

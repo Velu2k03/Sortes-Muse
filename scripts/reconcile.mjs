@@ -26,7 +26,20 @@
  */
 import postgres from "postgres";
 
-const days = Number(process.argv.find((a) => a.startsWith("--days="))?.slice(7) ?? 7);
+const daysArg = process.argv.find((a) => a.startsWith("--days="));
+const daysEq = daysArg ? Number(daysArg.slice(7)) : undefined;
+const daysSpaceIdx = process.argv.indexOf("--days");
+const daysSpace =
+  daysSpaceIdx >= 0 && process.argv[daysSpaceIdx + 1]
+    ? Number(process.argv[daysSpaceIdx + 1])
+    : undefined;
+// Phase 6B: --days 7 (space form) used to be silently ignored and
+// default to 7. Both forms now parse; a non-numeric value errors.
+const days = daysEq ?? daysSpace ?? 7;
+if (!Number.isFinite(days) || days < 1) {
+  console.error("--days must be a positive number of days.");
+  process.exit(2);
+}
 const dbUrl = process.env.DATABASE_URL ?? process.env.POSTGRES_URL;
 const apiKey = process.env.LEMONSQUEEZY_API_KEY;
 
@@ -38,10 +51,15 @@ if (!apiKey) {
   console.error("Set LEMONSQUEEZY_API_KEY (test key for staging runs).");
   process.exit(2);
 }
-if (
-  process.env.NODE_ENV === "production" &&
-  process.env.SORTES_RECONCILE_PRODUCTION !== "1"
-) {
+// Phase 6B: the header used to claim this refuses "a
+// production-looking DATABASE_URL", but the code only checked
+// NODE_ENV — with NODE_ENV unset (the default) a production URL
+// sailed through. Now the URL itself is checked too.
+const looksProduction =
+  process.env.NODE_ENV === "production" ||
+  /\.supabase\.co/i.test(dbUrl) ||
+  /pooler\.supabase\.com/i.test(dbUrl);
+if (looksProduction && process.env.SORTES_RECONCILE_PRODUCTION !== "1") {
   console.error("Refusing production run without SORTES_RECONCILE_PRODUCTION=1.");
   process.exit(2);
 }

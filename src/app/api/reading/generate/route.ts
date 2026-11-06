@@ -277,8 +277,7 @@ export async function POST(req: NextRequest) {
   // signed-in user with 0 credits and no free use got a full model
   // call and only then a 402 — wasted quota on every attempt. The
   // spend after generation stays as the atomic enforcement; this is
-  // the early, quota-saving check. The pre-checked user is reused
-  // for the response below so the balance is read once.
+  // the early, quota-saving check.
   let preCheckedUser: Awaited<ReturnType<typeof getUserById>> = null;
   if (session && !serverFree) {
     preCheckedUser = await getUserById(session.userId);
@@ -342,7 +341,11 @@ export async function POST(req: NextRequest) {
         );
       }
     }
-    const user = preCheckedUser ?? (await getUserById(session.userId));
+    // Phase 6B: re-fetch AFTER the spend. preCheckedUser was read
+    // before generation and the 1-Oracle spend, so reusing it would
+    // report a balance 1 higher than the real post-spend balance.
+    // (The other three AI routes already re-fetch; this one did not.)
+    const user = await getUserById(session.userId);
     return NextResponse.json({
       interpretation: finalText,
       model: generated.model,

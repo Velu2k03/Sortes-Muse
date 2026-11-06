@@ -42,6 +42,15 @@ describe("production fail-fast guard (N1)", () => {
     );
   });
 
+  it("throws when NODE_ENV is unset (fail closed, not exact-match)", async () => {
+    // Phase 6B: an unset/empty/misspelled NODE_ENV in a real
+    // deployment used to bypass the guard and silently use JSON.
+    const db = await freshDb({});
+    await expect(db.ensureSchema()).rejects.toThrow(
+      /POSTGRES_URL.*required in production/i
+    );
+  });
+
   it("keeps the local JSON fallback outside production", async () => {
     const db = await freshDb({ NODE_ENV: "development" });
     await expect(db.ensureSchema()).resolves.toBeUndefined();
