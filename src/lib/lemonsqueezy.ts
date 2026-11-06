@@ -16,13 +16,14 @@ export function variantIdForPack(packId: string): string | null {
     pack12: process.env.LEMONSQUEEZY_VARIANT_PACK12,
     pack30: process.env.LEMONSQUEEZY_VARIANT_PACK30,
   };
-  return map[packId] ?? null;
+  const val = map[packId]?.trim();
+  return val || null;
 }
 
 export function lemonConfigured(): boolean {
   return Boolean(
-    process.env.LEMONSQUEEZY_API_KEY &&
-      process.env.LEMONSQUEEZY_STORE_ID &&
+    process.env.LEMONSQUEEZY_API_KEY?.trim() &&
+      process.env.LEMONSQUEEZY_STORE_ID?.trim() &&
       variantIdForPack("pack5") &&
       variantIdForPack("pack12") &&
       variantIdForPack("pack30")
@@ -31,15 +32,17 @@ export function lemonConfigured(): boolean {
 
 /** Pack id -> readings granted. Single source of truth for webhook fulfillment. */
 export function readingsForVariant(variantId: string): number | null {
-  if (variantId === process.env.LEMONSQUEEZY_VARIANT_PACK5) return 5;
-  if (variantId === process.env.LEMONSQUEEZY_VARIANT_PACK12) return 12;
-  if (variantId === process.env.LEMONSQUEEZY_VARIANT_PACK30) return 30;
+  const trimmed = variantId.trim();
+  if (trimmed === process.env.LEMONSQUEEZY_VARIANT_PACK5?.trim()) return 5;
+  if (trimmed === process.env.LEMONSQUEEZY_VARIANT_PACK12?.trim()) return 12;
+  if (trimmed === process.env.LEMONSQUEEZY_VARIANT_PACK30?.trim()) return 30;
   return null;
 }
 
 export function packIdForVariant(variantId: string): string {
-  if (variantId === process.env.LEMONSQUEEZY_VARIANT_PACK5) return "pack5";
-  if (variantId === process.env.LEMONSQUEEZY_VARIANT_PACK12) return "pack12";
+  const trimmed = variantId.trim();
+  if (trimmed === process.env.LEMONSQUEEZY_VARIANT_PACK5?.trim()) return "pack5";
+  if (trimmed === process.env.LEMONSQUEEZY_VARIANT_PACK12?.trim()) return "pack12";
   return "pack30";
 }
 
@@ -78,17 +81,26 @@ export function verifyOrderAmount(
 export async function createCheckout(args: {
   packId: string;
   email?: string;
+  fetchFn?: typeof fetch;
 }): Promise<string> {
   const variantId = variantIdForPack(args.packId);
   const readings =
     args.packId === "pack5" ? 5 : args.packId === "pack12" ? 12 : 30;
   if (!variantId) throw new Error("Unknown pack.");
-  const site = process.env.NEXT_PUBLIC_SITE_URL ?? "https://sortes.resonantatlas.com";
+  const storeId = process.env.LEMONSQUEEZY_STORE_ID?.trim();
+  if (!storeId) throw new Error("Lemon Squeezy store ID is not configured.");
+  const apiKey = process.env.LEMONSQUEEZY_API_KEY?.trim();
+  if (!apiKey) throw new Error("Lemon Squeezy API key is not configured.");
 
-  const res = await fetch(`${API_BASE}/checkouts`, {
+  const site = (
+    process.env.NEXT_PUBLIC_SITE_URL ?? "https://sortes.resonantatlas.com"
+  ).replace(/\/+$/, "");
+
+  const fetchFn = args.fetchFn ?? fetch;
+  const res = await fetchFn(`${API_BASE}/checkouts`, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${process.env.LEMONSQUEEZY_API_KEY}`,
+      Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/vnd.api+json",
       Accept: "application/vnd.api+json",
     },
@@ -106,14 +118,35 @@ export async function createCheckout(args: {
         },
         relationships: {
           store: {
-            data: { type: "stores", id: process.env.LEMONSQUEEZY_STORE_ID },
+            data: { type: "stores", id: storeId },
           },
           variant: { data: { type: "variants", id: variantId } },
         },
       },
     }),
   });
-  if (!res.ok) throw new Error(`Lemon Squeezy checkout failed (${res.status})`);
+
+  if (!res.ok) {
+    let bodyText = "";
+    try {
+      bodyText = await res.text();
+    } catch {
+      bodyText = "<failed to read response body>";
+    }
+    const truncatedBody = bodyText.slice(0, 500);
+    console.error(
+      JSON.stringify({
+        source: "sortes-lemonsqueezy",
+        event: "checkout-failed",
+        status: res.status,
+        response: truncatedBody,
+      })
+    );
+    throw new Error(
+      `Lemon Squeezy checkout failed (${res.status}): ${truncatedBody}`
+    );
+  }
+
   const data = await res.json();
   const url: string | undefined = data?.data?.attributes?.url;
   if (!url) throw new Error("Lemon Squeezy returned no checkout URL.");

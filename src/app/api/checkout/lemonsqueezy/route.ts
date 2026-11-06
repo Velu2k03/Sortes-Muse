@@ -49,7 +49,14 @@ export async function POST(req: NextRequest) {
     // webhook grants credits to the checkout email, and the buyer
     // signs in with that email (OTP) to see them.
     return NextResponse.json({ url });
-  } catch {
+  } catch (err) {
+    console.error(
+      JSON.stringify({
+        source: "sortes-lemonsqueezy",
+        event: "checkout-route-error",
+        error: err instanceof Error ? err.message : String(err),
+      })
+    );
     return NextResponse.json(
       { error: "Could not start checkout. Please try again." },
       { status: 500 }

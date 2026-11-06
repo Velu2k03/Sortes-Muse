@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { createHmac } from "crypto";
 import {
   readingsForVariant,
@@ -6,10 +6,13 @@ import {
   expectedTotalCentsForVariant,
   verifyOrderAmount,
   verifyWebhookSignature,
+  createCheckout,
 } from "@/lib/lemonsqueezy";
 
 describe("lemonsqueezy helpers", () => {
   beforeEach(() => {
+    process.env.LEMONSQUEEZY_API_KEY = "test-key";
+    process.env.LEMONSQUEEZY_STORE_ID = "12345";
     process.env.LEMONSQUEEZY_VARIANT_PACK5 = "111";
     process.env.LEMONSQUEEZY_VARIANT_PACK12 = "222";
     process.env.LEMONSQUEEZY_VARIANT_PACK30 = "333";
@@ -57,5 +60,86 @@ describe("lemonsqueezy helpers", () => {
     expect(verifyWebhookSignature(raw, "deadbeef")).toBe(false);
     expect(verifyWebhookSignature(raw, null)).toBe(false);
     expect(verifyWebhookSignature(raw + "x", good)).toBe(false);
+  });
+
+  describe("createCheckout", () => {
+    let errorSpy: ReturnType<typeof vi.spyOn>;
+
+    beforeEach(() => {
+      errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+      errorSpy.mockRestore();
+    });
+
+    it("creates a checkout with correct payload shape and returns the URL", async () => {
+      let capturedBody: unknown;
+      const fetchFn = vi.fn(async (_url: unknown, init?: RequestInit) => {
+        capturedBody = JSON.parse(String(init?.body));
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              type: "checkouts",
+              id: "co_123",
+              attributes: { url: "https://test.lemonsqueezy.com/checkout/123" },
+            },
+          }),
+        };
+      });
+
+      const url = await createCheckout({
+        packId: "pack5",
+        email: "test@example.com",
+        fetchFn: fetchFn as unknown as typeof fetch,
+      });
+
+      expect(url).toBe("https://test.lemonsqueezy.com/checkout/123");
+      expect(capturedBody).toEqual({
+        data: {
+          type: "checkouts",
+          attributes: {
+            checkout_data: {
+              email: "test@example.com",
+              custom: { pack_id: "pack5", readings: "5" },
+            },
+            product_options: {
+              redirect_url: "https://sortes.resonantatlas.com/oracles?purchase=success",
+            },
+          },
+          relationships: {
+            store: { data: { type: "stores", id: "12345" } },
+            variant: { data: { type: "variants", id: "111" } },
+          },
+        },
+      });
+    });
+
+    it("logs structured error and throws when Lemon Squeezy returns non-OK", async () => {
+      const fetchFn = vi.fn(async () => ({
+        ok: false,
+        status: 422,
+        text: async () => JSON.stringify({ errors: [{ detail: "Store not found" }] }),
+      }));
+
+      await expect(
+        createCheckout({
+          packId: "pack5",
+          fetchFn: fetchFn as unknown as typeof fetch,
+        })
+      ).rejects.toThrow("Lemon Squeezy checkout failed (422)");
+
+      const logged = errorSpy.mock.calls.map((c: unknown[]) => String(c[0]));
+      expect(
+        logged.some(
+          (l: string) =>
+            l.includes("sortes-lemonsqueezy") &&
+            l.includes("checkout-failed") &&
+            l.includes("422") &&
+            l.includes("Store not found")
+        )
+      ).toBe(true);
+    });
   });
 });
