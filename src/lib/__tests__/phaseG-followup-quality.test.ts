@@ -108,21 +108,34 @@ describe("follow-up retains the original reading context", () => {
   });
 
   it("signed-in: a different reading's cards replace the old ones, they are not mixed in", async () => {
-    mockedGetSession.mockResolvedValue({ userId: "u-1", email: "a@example.com" });
-    mockedGetReading.mockResolvedValue(TOWER_READING);
-    mockedGenerateChat.mockImplementation(async (opts) => {
-      const text = foolAnswer("The Tower");
-      if (opts.validate && !opts.validate(text)) return null;
-      return { text, model: "test-model" };
-    });
-    const res = await POST(req({ question: "How do I rebuild?", readingId: "r-2" }, "10.2.0.2"));
-    expect(res.status).toBe(200);
-    const opts = mockedGenerateChat.mock.calls[0][0];
-    expect(opts.user).toContain("Original question: How do I rebuild after the sudden change?");
-    expect(opts.user).toContain("The Tower");
-    expect(opts.user).toContain("Death");
-    expect(opts.user).not.toContain("The Fool");
-    expect(opts.system).toContain("Never start a new reading");
+    // Seed the clarifier draw. The deck starts with The Fool, so an
+    // unseeded draw lands on it about 1 in 76 runs and the prompt
+    // then contains "The Fool" through the clarifier line, failing
+    // the assertion below. A fixed random of 0.999 draws the last
+    // remaining card (King of Pentacles), never The Fool, so this
+    // test is deterministic. The draw itself is unit-tested in
+    // clarifier.test.ts; this test pins the prompt, not the draw.
+    const randomSpy = vi.spyOn(Math, "random").mockReturnValue(0.999);
+    try {
+      mockedGetSession.mockResolvedValue({ userId: "u-1", email: "a@example.com" });
+      mockedGetReading.mockResolvedValue(TOWER_READING);
+      mockedGenerateChat.mockImplementation(async (opts) => {
+        const text = foolAnswer("The Tower");
+        if (opts.validate && !opts.validate(text)) return null;
+        return { text, model: "test-model" };
+      });
+      const res = await POST(req({ question: "How do I rebuild?", readingId: "r-2" }, "10.2.0.2"));
+      expect(res.status).toBe(200);
+      const opts = mockedGenerateChat.mock.calls[0][0];
+      expect(opts.user).toContain("Original question: How do I rebuild after the sudden change?");
+      expect(opts.user).toContain("The Tower");
+      expect(opts.user).toContain("Death");
+      expect(opts.user).toContain("King of Pentacles");
+      expect(opts.user).not.toContain("The Fool");
+      expect(opts.system).toContain("Never start a new reading");
+    } finally {
+      randomSpy.mockRestore();
+    }
   });
 
   it("guest: the whitelisted reading object still reaches the prompt intact", async () => {
