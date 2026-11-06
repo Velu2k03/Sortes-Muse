@@ -72,6 +72,22 @@ Notes:
 | Weekly | Verify the newest dump restores into local Postgres (see below) | This VM |
 | After any migration | `pg_dump` before + after the migration apply | This VM |
 
+### Schedule definition (Phase 7 — not enabled)
+
+Wrapper script: `scripts/backup-daily.sh` (in the repo). It sources
+the production database URL from an env file the owner supplies via
+Secure Vault (`~/.config/sortes/backup.env`, mode 600, containing
+only `SORTES_BACKUP_DATABASE_URL`), then runs `scripts/backup.mjs`
+with retention keep 14. It refuses to run if the env file is missing
+and never prints the URL.
+
+Indicative cron entry (the scheduler owns the exact form; creating
+the job needs owner approval, B-U):
+
+```
+0 3 * * *  TZ=Asia/Manila /home/hatch/workspace/sortes/scripts/backup-daily.sh >> /home/hatch/workspace/sortes-backups/cron.log 2>&1
+```
+
 **RPO:** up to 24h of data (daily dumps). **RTO:** under 1h for a
 logical restore of a 27 MB database (restore + verify + point the
 app at the restored database).
