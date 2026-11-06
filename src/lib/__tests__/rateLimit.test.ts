@@ -1,5 +1,13 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { checkRateLimit, isRateLimited, recordRateLimit, resetRateLimits, RATE_LIMITS } from "@/lib/rateLimit";
+import { NextRequest } from "next/server";
+import {
+  checkRateLimit,
+  isRateLimited,
+  recordRateLimit,
+  resetRateLimits,
+  RATE_LIMITS,
+  clientIp,
+} from "@/lib/rateLimit";
 
 describe("checkRateLimit", () => {
   beforeEach(() => resetRateLimits());
@@ -74,5 +82,49 @@ describe("checkRateLimit", () => {
     expect(RATE_LIMITS.accountExportUser).toEqual({ windowMs: 60 * 60_000, max: 10 });
     expect(RATE_LIMITS.historySyncUser).toEqual({ windowMs: 60 * 60_000, max: 20 });
     expect(RATE_LIMITS.readIp).toEqual({ windowMs: 60_000, max: 60 });
+  });
+});
+
+describe("clientIp", () => {
+  it("x-vercel-forwarded-for wins over a forged x-forwarded-for first entry", () => {
+    const req = new NextRequest("http://localhost", {
+      headers: {
+        "x-vercel-forwarded-for": "real-client-ip",
+        "x-forwarded-for": "forged-ip, proxy-ip",
+      },
+    });
+    expect(clientIp(req)).toBe("real-client-ip");
+  });
+
+  it("x-forwarded-for 'forged-ip, real-ip' returns the real (last) entry", () => {
+    const req = new NextRequest("http://localhost", {
+      headers: {
+        "x-forwarded-for": "forged-ip, real-ip",
+      },
+    });
+    expect(clientIp(req)).toBe("real-ip");
+  });
+
+  it("single-entry x-forwarded-for returns that entry", () => {
+    const req = new NextRequest("http://localhost", {
+      headers: {
+        "x-forwarded-for": "single-ip",
+      },
+    });
+    expect(clientIp(req)).toBe("single-ip");
+  });
+
+  it("no headers returns 'unknown'", () => {
+    const req = new NextRequest("http://localhost");
+    expect(clientIp(req)).toBe("unknown");
+  });
+
+  it("x-real-ip is used when no forwarded headers are present", () => {
+    const req = new NextRequest("http://localhost", {
+      headers: {
+        "x-real-ip": "192.0.2.1",
+      },
+    });
+    expect(clientIp(req)).toBe("192.0.2.1");
   });
 });

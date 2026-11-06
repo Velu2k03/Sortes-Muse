@@ -8,16 +8,17 @@ import { NextResponse } from "next/server";
  *
  * Phase 6: the six per-route in-memory maps that used to live in the
  * AI/chart routes (generate, follow-up, calculate, geocode,
- * interpret, reports/generate) are gone — every route below uses
+ * interpret, reports/generate) are gone: every route below uses
  * this limiter, with the same budgets the maps had. If a route ever
  * needs its own bucket again, the reason must be written here, not
  * silently re-added as a local map.
  *
  * Best effort by design: the buckets live in process memory, so on a
- * multi-instance host each instance enforces its own budget. That is
- * enough to stop casual abuse and credential stuffing from one
- * client. A distributed store would be needed for a hard global cap;
- * that is out of scope for this phase.
+ * multi-instance host each instance enforces its own budget. The
+ * limiter is per-instance in memory and therefore best-effort, not
+ * a global cap. That is enough to stop casual abuse and credential
+ * stuffing from one client. A distributed store would be needed for
+ * a hard global cap; that is out of scope for this phase.
  */
 export interface RateLimitRule {
   /** Sliding window length in milliseconds. */
@@ -118,9 +119,25 @@ export function resetRateLimits(): void {
 
 /** Best-effort client IP behind Vercel / a proxy. */
 export function clientIp(req: NextRequest): string {
+  const vercel = req.headers.get("x-vercel-forwarded-for");
+  if (vercel) {
+    const ip = vercel.split(",")[0]?.trim();
+    if (ip) return ip;
+  }
   const forwarded = req.headers.get("x-forwarded-for");
-  if (forwarded) return forwarded.split(",")[0]?.trim() || "unknown";
-  return req.headers.get("x-real-ip") ?? "unknown";
+  if (forwarded) {
+    // Off Vercel we cannot know how many trusted hops sit in front of the
+    // app, and the last entry is the only one a client cannot forge by
+    // prepending, because every proxy appends. This may group users behind
+    // one shared egress proxy into one bucket (over-grouping, the safe
+    // direction for a limiter) rather than letting anyone bypass it.
+    const parts = forwarded.split(",").map((s) => s.trim()).filter(Boolean);
+    const ip = parts[parts.length - 1];
+    if (ip) return ip;
+  }
+  const real = req.headers.get("x-real-ip")?.trim();
+  if (real) return real;
+  return "unknown";
 }
 
 export function rateLimitExceeded(): NextResponse {
