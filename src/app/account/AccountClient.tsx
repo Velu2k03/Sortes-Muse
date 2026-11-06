@@ -14,7 +14,7 @@ interface ServerTx {
   created_at: string;
 }
 
-type AuthStep = "email" | "code";
+type AuthStep = "email" | "sent" | "code";
 
 export default function AccountPage() {
   const { user, loading, credits, signOut, afterSignIn } = useAuth();
@@ -24,10 +24,10 @@ export default function AccountPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [devCode, setDevCode] = useState<string | null>(null);
-  const [authTab, setAuthTab] = useState<"password" | "code">("password");
+  const [authTab, setAuthTab] = useState<"password" | "link">("password");
   // Phase 3 (3.6): Create account and Sign in are two equal top-level
   // paths, not a sub-toggle hidden under one method. The method tabs
-  // (password / email code) sit one level below and apply to both.
+  // (password / email link) sit one level below and apply to both.
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [password, setPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -48,9 +48,8 @@ export default function AccountPage() {
   const [deleteCode, setDeleteCode] = useState("");
   const [deleteCodeSent, setDeleteCodeSent] = useState(false);
   const [deleteCodeBusy, setDeleteCodeBusy] = useState(false);
-  // Supabase sends an 8 digit code in production; the local fallback
-  // sends a 6 digit code. The UI follows whichever sender is active.
-  const codeLength = getSupabaseBrowser() ? 8 : 6;
+  // Dev-only fallback: local dev code length without Supabase.
+  const codeLength = 6;
 
   useEffect(() => {
     if (user) {
@@ -134,15 +133,15 @@ export default function AccountPage() {
     }
   };
 
-  const requestCode = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const requestCode = async (e?: React.SyntheticEvent) => {
+    if (e) e.preventDefault();
     setBusy(true);
     setError(null);
     setDevCode(null);
     try {
-      // Supabase first in production: it sends the 8 digit code and
-      // the magic link itself, so no separate email sender is needed.
-      // Local dev without Supabase falls back to the old local code.
+      // Supabase magic link in production: Supabase sends the sign-in link
+      // directly to the email. Local dev without Supabase falls back
+      // to the local verification code.
       const supabase = getSupabaseBrowser();
       if (supabase) {
         const { error } = await supabase.auth.signInWithOtp({
@@ -150,15 +149,16 @@ export default function AccountPage() {
           // Use the origin the visitor is actually on, not the hardcoded
           // canonical domain: Supabase only allows redirect URLs that are
           // in its allow list, and the canonical domain was not in it,
-          // which rejected the code request. The visitor's origin must
+          // which rejected the link request. The visitor's origin must
           // be in that list (vercel.app already is; resonantatlas.com
           // must be added in the Supabase dashboard).
           options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
         });
         if (error) throw new Error(error.message);
-        setStep("code");
+        setStep("sent");
         return;
       }
+      // Dev-only fallback: no Supabase browser client configured
       const res = await fetch("/api/auth/request-code", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -175,31 +175,13 @@ export default function AccountPage() {
     }
   };
 
+  // Dev-only fallback: verifies the code against /api/auth/verify-code
+  // when running without Supabase.
   const verifyCode = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
     setError(null);
     try {
-      const supabase = getSupabaseBrowser();
-      if (supabase) {
-        const { data, error } = await supabase.auth.verifyOtp({
-          email: email.trim().toLowerCase(),
-          token: code.trim(),
-          type: "email",
-        });
-        if (error) throw new Error(error.message);
-        const session = data.session;
-        if (!session) throw new Error("No session was created. Please request a new code.");
-        const res = await fetch("/api/auth/supabase-session", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ accessToken: session.access_token }),
-        });
-        const bridged = await parseJson(res);
-        if (!res.ok) throw new Error(bridged.error ?? "Something went wrong.");
-        await afterSignIn();
-        return;
-      }
       const res = await fetch("/api/auth/verify-code", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -347,7 +329,7 @@ export default function AccountPage() {
           <p className="mt-2 text-sm leading-relaxed text-cream/75">
             {mode === "signin"
               ? "Your guest Oracles and journal move into your account automatically, then follow you across devices. You stay signed in for 30 days."
-              : "One account keeps your Oracles, journal, and reports synced across devices. Sign in with an email code or a password. There is no Google sign-in."}
+              : "One account keeps your Oracles, journal, and reports synced across devices. Sign in with an email link or a password. There is no Google sign-in."}
           </p>
 
           {/* Phase 3 (3.6): two equal paths. */}
@@ -373,14 +355,14 @@ export default function AccountPage() {
           </div>
 
           <div className="mt-3 grid grid-cols-2 gap-1 rounded-xl border border-gold/25 bg-panel/70 p-1">
-            {(["password", "code"] as const).map((t) => (
+            {(["password", "link"] as const).map((t) => (
               <button
                 key={t}
                 type="button"
                 onClick={() => {
                   setAuthTab(t);
                   setError(null);
-                  if (t === "code") setStep("email");
+                  if (t === "link") setStep("email");
                 }}
                 className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
                   authTab === t
@@ -388,7 +370,7 @@ export default function AccountPage() {
                     : "text-mist hover:text-cream"
                 }`}
               >
-                {t === "password" ? "Password" : "Email code"}
+                {t === "password" ? "Password" : "Email link"}
               </button>
             ))}
           </div>
@@ -446,6 +428,10 @@ export default function AccountPage() {
             </form>
           ) : step === "email" ? (
             <form onSubmit={requestCode} className="mt-6 space-y-4">
+              <p className="text-sm text-cream/75">
+                We will send a sign-in link to this email. Open the email and
+                click the link to sign in.
+              </p>
               <div>
                 <label htmlFor="acct-email" className="mb-1.5 block text-sm font-medium text-cream">
                   Email address
@@ -460,14 +446,9 @@ export default function AccountPage() {
                   className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none"
                 />
               </div>
-              <div className="rounded-xl border border-gold/25 bg-panel/50 p-4">
-                <p className="text-sm text-cream/80">
-                  Next step: a {codeLength}-digit code will be sent to this email. Nothing is sent until you tap Send sign-in code.
-                </p>
-              </div>
               {mode === "signup" && (
                 <p className="text-center text-xs text-mist">
-                  No account with this email yet? Signing in with a code
+                  No account with this email yet? Signing in with an email link
                   creates one.
                 </p>
               )}
@@ -476,10 +457,35 @@ export default function AccountPage() {
                 disabled={busy}
                 className="btn-gold w-full rounded-xl px-6 py-3.5 font-bold disabled:opacity-50"
               >
-                {busy ? "Sending…" : "Send sign-in code"}
+                {busy ? "Sending…" : "Send sign-in link"}
               </button>
             </form>
+          ) : step === "sent" ? (
+            <div className="mt-6 space-y-4">
+              <p className="text-sm text-cream/75">
+                We sent a sign-in link to{" "}
+                <span className="text-goldbright">{email}</span>. Click the link
+                in the email to sign in. The link expires in 1 hour.
+              </p>
+              <button
+                type="button"
+                onClick={() => void requestCode()}
+                disabled={busy}
+                className="btn-gold w-full rounded-xl px-6 py-3.5 font-bold disabled:opacity-50"
+              >
+                {busy ? "Sending…" : "Send a new link"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setStep("email")}
+                className="btn-ghost w-full rounded-xl px-6 py-3 font-semibold"
+              >
+                Use a different email
+              </button>
+            </div>
           ) : (
+            /* Dev-only fallback: no Supabase browser client configured.
+               Uses /api/auth/request-code + /api/auth/verify-code with devCode. */
             <form onSubmit={verifyCode} className="mt-6 space-y-4">
               <p className="text-sm text-cream/75">
                 We sent a {codeLength}-digit code to <span className="text-goldbright">{email}</span>.
@@ -493,11 +499,11 @@ export default function AccountPage() {
                   type="text"
                   inputMode="numeric"
                   required
-                  pattern={codeLength === 8 ? "\d{8}" : "\d{6}"}
+                  pattern="\d{6}"
                   maxLength={codeLength}
                   value={code}
                   onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-                  placeholder={codeLength === 8 ? "12345678" : "123456"}
+                  placeholder="123456"
                   className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-center text-2xl tracking-[0.5em] text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none"
                 />
               </div>
@@ -600,7 +606,7 @@ export default function AccountPage() {
             <p className="font-display text-xl text-cream">Password</p>
             <p className="mt-1 text-sm text-cream/70">
               Set a password so you can sign in with email + password instead
-              of a code each time.
+              of a link each time.
             </p>
             <form onSubmit={savePassword} className="mt-4 space-y-4">
               <div>

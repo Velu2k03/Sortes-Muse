@@ -16,7 +16,7 @@ export const dynamic = "force-dynamic";
  * exchanges it for a Supabase session, then bridges to a Sortes
  * session exactly like the OTP bridge, and redirects to /account.
  * If anything fails, the user lands on /account with an error flag
- * instead of a broken page, and can retry with the code flow.
+ * instead of a broken page, and can retry with the magic-link flow.
  */
 export async function GET(req: NextRequest) {
   // Use the request origin, not the hardcoded canonical domain, so the

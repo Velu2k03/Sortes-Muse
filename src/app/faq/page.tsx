@@ -9,7 +9,7 @@ export const metadata = {
   alternates: { canonical: "/faq" },
 };
 
-const FAQS = [
+export const FAQS = [
   {
     q: "What is free in Sortes?",
     a: "The daily card is free every day, the deck browser with all 78 card meanings is free forever, chart calculation is free, and your first Quick Insight reading and your first chart interpretation per system are free. No account and no payment are needed for the free parts.",
@@ -36,7 +36,7 @@ const FAQS = [
   },
   {
     q: "How do I sign in?",
-    a: "On the account page, choose Email code to have a sign-in code sent to your email, then enter the code shown on the page. The same email also carries a magic link you can click instead. Or choose Password to sign in with email and password. There is no Google sign-in. After you sign in, your guest Oracles and journal move into your account, and you stay signed in for 30 days.",
+    a: "On the account page, choose Email link to have a sign-in link sent to your email, then click the link in the email to sign in. Or choose Password to sign in with email and password. There is no Google sign-in. After you sign in, your guest Oracles and journal move into your account, and you stay signed in for 30 days.",
   },
   {
     q: "What if I bought Oracles with a different email?",
