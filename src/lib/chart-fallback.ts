@@ -124,7 +124,23 @@ function vedicLines(r: VedicResult): string[] {
   if (!r.unknownTime && r.ascendantSign) {
     lines.push(`Your Rising sign (Lagna) is ${r.ascendantSign} (${signNote(r.ascendantSign)}).`);
   }
-  lines.push(`Your current Vimshottari mahadasha is ${r.currentDasha}${r.currentAntardasha ? `, with the ${r.currentAntardasha.lord} antardasha running inside it` : ""}. A dasha names the current chapter, not a guaranteed event.`);
+  lines.push(`Your current Vimshottari mahadasha is ${r.currentDasha}${r.currentAntardasha ? `, with the ${r.currentAntardasha.lord} antardasha running inside it` : ''}. A dasha names the current chapter, not a guaranteed event.`);
+  if (!r.unknownTime) {
+    if (r.yogas.length) {
+      lines.push(
+        "Named yogas computed from this chart: " +
+          r.yogas.map((y) => `${y.name} (${y.detail})`).join("; ") +
+          "."
+      );
+    } else {
+      lines.push("No named yogas from the classical set were found in this chart.");
+    }
+    if (r.ashtakavarga) {
+      lines.push(
+        `Ashtakavarga (unreduced): Sarvashtakavarga per house 1-12 is ${r.ashtakavarga.sav.join(", ")}, totalling ${r.ashtakavarga.total} of 337. A higher count means a relatively stronger house, not a guaranteed outcome.`
+      );
+    }
+  }
   const planets = r.planets.filter((p) => p.name !== "Sun" && p.name !== "Moon");
   if (planets.length) {
     lines.push(

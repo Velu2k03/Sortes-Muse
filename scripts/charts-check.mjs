@@ -247,6 +247,19 @@ assert.equal(goldenTimeline[1].lord, "Rahu", "Rahu follows Mars");
 assert.equal(goldenTimeline[2].lord, "Jupiter", "Jupiter follows Rahu");
 assert.equal(goldenTimeline[3].lord, "Saturn", "Saturn follows Jupiter");
 assert.ok(vedicA.currentAntardasha && vedicA.currentAntardasha.lord, "vedic A needs a current antardasha");
+// Phase E (item 5): golden yogas, computed by caelus's classical
+// rules from the D1 sign map. Mercury (9th lord) conjunct Venus
+// (10th lord) is both a raja and a dhana yoga; Venus rules a pure
+// kendra and a pure trikona, so it is the yogakaraka.
+assert.ok(vedicA.yogas.some((y) => y.kind === "raja" && y.planets.join(",") === "Mercury,Venus" && y.via === "conjunction"), "golden raja yoga must be Mercury-Venus by conjunction");
+assert.ok(vedicA.yogas.some((y) => y.kind === "dhana" && y.planets.join(",") === "Mercury,Venus" && y.via === "conjunction"), "golden dhana yoga must be Mercury-Venus by conjunction");
+assert.ok(vedicA.yogas.some((y) => y.kind === "yogakaraka" && y.planets.join(",") === "Venus"), "golden yogakaraka must be Venus");
+assert.equal(vedicA.yogas.filter((y) => y.kind === "placement").length, 0, "golden chart has no placement yogas");
+// Phase E (item 5): Ashtakavarga on the golden chart. The 337
+// checksum is the fixed grand total; every per-planet BAV row sums
+// to its fixed total, so a table error shows up here.
+assert.ok(vedicA.ashtakavarga && vedicA.ashtakavarga.total === 337, "golden Ashtakavarga must total 337");
+assert.deepEqual(vedicA.ashtakavarga.sav, [23, 23, 29, 31, 27, 31, 23, 23, 31, 35, 34, 27], "golden SAV row");
 // Phase E (item 4): the ayanamsa is a birth-date value, so it is
 // pinned exactly; the pratyantar is dated by the same calculation
 // as the antardasha, so it is asserted structurally (it must exist,

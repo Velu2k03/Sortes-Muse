@@ -14,6 +14,8 @@
 // and is never sent to any AI prompt.
 // Server-only: caelus is ESM and is loaded here, not by client components.
 import { Engine, ayanamsa, nakshatra, vimshottariAt, julianDay } from "caelus";
+import { detectYogas, rajaYogas, dhanaYogas, kemadruma, yogakarakas, houseLord } from "caelus";
+import { computeAshtakavarga, type AshtakavargaResult } from "./ashtakavarga.ts";
 import { embeddedData } from "caelus/data-embedded";
 import { resolveBirthTime, type TimeBasis } from "./timezone.ts";
 
@@ -418,6 +420,100 @@ export function computeDashaTimeline(
   return { periods, currentMahadasha, currentAntardasha, currentPratyantar };
 }
 
+export interface VedicYoga {
+  name: string;
+  kind: "placement" | "raja" | "dhana" | "kemadruma" | "yogakaraka";
+  planets: string[];
+  via?: string;
+  detail: string;
+}
+
+// Phase E (item 5): named classical yogas, computed from the
+// sidereal D1 sign map with caelus's BPHS-following rules, never
+// invented by the model. Placement yogas: the five Pancha
+// Mahapurusha (own sign or exaltation in a kendra), Gajakesari
+// (Jupiter in a kendra from the Moon), Budha-Aditya (Sun and
+// Mercury in one sign), Chandra-Mangala (Moon and Mars in one
+// sign). Raja yogas: a kendra lord associated with a trikona lord.
+// Dhana yogas: two wealth-house (2/5/9/11) lords associated.
+// Association is conjunction, sign exchange, or mutual graha
+// drishti. Kemadruma: the Moon isolated from the five tara grahas
+// (Sun and nodes not counted, the default convention). The list is
+// empty without a birth time, because kendras need the Lagna.
+export function computeYogas(
+  planets: Array<{ name: string; longitude: number }>,
+  ascendantLongitude: number | null
+): VedicYoga[] {
+  if (ascendantLongitude === null) return [];
+  const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : "");
+  const ordinal = (n: number) => (n === 1 ? "1st" : n === 2 ? "2nd" : n === 3 ? "3rd" : `${n}th`);
+  const signIndex = (lon: number) => Math.floor((((lon % 360) + 360) % 360) / 30);
+  const signs: Record<string, number> = {};
+  for (const p of planets) signs[p.name.toLowerCase()] = signIndex(p.longitude);
+  const ascSign = signIndex(ascendantLongitude);
+  const houseOf = (sign: number) => ((sign - ascSign) % 12 + 12) % 12 + 1;
+  const ruledHouses = (lord: string): number[] => {
+    const out: number[] = [];
+    for (let h = 1; h <= 12; h++) if (houseLord(ascSign, h) === lord) out.push(h);
+    return out;
+  };
+  const out: VedicYoga[] = [];
+  for (const y of detectYogas(signs, ascSign)) {
+    const p = y.planets[0];
+    const sign = signs[p];
+    let detail: string;
+    if (y.yoga === "Gajakesari") {
+      detail = "Jupiter stands in a kendra from the Moon.";
+    } else if (y.yoga === "Budha-Aditya") {
+      detail = `Sun and Mercury together in ${SIGNS[signs.sun]}.`;
+    } else if (y.yoga === "Chandra-Mangala") {
+      detail = `Moon and Mars together in ${SIGNS[signs.moon]}.`;
+    } else {
+      detail = `${cap(p)} in ${SIGNS[sign]}, in the ${ordinal(houseOf(sign))} house from the Ascendant (kendra), in its own sign or exaltation.`;
+    }
+    out.push({ name: y.yoga, kind: "placement", planets: y.planets.map(cap), detail });
+  }
+  for (const r of rajaYogas(signs, ascSign)) {
+    const [a, b] = r.lords;
+    out.push({
+      name: `Raja yoga (${r.lords.map(cap).join(", ")})`,
+      kind: "raja",
+      planets: r.lords.map(cap),
+      via: r.via,
+      detail: `${cap(a)} rules the ${ruledHouses(a).map(ordinal).join(" and ")} house${ruledHouses(a).length > 1 ? "s" : ""}; ${cap(b)} rules the ${ruledHouses(b).map(ordinal).join(" and ")} house${ruledHouses(b).length > 1 ? "s" : ""}; they associate by ${r.via}.`,
+    });
+  }
+  for (const d of dhanaYogas(signs, ascSign)) {
+    const [a, b] = d.lords;
+    out.push({
+      name: `Dhana yoga (${d.lords.map(cap).join(", ")})`,
+      kind: "dhana",
+      planets: d.lords.map(cap),
+      via: d.via,
+      detail: `${cap(a)} rules the ${ruledHouses(a).map(ordinal).join(" and ")} house${ruledHouses(a).length > 1 ? "s" : ""}; ${cap(b)} rules the ${ruledHouses(b).map(ordinal).join(" and ")} house${ruledHouses(b).length > 1 ? "s" : ""}; they associate by ${d.via}.`,
+    });
+  }
+  for (const yk of yogakarakas(ascSign)) {
+    const kendra = ruledHouses(yk).filter((h) => [4, 7, 10].includes(h));
+    const trikona = ruledHouses(yk).filter((h) => [5, 9].includes(h));
+    out.push({
+      name: `Yogakaraka: ${cap(yk)}`,
+      kind: "yogakaraka",
+      planets: [cap(yk)],
+      detail: `${cap(yk)} rules the ${kendra.map(ordinal).join(" and ")} house${kendra.length > 1 ? "s" : ""} (kendra) and the ${trikona.map(ordinal).join(" and ")} house${trikona.length > 1 ? "s" : ""} (trikona).`,
+    });
+  }
+  if (kemadruma(signs).present) {
+    out.push({
+      name: "Kemadruma",
+      kind: "kemadruma",
+      planets: ["Moon"],
+      detail: "The Moon has no tara graha in the 2nd or 12th sign from it, nor conjunct it. (Sun and the nodes are not counted, the default convention.)",
+    });
+  }
+  return out;
+}
+
 export interface VedicPlanet {
   name: string;
   longitude: number;
@@ -465,6 +561,13 @@ export interface VedicResult {
   // moment, read from caelus itself (ayanamsa(natalJd, "lahiri")),
   // so the chart states the exact value it was computed with.
   ayanamsaDegrees: number;
+  // Phase E (item 5): named classical yogas computed from the D1
+  // sign map (see computeYogas). Empty without a birth time.
+  yogas: VedicYoga[];
+  // Phase E (item 5): unreduced Ashtakavarga (BAV per planet plus
+  // SAV), computed from the same natal positions. Null without a
+  // birth time, because houses need the Lagna.
+  ashtakavarga: AshtakavargaResult | null;
   unknownTime: boolean;
   planets: VedicPlanet[];
   // Empty when birth time is unknown: no noon-derived houses.
@@ -604,6 +707,11 @@ export function calculateVedic(input: {
     // Phase E (item 4): the ayanamsa actually used for this chart,
     // read from caelus at the birth Julian day.
     ayanamsaDegrees: ayanamsa(natalJd, "lahiri"),
+    // Phase E (item 5): named yogas from the same natal positions.
+    yogas: computeYogas(planets, ascendantLongitude),
+    // Phase E (item 5): unreduced Ashtakavarga from the same
+    // natal positions (null without a birth time).
+    ashtakavarga: computeAshtakavarga(planets, ascendantLongitude),
     unknownTime: unknown,
     planets,
     cusps: unknown ? [] : chart.cusps ?? [],

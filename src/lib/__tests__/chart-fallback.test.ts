@@ -55,6 +55,8 @@ const vedic = {
   currentAntardasha: { lord: "Mercury", start: "2026-01-01", end: "2026-06-01" },
   currentPratyantar: { lord: "Venus", start: "2026-03-01", end: "2026-04-01" },
   ayanamsaDegrees: 23.85,
+  yogas: [],
+  ashtakavarga: null,
   unknownTime: false,
   planets: [
     { name: "Sun", longitude: 40, sign: "Taurus", house: 9, retrograde: false },

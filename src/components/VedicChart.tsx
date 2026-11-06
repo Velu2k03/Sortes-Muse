@@ -122,6 +122,74 @@ export default function VedicChart({ result }: { result: VedicResult }) {
       </details>
       <details className="mt-4 scroll-mt-24 rounded-2xl border border-gold/25 bg-panel/70 p-4">
         <summary className="cursor-pointer text-sm font-semibold text-goldbright">
+          Yogas (tap to list)
+        </summary>
+        {result.unknownTime ? (
+          <p className="mt-2 text-sm text-cream/85">Yogas need a birth time: the kendras are counted from the Ascendant, which is withheld without one.</p>
+        ) : result.yogas.length === 0 ? (
+          <p className="mt-2 text-sm text-cream/85">No classical yogas from the named set were found in this chart. Only yogas computed from your positions are listed; none are invented.</p>
+        ) : (
+          <ul className="mt-2 space-y-1 text-sm text-cream/85">
+            {result.yogas.map((y) => (
+              <li key={y.name}>
+                <strong className="text-cream">{y.name}.</strong> {y.detail}
+              </li>
+            ))}
+          </ul>
+        )}
+        <p className="mt-2 text-xs text-mist">Named yogas only: Pancha Mahapurusha, Gajakesari, Budha-Aditya, Chandra-Mangala, Kemadruma, raja and dhana yogas by lordship and association, and the yogakaraka. Ashtakavarga is computed separately, below.</p>
+      </details>
+      <details className="mt-4 scroll-mt-24 rounded-2xl border border-gold/25 bg-panel/70 p-4">
+        <summary className="cursor-pointer text-sm font-semibold text-goldbright">
+          Ashtakavarga (tap to list)
+        </summary>
+        {result.unknownTime || !result.ashtakavarga ? (
+          <p className="mt-2 text-sm text-cream/85">Ashtakavarga needs a birth time: the bindus are counted per house, and houses are counted from the Ascendant, which is withheld without one.</p>
+        ) : (
+          <>
+            <p className="mt-2 text-sm text-cream/85">
+              Sarvashtakavarga, bindus per house (1st to 12th): {result.ashtakavarga.sav.join(", ")}. Total {result.ashtakavarga.total} of 337.
+              Each planet&apos;s own bindus in the sign it occupies:{" "}
+              {Object.entries(result.ashtakavarga.natalBindus).map(([p, n]) => `${p.charAt(0).toUpperCase() + p.slice(1)} ${n}`).join(", ")} (4 is the neutral point).
+            </p>
+            <div className="mt-3 overflow-x-auto">
+              <table className="min-w-[520px] w-full text-left text-sm text-cream/85">
+                <thead>
+                  <tr className="border-b border-gold/25 text-cream/80">
+                    <th className="py-2 pr-4">House</th>
+                    <th className="py-2 pr-4">Sun</th>
+                    <th className="py-2 pr-4">Moon</th>
+                    <th className="py-2 pr-4">Mars</th>
+                    <th className="py-2 pr-4">Mercury</th>
+                    <th className="py-2 pr-4">Jupiter</th>
+                    <th className="py-2 pr-4">Venus</th>
+                    <th className="py-2 pr-4">Saturn</th>
+                    <th className="py-2">All</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {result.ashtakavarga.sav.map((sav, i) => (
+                    <tr key={i} className="border-b border-gold/10">
+                      <td className="py-2 pr-4">{i + 1}</td>
+                      <td className="py-2 pr-4">{result.ashtakavarga!.bav.sun[i]}</td>
+                      <td className="py-2 pr-4">{result.ashtakavarga!.bav.moon[i]}</td>
+                      <td className="py-2 pr-4">{result.ashtakavarga!.bav.mars[i]}</td>
+                      <td className="py-2 pr-4">{result.ashtakavarga!.bav.mercury[i]}</td>
+                      <td className="py-2 pr-4">{result.ashtakavarga!.bav.jupiter[i]}</td>
+                      <td className="py-2 pr-4">{result.ashtakavarga!.bav.venus[i]}</td>
+                      <td className="py-2 pr-4">{result.ashtakavarga!.bav.saturn[i]}</td>
+                      <td className="py-2 font-semibold text-cream">{sav}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="mt-2 text-xs text-mist">Unreduced BAV only (no Trikona/Ekadhipatya reductions, no Shodhya Pinda). Read as relative strength: more than 30 bindus is traditionally strong, 25 to 30 middling, fewer than 25 weak, with the 6th, 8th and 12th houses read the other way round. Tables follow Raman Ch. XXVI with the three BPHS recension entries noted on the methodology page; the full grid is verified against a published sample chart.</p>
+          </>
+        )}
+      </details>
+      <details className="mt-4 scroll-mt-24 rounded-2xl border border-gold/25 bg-panel/70 p-4">
+        <summary className="cursor-pointer text-sm font-semibold text-goldbright">
           Mahadasha timeline (tap to list)
         </summary>
         <ul className="mt-2 space-y-1 text-sm text-cream/85">

@@ -156,7 +156,26 @@ function buildChartLines(system: string, chart: Record<string, unknown>): string
     const ayanamsaLine = typeof chart.ayanamsaDegrees === "number"
       ? `\nAyanamsa (Lahiri) for this birth date: ${chart.ayanamsaDegrees.toFixed(4)} degrees.`
       : "";
-    return `System: Vedic (Jyotish), sidereal Lahiri, whole-sign houses.\n${header}\nMoon nakshatra: ${str(chart.moonNakshatra)}, pada ${str(chart.moonNakshatraPada)}, lord ${str(chart.moonNakshatraLord)}.\nCurrent Vimshottari dasha: ${str(chart.currentDasha)}.${timelineLines}${antarLine}${pratyLine}${ayanamsaLine}\n${lines.join("\n")}`;
+    // Phase E (item 5): only the computed yogas are sent, with
+    // their conditions, so the model names them as given and never
+    // invents yogas. Ashtakavarga is sent the same way when computed:
+    // the SAV row plus each planet's own bindus in the sign it
+    // occupies, read as relative strength only, never as a verdict,
+    // and with no reductions (none are computed).
+    const yogas = Array.isArray(chart.yogas) ? chart.yogas : [];
+    const yogaLines = yogas.length
+      ? `\nNamed yogas computed from this chart (name only the ones listed, with their conditions as given; never invent other yogas):\n${yogas.map((raw) => {
+        const y = raw as Record<string, unknown>;
+        return `- ${str(y.name)}: ${str(y.detail)}`;
+      }).join("\n")}`
+      : "\nNo named yogas from the classical set were found in this chart; do not invent any.";
+    const av = chart.ashtakavarga as Record<string, unknown> | undefined;
+    const sav = Array.isArray(av?.sav) ? (av.sav as unknown[]) : [];
+    const natal = (av?.natalBindus ?? {}) as Record<string, unknown>;
+    const avLines = sav.length === 12
+      ? `\nAshtakavarga (unreduced BAV/SAV, computed from this chart; read as relative strength, never as a verdict; no reductions are computed):\nSarvashtakavarga per house 1-12: ${sav.map((n) => String(n)).join(", ")} (total 337).\nEach planet's own bindus in the sign it occupies: ${["sun", "moon", "mars", "mercury", "jupiter", "venus", "saturn"].map((p) => `${p} ${String(natal[p] ?? "?")}`).join(", ")} (4 is the neutral point).`
+      : "\nAshtakavarga is not computed for this chart (no birth time); do not mention it.";
+    return `System: Vedic (Jyotish), sidereal Lahiri, whole-sign houses.\n${header}\nMoon nakshatra: ${str(chart.moonNakshatra)}, pada ${str(chart.moonNakshatraPada)}, lord ${str(chart.moonNakshatraLord)}.\nCurrent Vimshottari dasha: ${str(chart.currentDasha)}.${timelineLines}${antarLine}${pratyLine}${ayanamsaLine}${yogaLines}${avLines}\n${lines.join("\n")}`;
   }
   return null;
 }
