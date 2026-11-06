@@ -125,7 +125,8 @@ function buildChartLines(system: string, chart: Record<string, unknown>): string
       ? `\nAspects:\n${aspects.map((raw) => {
         const a = raw as Record<string, unknown>;
         const orb = num(a.orb);
-        return `- ${str(a.planet1)} ${str(a.label)} ${str(a.planet2)}${orb !== null ? `, orb ${orb.toFixed(2)} degrees` : ""}`;
+        const state = typeof a.state === "string" ? a.state : "";
+        return `- ${str(a.planet1)} ${str(a.label)} ${str(a.planet2)}${orb !== null ? `, orb ${orb.toFixed(2)} degrees` : ""}${state ? `, ${state}` : ""}`;
       }).join("\n")}`
       : "";
     return `System: Western tropical.\n${header}\n${lines.join("\n")}${cuspLines}${aspectLines}`;
@@ -148,7 +149,14 @@ function buildChartLines(system: string, chart: Record<string, unknown>): string
     const antarLine = antar && str(antar.lord)
       ? `\nCurrent antardasha: ${str(antar.lord)}, ${str(antar.start)} to ${str(antar.end)}.`
       : "";
-    return `System: Vedic (Jyotish), sidereal Lahiri, whole-sign houses.\n${header}\nMoon nakshatra: ${str(chart.moonNakshatra)}, pada ${str(chart.moonNakshatraPada)}, lord ${str(chart.moonNakshatraLord)}.\nCurrent Vimshottari dasha: ${str(chart.currentDasha)}.${timelineLines}${antarLine}\n${lines.join("\n")}`;
+    const praty = chart.currentPratyantar as Record<string, unknown> | undefined;
+    const pratyLine = praty && str(praty.lord)
+      ? `\nCurrent pratyantar: ${str(praty.lord)}, ${str(praty.start)} to ${str(praty.end)}.`
+      : "";
+    const ayanamsaLine = typeof chart.ayanamsaDegrees === "number"
+      ? `\nAyanamsa (Lahiri) for this birth date: ${chart.ayanamsaDegrees.toFixed(4)} degrees.`
+      : "";
+    return `System: Vedic (Jyotish), sidereal Lahiri, whole-sign houses.\n${header}\nMoon nakshatra: ${str(chart.moonNakshatra)}, pada ${str(chart.moonNakshatraPada)}, lord ${str(chart.moonNakshatraLord)}.\nCurrent Vimshottari dasha: ${str(chart.currentDasha)}.${timelineLines}${antarLine}${pratyLine}${ayanamsaLine}\n${lines.join("\n")}`;
   }
   return null;
 }
@@ -214,6 +222,7 @@ Rules you must always follow:
 - Frame everything as reflection and perspective, NEVER as guaranteed prediction. Never claim certainty about the future. Use language like "this may invite you to consider", "a mirror for", "worth sitting with".
 - Weave the chart placements into the seeker's focus area (${category}) and question, without inventing facts about them beyond the chart and question.
 - When a star transformation or brightness, an aspect, a cusp, a retrograde flag, or a dasha date is given, name it as given. Never invent a transformation, brightness, aspect, house placement, or date that is not in the chart positions. When birth time is unknown, never mention houses, Rising, or Midheaven.
+- In a Ziwei chart, minor stars are placed by birth month or year alone, so they describe a whole cohort, not this person: mention them only as background, and never let a minor star carry a personal verdict. Personal claims must rest on major stars, palaces, and transformations only.
 - Keep the reflection 350-550 words. Structure: a short opening that names their focus and question, one section per key placement group, then a closing section that answers their focus directly, in this order: what stands out in these placements for their focus; the tension or opportunity between placements; what they may be overlooking; one practical step they could take, small and concrete, never medical or financial advice; and exactly one gentle question for them to sit with. Every closing point must tie back to their focus, their question, or a named placement, never a generic paragraph that could fit any chart.
 - Never moralize, never repeat the question back verbatim.
 - Write the entire reflection in English.

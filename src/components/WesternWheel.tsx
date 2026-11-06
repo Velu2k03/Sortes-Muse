@@ -45,6 +45,9 @@ export default function WesternWheel({ result }: { result: WesternResult }) {
         {result.unknownTime && (
           <span className="text-goldbright">Unknown birth time: planet positions use noon as a stand-in. Rising, Midheaven, and houses are withheld, not estimated.</span>
         )}
+        {result.polar && (
+          <span className="text-goldbright">Polar latitude (inside the Arctic or Antarctic circle): Placidus houses can collapse or distort here, so the house placements are approximate, not exact.</span>
+        )}
       </div>
       <h3 className="mt-6 font-display text-xl text-goldbright">Planet table</h3>
       <p className="mt-1 text-sm text-cream/80">Exact positions, signs, and houses. The wheel below shows the same positions, with clustered labels staggered and leader lines to their true spots.</p>
@@ -131,7 +134,7 @@ export default function WesternWheel({ result }: { result: WesternResult }) {
         <ul className="mt-2 space-y-1 text-sm text-cream/85">
           {result.aspects.map((a, i) => (
             <li key={`${a.planet1}-${a.planet2}-${a.label}-${i}`}>
-              {a.planet1} {a.label} {a.planet2} · orb {a.orb.toFixed(2)}°
+              {a.planet1} {a.label} {a.planet2} · orb {a.orb.toFixed(2)}° · {a.state}
             </li>
           ))}
         </ul>

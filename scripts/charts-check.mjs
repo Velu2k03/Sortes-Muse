@@ -97,12 +97,26 @@ assert.equal(westA.sunSign, "Capricorn", "1990-01-01 Sun must be Capricorn");
 assert.ok(westA.planets.length >= 10, "western A needs 10+ planets");
 assert.ok(westA.cusps.length === 12, "western A needs 12 cusps");
 assert.ok(westA.ascendantLongitude >= 0 && westA.ascendantLongitude < 360);
+// Phase E (item 4): exact longitudes for the golden case, not just
+// the sign. Values come from the library itself on this input; they
+// are pinned so a library or conversion regression shows up here.
+const closeTo = (actual, expected, tol, msg) => assert.ok(Math.abs(actual - expected) <= tol, `${msg}: got ${actual}, want ${expected} ± ${tol}`);
+closeTo(westA.planets.find((p) => p.name === "Sun")?.longitude, 280.30, 0.01, "golden Sun longitude");
+closeTo(westA.planets.find((p) => p.name === "Moon")?.longitude, 326.55, 0.01, "golden Moon longitude");
+closeTo(westA.ascendantLongitude, 303.82, 0.01, "golden Ascendant longitude");
+closeTo(westA.midheavenLongitude, 223.83, 0.01, "golden Midheaven longitude");
+assert.equal(westA.polar, false, "Manila is not polar");
 console.log("western A:", "Sun", westA.sunSign, westA.planets.find((p) => p.name === "Sun")?.longitude.toFixed(2), "| Asc", westA.ascendantSign, westA.ascendantLongitude.toFixed(2), "| MC", westA.midheavenSign);
 
 // Audit fix: aspects must be listable, not just a count. The list comes
 // from the same library calculation, no new math.
 assert.equal(westA.aspects.length, westA.aspectCount, "western aspects list length must match aspectCount");
 assert.ok(westA.aspects.every((a) => a.planet1 && a.planet2 && a.label && typeof a.orb === "number"), "western aspects need both planets, a label, and an orb");
+// Phase E (item 4): every aspect carries its applying/separating
+// state from the 24-hour-later comparison, and the golden Sun-Saturn
+// conjunction is applying (the Sun closes on slow Saturn).
+assert.ok(westA.aspects.every((a) => ["applying", "separating", "steady"].includes(a.state)), "western aspects need an applying/separating state");
+assert.equal(westA.aspects.find((a) => a.planet1 === "Sun" && a.planet2 === "Saturn")?.state, "applying", "golden Sun-Saturn conjunction must be applying");
 console.log("western aspects:", westA.aspectCount, "listed, first:", westA.aspects[0].planet1, westA.aspects[0].label, westA.aspects[0].planet2);
 
 const westB = calculateWestern({ date: "2000-06-15", hour: 14, minute: 30, latitude: 14.5995, longitude: 120.9842 });
@@ -233,6 +247,17 @@ assert.equal(goldenTimeline[1].lord, "Rahu", "Rahu follows Mars");
 assert.equal(goldenTimeline[2].lord, "Jupiter", "Jupiter follows Rahu");
 assert.equal(goldenTimeline[3].lord, "Saturn", "Saturn follows Jupiter");
 assert.ok(vedicA.currentAntardasha && vedicA.currentAntardasha.lord, "vedic A needs a current antardasha");
+// Phase E (item 4): the ayanamsa is a birth-date value, so it is
+// pinned exactly; the pratyantar is dated by the same calculation
+// as the antardasha, so it is asserted structurally (it must exist,
+// sit inside the antardasha, cover today, and agree with the name
+// caelus reports in the dasha string) rather than by fixed dates,
+// which move as the as-of date moves.
+closeTo(vedicA.ayanamsaDegrees, 23.7174, 0.0001, "golden Lahiri ayanamsa");
+assert.ok(vedicA.currentPratyantar && vedicA.currentPratyantar.lord, "vedic A needs a dated current pratyantar");
+assert.ok(vedicA.currentPratyantar.start >= vedicA.currentAntardasha.start && vedicA.currentPratyantar.end <= vedicA.currentAntardasha.end, "pratyantar must sit inside the current antardasha");
+assert.ok(vedicA.dashaAsOf >= vedicA.currentPratyantar.start && vedicA.dashaAsOf < vedicA.currentPratyantar.end, "pratyantar must cover the as-of date");
+assert.equal(vedicA.currentPratyantar.lord, vedicA.currentDasha.split(" / ").at(-1), "dated pratyantar must agree with the dasha string");
 console.log("vedic unknown-time: angles withheld; golden dasha: Mars ends", goldenTimeline[0].end, ", Saturn maha starts", goldenTimeline[3].start);
 assert.equal(vedicB.sunSign, "Gemini");
 assert.equal(vedicB.moonNakshatra, "Anuradha");

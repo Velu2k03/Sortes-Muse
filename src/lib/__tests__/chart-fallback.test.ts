@@ -14,6 +14,7 @@ const western: WesternResult = {
   timeZone: "Asia/Manila",
   utcOffsetMinutes: 480,
   timeBasis: "iana",
+  polar: false,
   planets: [
     { name: "Sun", longitude: 10, sign: "Aries", house: 1, retrograde: false },
     { name: "Moon", longitude: 100, sign: "Cancer", house: 4, retrograde: false },
@@ -21,7 +22,7 @@ const western: WesternResult = {
   ],
   cusps: [0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330],
   aspectCount: 1,
-  aspects: [{ planet1: "Sun", planet2: "Moon", label: "square", orb: 2.5 }],
+  aspects: [{ planet1: "Sun", planet2: "Moon", label: "square", orb: 2.5, state: "applying" }],
 };
 
 const westernUnknownTime: WesternResult = {
@@ -52,6 +53,8 @@ const vedic = {
   dashaAsOf: "2026-11-05",
   dashaTimeline: [],
   currentAntardasha: { lord: "Mercury", start: "2026-01-01", end: "2026-06-01" },
+  currentPratyantar: { lord: "Venus", start: "2026-03-01", end: "2026-04-01" },
+  ayanamsaDegrees: 23.85,
   unknownTime: false,
   planets: [
     { name: "Sun", longitude: 40, sign: "Taurus", house: 9, retrograde: false },

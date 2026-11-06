@@ -25,13 +25,16 @@ export default function VedicChart({ result }: { result: VedicResult }) {
         </span>
         <span>
           Current Vimshottari dasha ({result.dashaAsOf}): <strong className="text-cream">{result.currentDasha}</strong>
+          {result.currentPratyantar && (
+            <> (pratyantar {result.currentPratyantar.lord}, {result.currentPratyantar.start} to {result.currentPratyantar.end})</>
+          )}
         </span>
         {result.unknownTime && (
           <span className="text-goldbright">Unknown birth time: planet positions use noon as a stand-in. Rising and houses are withheld, not estimated.</span>
         )}
       </div>
       <p className="mt-2 text-sm text-cream/80">
-        Sidereal Lahiri, whole-sign houses.{" "}
+        Sidereal Lahiri, whole-sign houses. Ayanamsa for this birth date: {result.ayanamsaDegrees.toFixed(4)}° (Lahiri, from caelus). Only the D9 Navamsa and D10 Dasamsa divisional charts are offered.{" "}
         {result.timeBasis === "iana"
           ? `Birth time was converted to UT with ${result.timeZone ?? ""} (${formatUtcOffset(result.utcOffsetMinutes)}), including daylight saving for the birth date.`
           : "No timezone could be resolved for these coordinates, so birth time was converted to UT with a longitude offset only, no timezone database and no DST, so a chart near a sign or nakshatra cusp may differ by one division."}

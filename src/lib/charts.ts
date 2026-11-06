@@ -468,6 +468,11 @@ export interface WesternAspect {
   planet2: string;
   label: string;
   orb: number;
+  // Phase E (item 4): applying when the separation is moving
+  // toward the exact aspect angle, separating when it is moving
+  // away, steady when it barely moves in 24 hours. Computed the
+  // same way transits do it: a second calculation 24 hours later.
+  state: "applying" | "separating" | "steady";
 }
 export interface WesternResult {
   system: "western";
@@ -479,6 +484,11 @@ export interface WesternResult {
   midheavenSign: string | null;
   midheavenLongitude: number | null;
   unknownTime: boolean;
+  // Phase E (item 4): true when the birth latitude is inside the
+  // Arctic or Antarctic circle (|latitude| >= 66.55 degrees), where
+  // Placidus houses can collapse or fail, so the chart is flagged
+  // instead of presented as exact.
+  polar: boolean;
   // Phase 4B (4.3): the zone the engine already resolved from the
   // coordinates, reported so the page can show it. The engine does
   // its own lookup with tz-lookup + moment-timezone (DST included);
@@ -536,7 +546,7 @@ export function calculateWestern(input: {
       SunSign: { label: string };
       Ascendant: { Sign: { label: string }; ChartPosition: { Ecliptic: { DecimalDegrees: number } } };
       Midheaven: { Sign: { label: string }; ChartPosition: { Ecliptic: { DecimalDegrees: number } } };
-      Aspects: { all: { point1Label: string; point2Label: string; label: string; orb: number }[] };
+      Aspects: { all: { point1Key: string; point1Label: string; point2Key: string; point2Label: string; aspectKey: string; label: string; orb: number }[] };
     };
   };
   const horoscope = build(y, m, d);
@@ -574,17 +584,63 @@ export function calculateWestern(input: {
     timeZone: resolved.timeZone,
     utcOffsetMinutes: resolved.utcOffsetMinutes,
     timeBasis: resolved.basis,
+    // Phase E (item 4): Placidus houses are unreliable inside the
+    // polar circles, where some houses can collapse. The flag is
+    // surfaced in the UI and the methodology page instead of
+    // silently presenting the houses as exact.
+    polar: Math.abs(input.latitude) >= 66.55,
     planets,
     cusps: unknown ? [] : horoscope.Houses.map((h) => h.ChartPosition.StartPosition.Ecliptic.DecimalDegrees),
     aspectCount: horoscope.Aspects.all.length,
     // Exposing the library's own aspect list, not new math: the count
     // alone told the user nothing, so the list is shown collapsibly.
-    aspects: horoscope.Aspects.all.map((a) => ({
-      planet1: a.point1Label,
-      planet2: a.point2Label,
-      label: a.label,
-      orb: a.orb,
-    })),
+    // Each aspect also carries its applying/separating state from the
+    // same 24-hour-later comparison the retrograde flags use: the
+    // separation between the two points now, against the separation
+    // a day later, measured against the exact angle for the aspect.
+    aspects: horoscope.Aspects.all.map((a) => {
+      const lonOf = (h: typeof horoscope, key: string): number | null => {
+        if (key === "ascendant") return h.Ascendant.ChartPosition.Ecliptic.DecimalDegrees;
+        if (key === "midheaven") return h.Midheaven.ChartPosition.Ecliptic.DecimalDegrees;
+        const body = h.CelestialBodies[key];
+        return body ? body.ChartPosition.Ecliptic.DecimalDegrees : null;
+      };
+      const exact: Record<string, number> = {
+        conjunction: 0,
+        opposition: 180,
+        trine: 120,
+        square: 90,
+        sextile: 60,
+        quincunx: 150,
+        quintile: 72,
+        septile: 360 / 7,
+        "semi-square": 45,
+        "semi-sextile": 30,
+      };
+      const angle = exact[a.aspectKey];
+      let state: WesternAspect["state"] = "steady";
+      const lon1 = lonOf(horoscope, a.point1Key);
+      const lon2 = lonOf(horoscope, a.point2Key);
+      const laterLon1 = lonOf(later, a.point1Key);
+      const laterLon2 = lonOf(later, a.point2Key);
+      if (typeof angle === "number" && lon1 !== null && lon2 !== null && laterLon1 !== null && laterLon2 !== null) {
+        const sep = (x: number, y: number) => {
+          const d = Math.abs(norm180(x - y));
+          return Math.min(d, 360 - d);
+        };
+        const orbNow = Math.abs(sep(lon1, lon2) - angle);
+        const orbLater = Math.abs(sep(laterLon1, laterLon2) - angle);
+        if (orbLater < orbNow - 0.001) state = "applying";
+        else if (orbLater > orbNow + 0.001) state = "separating";
+      }
+      return {
+        planet1: a.point1Label,
+        planet2: a.point2Label,
+        label: a.label,
+        orb: a.orb,
+        state,
+      };
+    }),
   };
 }
 

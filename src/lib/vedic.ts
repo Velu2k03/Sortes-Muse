@@ -13,7 +13,7 @@
 // Birth data is used in-memory only, exactly as for Ziwei and Western,
 // and is never sent to any AI prompt.
 // Server-only: caelus is ESM and is loaded here, not by client components.
-import { Engine, nakshatra, vimshottariAt, julianDay } from "caelus";
+import { Engine, ayanamsa, nakshatra, vimshottariAt, julianDay } from "caelus";
 import { embeddedData } from "caelus/data-embedded";
 import { resolveBirthTime, type TimeBasis } from "./timezone.ts";
 
@@ -331,6 +331,12 @@ export type DashaTimeline = {
   periods: DashaPeriod[];
   currentMahadasha: DashaPeriod | null;
   currentAntardasha: DashaPeriod | null;
+  // Phase E (item 4): the pratyantar inside the current antardasha,
+  // dated with the same (maha years x lord years) / 120 subdivision
+  // the antardashas use. Previously the display named the pratyantar
+  // from caelus with no dates; now the name and its dates come from
+  // one calculation, so the name is never shown undated.
+  currentPratyantar: DashaPeriod | null;
 };
 
 // Moon longitude in degrees (sidereal, as caelus reports it) plus the
@@ -377,6 +383,7 @@ export function computeDashaTimeline(
   // starting from the mahadasha lord. Each antardasha lasts
   // (mahadasha years times lord years) divided by 120.
   let currentAntardasha: DashaPeriod | null = null;
+  let currentPratyantar: DashaPeriod | null = null;
   if (currentMahadasha) {
     const mahaYears = (parseDay(currentMahadasha.end) - parseDay(currentMahadasha.start)) / DASHA_YEAR_MS;
     const startIdx = DASHA_LORDS.indexOf(currentMahadasha.lord as (typeof DASHA_LORDS)[number]);
@@ -386,13 +393,29 @@ export function computeDashaTimeline(
       const aEnd = aCursor + (mahaYears * DASHA_YEARS[lord]) / 120 * DASHA_YEAR_MS;
       if (asOfMs >= aCursor && asOfMs < aEnd) {
         currentAntardasha = { lord, start: isoDay(aCursor), end: isoDay(aEnd) };
+        // Pratyantars inside the current antardasha, in standard
+        // order starting from the antardasha lord. Each lasts
+        // (antardasha years times lord years) divided by 120, where
+        // the antardasha years are its span in 365.25-day years.
+        const antarYears = (aEnd - aCursor) / DASHA_YEAR_MS;
+        const pStartIdx = DASHA_LORDS.indexOf(lord);
+        let pCursor = aCursor;
+        for (let j = 0; j < 9; j++) {
+          const pLord = DASHA_LORDS[(pStartIdx + j) % 9];
+          const pEnd = pCursor + (antarYears * DASHA_YEARS[pLord]) / 120 * DASHA_YEAR_MS;
+          if (asOfMs >= pCursor && asOfMs < pEnd) {
+            currentPratyantar = { lord: pLord, start: isoDay(pCursor), end: isoDay(pEnd) };
+            break;
+          }
+          pCursor = pEnd;
+        }
         break;
       }
       aCursor = aEnd;
     }
   }
 
-  return { periods, currentMahadasha, currentAntardasha };
+  return { periods, currentMahadasha, currentAntardasha, currentPratyantar };
 }
 
 export interface VedicPlanet {
@@ -434,6 +457,14 @@ export interface VedicResult {
   // current antardasha. Computed from Moon longitude in dasha.ts.
   dashaTimeline: DashaPeriod[];
   currentAntardasha: DashaPeriod | null;
+  // Phase E (item 4): the current pratyantar with its dates, from
+  // the same calculation as the antardasha. Null only when no
+  // mahadasha covers the as-of date.
+  currentPratyantar: DashaPeriod | null;
+  // Phase E (item 4): the Lahiri ayanamsa in degrees for the birth
+  // moment, read from caelus itself (ayanamsa(natalJd, "lahiri")),
+  // so the chart states the exact value it was computed with.
+  ayanamsaDegrees: number;
   unknownTime: boolean;
   planets: VedicPlanet[];
   // Empty when birth time is unknown: no noon-derived houses.
@@ -569,6 +600,10 @@ export function calculateVedic(input: {
     dashaAsOf,
     dashaTimeline: timeline.periods,
     currentAntardasha: timeline.currentAntardasha,
+    currentPratyantar: timeline.currentPratyantar,
+    // Phase E (item 4): the ayanamsa actually used for this chart,
+    // read from caelus at the birth Julian day.
+    ayanamsaDegrees: ayanamsa(natalJd, "lahiri"),
     unknownTime: unknown,
     planets,
     cusps: unknown ? [] : chart.cusps ?? [],
