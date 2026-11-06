@@ -15,11 +15,10 @@ import postgres from "postgres";
  * concurrent spend at balance 1, the follow-up append race, and
  * rollback/retry behaviour.
  *
- *   SORTES_TEST_DATABASE_URL=postgres://sortes_test:sortes_test_local@localhost:5432/sortes_pgtest_money npm test -- src/lib/__tests__/db-postgres.test.ts
+ *   SORTES_TEST_DATABASE_URL=postgres://sortes_test:<local-password>@127.0.0.1:5432/sortes_pgtest_money
  *
- * The password above is for the LOCAL staging database only; it is
- * not a production secret (local Postgres, created by
- * Phase 6 setup, no customer data).
+ * (Local-only staging password: keep the real value out of the repo;
+ * set it in your shell when running the suite.)
  */
 const TEST_URL = process.env.SORTES_TEST_DATABASE_URL ?? "";
 const SKIP = !TEST_URL;
