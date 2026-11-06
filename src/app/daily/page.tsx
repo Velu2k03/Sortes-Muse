@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
   getDailyCard,
@@ -57,7 +57,9 @@ export default function DailyPage() {
   // timeline and Pattern Mirror can see it. One entry per day, by
   // id; drawing again the same day returns the same card and the
   // same entry.
-  const saveDailyEntry = async (state: DailyCardState) => {
+  // Stable (useCallback, empty deps): it only uses module-level
+  // helpers and setState setters, so the mount effect can depend on it.
+  const saveDailyEntry = useCallback(async (state: DailyCardState) => {
     const id = `daily-${state.date}`;
     const existing = getReading(id);
     if (existing) {
@@ -81,7 +83,7 @@ export default function DailyPage() {
       id,
     };
     await persistReading(entry);
-  };
+  }, [persistReading]);
 
   useEffect(() => {
     const existing = getDailyCard();
@@ -96,7 +98,7 @@ export default function DailyPage() {
     return () => {
       if (drawTimer.current) clearTimeout(drawTimer.current);
     };
-  }, []);
+  }, [saveDailyEntry]);
 
   const reduceMotion = useReducedMotion();
 

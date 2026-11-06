@@ -830,12 +830,14 @@ console.log("charts-check: all assertions passed");
 {
 // Deep UX Batch F: credits density. Compact balance row with one short
   // explanation plus a rules link, 3-column pack grid with name, quantity,
-  // price, per-Oracle price and checkout only, no sample section on the
-  // money page (the sample lives on home).
+  // price, per-Oracle price and checkout only. Phase E (item 9) overrides
+  // the old "no sample on the money page" rule: the same shared
+  // SampleReading component from the home page is embedded here, so
+  // visitors weighing a pack see what a reading reads like first.
   const creditsF = fs.readFileSync("src/app/oracles/CreditsClient.tsx", "utf8");
   assert.ok(creditsF.includes("See all five Oracle rules"), "credits must link the Oracle rules");
   assert.ok(creditsF.includes("sm:grid-cols-3"), "credits packs must use a 3-column grid");
-  assert.ok(!creditsF.includes("SampleReading"), "credits must not embed the sample reading");
+  assert.ok(creditsF.includes("SampleReading"), "credits must embed the shared sample reading");
   assert.ok(!creditsF.includes("PACK_TAGLINES"), "credits must not carry pack taglines");
   assert.ok(!creditsF.includes("Free first follow-up"), "credits must not repeat the full rules list");
   // Visual corrections follow-up: pack prices are static text, never
