@@ -37,6 +37,7 @@ import * as balanceRoute from "@/app/api/credits/balance/route";
 import { POST as followUpPOST } from "@/app/api/reading/follow-up/route";
 import { POST as generatePOST } from "@/app/api/reading/generate/route";
 import { POST as interpretPOST } from "@/app/api/chart/interpret/route";
+import { POST as reportsGeneratePOST } from "@/app/api/reports/generate/route";
 import { POST as historyPOST, DELETE as historyDELETE } from "@/app/api/history/route";
 import { GET as reportGET } from "@/app/api/reports/[id]/route";
 import {
@@ -91,6 +92,17 @@ const CHART = {
   ],
   cusps: [],
   aspects: [],
+};
+
+// Valid birth input for the reports route (same fixture as the
+// reports/generate input-validation tests).
+const REPORT_BIRTH = {
+  date: "1990-05-01",
+  hour: 12,
+  minute: 0,
+  latitude: 14.6,
+  longitude: 121,
+  gender: "female",
 };
 
 function generateBody(spreadSlug: string) {
@@ -237,6 +249,13 @@ describe("trust: no charge for failed results", () => {
 
   it("a failed chart interpretation returns 503 and spends nothing", async () => {
     const res = await interpretPOST(req("http://localhost/api/chart/interpret", { system: "western", chart: CHART, question: "What stands out?" }, "10.1.0.7"));
+    expect(res.status).toBe(503);
+    expect((await res.json()).error).toContain("No Oracle was spent");
+    expect(mockedSpend).not.toHaveBeenCalled();
+  }, 30_000);
+
+  it("a failed report generation returns 503 and spends nothing", async () => {
+    const res = await reportsGeneratePOST(req("http://localhost/api/reports/generate", { type: "transit", birth: REPORT_BIRTH, targetDate: "2026-11-07" }, "10.1.0.8"));
     expect(res.status).toBe(503);
     expect((await res.json()).error).toContain("No Oracle was spent");
     expect(mockedSpend).not.toHaveBeenCalled();
