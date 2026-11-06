@@ -49,6 +49,10 @@ export interface Reading {
   cards: DrawnCard[];
   interpretation: string | null;
   aiGenerated: boolean;
+  // Phase E (item 8): a general free-text note on the reading,
+  // editable, separate from the revisit note. The daily card's
+  // evening return is stored here too (item 6).
+  note?: string;
   // Phase E (item 2): the serving model that wrote the interpretation,
   // as returned by the API (for example "openrouter/free"). Older
   // readings saved before this field existed have none, and the UI

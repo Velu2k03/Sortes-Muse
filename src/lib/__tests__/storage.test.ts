@@ -8,6 +8,8 @@ import {
   getCredits,
   setDailyCard,
   getDailyCard,
+  getDailyPracticeDays,
+  getDailyStreak,
   clearLocalAccountData,
 } from "@/lib/storage";
 import type { SavedReport } from "@/lib/reports";
@@ -64,6 +66,37 @@ describe("saveReport idempotency", () => {
     saveReport(report("r1"));
     saveReport(report("r2"));
     expect(getReports().map((r) => r.id).sort()).toEqual(["r1", "r2"]);
+  });
+});
+
+describe("getDailyPracticeDays", () => {
+  beforeEach(() => installLocalStorageStub());
+  afterEach(() => {
+    delete (globalThis as unknown as Record<string, unknown>).localStorage;
+    delete (globalThis as unknown as Record<string, unknown>).window;
+  });
+
+  it("counts practiced days in total and in the last 30, and never resets to zero on a gap", () => {
+    const fmt = (d: Date) =>
+      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    const today = new Date();
+    const days: string[] = [];
+    // A practiced day 40 days ago, one 10 days ago, and today.
+    for (const offset of [40, 10, 0]) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - offset);
+      days.push(fmt(d));
+    }
+    localStorage.setItem("sortes-daily-streak", JSON.stringify(days));
+    const practice = getDailyPracticeDays();
+    expect(practice.total).toBe(3);
+    expect(practice.last30).toBe(2);
+    // The streak resets to zero on the gap; the practice count does not.
+    expect(getDailyStreak()).toBe(1);
+  });
+
+  it("starts at zero with no practiced days", () => {
+    expect(getDailyPracticeDays()).toEqual({ total: 0, last30: 0 });
   });
 });
 

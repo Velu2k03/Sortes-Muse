@@ -5,9 +5,12 @@ import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
   getDailyCard,
   setDailyCard,
-  getDailyStreak,
+  getDailyPracticeDays,
+  getReading,
+  makeReading,
   type DailyCardState,
 } from "@/lib/storage";
+import { useAuth } from "@/components/AuthProvider";
 import { getCard, orientationKeywords, orientationMeaning } from "@/lib/cards";
 import { drawSingle } from "@/lib/tarot";
 import TarotCard from "@/components/TarotCard";
@@ -27,9 +30,15 @@ type Phase = "idle" | "shuffling" | "revealed";
 export default function DailyPage() {
   const [phase, setPhase] = useState<Phase>("idle");
   const [daily, setDaily] = useState<DailyCardState | null>(null);
-  const [streak, setStreak] = useState(0);
+  // Phase E (item 6): the streak badge is gone. Practice is counted
+  // in days practiced, total and in the last 30, and never resets.
+  const [practice, setPractice] = useState({ total: 0, last30: 0 });
   const [zoomOpen, setZoomOpen] = useState(false);
   const drawTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { persistReading, updateReading } = useAuth();
+  // Evening return: one line on where the card's quality showed up.
+  const [reflection, setReflection] = useState("");
+  const [reflectionSaved, setReflectionSaved] = useState(false);
   // HoldButton colours bypass the theme tokens, so track the
   // document theme, 2026-11-04, instead of staying dark in light mode.
   const [siteTheme, setSiteTheme] = useState<"dark" | "light">("dark");
@@ -43,14 +52,46 @@ export default function DailyPage() {
   }, []);
 
 
+  // Phase E (item 6): the daily card is kept as a lightweight
+  // journal entry (date, card, orientation, one-line note) so the
+  // timeline and Pattern Mirror can see it. One entry per day, by
+  // id; drawing again the same day returns the same card and the
+  // same entry.
+  const saveDailyEntry = async (state: DailyCardState) => {
+    const id = `daily-${state.date}`;
+    const existing = getReading(id);
+    if (existing) {
+      if (existing.note) {
+        setReflection(existing.note);
+        setReflectionSaved(true);
+      }
+      return;
+    }
+    const cardInfo = getCard(state.cardId);
+    if (!cardInfo) return;
+    const entry = {
+      ...makeReading({
+        spreadSlug: "daily-card",
+        spreadName: "Daily card",
+        cards: [{ cardId: state.cardId, reversed: state.reversed, position: "Daily", positionKey: "daily" }],
+        interpretation: null,
+        aiGenerated: false,
+        free: true,
+      }),
+      id,
+    };
+    await persistReading(entry);
+  };
+
   useEffect(() => {
     const existing = getDailyCard();
     queueMicrotask(() => {
       if (existing) {
         setDaily(existing);
         setPhase("revealed");
+        void saveDailyEntry(existing);
       }
-      setStreak(getDailyStreak());
+      setPractice(getDailyPracticeDays());
     });
     return () => {
       if (drawTimer.current) clearTimeout(drawTimer.current);
@@ -67,10 +108,17 @@ export default function DailyPage() {
       const d = drawSingle();
       const saved = setDailyCard(d.cardId, d.reversed);
       setDaily(saved);
-      setStreak(getDailyStreak());
+      setPractice(getDailyPracticeDays());
       setPhase("revealed");
       trackDailyCardDrawn();
+      void saveDailyEntry(saved);
     }, 1400);
+  };
+
+  const saveReflection = async () => {
+    if (!daily || !reflection.trim()) return;
+    await updateReading(`daily-${daily.date}`, { note: reflection.trim() });
+    setReflectionSaved(true);
   };
 
   const card = daily ? getCard(daily.cardId) : null;
@@ -87,13 +135,14 @@ export default function DailyPage() {
         One card, free forever, no questions asked. A small mirror for the day
         ahead.
       </p>
-      {streak >= 2 && (
+      {practice.total >= 1 && (
         <motion.p
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           className="mt-4 inline-flex items-center gap-2 rounded-full border border-gold/40 bg-gold/10 px-4 py-1.5 text-sm font-semibold text-goldbright"
         >
-          <span aria-hidden="true">🔥</span> <span className="num">{streak}</span>-day streak
+          Practiced {practice.total} {practice.total === 1 ? "day" : "days"}
+          {practice.last30 !== practice.total && ` · ${practice.last30} in the last 30 days`}
         </motion.p>
       )}
 
@@ -227,12 +276,44 @@ export default function DailyPage() {
                 </motion.p>
                 <p className="mt-6 text-xs italic text-mist">
                   A reflection for today, not a prediction. Come back tomorrow
-                  for a new card
-                  {streak >= 1 && (
-                    <>{` and to keep your ${streak}-day streak alive`}</>
-                  )}
-                  .
+                  for a new card.
                 </p>
+                {/* Phase E (item 6): evening return. One line on where
+                    the card&apos;s quality showed up today, saved as
+                    the note on today&apos;s journal entry. */}
+                <div className="mt-6 rounded-2xl border border-gold/25 bg-navydeep/50 p-4 text-left">
+                  <label htmlFor="daily-reflection" className="text-sm font-semibold text-goldbright">
+                    Evening return
+                  </label>
+                  <p className="mt-1 text-sm text-cream/75">
+                    Where did this card&apos;s quality show up today?
+                  </p>
+                  <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                    <input
+                      id="daily-reflection"
+                      type="text"
+                      value={reflection}
+                      onChange={(e) => {
+                        setReflection(e.target.value);
+                        setReflectionSaved(false);
+                      }}
+                      maxLength={300}
+                      placeholder="One line is enough."
+                      className="min-w-0 flex-1 rounded-xl border border-gold/30 bg-navy px-3 py-2 text-sm text-cream placeholder:text-mist"
+                    />
+                    <button
+                      type="button"
+                      onClick={saveReflection}
+                      disabled={!reflection.trim()}
+                      className="rounded-xl border border-gold/40 px-4 py-2 text-sm font-bold text-goldbright disabled:opacity-50"
+                    >
+                      Save to journal
+                    </button>
+                  </div>
+                  {reflectionSaved && (
+                    <p className="mt-2 text-sm text-cream/70">Saved to your journal.</p>
+                  )}
+                </div>
                 {/* Personal Phase 3: a revealed daily card used to end
                     here. Give the user one obvious next step now,
                     not only tomorrow. Links only, no logic change. */}

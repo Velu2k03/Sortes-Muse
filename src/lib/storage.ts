@@ -138,6 +138,23 @@ export function getDailyStreak(): number {
   return streak;
 }
 
+// Phase E (item 6): the gentle replacement for the streak. The
+// streak counted consecutive days and reset to zero on a missed
+// day; this counts days practiced in total and in the last 30, so
+// it never resets. getDailyStreak stays exported: ReturnLoop still
+// uses it, and that call site is a separate decision.
+export function getDailyPracticeDays(): { total: number; last30: number } {
+  const days = read<string[]>(K.dailyStreak, []);
+  const total = days.length;
+  const today = new Date();
+  const cutoff = new Date(today);
+  cutoff.setDate(cutoff.getDate() - 29);
+  const fmt = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const last30 = days.filter((day) => day >= fmt(cutoff) && day <= fmt(today)).length;
+  return { total, last30 };
+}
+
 function recordDailyDraw(): void {
   const days = read<string[]>(K.dailyStreak, []);
   const today = todayKey();

@@ -74,7 +74,7 @@ export async function PATCH(req: NextRequest) {
   if (!checkRateLimit(`history-write:${session.userId}`, RATE_LIMITS.historyWriteUser).allowed) {
     return rateLimitExceeded();
   }
-  let body: { id?: unknown; nextStep?: unknown; revisitNote?: unknown; revisitAt?: unknown };
+  let body: { id?: unknown; nextStep?: unknown; revisitNote?: unknown; revisitAt?: unknown; note?: unknown };
   try {
     body = await req.json();
   } catch {
@@ -98,6 +98,15 @@ export async function PATCH(req: NextRequest) {
     if (typeof body.revisitAt === "string" && body.revisitAt.length < 100) {
       patch.revisitAt = body.revisitAt;
     }
+  }
+  // Phase E (item 8): the general note field, separate from the
+  // revisit note. Same 1-1000 character bound; the daily evening
+  // return is one line and fits easily inside it.
+  if (body.note !== undefined) {
+    if (typeof body.note !== "string" || body.note.trim().length < 1 || body.note.length > 1000) {
+      return NextResponse.json({ error: "Note must be 1 to 1000 characters." }, { status: 400 });
+    }
+    patch.note = body.note.trim();
   }
   if (Object.keys(patch).length === 0) {
     return NextResponse.json({ error: "Nothing to update." }, { status: 400 });
