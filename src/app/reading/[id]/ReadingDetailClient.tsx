@@ -204,6 +204,16 @@ export default function ReadingDetail({ id }: { id: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reading?.id]);
 
+  // Phase E (item 8): the general note field, separate from the
+  // revisit note. Same prefill rule.
+  const [noteInput, setNoteInput] = useState("");
+  const [noteSaved, setNoteSaved] = useState(false);
+  const [noteSaving, setNoteSaving] = useState(false);
+  useEffect(() => {
+    if (reading) queueMicrotask(() => setNoteInput(reading.note ?? ""));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reading?.id]);
+
   if (reading === undefined) {
     return <p className="py-20 text-center text-mist">Loading…</p>;
   }
@@ -475,6 +485,52 @@ export default function ReadingDetail({ id }: { id: string }) {
         )}
       </div>
 
+      {/* Phase E (item 8): a general note on the reading, free text,
+          editable, separate from the revisit note. */}
+      <div className="mx-auto mt-10 max-w-3xl rounded-3xl border border-gold/25 bg-panel/60 p-6 text-left sm:p-8">
+        <p className="text-xs uppercase tracking-[0.25em] text-gold">
+          Your note
+        </p>
+        <p className="mt-2 text-sm leading-relaxed text-cream/85">
+          Anything you want to remember about this reading, in your own words. Saved with it and shown in your Journal.
+        </p>
+        <div className="mt-4 flex flex-col gap-3">
+          <textarea
+            value={noteInput}
+            onChange={(e) => {
+              setNoteInput(e.target.value);
+              setNoteSaved(false);
+            }}
+            placeholder="e.g. This landed the day I decided to apply"
+            maxLength={1000}
+            rows={3}
+            aria-label="Note on this reading"
+            className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none"
+          />
+          <button
+            type="button"
+            disabled={noteSaving || !noteInput.trim()}
+            onClick={async () => {
+              const value = noteInput.trim();
+              if (!value) return;
+              setNoteSaving(true);
+              const updated = await updateReading(reading.id, { note: value });
+              setNoteSaving(false);
+              if (updated) {
+                setReading(updated);
+                setNoteSaved(true);
+              }
+            }}
+            className="btn-gold self-start rounded-xl px-6 py-3 font-bold disabled:opacity-40"
+          >
+            {noteSaving ? "Saving…" : reading.note ? "Update note" : "Save note"}
+          </button>
+        </div>
+        {noteSaved && (
+          <p className="mt-2 text-sm text-goldbright">Saved with this reading.</p>
+        )}
+      </div>
+
       {/* M2.2: 7-day revisit. Shown once a week has passed and no note
           exists yet, or to display a saved note. Never shown early. */}
       {(() => {
@@ -495,9 +551,49 @@ export default function ReadingDetail({ id }: { id: string }) {
               <p className="text-xs uppercase tracking-[0.25em] text-gold">
                 What you noted on revisit
               </p>
-              <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-cream/90">
-                {reading.revisitNote}
-              </p>
+              {/* Phase E (item 8): the revisit note is editable after
+                  saving, like the next step. The prefilled form is
+                  the same one used to write it the first time. */}
+              <div className="mt-4 flex flex-col gap-3">
+                <textarea
+                  value={revisitInput}
+                  onChange={(e) => {
+                    setRevisitInput(e.target.value);
+                    setRevisitSaved(false);
+                  }}
+                  placeholder="e.g. I took the step, and the reply came faster than I feared"
+                  maxLength={1000}
+                  rows={3}
+                  aria-label="Revisit note"
+                  className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none"
+                />
+                <button
+                  type="button"
+                  disabled={revisitSaving || !revisitInput.trim()}
+                  onClick={async () => {
+                    const value = revisitInput.trim();
+                    if (!value) return;
+                    setRevisitSaving(true);
+                    const updated = await updateReading(reading.id, {
+                      revisitNote: value,
+                      revisitAt: new Date().toISOString(),
+                    });
+                    setRevisitSaving(false);
+                    if (updated) {
+                      setReading(updated);
+                      setRevisitSaved(true);
+                    }
+                  }}
+                  className="btn-gold self-start rounded-xl px-6 py-3 font-bold disabled:opacity-40"
+                >
+                  {revisitSaving ? "Saving…" : "Update revisit note"}
+                </button>
+              </div>
+              {revisitSaved && (
+                <p className="mt-2 text-sm text-goldbright">
+                  Saved with this reading.
+                </p>
+              )}
               {reading.revisitAt && (
                 <p className="mt-2 text-xs text-mist">
                   Noted{" "}
@@ -593,6 +689,7 @@ export default function ReadingDetail({ id }: { id: string }) {
             },
             { heading: "Interpretation", body: reading.interpretation ?? "" },
             { heading: "My next step", body: reading.nextStep ?? "" },
+            { heading: "Note", body: reading.note ?? "" },
             {
               heading: "Follow-ups",
               body: (reading.followUps ?? [])
@@ -692,6 +789,13 @@ export default function ReadingDetail({ id }: { id: string }) {
                 {followUpError && (
                   <p className="text-sm text-danger">{followUpError}</p>
                 )}
+                {/* Phase E (item 7): the chosen next step is sent with
+                    the follow-up question, so the answer can build on
+                    it; and a guest thread lives only on this device. */}
+                <p className="text-xs text-mist">
+                  Your chosen next step, if you saved one above, is sent along with your follow-up question.
+                  {!user && " As a guest, this thread lives only on this device: sign in to keep it on your account."}
+                </p>
                 {followUpFailed && (
                   <div className="space-y-3">
                     <SwipeToast
@@ -722,7 +826,11 @@ export default function ReadingDetail({ id }: { id: string }) {
           </>
         )}
 
-        {/* Non-tarot or no-interpretation: show the old new-reading link */}
+        {/* Non-tarot or no-interpretation: this is not a follow-up
+            thread (the route rejects non-AI readings), so the button
+            says plainly what it does: a new reading. Phase E (item 7):
+            free readings are AI readings, so their real follow-up
+            thread is the section above; only this branch is relabeled. */}
         {!(reading.aiGenerated && reading.interpretation && !reading.chartSummary) && (
           <>
             <div className="rule-gold w-24" />
@@ -735,7 +843,7 @@ export default function ReadingDetail({ id }: { id: string }) {
               href="/spreads/quick-insight"
               className="btn-gold rounded-xl px-8 py-3 font-bold"
             >
-              Ask a follow-up &middot; 1 Oracle
+              Start a new reading &middot; 1 Oracle
             </Link>
           </>
         )}

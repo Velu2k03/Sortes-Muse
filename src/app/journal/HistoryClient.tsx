@@ -102,6 +102,11 @@ export default function HistoryPage() {
           <p className="mt-2 text-sm text-cream/75">
             Your first Quick Insight reading is free. Cast the lots and begin.
           </p>
+          {/* Phase E (item 8): one writing prompt on the empty journal,
+              so the blank page asks something instead of only waiting. */}
+          <p className="mt-4 text-sm italic text-goldbright">
+            To begin: what question has been following you around this week?
+          </p>
           <Link
             href="/spreads/quick-insight"
             className="btn-gold mt-6 inline-block rounded-xl px-8 py-3 font-bold"
@@ -294,6 +299,11 @@ export default function HistoryPage() {
                           })}
                           . Worth a re-read now that a week has passed.
                         </p>
+                        {/* Phase E (item 8): one writing prompt on the
+                            revisit candidate. */}
+                        <p className="mt-2 text-sm italic text-goldbright">
+                          What actually happened since this reading?
+                        </p>
                         <Link
                           href={`/reading/${mirror.revisitCandidate.id}`}
                           className="mt-2 inline-block text-sm font-semibold text-goldbright underline"
@@ -421,6 +431,11 @@ export default function HistoryPage() {
                               day: "numeric",
                             }
                           )}
+                        </span>
+                        {/* Phase E (item 8): one writing prompt per
+                            revisit candidate. */}
+                        <span className="mt-1 block text-xs italic text-goldbright">
+                          What actually happened since this reading?
                         </span>
                       </span>
                       <Link

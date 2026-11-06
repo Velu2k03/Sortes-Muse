@@ -169,4 +169,14 @@ describe("buildJournalMarkdown", () => {
     expect(md).toContain("Written with openrouter/free.");
     expect(md.match(/Written with/g)?.length).toBe(1);
   });
+
+  it("includes the general note when present", () => {
+    const readings = [
+      reading("r1", "2026-11-05T10:00:00.000Z", ["major-00"], {
+        note: "This landed the day I decided to apply.",
+      }),
+    ];
+    const md = buildJournalMarkdown(readings, (id) => id);
+    expect(md).toContain("Note: This landed the day I decided to apply.");
+  });
 });
