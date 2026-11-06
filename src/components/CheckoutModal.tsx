@@ -88,6 +88,7 @@ export default function CheckoutModal({ open, onClose, reason, initialPackId }: 
     <AnimatePresence>
       {open && (
         <motion.div
+          ref={dialogRef}
           className="fixed inset-0 z-50 flex items-end justify-center bg-ink/85 p-0 backdrop-blur-sm sm:items-center sm:p-6"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -98,7 +99,6 @@ export default function CheckoutModal({ open, onClose, reason, initialPackId }: 
           aria-label="Top up Oracles"
         >
           <motion.div
-            ref={dialogRef}
             className="w-full max-w-lg rounded-t-3xl border border-gold/30 bg-navydeep p-6 sm:rounded-3xl sm:p-8"
             initial={{ y: 60, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}

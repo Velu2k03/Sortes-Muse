@@ -150,8 +150,6 @@ export default function InstallBanner() {
     <div
       ref={bannerRef}
       className="fixed inset-x-3 bottom-3 z-50 mx-auto max-w-md rounded-2xl border border-gold/40 bg-navydeep/95 p-4 shadow-2xl backdrop-blur-md sm:inset-x-auto sm:bottom-6 sm:right-6"
-      role="dialog"
-      aria-label="Install Sortes"
     >
       <div className="flex items-start gap-3">
         <Image

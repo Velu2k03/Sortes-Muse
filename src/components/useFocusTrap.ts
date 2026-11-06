@@ -10,9 +10,9 @@ const FOCUSABLE_SELECTOR =
 
 /**
  * Focus trap for modal dialogs (UX P0-4). Attach the returned ref to
- * the dialog panel and pass `active` true while the dialog is open:
+ * the dialog element (the element carrying role="dialog") and pass `active` true while the dialog is open:
  * focus moves into the dialog on open (first focusable control, else
- * the panel itself), Tab / Shift+Tab cycle inside it, Escape calls
+ * the dialog itself), Tab / Shift+Tab cycle inside it, Escape calls
  * onClose, and focus returns to the element that opened the dialog
  * when it closes.
  *
@@ -63,10 +63,20 @@ export function useFocusTrap<T extends HTMLElement>(
       }
       const firstEl = items[0];
       const lastEl = items[items.length - 1];
-      if (e.shiftKey && document.activeElement === firstEl) {
+      const activeEl = document.activeElement;
+      if (!activeEl || !el.contains(activeEl)) {
+        e.preventDefault();
+        if (e.shiftKey) {
+          lastEl.focus();
+        } else {
+          firstEl.focus();
+        }
+        return;
+      }
+      if (e.shiftKey && activeEl === firstEl) {
         e.preventDefault();
         lastEl.focus();
-      } else if (!e.shiftKey && document.activeElement === lastEl) {
+      } else if (!e.shiftKey && activeEl === lastEl) {
         e.preventDefault();
         firstEl.focus();
       }
