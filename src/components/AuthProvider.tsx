@@ -27,6 +27,11 @@ export interface AuthUser {
 interface AuthContextValue {
   user: AuthUser | null;
   loading: boolean;
+  /** True when the last auth load failed (network error or 10 s
+      timeout, P0-1): the page is showing a signed-out fallback, not a
+      confirmed signed-out state. Cleared by the next successful
+      refresh. */
+  loadError: boolean;
   /** Effective credit balance. null while loading. */
   credits: number | null;
   refresh: () => Promise<void>;
@@ -60,6 +65,23 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 const MIGRATED_KEY = "sortes-migrated-v1";
 
+/** Fetch with a 10 s timeout (UX P0-1): a hung /api/auth/me must not
+    spin the header and the account page forever. The abort surfaces
+    as an AbortError to the caller. */
+async function fetchWithTimeout(
+  input: string,
+  init?: RequestInit,
+  ms = 10000
+): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ms);
+  try {
+    return await fetch(input, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 /** Parse a JSON response without throwing on empty / non-JSON bodies. */
 interface SafeJsonBody {
   user?: { id: string; email: string; credits?: number };
@@ -87,7 +109,7 @@ async function migrateGuestData(): Promise<number> {
   // spent later as a guest.
   try {
     if (history.length > 0) {
-      const res = await fetch("/api/history", {
+      const res = await fetchWithTimeout("/api/history", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ readings: history }),
@@ -100,12 +122,11 @@ async function migrateGuestData(): Promise<number> {
   } catch {
     // Sync failed: keep the guest journal intact so the next refresh
     // can retry, and report the server balance (never the local one).
-    const me = await fetch("/api/auth/me")
-      .then(safeJson)
-      .catch((): SafeJsonBody => ({}));
+    // A timeout here propagates to refresh(), which raises loadError.
+    const me = await fetchWithTimeout("/api/auth/me").then(safeJson);
     return typeof me.user?.credits === "number" ? me.user.credits : 0;
   }
-  const me = await safeJson(await fetch("/api/auth/me"));
+  const me = await safeJson(await fetchWithTimeout("/api/auth/me"));
   return me.user?.credits ?? 0;
 }
 
@@ -113,10 +134,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [credits, setCredits] = useState<number | null>(null);
+  const [loadError, setLoadError] = useState(false);
 
   const refresh = useCallback(async () => {
     try {
-      const res = await fetch("/api/auth/me");
+      const res = await fetchWithTimeout("/api/auth/me");
       const data = await safeJson(res);
       if (data.user) {
         setUser({ id: data.user.id, email: data.user.email });
@@ -130,9 +152,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(null);
         setCredits(getCredits());
       }
+      setLoadError(false);
     } catch {
+      // Network failure or 10 s timeout: show the signed-out fallback
+      // (guest credits) with loadError set, and always clear loading
+      // so the header and account page never spin forever (P0-1).
       setUser(null);
       setCredits(getCredits());
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -269,7 +296,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, loading, credits, refresh, signOut, spend, add, persistReading, updateReading, deleteReading, afterSignIn }}
+      value={{ user, loading, loadError, credits, refresh, signOut, spend, add, persistReading, updateReading, deleteReading, afterSignIn }}
     >
       {children}
     </AuthContext.Provider>

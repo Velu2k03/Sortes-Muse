@@ -17,7 +17,7 @@ interface ServerTx {
 type AuthStep = "email" | "sent" | "code";
 
 export default function AccountPage() {
-  const { user, loading, credits, signOut, afterSignIn } = useAuth();
+  const { user, loading, loadError, credits, signOut, afterSignIn, refresh } = useAuth();
   const [step, setStep] = useState<AuthStep>("email");
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
@@ -318,6 +318,26 @@ export default function AccountPage() {
       <h1 className="mt-3 text-center font-display text-5xl text-goldbright">
         Your account
       </h1>
+
+      {/* P0-1: the auth load timed out or failed, so this page is
+          showing the sign-in form as a fallback instead of spinning
+          forever. The session may still be valid; retry re-checks. */}
+      {loadError && (
+        <div role="alert" className="mt-6 rounded-xl border border-red-400/40 bg-red-500/10 p-4 text-sm leading-relaxed text-cream">
+          <p>
+            We couldn&apos;t reach the server to check your sign-in, so
+            this page is showing the sign-in form. If you already have
+            an account, try again.
+          </p>
+          <button
+            type="button"
+            onClick={() => void refresh()}
+            className="mt-3 rounded-lg border border-gold/40 bg-gold/10 px-4 py-2 font-semibold text-goldbright transition hover:border-goldbright"
+          >
+            Retry
+          </button>
+        </div>
+      )}
 
       {!user ? (
         <div className="mt-8 rounded-3xl border border-gold/20 bg-panel/60 p-6 sm:p-8">

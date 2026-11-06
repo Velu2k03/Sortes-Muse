@@ -74,7 +74,7 @@ function syncThemeColor(theme: "dark" | "light"): void {
 }
 
 export default function Header() {
-  const { credits, user, loading } = useAuth();
+  const { credits, user, loading, loadError, refresh } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
   // Deep pages highlight their parent section: a reading detail
@@ -282,17 +282,24 @@ export default function Header() {
           </button>
           {/* Phase 4A (4.1): one Oracle pill, not two controls. The
               balance and the Top up action are a single link to
-              /oracles; the separate Top up button is gone. */}
+              /oracles; the separate Top up button is gone.
+              P0-1: while credits is null the balance is unknown, so
+              the pill shows a skeleton, never 0, and the aria-label
+              says loading instead of "0 Oracles". */}
           <Link
             href="/oracles"
             className="flex items-center gap-1.5 rounded-full border border-gold/40 bg-gold/10 px-2.5 py-1.5 text-sm font-semibold text-goldbright"
-            aria-label={`Oracle balance: ${credits ?? 0} Oracles. Top up.`}
+            aria-label={credits === null ? "Oracle balance loading. Top up." : `Oracle balance: ${credits} Oracles. Top up.`}
             title="Your Oracles — top up"
           >
             <Icon name="coin" size={18} />
-            <span className="num">
-              <CountUp value={credits ?? 0} />
-            </span>
+            {credits === null ? (
+              <span className="inline-block h-4 w-6 animate-pulse rounded bg-gold/30" aria-hidden="true" />
+            ) : (
+              <span className="num">
+                <CountUp value={credits} />
+              </span>
+            )}
             {/* Phase 6 (D3): the word "Oracles" hides below 420px so the
                 header row fits at 390px. The coin + count stay, and the
                 aria-label still reads the full balance. The buttons
@@ -301,6 +308,17 @@ export default function Header() {
             <span className="hidden min-[420px]:inline">Oracles</span>
             <span className="hidden border-l border-gold/40 pl-1.5 sm:inline">Top up</span>
           </Link>
+          {loadError && (
+            <button
+              type="button"
+              onClick={() => void refresh()}
+              aria-label="Retry loading your account"
+              title="Couldn't load your account — retry"
+              className="rounded-full border border-gold/40 bg-gold/10 px-3 py-1.5 text-sm font-semibold text-goldbright transition hover:border-goldbright"
+            >
+              Retry
+            </button>
+          )}
           {!loading &&
             (user ? (
               <Link
