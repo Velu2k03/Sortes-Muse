@@ -224,7 +224,8 @@ export default function Home() {
             </h2>
             <p className="mx-auto mt-4 max-w-xl text-cream/75">
               The cards above answer by intention. Below, every spread
-              by size, from one card to the full ten-card spread.
+              by size, from one card to the full ten-card spread. Your
+              first Quick Insight is free.
             </p>
             <p className="mx-auto mt-3 max-w-xl text-sm text-cream/75">
               For reflection, not prediction.
