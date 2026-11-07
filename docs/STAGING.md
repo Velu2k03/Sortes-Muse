@@ -59,6 +59,22 @@ done
   for it until the final approval list — local Postgres covers all
   transaction testing until then.
 
+- **Redirect URLs allow list (magic link, Bug 2, 2026-11-07):** the
+  account page passes
+  `emailRedirectTo: `${window.location.origin}/auth/callback`` in
+  `signInWithOtp` (`src/app/account/AccountClient.tsx:160`), but
+  Supabase silently falls back to the Site URL when the passed URL is
+  not on the allow list. Dashboard: Authentication → URL
+  Configuration → Redirect URLs. Required entries (staging):
+  `https://*-velus-projects-27f81f38.vercel.app/**` (covers every
+  Preview deployment, branch alias and direct deployment URLs) and,
+  if not already present, `http://localhost:3000/**` for local dev.
+  Production project (`adgputwbdtdmgkiswtnz`) needs the same wildcard
+  plus `https://sortes.resonantatlas.com/**`. The Site URL itself must
+  NOT change. Full spec:
+  `hidden_files/bug2-redirect-allowlist-spec.md`; E2E re-verification:
+  `hidden_files/bug2-e2e-reverify.md`.
+
 ## Pointing the app at staging
 
 Env names only — never paste a real connection string into a file,
