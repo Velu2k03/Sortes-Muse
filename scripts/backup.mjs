@@ -66,7 +66,22 @@ const log = (obj) => {
 const res = spawnSync(
   "pg_dump",
   [dbUrl, "--format=custom", "--no-owner", "--no-acl", "--file", file],
-  { stdio: "inherit" }
+  // Hang diagnosis (2026-11-07): the database may carry a
+  // database-level statement_timeout (ALTER DATABASE ... SET
+  // statement_timeout = '10s', the server-side half of the fix for
+  // the pooler discarding the client startup parameter). pg_dump's
+  // table scans can legitimately exceed 10 s, so lift it for this
+  // session. PGOPTIONS is the documented way to pass per-session
+  // settings to pg_dump; an operator-set PGOPTIONS is preserved.
+  {
+    stdio: "inherit",
+    env: {
+      ...process.env,
+      PGOPTIONS: [process.env.PGOPTIONS, "-c statement_timeout=0"]
+        .filter(Boolean)
+        .join(" "),
+    },
+  }
 );
 if (res.status !== 0) {
   log({ event: "backup-failed", step: "pg_dump", file, status: res.status });

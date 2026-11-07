@@ -123,7 +123,18 @@ try {
   console.log(`restore: pg_restore ${restoreSource} -> target database`);
   // NOTE: do not use run() here: it calls process.exit() on failure,
   // which would skip the finally cleanup of the decrypted temp file.
-  const restoreRes = spawnSync("pg_restore", ["--no-owner", "--no-acl", "--dbname", target, restoreSource], { stdio: "inherit" });
+  // Hang diagnosis (2026-11-07): same statement_timeout exemption
+  // as backup.mjs — a restore's COPY/INSERT batches can legitimately
+  // exceed a database-level 10 s statement_timeout.
+  const restoreRes = spawnSync("pg_restore", ["--no-owner", "--no-acl", "--dbname", target, restoreSource], {
+    stdio: "inherit",
+    env: {
+      ...process.env,
+      PGOPTIONS: [process.env.PGOPTIONS, "-c statement_timeout=0"]
+        .filter(Boolean)
+        .join(" "),
+    },
+  });
   if (restoreRes.status !== 0) {
     console.error(`restore: pg_restore failed (status ${restoreRes.status})`);
     process.exitCode = 1;

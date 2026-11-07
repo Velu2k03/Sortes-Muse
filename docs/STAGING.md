@@ -150,6 +150,63 @@ SELECT tablename, rowsecurity FROM pg_tables
 WHERE schemaname = 'public';
 ```
 
+## Database statement_timeout (server-side half of the hang fix)
+
+Diagnosis 2026-11-07: the app's 10 s `statement_timeout` startup
+parameter (commit c7f2ba4, `createAppPostgres` in `src/lib/db.ts`)
+never reaches the server through a transaction-mode pooler.
+PgBouncer/Supavisor discard client startup parameters they do not
+track, and `statement_timeout` is not one Postgres reports, so it
+cannot be tracked. Proven on a local PgBouncer 1.22 transaction
+pooler with the app's exact factory: `SHOW statement_timeout`
+returned `0` (direct Postgres: `10s`) and `pg_sleep(15)` ran the
+full 15 s with no 57014. A second unbounded wait was measured the
+same day: a query waiting to acquire the max:1 pool connection waits
+as long as the holder holds it (a `SELECT 1` waited the full 20.0 s).
+So a stuck holder plus a discarded timeout turns any stall into a
+300 s Vercel timeout. The client-side half is already in code:
+every DB call races a 12 s deadline (`withDbTimeout` in
+`src/lib/db.ts`, `DB_QUERY_TIMEOUT_MS`, tests in
+`src/lib/__tests__/db-query-timeout.test.ts`). The server-side half
+is this database-level setting, which the pooler cannot strip —
+it makes the server kill the statement itself at 10 s.
+
+Run once per project (staging now; production only with Velu's
+explicit approval, at release time). Connect as the `postgres` role
+(session pooler port 5432, or the dashboard SQL editor):
+
+```sql
+-- Staging project (ref rztkdkespxliddkdafok) and, at release,
+-- production (ref adgputwbdtdmgkiswtnz). One database per project:
+-- the app connects to the default database `postgres`.
+ALTER DATABASE postgres SET statement_timeout = '10s';
+```
+
+Verify on a fresh connection through the transaction-mode pooler
+(port 6543, the path the app uses) — this is the check the startup
+parameter failed:
+
+```sql
+SHOW statement_timeout;  -- must return 10s, not 0
+SELECT pg_sleep(15);     -- must fail at ~10 s with 57014, not run 15 s
+```
+
+Notes:
+
+- The setting is a default for new sessions. The in-app migration
+  exemption (`SET LOCAL statement_timeout = 0` per file transaction)
+  still overrides it, and `scripts/backup.mjs` / `scripts/restore.mjs`
+  pass `PGOPTIONS="-c statement_timeout=0"` so long dumps and
+  restores are not killed at 10 s.
+- Do not "fix" this by switching the app to the session-mode pooler
+  (5432): each Vercel instance would hold a dedicated server
+  connection and the free tier would exhaust direct connections.
+- The burst trigger itself (what first stalls a query) is still
+  unknown; the live evidence that would settle it is
+  `pg_stat_activity` during a burst, or pooler metrics. With both
+  halves in place a stall now fails fast (server kill at 10 s,
+  client deadline at 12 s) instead of hanging to 300 s.
+
 ## Staging sign-in / checkout checks (before any production release)
 
 - [ ] Migrations apply cleanly to a fresh staging database.

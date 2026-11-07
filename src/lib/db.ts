@@ -2,6 +2,7 @@ import postgres, { type Parameter } from "postgres";
 import { promises as fs } from "fs";
 import path from "path";
 import { runMigrations } from "./migrations";
+import { withTimeout } from "./fetch-timeout";
 
 /**
  * Database layer.
@@ -118,6 +119,48 @@ if (connectionString) validatePostgresUrl(connectionString);
 // the whole statement including lock wait.
 export const APP_STATEMENT_TIMEOUT_MS = 10_000;
 
+/**
+ * Hang diagnosis (2026-11-07): the 10 s server-side statement_timeout
+ * above never reaches the server through a transaction-mode pooler.
+ * PgBouncer/Supavisor discard client startup parameters they do not
+ * track, and statement_timeout is not one Postgres reports, so it
+ * cannot be tracked. Proven on a local PgBouncer 1.22 transaction
+ * pooler with this exact factory: SHOW statement_timeout returned 0
+ * (direct Postgres: 10s) and pg_sleep(15) ran the full 15 s with no
+ * 57014. The server-side half of the fix is a database-level setting
+ * the pooler cannot strip — ALTER DATABASE postgres SET
+ * statement_timeout = '10s' (runbook in docs/STAGING.md; staging
+ * needs the DB password, production needs Velu's approval). This
+ * client-side deadline is the other half: it bounds the waits the
+ * server cannot see at all, because no statement has reached it yet
+ * — waiting to acquire the max:1 pool connection (measured: a
+ * SELECT 1 waited the full 20.0 s for a held connection) and
+ * waiting in the pooler's queue for a server connection. 12 s sits
+ * just above the 10 s server timeout so the server kills first when
+ * its setting is in place; the client race is the backstop.
+ * The race only rejects the caller's promise: the underlying query
+ * keeps running until it finishes or the server kills it at 10 s,
+ * then the connection is freed, so the pool recovers (proven by
+ * db-query-timeout.test.ts). Callers get the same friendly timeout
+ * message the fetch layer already uses.
+ */
+export const DB_QUERY_TIMEOUT_MS = 12_000;
+
+/** Client-side bound for the cold-start schema check in
+ * ensureSchema (two fast SELECTs when nothing is pending). 30 s, not
+ * 12 s: applying a pending migration can legitimately take longer
+ * than a single query, and the in-app path only ever applies on
+ * Preview/dev (tiny tables); production never applies in-app and the
+ * operator CLI (scripts/migrate.mjs) has no timeout at all. */
+export const DB_SCHEMA_TIMEOUT_MS = 30_000;
+
+/** Race a DB promise against the query deadline above. Used by the
+ * sql() wrapper and every pg.begin() site, so no DB wait can hold a
+ * route until the 300 s function timeout. */
+export function withDbTimeout<T>(promise: Promise<T>): Promise<T> {
+  return withTimeout(promise, DB_QUERY_TIMEOUT_MS);
+}
+
 /** The one place the app's Postgres client is constructed, so the
  * timeout above (and every other pool option) cannot drift between
  * the app and its tests. */
@@ -141,10 +184,12 @@ async function sql(
   ...values: unknown[]
 ): Promise<{ rows: unknown[] }> {
   if (!pg) throw new Error("Database not configured");
-  const rows = await (pg as unknown as (
-    strings: TemplateStringsArray,
-    ...values: unknown[]
-  ) => Promise<unknown[]>)(strings, ...values);
+  const rows = await withDbTimeout(
+    (pg as unknown as (
+      strings: TemplateStringsArray,
+      ...values: unknown[]
+    ) => Promise<unknown[]>)(strings, ...values)
+  );
   return { rows };
 }
 
@@ -266,7 +311,7 @@ export async function ensureSchema(): Promise<void> {
   //   npm run db:migrate
   // which needs Velu's explicit approval for production.
   if (!pg) throw new Error("Database not configured");
-  await runMigrations(pg);
+  await withTimeout(runMigrations(pg), DB_SCHEMA_TIMEOUT_MS);
   // Phase G (F11): assert the connection role is not one RLS denies.
   // Runs once per instance (schemaReady caches below). The query is
   // one cheap SELECT; current_user is always readable.
@@ -402,7 +447,7 @@ export async function deleteUser(userId: string): Promise<boolean> {
   await ensureSchema();
   if (usePostgres) {
     if (!pg) throw new Error("Database not configured");
-    return await pg.begin(async (tx) => {
+    return await withDbTimeout(pg.begin(async (tx) => {
       const found = await tx`SELECT id, email FROM users WHERE id = ${userId} FOR UPDATE`;
       if (found.length === 0) return false;
       const email = (found[0] as { email: string }).email;
@@ -414,7 +459,7 @@ export async function deleteUser(userId: string): Promise<boolean> {
       await tx`DELETE FROM transactions WHERE user_id = ${userId} OR email = ${email}`;
       await tx`DELETE FROM users WHERE id = ${userId}`;
       return true;
-    });
+    }));
   }
   const db = await readLocal();
   const user = db.users.find((x) => x.id === userId);
@@ -666,7 +711,7 @@ export async function fulfillOrder(args: {
   };
   if (usePostgres) {
     if (!pg) throw new Error("Database not configured");
-    return await pg.begin(async (tx) => {
+    return await withDbTimeout(pg.begin(async (tx) => {
       // Phase 6 (G2 finding): check the lock result. The old code
       // discarded it, so an unknown user failed later at the INSERT
       // with a raw foreign-key error instead of this clear message.
@@ -706,7 +751,7 @@ export async function fulfillOrder(args: {
       const upd = await tx`UPDATE users SET credits = credits + ${args.readings} WHERE id = ${args.userId} RETURNING credits`;
       if (upd.length === 0) throw new Error("User not found during fulfillment");
       return { transaction: row, credits: (upd[0] as { credits: number }).credits, duplicate: false };
-    });
+    }));
   }
   const db = await readLocal();
   // After a refund, a redelivered order_created is treated as a duplicate
@@ -772,11 +817,11 @@ export async function revokeOrder(orderId: string, email = ""): Promise<{ revoke
       if (!pg) throw new Error("Database not configured");
       // One atomic statement: concurrent refunds for the same
       // never-fulfilled order insert exactly one marker row.
-      await pg.begin(async (tx) => {
+      await withDbTimeout(pg.begin(async (tx) => {
         await tx`INSERT INTO transactions (id, user_id, email, pack_type, amount, readings, created_at)
           SELECT ${markerRow.id}, ${markerRow.user_id}, ${markerRow.email}, ${markerRow.pack_type}, 0, 0, NOW()
           WHERE NOT EXISTS (SELECT 1 FROM transactions WHERE pack_type LIKE ${"%" + refundMarker + ")%"})`;
-      });
+      }));
       return { revoked: false, readings: 0 };
     }
     const db = await readLocal();
@@ -803,7 +848,7 @@ export async function revokeOrder(orderId: string, email = ""): Promise<{ revoke
   };
   if (usePostgres) {
     if (!pg) throw new Error("Database not configured");
-    return await pg.begin(async (tx) => {
+    return await withDbTimeout(pg.begin(async (tx) => {
       // Phase 6 (G2 finding): same guard as fulfillOrder — fail with
       // a clear error instead of a foreign-key error at the INSERT.
       const locked = await tx`SELECT id FROM users WHERE id = ${userId} FOR UPDATE`;
@@ -814,7 +859,7 @@ export async function revokeOrder(orderId: string, email = ""): Promise<{ revoke
         VALUES (${refundRow.id}, ${refundRow.user_id}, ${refundRow.email}, ${refundRow.pack_type}, ${refundRow.amount}, ${refundRow.readings}, NOW())`;
       await tx`UPDATE users SET credits = GREATEST(0, credits - ${orig.readings}) WHERE id = ${userId}`;
       return { revoked: true, readings: orig.readings };
-    });
+    }));
   }
   const db = await readLocal();
   if (db.transactions.some((t) => t.pack_type.includes(`${refundMarker})`))) {
@@ -919,7 +964,7 @@ export async function appendFollowUpWithSpend(
   await ensureSchema();
   if (usePostgres) {
     if (!pg) throw new Error("Database not configured");
-    return await pg.begin(async (tx) => {
+    return await withDbTimeout(pg.begin(async (tx) => {
       const rows = await tx`SELECT data FROM readings WHERE id = ${readingId} AND user_id = ${userId} FOR UPDATE`;
       if (rows.length === 0) return { ok: false, reason: "not-found" as const };
       const data = (rows[0] as { data: { followUps?: unknown[] } }).data;
@@ -944,7 +989,7 @@ export async function appendFollowUpWithSpend(
         (updated[0] as { follow_ups?: unknown[] } | undefined)?.follow_ups ??
         [...existing, followUpToStore];
       return { ok: true, followUps, free: effectiveCost === 0 };
-    });
+    }));
   }
   // Local JSON branch: single-process dev store, no concurrent writers
   // in practice. Keep the same ordering (check cap, spend, append);
