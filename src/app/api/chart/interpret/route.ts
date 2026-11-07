@@ -242,7 +242,7 @@ Rules you must always follow:
 - Weave the chart placements into the seeker's focus area (${category}) and question, without inventing facts about them beyond the chart and question.
 - When a star transformation or brightness, an aspect, a cusp, a retrograde flag, or a dasha date is given, name it as given. Never invent a transformation, brightness, aspect, house placement, or date that is not in the chart positions. When birth time is unknown, never mention houses, Rising, or Midheaven.
 - In a Ziwei chart, minor stars are placed by birth month or year alone, so they describe a whole cohort, not this person: mention them only as background, and never let a minor star carry a personal verdict. Personal claims must rest on major stars, palaces, and transformations only.
-- Keep the reflection 350-550 words. Structure: a short opening that names their focus and question, one section per key placement group, then a closing section that answers their focus directly, in this order: what stands out in these placements for their focus; the tension or opportunity between placements; what they may be overlooking; one practical step they could take, small and concrete, never medical or financial advice; and exactly one gentle question for them to sit with. Every closing point must tie back to their focus, their question, or a named placement, never a generic paragraph that could fit any chart.
+- Keep the reflection 350-550 words. Structure: a short opening that names their focus and question, group the placements into a few themes (no more than four sections), then a closing section that answers their focus directly, in this order: what stands out in these placements for their focus; the tension or opportunity between placements; what they may be overlooking; one practical step they could take, small and concrete, never medical or financial advice; and exactly one gentle question for them to sit with. Every closing point must tie back to their focus, their question, or a named placement, never a generic paragraph that could fit any chart.
 - Never moralize, never repeat the question back verbatim.
 - Write the entire reflection in English.
 ${healthGuard}`;
@@ -304,7 +304,7 @@ Write the personalized chart reflection now.`;
     system: systemPrompt,
     user: userPrompt,
     temperature: 0.8,
-    maxTokens: 1200,
+    maxTokens: 2000,
     validate: (text) => validateChartText(text, { anchors: anchorTerms(lines) }),
     route: "chart/interpret",
   });

@@ -122,6 +122,34 @@ describe("POST /api/chart/interpret", () => {
     expect(mockedMarkFree).toHaveBeenCalledWith("u1", "western");
   });
 
+  // Chart-interpret fix (2026-11-07): the chart prompt is ~836 words
+  // (~1,110 tokens: 10 planets + 12 cusps + 43 aspects) but the route
+  // reused the reading route's 1200-token budget, and the system
+  // prompt demanded one section per placement group while also
+  // demanding 350-550 words — for a 43-aspect chart those contradict
+  // and every free model fails validation. The route now requests
+  // 2000 tokens and caps the reflection at four themed sections.
+  it("requests 2000 max_tokens and caps the reflection at four themed sections", async () => {
+    mockedGetSession.mockResolvedValue(null);
+    const fetchMock = vi.mocked(fetch);
+    const res = await POST(
+      req({ system: "western", chart: CHART, category: "general" }, "10.0.2.5")
+    );
+    expect(res.status).toBe(200);
+    const call = fetchMock.mock.calls.find(([url]) =>
+      String(url).includes("openrouter.ai")
+    );
+    expect(call).toBeDefined();
+    const body = JSON.parse(String((call?.[1] as RequestInit)?.body ?? "{}")) as {
+      max_tokens: number;
+      messages: { role: string; content: string }[];
+    };
+    expect(body.max_tokens).toBe(2000);
+    const system = body.messages.find((m) => m.role === "system")?.content ?? "";
+    expect(system).toContain("no more than four sections");
+    expect(system).not.toContain("one section per key placement group");
+  });
+
   // Phase B (R7): when the atomic free claim loses the race, the
   // request spends one Oracle instead of serving a second free
   // interpretation, and reports free: false.
