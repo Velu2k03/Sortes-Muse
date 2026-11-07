@@ -1,4 +1,4 @@
-const TIMEOUT_ERROR_MESSAGE = "The request timed out. Please try again.";
+export const TIMEOUT_ERROR_MESSAGE = "The request timed out. Please try again.";
 
 function isAbortError(err: unknown): boolean {
   if (err instanceof Error && err.name === "AbortError") return true;

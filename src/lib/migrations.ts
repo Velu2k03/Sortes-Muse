@@ -108,7 +108,16 @@ export async function runMigrations(
       // to app queries on the shared max:1 connection; the CLI
       // (scripts/migrate.mjs) already runs with no timeout, so
       // this keeps the in-app path consistent with it.
+      // Pool-unwedging (2026-11-07): the same exemption covers
+      // idle_in_transaction_session_timeout, which is set at the
+      // database level on staging (and, at release, production)
+      // as the server-side half of the hang fix — a long migration
+      // that pauses between statements inside its transaction
+      // must never be killed mid-DDL by the idle-in-transaction
+      // limit either. SET LOCAL scopes both lifts to this file
+      // transaction only.
       await tx.unsafe(`SET LOCAL statement_timeout = 0`);
+      await tx.unsafe(`SET LOCAL idle_in_transaction_session_timeout = 0`);
       await tx.unsafe(file.sql);
       await tx`
         INSERT INTO ${tx(SCHEMA_MIGRATIONS_TABLE)} (version, name)

@@ -2,7 +2,7 @@ import postgres, { type Parameter } from "postgres";
 import { promises as fs } from "fs";
 import path from "path";
 import { runMigrations } from "./migrations";
-import { withTimeout } from "./fetch-timeout";
+import { withTimeout, TIMEOUT_ERROR_MESSAGE } from "./fetch-timeout";
 
 /**
  * Database layer.
@@ -138,11 +138,20 @@ export const APP_STATEMENT_TIMEOUT_MS = 10_000;
  * waiting in the pooler's queue for a server connection. 12 s sits
  * just above the 10 s server timeout so the server kills first when
  * its setting is in place; the client race is the backstop.
- * The race only rejects the caller's promise: the underlying query
- * keeps running until it finishes or the server kills it at 10 s,
- * then the connection is freed, so the pool recovers (proven by
- * db-query-timeout.test.ts). Callers get the same friendly timeout
- * message the fetch layer already uses.
+ *
+ * Pool-unwedging (2026-11-07): the deadline is NOT a bare race.
+ * The earlier version only rejected the caller's promise while the
+ * underlying query kept holding the single max:1 connection, so a
+ * never-settling holder wedged the whole Vercel instance — the 6
+ * consecutive /api/auth/me failures in 7 minutes were one wedged
+ * instance, not six slow queries, and zero 57014s prove the waits
+ * are pre-statement. withDbTimeout now CANCELS the query on
+ * timeout (below): a queued job is removed from the pool's waiting
+ * list and rejected, an in-flight statement is cancelled
+ * server-side via CancelRequest, and a transaction rolls back and
+ * releases its lease — so the pool recovers with no manual release.
+ * Callers still get the same friendly timeout message the fetch
+ * layer already uses.
  */
 export const DB_QUERY_TIMEOUT_MS = 12_000;
 
@@ -154,11 +163,90 @@ export const DB_QUERY_TIMEOUT_MS = 12_000;
  * operator CLI (scripts/migrate.mjs) has no timeout at all. */
 export const DB_SCHEMA_TIMEOUT_MS = 30_000;
 
-/** Race a DB promise against the query deadline above. Used by the
- * sql() wrapper and every pg.begin() site, so no DB wait can hold a
- * route until the 300 s function timeout. */
-export function withDbTimeout<T>(promise: Promise<T>): Promise<T> {
-  return withTimeout(promise, DB_QUERY_TIMEOUT_MS);
+/** Race a DB promise against the query deadline above, and CANCEL
+ * the underlying query when the deadline fires — a bare race only
+ * rejects the caller's promise while the query keeps holding the
+ * single max:1 connection (see the note on DB_QUERY_TIMEOUT_MS).
+ * The promise is usually a postgres.js Query, which exposes
+ * .signal() (types: PendingQueryModifiers). Attaching the
+ * controller wires the abort to this.cancel() -> handler.cancel ->
+ * pool.cancel (src/pool.js:603-615): a queued job is removed from
+ * waiting and rejected with 57014, an in-flight statement gets a
+ * CancelRequest and is killed server-side. The abort is the ONLY
+ * cancel issued: a second, explicit cancel could hit an unrelated
+ * statement if the query settled and its connection was reused in
+ * the meantime. A caller may pass its own controller so the same
+ * deadline also cancels work created inside a pg.begin callback
+ * (see txWithSignal); otherwise one is created per call. Promises
+ * that are not Queries (e.g. a bare pg.begin promise) keep the old
+ * race behaviour — their inner queries carry the signal instead. */
+export async function withDbTimeout<T>(
+  promise: Promise<T>,
+  controller: AbortController = new AbortController()
+): Promise<T> {
+  const query = promise as Promise<T> & {
+    signal?: (signal: AbortSignal) => unknown;
+  };
+  if (typeof query.signal === "function") {
+    query.signal(controller.signal);
+  }
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      controller.abort();
+      reject(new Error(TIMEOUT_ERROR_MESSAGE));
+    }, DB_QUERY_TIMEOUT_MS);
+  });
+  try {
+    return await Promise.race([promise, timeoutPromise]);
+  } finally {
+    if (timer !== undefined) {
+      clearTimeout(timer);
+    }
+  }
+}
+
+/**
+ * Pool-unwedging (2026-11-07): wrap a tx-scoped Sql so every query
+ * it creates carries the given AbortSignal. Used at the five
+ * pg.begin sites with the same controller the outer withDbTimeout
+ * aborts: an in-flight statement inside the transaction is
+ * cancelled, the callback throws, scope() rolls back, done settles,
+ * and transaction()'s finally runs lease.release() — so a timed-out
+ * transaction frees the single max:1 connection instead of holding
+ * it forever. Only the template-tag call and unsafe() are wrapped;
+ * settled queries detach their abort listener on resolve/reject
+ * (Query.resolve/reject call this.aborts()), and the COMMIT is a
+ * control query this wrapper never sees, so a query that already
+ * committed is never cancelled. The guard keeps non-query calls
+ * (e.g. the identifier form tx("table")) working untouched.
+ * Exported for the pool-recovery tests
+ * (src/lib/__tests__/db-query-timeout.test.ts), which build a
+ * transaction the same way the five pg.begin sites do.
+ */
+export function txWithSignal<T extends postgres.ISql>(tx: T, signal: AbortSignal): T {
+  type QueryLike = { signal: (signal: AbortSignal) => unknown };
+  const runQuery = tx as unknown as (
+    strings: TemplateStringsArray,
+    ...args: unknown[]
+  ) => QueryLike;
+  const call = ((strings: TemplateStringsArray, ...args: unknown[]) => {
+    const q = runQuery(strings, ...args);
+    if (typeof q.signal === "function") q.signal(signal);
+    return q;
+  }) as unknown as T;
+  const wrapped = Object.assign(call, tx);
+  const runUnsafe = tx.unsafe as unknown as (
+    query: string,
+    parameters?: unknown[],
+    options?: unknown
+  ) => QueryLike;
+  wrapped.unsafe = ((query: string, parameters?: unknown[], options?: unknown) => {
+    const q = runUnsafe(query, parameters, options);
+    if (typeof q.signal === "function") q.signal(signal);
+    return q;
+  }) as T["unsafe"];
+  return wrapped;
 }
 
 /** The one place the app's Postgres client is constructed, so the
@@ -171,6 +259,14 @@ export function createAppPostgres(connectionString: string): postgres.Sql {
     max: 1,
     idle_timeout: 20,
     connect_timeout: 10,
+    // Pool-unwedging hygiene (2026-11-07): a query waiting for the
+    // single max:1 connection is rejected with QUEUE_TIMEOUT after
+    // 12 s (seconds, not ms) AND removed from the pool's waiting
+    // list (src/pool.js wait()), so it can never run later as a
+    // ghost job. 12 s matches DB_QUERY_TIMEOUT_MS. This is hygiene,
+    // not the un-wedger — the withDbTimeout cancellation above is
+    // what frees a connection held by a never-settling operation.
+    queue_timeout: 12,
     connection: { statement_timeout: APP_STATEMENT_TIMEOUT_MS },
   });
 }
@@ -447,7 +543,9 @@ export async function deleteUser(userId: string): Promise<boolean> {
   await ensureSchema();
   if (usePostgres) {
     if (!pg) throw new Error("Database not configured");
-    return await withDbTimeout(pg.begin(async (tx) => {
+    const controller = new AbortController();
+    const begin = pg.begin(async (rawTx) => {
+      const tx = txWithSignal(rawTx, controller.signal);
       const found = await tx`SELECT id, email FROM users WHERE id = ${userId} FOR UPDATE`;
       if (found.length === 0) return false;
       const email = (found[0] as { email: string }).email;
@@ -459,7 +557,8 @@ export async function deleteUser(userId: string): Promise<boolean> {
       await tx`DELETE FROM transactions WHERE user_id = ${userId} OR email = ${email}`;
       await tx`DELETE FROM users WHERE id = ${userId}`;
       return true;
-    }));
+    });
+    return await withDbTimeout(begin, controller);
   }
   const db = await readLocal();
   const user = db.users.find((x) => x.id === userId);
@@ -711,7 +810,9 @@ export async function fulfillOrder(args: {
   };
   if (usePostgres) {
     if (!pg) throw new Error("Database not configured");
-    return await withDbTimeout(pg.begin(async (tx) => {
+    const controller = new AbortController();
+    const begin = pg.begin(async (rawTx) => {
+      const tx = txWithSignal(rawTx, controller.signal);
       // Phase 6 (G2 finding): check the lock result. The old code
       // discarded it, so an unknown user failed later at the INSERT
       // with a raw foreign-key error instead of this clear message.
@@ -751,7 +852,8 @@ export async function fulfillOrder(args: {
       const upd = await tx`UPDATE users SET credits = credits + ${args.readings} WHERE id = ${args.userId} RETURNING credits`;
       if (upd.length === 0) throw new Error("User not found during fulfillment");
       return { transaction: row, credits: (upd[0] as { credits: number }).credits, duplicate: false };
-    }));
+    });
+    return await withDbTimeout(begin, controller);
   }
   const db = await readLocal();
   // After a refund, a redelivered order_created is treated as a duplicate
@@ -817,11 +919,14 @@ export async function revokeOrder(orderId: string, email = ""): Promise<{ revoke
       if (!pg) throw new Error("Database not configured");
       // One atomic statement: concurrent refunds for the same
       // never-fulfilled order insert exactly one marker row.
-      await withDbTimeout(pg.begin(async (tx) => {
+      const controller = new AbortController();
+      const begin = pg.begin(async (rawTx) => {
+        const tx = txWithSignal(rawTx, controller.signal);
         await tx`INSERT INTO transactions (id, user_id, email, pack_type, amount, readings, created_at)
           SELECT ${markerRow.id}, ${markerRow.user_id}, ${markerRow.email}, ${markerRow.pack_type}, 0, 0, NOW()
           WHERE NOT EXISTS (SELECT 1 FROM transactions WHERE pack_type LIKE ${"%" + refundMarker + ")%"})`;
-      }));
+      });
+      await withDbTimeout(begin, controller);
       return { revoked: false, readings: 0 };
     }
     const db = await readLocal();
@@ -848,7 +953,9 @@ export async function revokeOrder(orderId: string, email = ""): Promise<{ revoke
   };
   if (usePostgres) {
     if (!pg) throw new Error("Database not configured");
-    return await withDbTimeout(pg.begin(async (tx) => {
+    const controller = new AbortController();
+    const begin = pg.begin(async (rawTx) => {
+      const tx = txWithSignal(rawTx, controller.signal);
       // Phase 6 (G2 finding): same guard as fulfillOrder — fail with
       // a clear error instead of a foreign-key error at the INSERT.
       const locked = await tx`SELECT id FROM users WHERE id = ${userId} FOR UPDATE`;
@@ -859,7 +966,8 @@ export async function revokeOrder(orderId: string, email = ""): Promise<{ revoke
         VALUES (${refundRow.id}, ${refundRow.user_id}, ${refundRow.email}, ${refundRow.pack_type}, ${refundRow.amount}, ${refundRow.readings}, NOW())`;
       await tx`UPDATE users SET credits = GREATEST(0, credits - ${orig.readings}) WHERE id = ${userId}`;
       return { revoked: true, readings: orig.readings };
-    }));
+    });
+    return await withDbTimeout(begin, controller);
   }
   const db = await readLocal();
   if (db.transactions.some((t) => t.pack_type.includes(`${refundMarker})`))) {
@@ -964,7 +1072,9 @@ export async function appendFollowUpWithSpend(
   await ensureSchema();
   if (usePostgres) {
     if (!pg) throw new Error("Database not configured");
-    return await withDbTimeout(pg.begin(async (tx) => {
+    const controller = new AbortController();
+    const begin = pg.begin(async (rawTx) => {
+      const tx = txWithSignal(rawTx, controller.signal);
       const rows = await tx`SELECT data FROM readings WHERE id = ${readingId} AND user_id = ${userId} FOR UPDATE`;
       if (rows.length === 0) return { ok: false, reason: "not-found" as const };
       const data = (rows[0] as { data: { followUps?: unknown[] } }).data;
@@ -989,7 +1099,8 @@ export async function appendFollowUpWithSpend(
         (updated[0] as { follow_ups?: unknown[] } | undefined)?.follow_ups ??
         [...existing, followUpToStore];
       return { ok: true, followUps, free: effectiveCost === 0 };
-    }));
+    });
+    return await withDbTimeout(begin, controller);
   }
   // Local JSON branch: single-process dev store, no concurrent writers
   // in practice. Keep the same ordering (check cap, spend, append);
