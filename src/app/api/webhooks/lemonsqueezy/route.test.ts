@@ -4,6 +4,7 @@ import { createHmac } from "crypto";
 
 vi.mock("@/lib/db", () => ({
   getUserByEmail: vi.fn(),
+  getUserById: vi.fn(),
   createUser: vi.fn(),
   fulfillOrder: vi.fn(),
   revokeOrder: vi.fn(),
@@ -18,12 +19,13 @@ vi.mock("@/lib/lemonsqueezy", async (importOriginal) => {
 });
 
 import { POST } from "@/app/api/webhooks/lemonsqueezy/route";
-import { getUserByEmail, createUser, fulfillOrder, revokeOrder } from "@/lib/db";
+import { getUserByEmail, getUserById, createUser, fulfillOrder, revokeOrder } from "@/lib/db";
 import { getOrder } from "@/lib/lemonsqueezy";
 
 const mockedGetOrder = vi.mocked(getOrder);
 
 const mockedGetUserByEmail = vi.mocked(getUserByEmail);
+const mockedGetUserById = vi.mocked(getUserById);
 const mockedCreateUser = vi.mocked(createUser);
 const mockedFulfill = vi.mocked(fulfillOrder);
 const mockedRevoke = vi.mocked(revokeOrder);
@@ -40,9 +42,9 @@ function signedReq(payload: unknown): NextRequest {
   });
 }
 
-function orderCreated(overrides: Record<string, unknown> = {}) {
+function orderCreated(overrides: Record<string, unknown> = {}, metaOverrides: Record<string, unknown> = {}) {
   return {
-    meta: { event_name: "order_created" },
+    meta: { event_name: "order_created", ...metaOverrides },
     data: {
       id: "ord_1",
       attributes: {
@@ -85,6 +87,9 @@ describe("POST /api/webhooks/lemonsqueezy", () => {
     process.env.LEMONSQUEEZY_VARIANT_PACK5 = "111";
     process.env.LEMONSQUEEZY_VARIANT_PACK12 = "222";
     process.env.LEMONSQUEEZY_VARIANT_PACK30 = "333";
+    // Bug 1 fix: no custom_data user_id by default; tests that need
+    // a signed-in attribution set their own getUserById value.
+    mockedGetUserById.mockResolvedValue(null);
     // The API lookup confirms the signed payload by default.
     mockedGetOrder.mockResolvedValue(apiOrder());
   });
@@ -151,6 +156,145 @@ describe("POST /api/webhooks/lemonsqueezy", () => {
       readings: 5,
       orderId: "ord_1",
     });
+  });
+
+  // Bug 1 fix: a signed-in purchase must be credited to the
+  // signed-in account, not to the email Lemon Squeezy reports. The
+  // checkout binds the signed-in user id into
+  // meta.custom_data.user_id; the webhook attributes by that id
+  // first. The payload email (which Lemon Squeezy overrides with
+  // the Link account's email) is only a warning signal, never the
+  // attribution key. The guest path (no user_id) keeps the old
+  // email behaviour: getUserByEmail ?? createUser.
+  it("fulfills a signed-in purchase to the signed-in account when the payload email differs", async () => {
+    mockedGetUserById.mockResolvedValue({
+      id: "u-signed-in",
+      email: "signedin@example.com",
+      credits: 0,
+      created_at: "2026-11-05T00:00:00Z",
+    });
+    mockedFulfill.mockResolvedValue({ transaction: null, credits: 5, duplicate: false });
+    const payload = orderCreated(
+      {},
+      { custom_data: { pack_id: "pack5", user_id: "u-signed-in" } }
+    );
+    payload.data.attributes.user_email = "link-account@example.com";
+    const res = await POST(signedReq(payload));
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({ ok: true });
+    expect(mockedFulfill).toHaveBeenCalledWith({
+      userId: "u-signed-in",
+      email: "signedin@example.com",
+      packType: "pack5 (lemonsqueezy:ord_1)",
+      amount: 3.99,
+      readings: 5,
+      orderId: "ord_1",
+    });
+    expect(mockedGetUserByEmail).not.toHaveBeenCalled();
+    expect(mockedCreateUser).not.toHaveBeenCalled();
+  });
+
+  it("returns 500 and never falls back to email when custom_data user_id has no such user", async () => {
+    mockedGetUserById.mockResolvedValue(null);
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const payload = orderCreated(
+      {},
+      { custom_data: { pack_id: "pack5", user_id: "u-deleted" } }
+    );
+    const res = await POST(signedReq(payload));
+    expect(res.status).toBe(500);
+    expect(mockedFulfill).not.toHaveBeenCalled();
+    expect(mockedGetUserByEmail).not.toHaveBeenCalled();
+    expect(mockedCreateUser).not.toHaveBeenCalled();
+    expect(
+      errorSpy.mock.calls.some((c) =>
+        String(c[0]).includes("sortes-webhook") &&
+        String(c[0]).includes("order-user-not-found")
+      )
+    ).toBe(true);
+    errorSpy.mockRestore();
+  });
+
+  it("logs a structured order-fulfilled line on grant", async () => {
+    mockedGetUserById.mockResolvedValue({
+      id: "u-signed-in",
+      email: "buyer@example.com",
+      credits: 0,
+      created_at: "2026-11-05T00:00:00Z",
+    });
+    mockedFulfill.mockResolvedValue({ transaction: null, credits: 5, duplicate: false });
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const payload = orderCreated(
+      {},
+      { custom_data: { pack_id: "pack5", user_id: "u-signed-in" } }
+    );
+    const res = await POST(signedReq(payload));
+    expect(res.status).toBe(200);
+    const lines = logSpy.mock.calls.map((c) => String(c[0]));
+    const fulfilled = lines
+      .map((l) => {
+        try {
+          return JSON.parse(l);
+        } catch {
+          return null;
+        }
+      })
+      .find((o) => o?.event === "order-fulfilled");
+    expect(fulfilled).toMatchObject({
+      source: "sortes-webhook",
+      event: "order-fulfilled",
+      orderId: "ord_1",
+      userId: "u-signed-in",
+      readings: 5,
+    });
+    logSpy.mockRestore();
+  });
+
+  it("does not log order-fulfilled on a duplicate delivery (nothing was granted)", async () => {
+    mockedGetUserById.mockResolvedValue({
+      id: "u-signed-in",
+      email: "buyer@example.com",
+      credits: 5,
+      created_at: "2026-11-05T00:00:00Z",
+    });
+    mockedFulfill.mockResolvedValue({ transaction: null, credits: 5, duplicate: true });
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const payload = orderCreated(
+      {},
+      { custom_data: { pack_id: "pack5", user_id: "u-signed-in" } }
+    );
+    const res = await POST(signedReq(payload));
+    expect(await res.json()).toMatchObject({ ok: true, duplicate: true });
+    const lines = logSpy.mock.calls.map((c) => String(c[0]));
+    expect(lines.some((l) => l.includes("order-fulfilled"))).toBe(false);
+    logSpy.mockRestore();
+  });
+
+  it("warns when the payload email differs from the fulfilled account email", async () => {
+    mockedGetUserById.mockResolvedValue({
+      id: "u-signed-in",
+      email: "signedin@example.com",
+      credits: 0,
+      created_at: "2026-11-05T00:00:00Z",
+    });
+    mockedFulfill.mockResolvedValue({ transaction: null, credits: 5, duplicate: false });
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const payload = orderCreated(
+      {},
+      { custom_data: { pack_id: "pack5", user_id: "u-signed-in" } }
+    );
+    payload.data.attributes.user_email = "link-account@example.com";
+    const res = await POST(signedReq(payload));
+    expect(res.status).toBe(200);
+    expect(
+      warnSpy.mock.calls.some(
+        (c) =>
+          String(c[0]).includes("order-fulfilled-email-mismatch") &&
+          String(c[0]).includes("link-account@example.com") &&
+          String(c[0]).includes("signedin@example.com")
+      )
+    ).toBe(true);
+    warnSpy.mockRestore();
   });
 
   it("reports a duplicate delivery without granting twice", async () => {

@@ -28,6 +28,24 @@
  *   node scripts/simulate-webhook.mjs [--url http://localhost:3000] \
  *     [--email webhook-test@example.com]
  *
+ * Signed-in purchase (Bug 1 fix: the paid order must credit the
+ * signed-in account even when the payload email is the Link
+ * account's email). First create the signed-in user in the
+ * staging DB, then run with --user-id and a DIFFERENT --email:
+ *
+ *   psql $DATABASE_URL -c "INSERT INTO users (id, email, credits, password_hash, created_at)
+ *     VALUES ('u_sim_signedin', 'signedin-sim@example.com', 0, NULL, NOW());"
+ *   LEMONSQUEEZY_WEBHOOK_SECRET=<that secret> \
+ *   LEMONSQUEEZY_STORE_ID=999999 LEMONSQUEEZY_VARIANT_PACK5=111111 \
+ *   node scripts/simulate-webhook.mjs [--url http://localhost:3000] \
+ *     --email link-sim@example.com --user-id u_sim_signedin
+ *   psql $DATABASE_URL -c "SELECT email, credits FROM users
+ *     WHERE id = 'u_sim_signedin';"
+ *   -- after step 1: signedin-sim@example.com has 5. After step 3: 0.
+ *   psql $DATABASE_URL -c "SELECT count(*) FROM users
+ *     WHERE email = 'link-sim@example.com';"
+ *   -- must be 0: no account is ever auto-created for the Link email.
+ *
  * Expected results (pack5 = 5 Oracles, $3.99 = 399 cents):
  *   1. order_created        -> 200 { ok: true }
  *   2. order_created again  -> 200 { ok: true, duplicate: true }
@@ -60,6 +78,10 @@ function flagValue(name, def) {
 }
 const urlArg = flagValue("--url", "http://localhost:3000");
 const emailArg = flagValue("--email", "webhook-test@example.com");
+// Bug 1 fix: the signed-in user id to bind into meta.custom_data.
+// When set, the webhook must credit this user even though the
+// payload email (--email) is a different, Link-account address.
+const userIdArg = flagValue("--user-id", "");
 
 const secret = process.env.LEMONSQUEEZY_WEBHOOK_SECRET;
 const storeId = process.env.LEMONSQUEEZY_STORE_ID;
@@ -90,7 +112,13 @@ function sign(raw) {
 
 async function post(eventName, label) {
   const payload = {
-    meta: { event_name: eventName, custom_data: { pack_id: "pack5" } },
+    meta: {
+      event_name: eventName,
+      custom_data: {
+        pack_id: "pack5",
+        ...(userIdArg ? { user_id: userIdArg } : {}),
+      },
+    },
     data: {
       id: orderId,
       attributes: {

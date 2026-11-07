@@ -49,7 +49,16 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const url = await createCheckout({ packId, email: email || undefined });
+    // Bug 1 fix: bind the checkout to the signed-in account. The
+    // user id travels in checkout_data.custom (see createCheckout)
+    // so the webhook credits the signed-in account even when Lemon
+    // Squeezy reports the Link account's email. Guests pass none
+    // and keep the email-only path.
+    const url = await createCheckout({
+      packId,
+      email: email || undefined,
+      ...(session ? { userId: session.userId } : {}),
+    });
     // Phase 6: no claim nonce is created here. The post-payment claim
     // endpoint (/api/checkout/claim) was deleted — it had no client
     // callers, and PurchaseConfirmer polls the balance instead. The

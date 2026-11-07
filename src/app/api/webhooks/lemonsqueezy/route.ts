@@ -9,9 +9,11 @@ import {
 } from "@/lib/lemonsqueezy";
 import {
   getUserByEmail,
+  getUserById,
   createUser,
   fulfillOrder,
   revokeOrder,
+  type DbUser,
 } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
@@ -49,7 +51,7 @@ export async function POST(req: NextRequest) {
     }
 
     let event: {
-      meta?: { event_name?: string; custom_data?: { pack_id?: string } };
+      meta?: { event_name?: string; custom_data?: { pack_id?: string; user_id?: string } };
       data?: {
         id?: string;
         attributes?: {
@@ -168,17 +170,66 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Order could not be verified." }, { status: 500 });
     }
 
-    const user = (await getUserByEmail(email)) ?? (await createUser(email));
+    // Bug 1 fix: attribute by the signed-in user id first. The
+    // checkout binds it into meta.custom_data.user_id; the payload
+    // email is the Link account's email and must not decide who gets
+    // the credits. A user_id for a user that no longer exists
+    // (deleted between checkout and webhook) is never silently
+    // re-attributed to the payload email: 500, so Lemon Squeezy
+    // retries and the reconcile script catches the paid order with
+    // no transaction row. No user_id means a guest checkout, which
+    // keeps the email behaviour (getUserByEmail ?? createUser).
+    const customUserId = String(event.meta?.custom_data?.user_id ?? "").trim();
+    let user: DbUser;
+    if (customUserId) {
+      const signedIn = await getUserById(customUserId);
+      if (!signedIn) {
+        console.error(
+          JSON.stringify({
+            source: "sortes-webhook",
+            event: "order-user-not-found",
+            orderId,
+            userId: customUserId,
+            payloadEmail: email,
+          })
+        );
+        return NextResponse.json({ error: "User not found for this order." }, { status: 500 });
+      }
+      user = signedIn;
+      if (email && email !== user.email.toLowerCase()) {
+        console.warn(
+          JSON.stringify({
+            source: "sortes-webhook",
+            event: "order-fulfilled-email-mismatch",
+            orderId,
+            userId: user.id,
+            payloadEmail: email,
+            accountEmail: user.email,
+          })
+        );
+      }
+    } else {
+      user = (await getUserByEmail(email)) ?? (await createUser(email));
+    }
     const amount = Number(attrs?.total ?? 0) / 100;
     const result = await fulfillOrder({
       userId: user.id,
-      email,
+      email: user.email,
       packType: `${packIdForVariant(variantId)} (lemonsqueezy:${orderId})`,
       amount,
       readings,
       orderId,
     });
     if (result.duplicate) return NextResponse.json({ ok: true, duplicate: true });
+    console.log(
+      JSON.stringify({
+        source: "sortes-webhook",
+        event: "order-fulfilled",
+        orderId,
+        userId: user.id,
+        readings,
+      })
+    );
 
     return NextResponse.json({ ok: true });
   } catch (err) {

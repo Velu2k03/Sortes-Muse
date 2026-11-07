@@ -88,6 +88,11 @@ export function verifyOrderAmount(
 export async function createCheckout(args: {
   packId: string;
   email?: string;
+  // Bug 1 fix: the signed-in user's id, bound into
+  // checkout_data.custom so the webhook can attribute the paid
+  // order to the signed-in account even when Lemon Squeezy reports
+  // the Link account's email. Omitted for guest checkouts.
+  userId?: string;
   fetchFn?: typeof fetch;
   timeoutMs?: number;
 }): Promise<string> {
@@ -120,7 +125,11 @@ export async function createCheckout(args: {
         attributes: {
           checkout_data: {
             ...(args.email ? { email: args.email } : {}),
-            custom: { pack_id: args.packId, readings: String(readings) },
+            custom: {
+              pack_id: args.packId,
+              readings: String(readings),
+              ...(args.userId ? { user_id: args.userId } : {}),
+            },
           },
           product_options: {
             redirect_url: `${site}/oracles?purchase=success`,

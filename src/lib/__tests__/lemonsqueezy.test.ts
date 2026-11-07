@@ -262,6 +262,38 @@ describe("lemonsqueezy helpers", () => {
       });
     });
 
+    it("includes user_id in checkout_data.custom for a signed-in checkout", async () => {
+      let capturedBody: unknown;
+      const fetchFn = vi.fn(async (_url: unknown, init?: RequestInit) => {
+        capturedBody = JSON.parse(String(init?.body));
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              type: "checkouts",
+              id: "co_123",
+              attributes: { url: "https://test.lemonsqueezy.com/checkout/123" },
+            },
+          }),
+        };
+      });
+
+      const url = await createCheckout({
+        packId: "pack5",
+        email: "test@example.com",
+        userId: "u-1",
+        fetchFn: fetchFn as unknown as typeof fetch,
+      });
+
+      expect(url).toBe("https://test.lemonsqueezy.com/checkout/123");
+      const custom = (capturedBody as { data: { attributes: { checkout_data: { custom: unknown } } } })
+        .data.attributes.checkout_data.custom;
+      // Bug 1 fix: the signed-in user id travels in custom_data so
+      // the webhook can attribute the paid order to the signed-in
+      // account even when Lemon Squeezy reports the Link email.
+      expect(custom).toEqual({ pack_id: "pack5", readings: "5", user_id: "u-1" });
+    });
+
     it("logs structured error and throws when Lemon Squeezy returns non-OK", async () => {
       const fetchFn = vi.fn(async () => ({
         ok: false,

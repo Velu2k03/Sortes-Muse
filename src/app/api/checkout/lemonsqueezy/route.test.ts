@@ -69,7 +69,7 @@ describe("POST /api/checkout/lemonsqueezy", () => {
     mockedGetUserById.mockResolvedValue({ id: "u-1", email: "session@example.com", credits: 0, created_at: "2026-11-05T00:00:00Z" });
     const res = await POST(req({ packId: "pack5", email: "someone-else@example.com" }));
     expect(res.status).toBe(200);
-    expect(mockedCreateCheckout).toHaveBeenCalledWith({ packId: "pack5", email: "session@example.com" });
+    expect(mockedCreateCheckout).toHaveBeenCalledWith({ packId: "pack5", email: "session@example.com", userId: "u-1" });
     expect(mockedCreateCheckout).not.toHaveBeenCalledWith(
       expect.objectContaining({ email: "someone-else@example.com" })
     );
