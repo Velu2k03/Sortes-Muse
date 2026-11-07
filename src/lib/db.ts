@@ -267,6 +267,17 @@ export function createAppPostgres(connectionString: string): postgres.Sql {
     // not the un-wedger — the withDbTimeout cancellation above is
     // what frees a connection held by a never-settling operation.
     queue_timeout: 12,
+    // Pool-unwedging round 2 (2026-11-07): postgres.js 4.1.0 adds
+    // cancel_timeout — when a cancel goes unanswered, the
+    // connection is closed after this many seconds and the pool
+    // reconnects. That is the escape hatch for a backend stuck
+    // mid-protocol-message (state active, wait_event ClientRead):
+    // Postgres defers query-cancel interrupts while reading a
+    // protocol message, so statement_timeout, the idle-in-
+    // transaction timeout, and pool.cancel all fail to free it.
+    // 5 s is the 4.1.0 default; set explicitly so the value is
+    // visible here and survives a future default change.
+    cancel_timeout: 5,
     connection: { statement_timeout: APP_STATEMENT_TIMEOUT_MS },
   });
 }

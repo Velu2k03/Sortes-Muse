@@ -81,7 +81,13 @@ try {
     const text = readFileSync(path.join(dir, file), "utf8");
     await sql.begin(async (tx) => {
       await tx.unsafe(text);
-      await tx`INSERT INTO schema_migrations (version, name) VALUES (${version}, ${name})`;
+      // Race-safe ledger insert (2026-11-07): the test suite runs
+      // the CLI and the in-app runner against the same migrations
+      // test DB in parallel; a version recorded between this
+      // runner's "not applied" check and its INSERT must be a
+      // no-op, not a 23505 failure (the file SQL is idempotent).
+      // Same guard on the in-app insert (src/lib/migrations.ts).
+      await tx`INSERT INTO schema_migrations (version, name) VALUES (${version}, ${name}) ON CONFLICT (version) DO NOTHING`;
     });
     console.log(`  ${version} ${name} — applied`);
     count += 1;

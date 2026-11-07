@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
 import postgres from "postgres";
 import { execFileSync } from "child_process";
+import fs from "fs";
 import path from "path";
 
 /**
@@ -166,6 +167,31 @@ describe.skipIf(SKIP)("migrations on real Postgres (staging only)", () => {
     const user = await db.getUserByEmail("old@example.com");
     expect(user?.credits).toBe(7);
     expect(await db.hasUsedFreeReading("u_old")).toBe(false);
+  });
+
+  it("migration files exempt transaction_timeout (SET LOCAL) alongside the other two timeouts", () => {
+    // Pool-unwedging round 2 (2026-11-07): the database-level
+    // transaction_timeout kills a transaction unconditionally, even
+    // one stuck mid-protocol-message, so a long migration must never
+    // be subject to it mid-DDL. The runner lifts all three timeouts
+    // inside each file transaction; SET LOCAL scopes the lifts to
+    // that transaction only. This is a source-level contract: a
+    // behavioural test would need a slow migration file, and none
+    // exists (the real files apply in milliseconds on a test DB),
+    // so this guards the exemption text instead.
+    const src = fs.readFileSync(
+      path.join(process.cwd(), "src", "lib", "migrations.ts"),
+      "utf8"
+    );
+    expect(src).toContain("SET LOCAL statement_timeout = 0");
+    expect(src).toContain("SET LOCAL idle_in_transaction_session_timeout = 0");
+    // transaction_timeout exists only on PG 17+; the local test DBs
+    // run PG 16, where a bare SET LOCAL errors. The lift therefore
+    // goes through a DO block that swallows exactly undefined_object
+    // (see the comment in migrations.ts) — assert that form, not a
+    // bare SET LOCAL.
+    expect(src).toContain("set_config('transaction_timeout', '0', true)");
+    expect(src).toContain("EXCEPTION WHEN undefined_object");
   });
 
   it("in-app runner REFUSES to apply a pending migration in production", async () => {

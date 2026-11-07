@@ -108,20 +108,46 @@ export async function runMigrations(
       // to app queries on the shared max:1 connection; the CLI
       // (scripts/migrate.mjs) already runs with no timeout, so
       // this keeps the in-app path consistent with it.
-      // Pool-unwedging (2026-11-07): the same exemption covers
-      // idle_in_transaction_session_timeout, which is set at the
-      // database level on staging (and, at release, production)
-      // as the server-side half of the hang fix — a long migration
-      // that pauses between statements inside its transaction
-      // must never be killed mid-DDL by the idle-in-transaction
-      // limit either. SET LOCAL scopes both lifts to this file
-      // transaction only.
+      // Pool-unwedging round 2 (2026-11-07): the same exemption
+      // covers transaction_timeout, which is set at the database
+      // level on staging (and, at release, production) as the
+      // server-side half of the hang fix — PG 17
+      // transaction_timeout kills a transaction unconditionally,
+      // even one stuck mid-protocol-message, so a long migration
+      // must never be subject to it mid-DDL either. SET LOCAL
+      // scopes all three lifts to this file transaction only.
+      // transaction_timeout exists only on PG 17+, and the local
+      // test databases run PG 16, where a bare SET LOCAL errors
+      // with "unrecognized configuration parameter" and breaks
+      // every migration run (proven by the full suite, 2026-11-07:
+      // 3 failed + 23 skipped). So this one lift goes through a
+      // DO block that swallows exactly undefined_object (42704):
+      // on PG 17 set_config applies the lift, on PG 16 it is a
+      // no-op because there is no transaction_timeout to lift.
+      // The other two parameters exist on PG 16, so they keep
+      // the plain SET LOCAL form.
       await tx.unsafe(`SET LOCAL statement_timeout = 0`);
       await tx.unsafe(`SET LOCAL idle_in_transaction_session_timeout = 0`);
+      await tx.unsafe(`DO $$
+        BEGIN
+          PERFORM set_config('transaction_timeout', '0', true);
+        EXCEPTION WHEN undefined_object THEN
+          NULL;
+        END
+      $$`);
       await tx.unsafe(file.sql);
+      // Race-safe ledger insert (2026-11-07): two test files
+      // (migrations-pg + db-statement-timeout) reset and apply
+      // against the same migrations test DB in parallel, so a
+      // second applier can record a version between this runner's
+      // "not applied" check and its INSERT. The file SQL is
+      // idempotent and the version is already recorded, so the
+      // insert is a no-op instead of a 23505 failure. The same
+      // guard is on the CLI's insert (scripts/migrate.mjs).
       await tx`
         INSERT INTO ${tx(SCHEMA_MIGRATIONS_TABLE)} (version, name)
-        VALUES (${file.version}, ${file.name})`;
+        VALUES (${file.version}, ${file.name})
+        ON CONFLICT (version) DO NOTHING`;
     });
     done.push({ version: file.version, name: file.name });
   }
