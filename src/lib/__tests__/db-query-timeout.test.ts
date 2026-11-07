@@ -94,7 +94,7 @@
 //   SORTES_TEST_DATABASE_URL_MIGRATIONS=.../sortes_pgtest_migrations
 //   SORTES_TEST_DATABASE_URL_RLS=.../sortes_pgtest_rls
 // Without SORTES_TEST_DATABASE_URL the file defines no tests.
-import { describe, it, expect, afterEach, beforeAll, afterAll } from "vitest";
+import { describe, it, expect, afterEach, beforeAll, afterAll, vi } from "vitest";
 import net from "node:net";
 import fs from "node:fs";
 import path from "node:path";
@@ -103,9 +103,11 @@ import {
   createAppPostgres,
   APP_STATEMENT_TIMEOUT_MS,
   DB_QUERY_TIMEOUT_MS,
+  DB_INSTANCE_ID,
   withDbTimeout,
   txWithSignal,
 } from "../db";
+import { runMigrations } from "../migrations";
 import { withTimeout } from "../fetch-timeout";
 
 const MONEY_URL = process.env.SORTES_TEST_DATABASE_URL ?? "";
@@ -625,3 +627,200 @@ describeIfPg("cancel_timeout closes the connection on an unanswered cancel (post
     }
   }, 30_000);
 });
+
+// ---------------------------------------------------------------------------
+// Diagnosis round 4 (2026-11-07). See the file header's round-2 note
+// for the production state: one server session stuck mid-protocol-
+// message (state active, wait_event ClientRead, inside a transaction,
+// on the migration-ledger existence check). The gap this round closes:
+// readAppliedVersions sent its queries as RAW pg calls — no
+// withDbTimeout, no signal — while ensureSchema's withTimeout is a
+// bare race that cancels nothing. So a ClientRead stall on that
+// exact query issued no cancel, cancel_timeout never armed, and the
+// max:1 lease was held until the server-side kill or instance
+// recycle. The first test below reproduces that stall on the ledger
+// check with the truncating proxy and proves the lease is released
+// with NO manual intervention. The second proves the new timeout
+// logging: one structured line per event, with the call-site label,
+// the per-instance id, and the backend's eventual error code.
+// ---------------------------------------------------------------------------
+
+describeIfPg("diagnosis round 4: migration-ledger gap + timeout logging", () => {
+  let poolerUp = false;
+  let poolerPlainUp = false;
+
+  beforeAll(async () => {
+    const probe = createAppPostgres(POOLER_URL);
+    try {
+      await withTimeout(probe`SELECT 1 AS one`, 5_000);
+      poolerUp = true;
+    } catch {
+      poolerUp = false;
+      console.log(
+        "pooler rig not reachable at " +
+          POOLER_URL.replace(/:[^:@]+@/, ":***@") +
+          " — round-4 pooler test skipped (see the file header for the rig setup)"
+      );
+    } finally {
+      await probe.end().catch(() => undefined);
+    }
+    const plainProbe = postgres(POOLER_PLAIN_URL, { ssl: false, max: 1 });
+    try {
+      await withTimeout(plainProbe`SELECT 1 AS one`, 5_000);
+      poolerPlainUp = true;
+    } catch {
+      poolerPlainUp = false;
+      console.log(
+        "plaintext pooler rig not reachable at " +
+          POOLER_PLAIN_URL.replace(/:[^:@]+@/, ":***@") +
+          " — round-4 proxy test skipped (see the file header for the rig setup)"
+      );
+    } finally {
+      await plainProbe.end().catch(() => undefined);
+    }
+  });
+
+  it("a stalled migration-ledger check releases the lease with no manual intervention (proxy)", async () => {
+    if (!poolerPlainUp) {
+      console.log("skipped: plaintext pooler rig not reachable");
+      return;
+    }
+    const errors: string[] = [];
+    const spy = vi
+      .spyOn(console, "error")
+      .mockImplementation((...args: unknown[]) => {
+        errors.push(args.map((a) => String(a)).join(" "));
+      });
+    const proxy = await startTruncatingProxy(6434, 0);
+    const sql = plainClient(proxy.port);
+    try {
+      // The first Parse this fresh client sends IS the ledger
+      // existence check (readAppliedVersions' first query), so the
+      // proxy reproduces the exact production stuck state on that
+      // query — the one that used to have no cancellation at all.
+      const t0 = Date.now();
+      await expect(runMigrations(sql)).rejects.toThrow(/timed out/i);
+      const ms = Date.now() - t0;
+      expect(proxy.truncated()).toBe(true);
+      // The deadline is 12 s; allow 1 s of scheduling slack either way.
+      expect(ms).toBeGreaterThanOrEqual(11_000);
+      expect(ms).toBeLessThan(14_000);
+      // The fire line names the call site; the settled line names
+      // the backend's answer. The cancel went unanswered, so 4.1.0
+      // closed the connection after cancel_timeout (5 s): the
+      // top-level code is CONNECTION_DESTROYED with the unanswered
+      // cancel as its cause (proven by the error-chain probe:
+      // CONNECTION_DESTROYED <- cause CANCEL_UNANSWERED).
+      const fire = errors.filter(
+        (l) =>
+          l.includes("event=db-timeout ") &&
+          l.includes("label=migration-ledger")
+      );
+      expect(fire.length).toBeGreaterThanOrEqual(1);
+      expect(fire[0]).toContain(`instance=${DB_INSTANCE_ID}`);
+      const settledDeadline = Date.now() + 8_000;
+      while (Date.now() < settledDeadline) {
+        if (
+          errors.some(
+            (l) =>
+              l.includes("event=db-timeout-settled") &&
+              l.includes("label=migration-ledger")
+          )
+        ) {
+          break;
+        }
+        await new Promise((r) => setTimeout(r, 200));
+      }
+      const settled = errors.filter(
+        (l) =>
+          l.includes("event=db-timeout-settled") &&
+          l.includes("label=migration-ledger")
+      );
+      expect(settled).toHaveLength(1);
+      expect(settled[0]).toContain("code=CONNECTION_DESTROYED");
+      expect(settled[0]).toContain("cause=CANCEL_UNANSWERED");
+      // NO manual release anywhere: the cancel + cancel_timeout
+      // closed the wedged connection and the pool reconnected, so
+      // the pool must serve the next query promptly. The underlying
+      // rejection lands at ~17 s (12 s deadline + 5 s
+      // cancel_timeout); wait past it before asserting recovery.
+      await new Promise((r) => setTimeout(r, 6_000));
+      const t1 = Date.now();
+      const rows = await sql`SELECT 1 AS one`;
+      expect(rows).toEqual([{ one: 1 }]);
+      expect(Date.now() - t1).toBeLessThan(5_000);
+    } finally {
+      spy.mockRestore();
+      await sql.end().catch(() => undefined);
+      await proxy.close();
+    }
+  }, 40_000);
+
+  it("a timed-out query logs one structured line with the label, instance id, and backend error code", async () => {
+    if (!poolerUp) {
+      console.log("skipped: pooler rig not reachable");
+      return;
+    }
+    expect(DB_INSTANCE_ID).toMatch(/^[0-9a-f]{8}$/);
+    const errors: string[] = [];
+    const spy = vi
+      .spyOn(console, "error")
+      .mockImplementation((...args: unknown[]) => {
+        errors.push(args.map((a) => String(a)).join(" "));
+      });
+    const sql = createAppPostgres(POOLER_URL);
+    try {
+      // Through the pooler the server statement_timeout is
+      // discarded, so this 30 s statement can only be stopped by
+      // the client-side cancel — which the backend answers with
+      // 57014 once the statement is killed.
+      const t0 = Date.now();
+      await expect(
+        withDbTimeout(
+          sql`SELECT pg_sleep(30) AS slept`,
+          new AbortController(),
+          "test-log-label"
+        )
+      ).rejects.toThrow(/timed out/i);
+      const ms = Date.now() - t0;
+      expect(ms).toBeGreaterThanOrEqual(11_000);
+      expect(ms).toBeLessThan(14_000);
+      // The fire line names the call site immediately; the settled
+      // line follows once the backend answers the cancel.
+      const fire = errors.filter(
+        (l) =>
+          l.includes("event=db-timeout ") &&
+          l.includes("label=test-log-label")
+      );
+      expect(fire).toHaveLength(1);
+      expect(fire[0]).toContain(`instance=${DB_INSTANCE_ID}`);
+      expect(fire[0]).toContain("cancel=issued");
+      const settledDeadline = Date.now() + 8_000;
+      while (Date.now() < settledDeadline) {
+        if (
+          errors.some(
+            (l) =>
+              l.includes("event=db-timeout-settled") &&
+              l.includes("label=test-log-label")
+          )
+        ) {
+          break;
+        }
+        await new Promise((r) => setTimeout(r, 200));
+      }
+      const settled = errors.filter(
+        (l) =>
+          l.includes("event=db-timeout-settled") &&
+          l.includes("label=test-log-label")
+      );
+      expect(settled).toHaveLength(1);
+      expect(settled[0]).toContain(`instance=${DB_INSTANCE_ID}`);
+      expect(settled[0]).toContain("code=57014");
+    } finally {
+      spy.mockRestore();
+      await sql.end().catch(() => undefined);
+    }
+  }, 40_000);
+});
+
+

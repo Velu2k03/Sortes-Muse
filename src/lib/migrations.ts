@@ -1,5 +1,6 @@
 import type postgres from "postgres";
 import { MIGRATION_FILES } from "./migrations.generated";
+import { withDbTimeout } from "./db";
 
 /**
  * Phase 6: versioned migrations. Replaces the old ensureSchema()
@@ -47,20 +48,49 @@ async function readAppliedVersions(
   // EXISTS stays as the fallback, so that race is still safe (the
   // second CREATE is a no-op, and both sides then read the ledger).
   // No client_min_messages hiding: notices stay visible.
-  const exists = await pg`
+  //
+  // Diagnosis round 4 (2026-11-07): these queries used to be raw
+  // pg template calls with NO cancellation at all — no
+  // withDbTimeout, no signal — while ensureSchema's withTimeout is
+  // a bare race that cancels nothing. So a ClientRead stall on the
+  // ledger check (the exact production state: one server session
+  // stuck mid-message on this existence check) issued no cancel,
+  // cancel_timeout never armed, and the max:1 lease was held until
+  // the server-side kill or instance recycle. Every query here now
+  // runs through withDbTimeout with a fresh controller and the
+  // "migration-ledger" label, the same cancellable path as sql().
+  // NOTE on the import above: db.ts imports runMigrations from
+  // this file, so this is a cycle — it is safe because both modules
+  // only use each other inside function bodies at call time (no
+  // top-level cross-use), and withDbTimeout is a hoisted function
+  // declaration. The full suite (which imports in both orders)
+  // is the regression check.
+  const exists = await withDbTimeout(
+    pg`
     SELECT 1 FROM information_schema.tables
-    WHERE table_schema = 'public' AND table_name = ${SCHEMA_MIGRATIONS_TABLE}`;
+    WHERE table_schema = 'public' AND table_name = ${SCHEMA_MIGRATIONS_TABLE}`,
+    new AbortController(),
+    "migration-ledger"
+  );
   if (exists.length === 0) {
     if (!createLedger) return new Set();
-    await pg.unsafe(`
+    await withDbTimeout(
+      pg.unsafe(`
     CREATE TABLE IF NOT EXISTS ${SCHEMA_MIGRATIONS_TABLE} (
       version TEXT PRIMARY KEY,
       name TEXT NOT NULL,
       applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    )`);
+    )`),
+      new AbortController(),
+      "migration-ledger"
+    );
   }
-  const applied = (await pg`
-    SELECT version FROM ${pg(SCHEMA_MIGRATIONS_TABLE)}`) as Array<{
+  const applied = (await withDbTimeout(
+    pg`
+    SELECT version FROM ${pg(SCHEMA_MIGRATIONS_TABLE)}`,
+    new AbortController(),
+    "migration-ledger"
+  )) as Array<{
     version: string;
   }>;
   return new Set(applied.map((r) => r.version));
