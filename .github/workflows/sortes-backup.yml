@@ -12,17 +12,6 @@ on:
   schedule:
     - cron: '7 19 * * *' # 03:07 Asia/Manila
   workflow_dispatch:
-  # Temporary push trigger (transformation branch only) so the first
-  # backup can run before this file is merged to main: workflow_dispatch
-  # and schedule only fire when the file exists on the default branch.
-  # Remove this push block in the Phase H merge cleanup once the file
-  # is on main and the schedule takes over.
-  push:
-    branches:
-      - sortes-transformation-2026-11-05
-    paths:
-      - .github/workflows/sortes-backup.yml
-      - scripts/backup.mjs
 
 permissions:
   contents: read
