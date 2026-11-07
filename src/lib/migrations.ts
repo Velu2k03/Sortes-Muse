@@ -37,7 +37,21 @@ async function readAppliedVersions(
   pg: postgres.Sql,
   createLedger: boolean
 ): Promise<Set<string>> {
-  if (createLedger) {
+  // Bug 3 (2026-11-07): check existence FIRST and CREATE only when
+  // the table is missing. The old order (CREATE TABLE IF NOT
+  // EXISTS, then check) emitted the 42P07 NOTICE ("relation
+  // schema_migrations already exists, skipping") on EVERY cold
+  // start, because ensureSchema runs this on first DB use per
+  // instance. Now the NOTICE fires only in the rare race where two
+  // instances both see the table missing; CREATE TABLE IF NOT
+  // EXISTS stays as the fallback, so that race is still safe (the
+  // second CREATE is a no-op, and both sides then read the ledger).
+  // No client_min_messages hiding: notices stay visible.
+  const exists = await pg`
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = ${SCHEMA_MIGRATIONS_TABLE}`;
+  if (exists.length === 0) {
+    if (!createLedger) return new Set();
     await pg.unsafe(`
     CREATE TABLE IF NOT EXISTS ${SCHEMA_MIGRATIONS_TABLE} (
       version TEXT PRIMARY KEY,
@@ -45,10 +59,6 @@ async function readAppliedVersions(
       applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )`);
   }
-  const exists = await pg`
-    SELECT 1 FROM information_schema.tables
-    WHERE table_schema = 'public' AND table_name = ${SCHEMA_MIGRATIONS_TABLE}`;
-  if (exists.length === 0) return new Set();
   const applied = (await pg`
     SELECT version FROM ${pg(SCHEMA_MIGRATIONS_TABLE)}`) as Array<{
     version: string;
@@ -88,6 +98,17 @@ export async function runMigrations(
   for (const file of MIGRATION_FILES) {
     if (appliedVersions.has(file.version)) continue;
     await pg.begin(async (tx) => {
+      // Bug 3 (2026-11-07): the app connection carries a 10 s
+      // statement_timeout, but a migration file must never be
+      // killed mid-DDL — 002 runs CREATE INDEX and a row-by-row
+      // repair loop that can legitimately exceed 10 s on a
+      // production-size table, and a timeout inside this
+      // transaction would roll back the file partway. SET LOCAL is
+      // scoped to this transaction only, so the lift cannot leak
+      // to app queries on the shared max:1 connection; the CLI
+      // (scripts/migrate.mjs) already runs with no timeout, so
+      // this keeps the in-app path consistent with it.
+      await tx.unsafe(`SET LOCAL statement_timeout = 0`);
       await tx.unsafe(file.sql);
       await tx`
         INSERT INTO ${tx(SCHEMA_MIGRATIONS_TABLE)} (version, name)

@@ -83,17 +83,58 @@ export function validatePostgresUrl(url: string): void {
 
 if (connectionString) validatePostgresUrl(connectionString);
 
+// Bug 3 (2026-11-07): server-side statement_timeout for the app
+// pool. Verified mechanism (postgres.js 4.0.0, installed):
+// node_modules/postgres/README.md "All Postgres options" lists a
+// `connection: { application_name, ... }` bag of "Other connection
+// parameters, see https://www.postgresql.org/docs/current/runtime-config-client.html",
+// types/index.d.ts declares ConnectionParameters.statement_timeout
+// (number, milliseconds), and src/startup.js sends the bag in the
+// Startup message, so it applies session-wide to every connection
+// the pool opens. Official Postgres docs
+// (postgresql.org/docs/current/runtime-config-client.html):
+// statement_timeout "Abort any statement that takes more than the
+// specified amount of time... If this value is specified without
+// units, it is taken as milliseconds", measured "from the time a
+// command arrives at the server until it is completed", so it
+// covers lock-wait time too. Postgres cancels the statement
+// (error 57014), frees its locks, and the client gets the error —
+// so the single max:1 connection is freed instead of being held
+// until the 300 s function timeout. A client-side race alone would
+// NOT do this: the timed-out query would keep holding the only
+// connection.
+// Value: 10 s. Normal app queries are single indexed SELECTs /
+// short writes that run in milliseconds, so 10 s is generous for
+// the app-query path while failing fast on hangs. Migrations are
+// exempt: runMigrations() sets SET LOCAL statement_timeout = 0
+// inside each file transaction (see migrations.ts), because DDL
+// such as the 002 CREATE INDEX and row-by-row repair can
+// legitimately exceed 10 s and must never be killed mid-file.
+// No separate lock_timeout: the Postgres docs state that with a
+// nonzero statement_timeout it is "rather pointless to set
+// lock_timeout to the same or larger value, since the statement
+// timeout would always trigger first", and lock_timeout "can only
+// occur while waiting for locks" while statement_timeout covers
+// the whole statement including lock wait.
+export const APP_STATEMENT_TIMEOUT_MS = 10_000;
+
+/** The one place the app's Postgres client is constructed, so the
+ * timeout above (and every other pool option) cannot drift between
+ * the app and its tests. */
+export function createAppPostgres(connectionString: string): postgres.Sql {
+  return postgres(connectionString, {
+    ssl: "require",
+    prepare: false,
+    max: 1,
+    idle_timeout: 20,
+    connect_timeout: 10,
+    connection: { statement_timeout: APP_STATEMENT_TIMEOUT_MS },
+  });
+}
+
 // postgres.js template tag returns rows directly; wrap it so the rest of
 // this file keeps its existing `{ rows }` shape from @vercel/postgres.
-const pg = usePostgres
-  ? postgres(connectionString, {
-      ssl: "require",
-      prepare: false,
-      max: 1,
-      idle_timeout: 20,
-      connect_timeout: 10,
-    })
-  : null;
+const pg = usePostgres ? createAppPostgres(connectionString) : null;
 
 async function sql(
   strings: TemplateStringsArray,
