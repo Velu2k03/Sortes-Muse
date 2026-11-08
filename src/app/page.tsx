@@ -87,6 +87,9 @@ export default function Home() {
           <h1 className="mt-6 font-display text-5xl leading-tight text-goldbright sm:text-6xl md:text-7xl">
             Sortes: free tarot reading with AI
           </h1>
+          <p className="mt-6 max-w-xl text-base leading-relaxed text-cream/80">
+            Draw a free daily card, explore 78 meanings.
+          </p>
           {/* AF-034 homepage diet: the Latin etymology line is gone
               (it belongs on /about, which needs Velu's identity copy
               first — AF-036 — so it is dropped, not moved). */}
@@ -99,7 +102,7 @@ export default function Home() {
             </Link>
           </div>
           <p className="mt-5 text-sm text-mist">
-            Your first Quick Insight reading is free. No payment card, no account.
+            No card, no account.
           </p>
           {/* AF-034: the pricing line and the charts line are gone
               from the hero. Pricing lives on /oracles; charts have

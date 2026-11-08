@@ -31,7 +31,8 @@ describe("home page: first-visit comprehension", () => {
   });
 
   it("states what is free", () => {
-    expect(src).toContain("Your first Quick Insight reading is free. No payment card, no account.");
+    // Round-3 sample text for the hero small print.
+    expect(src).toContain("No card, no account.");
     expect(src).toContain("First free · then 1 Oracle");
   });
 
