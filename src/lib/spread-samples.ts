@@ -21,7 +21,7 @@ export const SPREAD_SAMPLES: Record<Spread["slug"], string> = {
   "weekly-outlook":
     "Sample question: \u201CWhat should I watch for this week?\u201D The Focus card picks one thread for the week instead of seven. The Challenge card names the likely friction early, while there is still time to plan around it. The Opportunity card points at the opening that is easy to miss once the week gets busy.",
   "celtic-cross":
-    "Sample question: \u201CWhy does this decision feel so stuck?\u201D The cross lays out the heart of it, what crosses it, and the foundation underneath, the part that was decided long before this week. The staff follows the arc upward: the goal, the deeper root, the advice, the outside influences, and the hopes and fears pulling in opposite directions. The Outcome card closes with a direction, not a guarantee: where this is heading if nothing changes.",
+    "Sample question: \u201CWhy does this decision feel so stuck?\u201D The cross lays out the heart of it, what crosses it, and what lies beneath, the part that was decided long before this week. The staff follows the arc upward: the goal, the deeper root, the advice, the outside influences, and the hopes and fears pulling in opposite directions. The Outcome card closes with a direction, not a guarantee: where this is heading if nothing changes.",
 };
 
 export function spreadSample(slug: string): string {

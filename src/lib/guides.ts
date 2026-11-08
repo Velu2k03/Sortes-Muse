@@ -92,7 +92,7 @@ export const GUIDES: Guide[] = [
       {
         heading: "Why ten cards",
         paragraphs: [
-          "The Celtic Cross is the classic ten-card spread because it shows a situation from ten angles at once: the present, the obstacle, the past, the near future, the goal, the foundation, the advice, the outside world, hopes and fears, and the outcome. It is best for a situation with history and stakes, not for a quick daily check. For a quick check, Sortes offers Quick Insight with one card instead.",
+          "The Celtic Cross is the classic ten-card spread because it shows a situation from ten angles at once: the present, the obstacle, the past, the near future, the goal, what lies beneath, the advice, the outside world, hopes and fears, and the outcome. It is best for a situation with history and stakes, not for a quick daily check. For a quick check, Sortes offers Quick Insight with one card instead.",
           "Read the cross first, then the staff. The first six cards describe the situation itself. The last four cards describe how you meet it, what surrounds it, and where it may head.",
         ],
       },
