@@ -1,0 +1,55 @@
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { authConfigured } from "@/lib/auth";
+
+/**
+ * AF-005: the session-signing secret chain. NEXTAUTH_SECRET was a
+ * legacy alias nothing is supposed to set (docs/ENVIRONMENT.md:
+ * "Not needed — do NOT add"); it must not be able to sign sessions.
+ * SUPABASE_JWT_SECRET stays as the fallback for now: production
+ * still relies on it (docs/PRODUCTION-CHANGE-PLAN.md §7), so
+ * removing it needs Velu to set AUTH_SECRET in production first.
+ */
+describe("authConfigured() secret chain (AF-005)", () => {
+  const KEYS = ["AUTH_SECRET", "NEXTAUTH_SECRET", "SUPABASE_JWT_SECRET"] as const;
+  const saved: Record<string, string | undefined> = {};
+  let savedNodeEnv: string | undefined;
+
+  beforeEach(() => {
+    savedNodeEnv = process.env.NODE_ENV;
+    for (const k of KEYS) {
+      saved[k] = process.env[k];
+      delete process.env[k];
+    }
+    // authConfigured() returns true in non-production regardless of
+    // secrets, so the chain is only observable as production.
+    process.env.NODE_ENV = "production";
+  });
+
+  afterEach(() => {
+    for (const k of KEYS) {
+      if (saved[k] === undefined) delete process.env[k];
+      else process.env[k] = saved[k];
+    }
+    if (savedNodeEnv === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = savedNodeEnv;
+  });
+
+  it("NEXTAUTH_SECRET alone does not configure auth", () => {
+    process.env.NEXTAUTH_SECRET = "legacy-alias-value";
+    expect(authConfigured()).toBe(false);
+  });
+
+  it("SUPABASE_JWT_SECRET alone still configures auth (fallback kept)", () => {
+    process.env.SUPABASE_JWT_SECRET = "supabase-jwt-value";
+    expect(authConfigured()).toBe(true);
+  });
+
+  it("AUTH_SECRET alone configures auth", () => {
+    process.env.AUTH_SECRET = "dedicated-value";
+    expect(authConfigured()).toBe(true);
+  });
+
+  it("no secret at all does not configure auth in production", () => {
+    expect(authConfigured()).toBe(false);
+  });
+});

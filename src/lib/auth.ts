@@ -13,9 +13,15 @@ function secret(): Uint8Array {
   // value is never sent to the browser and never logged; it is only
   // used here to sign Sortes' own session cookie, so password sign-in
   // and the Supabase bridge work in production without a new secret.
+  // AF-005 (2026-11-08): NEXTAUTH_SECRET was removed from this chain
+  // — a legacy alias nothing is supposed to set, it must not be able
+  // to sign sessions. The SUPABASE_JWT_SECRET fallback stays ONLY
+  // because production still relies on it (PRODUCTION-CHANGE-PLAN.md
+  // §7: production has no AUTH_SECRET yet); once Velu sets
+  // AUTH_SECRET in production, delete the second line here and in
+  // authConfigured() below.
   const s =
     process.env.AUTH_SECRET ||
-    process.env.NEXTAUTH_SECRET ||
     process.env.SUPABASE_JWT_SECRET;
   if (!s) {
     if (process.env.NODE_ENV === "production") {
@@ -99,7 +105,6 @@ export async function getSession(): Promise<{ userId: string; email: string } | 
 export function authConfigured(): boolean {
   return Boolean(
     process.env.AUTH_SECRET ||
-      process.env.NEXTAUTH_SECRET ||
       process.env.SUPABASE_JWT_SECRET ||
       process.env.NODE_ENV !== "production"
   );
