@@ -120,6 +120,10 @@ export default function SampleReading() {
             <p className="mt-3 text-xs text-mist">
               Your first Quick Insight reading is free. No card required.
             </p>
+            <p className="mt-1 text-xs text-mist">
+              Real readings are written by AI from your cards, question, and
+              story — 300-600 words, on screen in under a minute.
+            </p>
           </div>
         </motion.div>
       </div>

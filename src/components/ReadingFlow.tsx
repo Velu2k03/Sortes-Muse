@@ -126,6 +126,16 @@ function GateScreen({
         );
       })()}
 
+      <div className="mx-auto mt-8 max-w-xl rounded-2xl border border-gold/15 px-5 py-4 text-left text-sm text-mist">
+        <p className="font-semibold text-cream/90">What your reading includes</p>
+        <ul className="mt-2 list-disc space-y-1 pl-5">
+          <li>300-600 words, shown on screen</li>
+          <li>AI-written from your cards, question, and story</li>
+          <li>Ready in under a minute</li>
+          <li>First follow-up free, then 1 Oracle each, up to 3</li>
+        </ul>
+      </div>
+
       <div className="mt-8">
         {isFreeAvailable ? (
           <>
