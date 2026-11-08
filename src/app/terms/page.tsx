@@ -4,9 +4,9 @@ import { pageSocial } from "@/lib/seo";
 export const metadata = {
   title: "Terms of Service",
   description:
-    "The terms governing your use of Sortes: readings for reflection only, how Oracles and refunds work, and acceptable use of the site.",
+    "The terms governing your use of Sortes: readings for reflection only, how Oracles and refunds work, and acceptable use of the site. Please read before use.",
   alternates: { canonical: "/terms" },
-  ...pageSocial({ title: "Terms of Service", description: "The terms governing your use of Sortes: readings for reflection only, how Oracles and refunds work, and acceptable use of the site.", path: "/terms" }),
+  ...pageSocial({ title: "Terms of Service", description: "The terms governing your use of Sortes: readings for reflection only, how Oracles and refunds work, and acceptable use of the site. Please read before use.", path: "/terms" }),
 };
 
 const UPDATED = "November 7, 2026";
