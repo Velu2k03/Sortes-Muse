@@ -5,6 +5,7 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
+import { freeReadingUsed } from "@/lib/storage";
 import CountUp from "@/components/CountUp";
 import Icon from "@/components/Icon";
 import BranchedMenu, { type BranchedMenuItem } from "@/components/BranchedMenu";
@@ -74,7 +75,7 @@ function syncThemeColor(theme: "dark" | "light"): void {
 }
 
 export default function Header() {
-  const { credits, user, loading, loadError, refresh } = useAuth();
+  const { credits, user, loadError, refresh } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
   // Deep pages highlight their parent section: a reading detail
@@ -91,6 +92,35 @@ export default function Header() {
   // Index into GROUPS of the open desktop popover, or null.
   const [openGroup, setOpenGroup] = useState<number | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
+  // AF-014: a guest with 0 Oracles and an unused free reading sees
+  // "1 free reading" in the pill instead of "0 Oracles". Read on
+  // mount and whenever the tab regains focus or the wallet changes,
+  // so using the free reading elsewhere updates the pill.
+  const [freeAvailable, setFreeAvailable] = useState(false);
+  useEffect(() => {
+    const syncFree = () => {
+      try {
+        setFreeAvailable(!freeReadingUsed());
+      } catch {
+        setFreeAvailable(false);
+      }
+    };
+    syncFree();
+    window.addEventListener("focus", syncFree);
+    window.addEventListener("sortes:credits-changed", syncFree);
+    return () => {
+      window.removeEventListener("focus", syncFree);
+      window.removeEventListener("sortes:credits-changed", syncFree);
+    };
+  }, []);
+  // AF-038: an open desktop dropdown closes on scroll, so it never
+  // covers the page while the visitor reads on.
+  useEffect(() => {
+    if (openGroup === null) return;
+    const onScroll = () => setOpenGroup(null);
+    window.addEventListener("scroll", onScroll, { capture: true });
+    return () => window.removeEventListener("scroll", onScroll, { capture: true });
+  }, [openGroup]);
   const triggerRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const itemRefs = useRef<(HTMLAnchorElement | null)[]>([]);
   // ArrowDown on a trigger opens the group and moves focus into it;
@@ -151,6 +181,8 @@ export default function Header() {
     window.dispatchEvent(new Event("sortes-theme-change"));
   };
   const initial = user?.email ? user.email.charAt(0).toUpperCase() : "?";
+  // AF-014: signed-out, 0 Oracles, free reading still unused.
+  const showFreePill = !user && credits === 0 && freeAvailable;
   // BranchedMenu colours are theme-aware: the panel background is
   // bg-navydeep, which is dark navy in dark theme and light cream in
   // light theme, so hardcoded dark-theme ink fails axe in light
@@ -182,7 +214,11 @@ export default function Header() {
           </span>
         </Link>
 
-        <nav className="hidden items-center gap-4 lg:flex" aria-label="Primary">
+        {/* AF-038: the nav sits above the fixed click-away overlay
+            below (z-30), so clicking another group switches to it
+            directly instead of the overlay swallowing the tap and
+            only closing the open menu. */}
+        <nav className="relative z-40 hidden items-center gap-4 lg:flex" aria-label="Primary">
           {BAR_GROUPS.map((g) => {
             const group = GROUPS[g.index];
             const children = group.children ?? [];
@@ -285,16 +321,27 @@ export default function Header() {
               /oracles; the separate Top up button is gone.
               P0-1: while credits is null the balance is unknown, so
               the pill shows a skeleton, never 0, and the aria-label
-              says loading instead of "0 Oracles". */}
+              says loading instead of "0 Oracles".
+              AF-014: a signed-out visitor with 0 Oracles and an
+              unused free reading sees "1 free reading" and the pill
+              goes to the free Quick Insight, not the top-up page. */}
           <Link
-            href="/oracles"
+            href={showFreePill ? "/spreads/quick-insight" : "/oracles"}
             className="flex items-center gap-1.5 rounded-full border border-gold/40 bg-gold/10 px-2.5 py-1.5 text-sm font-semibold text-goldbright"
-            aria-label={credits === null ? "Oracle balance loading. Top up." : `Oracle balance: ${credits} Oracles. Top up.`}
-            title="Your Oracles — top up"
+            aria-label={
+              credits === null
+                ? "Oracle balance loading. Top up."
+                : showFreePill
+                  ? "1 free reading available. Start your free Quick Insight reading."
+                  : `Oracle balance: ${credits} Oracles. Top up.`
+            }
+            title={showFreePill ? "Your first Quick Insight reading is free" : "Your Oracles — top up"}
           >
             <Icon name="coin" size={18} />
             {credits === null ? (
               <span className="inline-block h-4 w-6 animate-pulse rounded bg-gold/30" aria-hidden="true" />
+            ) : showFreePill ? (
+              <span>1 free reading</span>
             ) : (
               <span className="num">
                 <CountUp value={credits} />
@@ -305,8 +352,12 @@ export default function Header() {
                 aria-label still reads the full balance. The buttons
                 keep p-3 (44px touch targets, asserted by charts-check)
                 — the pill is the flexible part, not the buttons. */}
-            <span className="hidden min-[420px]:inline">Oracles</span>
-            <span className="hidden border-l border-gold/40 pl-1.5 sm:inline">Top up</span>
+            {!showFreePill && (
+              <>
+                <span className="hidden min-[420px]:inline">Oracles</span>
+                <span className="hidden border-l border-gold/40 pl-1.5 sm:inline">Top up</span>
+              </>
+            )}
           </Link>
           {loadError && (
             <button
@@ -319,24 +370,28 @@ export default function Header() {
               Retry
             </button>
           )}
-          {!loading &&
-            (user ? (
-              <Link
-                href="/account"
-                title={user.email}
-                aria-label={`Account: ${user.email}`}
-                className="hidden h-11 w-11 items-center justify-center rounded-full border border-gold/50 bg-gold/15 font-display text-sm font-bold text-goldbright transition hover:border-goldbright lg:flex"
-              >
-                {initial}
-              </Link>
-            ) : (
-              <Link
-                href="/account"
-                className="hidden rounded-full px-4 py-1.5 text-sm font-semibold text-cream/80 transition hover:text-goldbright lg:inline-block"
-              >
-                Sign in
-              </Link>
-            ))}
+          {/* AF-012: the Sign in link renders whenever there is no
+              signed-in user, including while the session is still
+              loading, so it is in the server HTML instead of only
+              appearing after hydration. A signed-in visitor briefly
+              sees it until the session resolves to their avatar. */}
+          {user ? (
+            <Link
+              href="/account"
+              title={user.email}
+              aria-label={`Account: ${user.email}`}
+              className="hidden h-11 w-11 items-center justify-center rounded-full border border-gold/50 bg-gold/15 font-display text-sm font-bold text-goldbright transition hover:border-goldbright lg:flex"
+            >
+              {initial}
+            </Link>
+          ) : (
+            <Link
+              href="/account"
+              className="hidden rounded-full px-4 py-1.5 text-sm font-semibold text-cream/80 transition hover:text-goldbright lg:inline-block"
+            >
+              Sign in
+            </Link>
+          )}
           <button
             type="button"
             className="rounded-lg p-3 text-cream/80 lg:hidden"

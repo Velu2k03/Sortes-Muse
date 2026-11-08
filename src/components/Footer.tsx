@@ -40,6 +40,7 @@ export default function Footer() {
           <p className="text-xs uppercase tracking-[0.2em] text-gold">Trust</p>
           <ul className="mt-3 grid grid-cols-2 gap-x-6 gap-y-2 text-sm md:block md:space-y-2">
             <li><Link href="/about" className="text-cream/80 hover:text-goldbright">About Sortes</Link></li>
+            <li><Link href="/account" className="text-cream/80 hover:text-goldbright">Sign in</Link></li>
             <li><Link href="/methodology" className="text-cream/80 hover:text-goldbright">Methodology</Link></li>
             <li><Link href="/privacy" className="text-cream/80 hover:text-goldbright">Privacy Policy</Link></li>
             <li><Link href="/terms" className="text-cream/80 hover:text-goldbright">Terms of Service</Link></li>
