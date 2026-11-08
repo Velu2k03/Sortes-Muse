@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { pageSocial } from "@/lib/seo";
-import { APP_NAME, CONTACT_EMAIL } from "@/lib/site";
 
 export const metadata = {
   title: "About",
@@ -21,8 +20,13 @@ export default function AboutPage() {
         <section>
           <h2 className="font-display text-3xl text-goldbright">Who runs Sortes</h2>
           <p className="mt-3">
-            {APP_NAME} is run by Resonant Atlas. It is a tarot reading web app.
-            Contact is {CONTACT_EMAIL}.
+            Sortes is run by Resonant Atlas. Founder: Velu Murugan. Contact: support@resonantatlas.com. Location: Philippines.
+          </p>
+        </section>
+        <section>
+          <h2 className="font-display text-3xl text-goldbright">Why I built it</h2>
+          <p className="mt-3">
+            My Filipino friend gave me the idea for this. Their tarot business runs an intake flow: the client picks a category, tells their story, and the cards answer. I wanted it personal: the client says their story and the cards speak to it, instead of plain card meanings. The readings are written by free AI models through OpenRouter. Readings are for reflection and perspective only, never guaranteed predictions.
           </p>
         </section>
         <section>
