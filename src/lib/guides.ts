@@ -100,7 +100,7 @@ export const GUIDES: Guide[] = [
         heading: "The ten positions in Sortes",
         paragraphs: [
           "Present: the heart of the matter, where you stand right now. Challenge: what crosses you, the obstacle or tension in the way. Past: the foundation behind you, what shaped this moment. Future: what is approaching, not a fixed fate but the next turn of the path.",
-          "Above: your goal or best outcome, what you are aiming at whether you have named it or not. Below: the deeper foundation, the root cause or unconscious drive under the situation. Advice: how to approach it, the attitude or action the spread suggests.",
+          "Above: your goal or best outcome, what you are aiming at whether you have named it or not. Below: what lies beneath, out of sight — the root cause or unconscious drive under the situation. Advice: how to approach it, the attitude or action the spread suggests.",
           "External: outside influences, other people, timing, or circumstances you do not control. Hopes and fears: what you hope for or dread, and how those two often point at the same thing. Outcome: where this is heading if things continue as they are, which is a direction to work with, not a sentence to accept.",
         ],
       },

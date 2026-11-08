@@ -110,7 +110,7 @@ export default function SampleReading({ collapsed = false }: { collapsed?: boole
           Get my reading · 1 Oracle
         </Link>
         <p className="mt-3 text-xs text-mist">
-          Your first Quick Insight reading is free. No card required.
+          Your first Quick Insight reading is free.
         </p>
         <p className="mt-1 text-xs text-mist">
           Real readings are written by AI from your cards, question, and

@@ -57,7 +57,7 @@ export const FAQS = [
   },
   {
     q: "Can I get a refund?",
-    a: "Unused Oracle packs may be refunded within 14 days of purchase. Readings that have already been delivered are non-refundable. See the Terms page for the full wording.",
+    a: "Unused Oracle packs may be refunded within 14 days of purchase. Readings that have already been delivered or used are non-refundable. See the Terms page for the full wording.",
   },
   {
     q: "How do I pay for Oracles?",
@@ -69,7 +69,7 @@ export const FAQS = [
   },
   {
     q: "What does a reading include?",
-    a: "Each reading is a written interpretation of your cards (or chart) around your question, about 300 to 600 words on screen. It includes what stands out, the tension and opportunity, what you may be overlooking, one practical step, and one reflection question. A reading costs 1 Oracle, and your first Quick Insight is free.",
+    a: "Each reading is a written interpretation of your cards (or chart) around your question, about 300 to 600 words, shown on screen in under a minute and saved to your journal. It includes what stands out, the tension and opportunity, what you may be overlooking, one practical step, and one reflection question. A reading costs 1 Oracle, and your first Quick Insight is free. Your first follow-up question for each reading is free, then each follow-up costs 1 Oracle, up to 3 per reading.",
   },
   {
     q: "How do I delete my data?",
@@ -86,14 +86,6 @@ export const FAQS = [
   {
     q: "How do I pay?",
     a: "You can pay by card, PayPal, Apple Pay, or Google Pay through Lemon Squeezy secure checkout. Checkout shows the full amount, including any applicable taxes or fees, before you pay.",
-  },
-  {
-    q: "Can I get a refund?",
-    a: "Unused Oracle packs can be refunded within 14 days of purchase. Readings that have already been used are not refundable.",
-  },
-  {
-    q: "What does a reading include?",
-    a: "A reading is a 300-600 word interpretation written by AI from your cards, your question, and your story. It is shown on screen in under a minute and saved to your journal. Your first follow-up question for each reading is free, then each follow-up costs 1 Oracle, up to 3 per reading.",
   },
 ];
 
