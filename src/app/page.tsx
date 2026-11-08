@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
+import { useCanHide } from "@/lib/use-mounted";
 import { MAJORS, cardSlug, getCard } from "@/lib/cards";
 import { SPREADS } from "@/lib/tarot";
 import { TAGLINE } from "@/lib/site";
@@ -21,12 +22,14 @@ import { Orb } from "@/components/ReactBitsNew";
 // hero background, not a competing gimmick, and it is static under
 // prefers-reduced-motion. MotionConfig reducedMotion="user" in the
 // MotionProvider still governs the framer-motion reveals below.
-const fadeUp = {
-  initial: { opacity: 0, y: 24 },
+// AF-033: the hidden initial state is applied only after mount and never
+// under reduced motion, so server HTML (and no-JS) renders visible.
+const fadeUpFor = (hide: boolean) => ({
+  initial: hide ? { opacity: 0, y: 24 } : (false as const),
   whileInView: { opacity: 1, y: 0 },
   viewport: { once: true, margin: "-60px" },
   transition: { duration: 0.6, ease: "easeOut" as const },
-};
+});
 
 // Phase 4C (4.6): the orbit carousel is replaced by a static grid of
 // the same six Major Arcana cards, each linking to its own card page.
@@ -40,6 +43,9 @@ const EXPLORE_CARD_IDS = [
 ];
 
 export default function Home() {
+  const hide = useCanHide();
+  const fadeUp = fadeUpFor(hide);
+  const revealKey = hide ? "reveal" : "static";
   const fanCards = MAJORS.slice(0, 5);
   const middle = (fanCards.length - 1) / 2;
   return (
@@ -218,7 +224,7 @@ export default function Home() {
       {/* SPREADS PREVIEW */}
       <section className="border-y border-gold/10 bg-navydeep/40 py-16">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <motion.div {...fadeUp} className="text-center">
+          <motion.div key={revealKey} {...fadeUp} className="text-center">
             <h2 className="font-display text-4xl text-goldbright sm:text-5xl">
               All spreads, one Oracle each
             </h2>
@@ -326,7 +332,7 @@ export default function Home() {
 
       {/* WHAT IS TAROT */}
       <section className="mx-auto max-w-4xl px-4 py-16 sm:px-6">
-        <motion.div {...fadeUp}>
+        <motion.div key={revealKey} {...fadeUp}>
           <div className="rule-gold mx-auto w-24" />
           <h2 className="mt-6 text-center font-display text-4xl text-goldbright sm:text-5xl">
             What is tarot?
@@ -336,7 +342,7 @@ export default function Home() {
           </p>
         </motion.div>
 
-        <motion.div {...fadeUp} className="mt-12 grid gap-4 sm:grid-cols-3">
+        <motion.div key={revealKey} {...fadeUp} className="mt-12 grid gap-4 sm:grid-cols-3">
           {[
             {
               title: "Draw",
@@ -371,7 +377,7 @@ export default function Home() {
 
       {/* DAILY CARD TEASER */}
       <section className="mx-auto max-w-4xl px-4 py-16 text-center sm:px-6">
-        <motion.div {...fadeUp}>
+        <motion.div key={revealKey} {...fadeUp}>
           <p className="text-xs uppercase tracking-[0.35em] text-gold">
             A daily ritual
           </p>

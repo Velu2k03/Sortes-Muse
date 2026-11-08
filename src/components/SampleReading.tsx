@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
+import { useCanHide } from "@/lib/use-mounted";
 import { getCard } from "@/lib/cards";
 
 const SAMPLE_CARDS = [
@@ -37,11 +38,14 @@ What would change if you trusted that the steadiness of The Star is already your
  * and structure are pinned in sample-reading.test.ts.
  */
 export default function SampleReading() {
+  const hide = useCanHide();
+  const revealKey = hide ? "reveal" : "static";
   return (
     <section className="border-y border-gold/10 bg-navydeep/40 py-16">
       <div className="mx-auto max-w-4xl px-4 sm:px-6">
         <motion.div
-          initial={{ opacity: 0, y: 24 }}
+          key={`${revealKey}-a`}
+          initial={hide ? { opacity: 0, y: 24 } : false}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-60px" }}
           transition={{ duration: 0.6, ease: "easeOut" }}
@@ -60,7 +64,8 @@ export default function SampleReading() {
         </motion.div>
 
         <motion.div
-          initial={{ opacity: 0, y: 24 }}
+          key={`${revealKey}-b`}
+          initial={hide ? { opacity: 0, y: 24 } : false}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-60px" }}
           transition={{ duration: 0.6, ease: "easeOut", delay: 0.1 }}

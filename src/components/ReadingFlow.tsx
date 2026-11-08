@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
+import { useCanHide } from "@/lib/use-mounted";
 import { getSpread } from "@/lib/tarot";
 import type { Spread } from "@/lib/types";
 import { freeReadingUsed } from "@/lib/storage";
@@ -74,9 +75,11 @@ function GateScreen({
   onTopUp: () => void;
 }) {
   const router = useRouter();
+  const hide = useCanHide();
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      key={hide ? "reveal" : "static"}
+      initial={hide ? { opacity: 0, y: 20 } : false}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0 }}
       className="mx-auto max-w-2xl text-center"

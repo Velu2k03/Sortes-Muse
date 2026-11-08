@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { useCanHide } from "@/lib/use-mounted";
 import { SPREADS } from "@/lib/tarot";
 import { SPREAD_SAMPLES } from "@/lib/spread-samples";
 import SpreadDiagram from "@/components/SpreadDiagram";
@@ -21,6 +22,7 @@ import { freeReadingUsed } from "@/lib/storage";
  * "Begin reading" and the gate offers the personalized intake.
  */
 export default function SpreadsPage() {
+  const hide = useCanHide();
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   // Deep UX Batch C: question picker. A newcomer should not have to
   // self-diagnose a spread name; they pick what they are asking
@@ -113,8 +115,8 @@ export default function SpreadsPage() {
           return (
           <motion.article
             id={`spread-${s.slug}`}
-            key={s.slug}
-            initial={{ opacity: 0, y: 24 }}
+            key={`${s.slug}-${hide ? "reveal" : "static"}`}
+            initial={hide ? { opacity: 0, y: 24 } : false}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.05, duration: 0.4 }}
             className={`relative flex flex-col overflow-hidden rounded-3xl border bg-panel/70 ${pickedSlug === s.slug ? "border-gold shadow-[0_0_0_2px_rgba(212,175,55,0.6)]" : "border-gold/25"}`}
