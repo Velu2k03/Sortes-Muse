@@ -268,6 +268,21 @@ export default function ReadingDetail({ id }: { id: string }) {
         </p>
       )}
 
+      {!user && (
+        <section className="mx-auto mt-6 max-w-xl rounded-2xl border border-gold/40 bg-panel/70 p-5 text-center">
+          <h2 className="font-display text-xl text-goldbright">Keep this reading</h2>
+          <p className="mt-2 text-sm text-cream/80">
+            Right now this reading lives only on this device. Sign in to save it to your account, so it stays in your Journal and future readings are kept there too.
+          </p>
+          <Link
+            href="/account"
+            className="mt-4 inline-block rounded-full bg-gold px-5 py-3 text-sm font-semibold text-ink hover:bg-goldbright"
+          >
+            Sign in to save this reading
+          </Link>
+        </section>
+      )}
+
       {/* Personal Phase 1: at a glance, computed from this draw only.
           No AI, no invented story: dominant suit and tension pair are
           deterministic facts about the cards drawn, shown here so the
