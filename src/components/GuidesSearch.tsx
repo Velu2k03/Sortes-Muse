@@ -48,7 +48,7 @@ export default function GuidesSearch({
             href={`/guides/${g.slug}`}
             className="block rounded-3xl border border-gold/25 bg-panel/70 p-6 hover:border-gold/60"
           >
-            <h2 className="font-display text-3xl text-goldbright">{g.title}</h2>
+            <h2 className="font-display text-3xl text-balance text-goldbright">{g.title}</h2>
             <p className="mt-2 text-sm leading-relaxed text-cream/75">{g.description}</p>
             <span className="mt-3 inline-block text-sm font-semibold text-goldbright underline underline-offset-4">
               Read the guide<span className="sr-only">: {g.title}</span>
