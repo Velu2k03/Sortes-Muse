@@ -90,9 +90,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       suppressHydrationWarning
     >
       <body className="flex min-h-full flex-col font-body">
-        {/* Theme before paint: default dark, localStorage
-            sortes-theme wins. Runs before React hydration so the
-            first paint is already the saved theme, not a light flash.
+        {/* Theme before paint: a saved choice (localStorage
+            sortes-theme) wins; with no saved choice the OS
+            prefers-color-scheme decides (AF-031). Runs before React
+            hydration so the first paint is already the right theme,
+            not a light flash.
             AF-093: the old <Script src="/theme.js"
             beforeInteractive> only preloaded theme.js — the served
             HTML had the preload link but no script tag, so the theme
@@ -102,7 +104,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <script
           dangerouslySetInnerHTML={{
             __html:
-              "try{var t=localStorage.getItem('sortes-theme');var theme=(t==='light'||t==='dark')?t:'dark';document.documentElement.dataset.theme=theme;var m=document.querySelector('meta[name=\"theme-color\"]');if(m)m.setAttribute('content',theme==='dark'?'#0a0e1a':'#fdf9ee');}catch{document.documentElement.dataset.theme='dark';}",
+              "try{var t=localStorage.getItem('sortes-theme');var theme=(t==='light'||t==='dark')?t:(window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');document.documentElement.dataset.theme=theme;var m=document.querySelector('meta[name=\"theme-color\"]');if(m)m.setAttribute('content',theme==='dark'?'#0a0e1a':'#fdf9ee');}catch{document.documentElement.dataset.theme='dark';}",
           }}
         />
         {/* Lightsite fix V12: Organization and WebSite JSON-LD, so

@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { useCanHide } from "@/lib/use-mounted";
 import { getSpread, SPREADS } from "@/lib/tarot";
+import { spreadSample } from "@/lib/spread-samples";
 import type { Spread } from "@/lib/types";
 import { freeReadingUsed } from "@/lib/storage";
 import { useAuth } from "@/components/AuthProvider";
@@ -120,6 +121,24 @@ function GateScreen({
           </ol>
         </div>
       </div>
+
+      {/* AF-077: the per-spread sample reading already exists in
+          src/lib/spread-samples.ts and was shown only on the /spreads
+          index. Showing it here adds the page's unique substance
+          from existing copy — no new text invented. */}
+      <details className="mx-auto mt-6 max-w-xl text-left">
+        <summary className="cursor-pointer text-sm font-semibold text-goldbright">
+          See a sample reading
+        </summary>
+        <div className="mt-2 space-y-2">
+          <p className="text-xs italic text-mist">
+            Sample, not your reading. Your reading uses your question and your cards.
+          </p>
+          <p className="text-sm leading-relaxed text-cream/80">
+            {spreadSample(spread.slug)}
+          </p>
+        </div>
+      </details>
 
       {(() => {
         const guideBySpread: Record<string, string> = {

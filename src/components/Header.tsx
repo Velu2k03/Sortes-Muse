@@ -145,11 +145,13 @@ export default function Header() {
     itemRefs.current = [];
     setOpenGroup((v) => (v === index ? null : index));
   };
-  // Theme default is dark, persisted in
-  // localStorage under sortes-theme, layout's inline script already
-  // set data-theme before paint so there is no light flash. The toggle
-  // here only flips the stored value and the attribute, and tells the
-  // theme-aware Western wheel to re-render via a window event.
+  // Theme: a saved choice persists in
+  // localStorage under sortes-theme; with no saved choice the OS
+  // prefers-color-scheme decides (AF-031), and layout's inline
+  // script already set data-theme before paint so there is no
+  // flash. The toggle here only flips the stored value and the
+  // attribute, and tells the theme-aware Western wheel to re-render
+  // via a window event.
   // Phase 2, 2.5: the toggle also keeps the meta theme-color in step
   // with the active theme (dark #0a0e1a, light #fdf9ee), so the
   // browser chrome matches the page; theme.js does the same before
@@ -163,7 +165,22 @@ export default function Header() {
           setTheme(saved);
           syncThemeColor(saved);
         });
+        return;
       }
+      // AF-031: no saved choice — follow the OS, and keep following
+      // it until the user picks a theme. toggleTheme stores a choice,
+      // and the guard in applyOs then stops OS changes overriding it.
+      const mq = window.matchMedia("(prefers-color-scheme: light)");
+      const applyOs = () => {
+        if (localStorage.getItem("sortes-theme")) return;
+        const os: "dark" | "light" = mq.matches ? "light" : "dark";
+        setTheme(os);
+        document.documentElement.dataset.theme = os;
+        syncThemeColor(os);
+      };
+      applyOs();
+      mq.addEventListener("change", applyOs);
+      return () => mq.removeEventListener("change", applyOs);
     } catch {
       // Private mode or blocked storage: stay dark, do not crash.
     }

@@ -21,8 +21,9 @@
    so overriding those variables under [data-theme="light"] flips every
    page that already uses bg-ink, bg-panel, text-cream, text-mist,
    border-gold, and so on, without rewriting every class and without
-   touching chart math, pricing, or privacy. Default is dark:
-   layout sets data-theme="dark" unless localStorage says "light".
+   touching chart math, pricing, or privacy. No saved choice: the
+   layout follows the OS prefers-color-scheme (AF-031); a saved
+   choice wins.
    Light tokens, checked for AA on their own backgrounds (normal text
    needs 4.5:1): paper #fdf9ee with ink text #1c1a15 is about 15:1;
    dark gold #8a6d0a on paper is about 5.6:1; darker goldbright #7c5e00
@@ -328,21 +329,30 @@ html[data-theme="light"] .alert-error-text {
   height: 1px;
 }
 
-/* Ambient drifting nebula glows (gold + violet) for hero sections */
-@media (prefers-reduced-motion: no-preference) {
-  .nebula {
-    animation: nebula-drift 22s ease-in-out infinite;
-    will-change: transform;
-  }
-  @keyframes nebula-drift {
-    0%,
-    100% {
-      transform: translate(0, 0) scale(1);
-    }
-    50% {
-      transform: translate(5%, -4%) scale(1.1);
-    }
-  }
+/* Homepage hero scrim (AF-031): a dark gradient in dark theme. In
+   light theme a paper wash that lightens toward full paper, so the
+   dark hero image does not turn into a muddy grey band, while the
+   dark hero copy stays readable. The hero image itself is dimmed
+   in light theme (.hero-img), so the moon shows faintly over paper
+   instead of greyed-out. */
+.hero-scrim {
+  background: linear-gradient(
+    to bottom,
+    rgb(10 14 26 / 0.6),
+    rgb(10 14 26 / 0.75),
+    rgb(10 14 26)
+  );
+}
+html[data-theme="light"] .hero-scrim {
+  background: linear-gradient(
+    to bottom,
+    rgb(253 249 238 / 0.25),
+    rgb(253 249 238 / 0.45),
+    rgb(253 249 238)
+  );
+}
+html[data-theme="light"] .hero-img {
+  opacity: 0.3;
 }
 
 /* Batch 9: native pickers that remain (birth time) must follow the
