@@ -170,7 +170,7 @@ export default function CreditsPage() {
       </div>
 
       <p className="mx-auto mt-6 max-w-md text-center text-xs leading-relaxed text-mist">
-        Secure checkout is powered by Lemon Squeezy.
+        Secure checkout is powered by Lemon Squeezy. There are no hidden fees.
       </p>
 
       {/* Phase E (item 9): the same full sample reading as the home
