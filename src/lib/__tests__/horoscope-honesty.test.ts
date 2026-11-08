@@ -52,10 +52,14 @@ describe("horoscope honesty: content changes with the date", () => {
 
 describe("horoscope honesty: the page labels it as general reflection", () => {
   it("says general reflection, free, unsaved, and not a prediction", () => {
+    // AF-088: page.tsx is now a thin server component; the label lives
+    // in HoroscopeClient.tsx and renders in the SSR HTML.
     const src = readFileSync(path.resolve(process.cwd(), "src/app/horoscope/page.tsx"), "utf8").replace(/\s+/g, " ");
-    expect(src).toContain("general reflection");
-    expect(src).toContain("Free, unsaved");
-    expect(src).toContain("Nothing is charged, and nothing is saved");
+    const client = readFileSync(path.resolve(process.cwd(), "src/app/horoscope/HoroscopeClient.tsx"), "utf8").replace(/\s+/g, " ");
+    expect(client).toContain("general reflection");
+    expect(client).toContain("Free, unsaved");
+    // AF-088 removed the defensive "Nothing is charged" copy.
+    expect(client).not.toContain("Nothing is charged, and nothing is saved");
   });
 
   it("shows no lucky colour or lucky number gimmick anywhere on the page", () => {
