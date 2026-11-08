@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Cormorant_Garamond, Inter } from "next/font/google";
 import Script from "next/script";
+import { headers } from "next/headers";
 import "./globals.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -81,7 +82,10 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  // Per-request CSP nonce minted in src/proxy.ts. Reading headers()
+  // makes every page dynamically rendered, which the nonce needs.
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
   const plausibleDomain = process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN;
   return (
     <html
@@ -99,9 +103,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             beforeInteractive> only preloaded theme.js — the served
             HTML had the preload link but no script tag, so the theme
             was not applied before paint. The 315 bytes are inlined
-            here instead (CSP allows 'unsafe-inline'), and
-            public/theme.js is deleted. */}
+            here instead, and public/theme.js is deleted. It carries
+            the per-request CSP nonce (src/proxy.ts). */}
         <script
+          nonce={nonce}
           dangerouslySetInnerHTML={{
             __html:
               "try{var t=localStorage.getItem('sortes-theme');var theme=(t==='light'||t==='dark')?t:(window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');document.documentElement.dataset.theme=theme;var m=document.querySelector('meta[name=\"theme-color\"]');if(m)m.setAttribute('content',theme==='dark'?'#0a0e1a':'#fdf9ee');}catch{document.documentElement.dataset.theme='dark';}",
@@ -111,6 +116,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             search and AI tools know who runs Sortes. Static constants
             only, no user input, no social links invented. */}
         <script
+          nonce={nonce}
           type="application/ld+json"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
@@ -150,6 +156,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             data-domain={plausibleDomain}
             src="https://plausible.io/js/script.js"
             strategy="afterInteractive"
+            nonce={nonce}
           />
         )}
       </body>
