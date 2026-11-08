@@ -4,7 +4,8 @@ import { useEffect } from "react";
 
 /**
  * Registers the service worker in production. It precaches the 78 card
- * images + card back, so readings keep working offline after the first visit.
+ * images + card back, and the /daily, /deck, and /birth-card pages,
+ * so readings keep working offline after the first visit.
  */
 export default function ServiceWorkerRegister() {
   useEffect(() => {

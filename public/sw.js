@@ -84,12 +84,16 @@ const PRECACHE = [
   "/brand/logo.webp",
   "/icons/icon-192.webp"
 ];
+const PAGES = ["/daily","/deck","/birth-card"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches
-      .open(CARD_CACHE)
-      .then((cache) => cache.addAll(PRECACHE))
+    Promise.all([
+      caches.open(CARD_CACHE).then((cache) => cache.addAll(PRECACHE)),
+      // Pages go in STATIC_CACHE: networkFirst() only falls back to
+      // that cache offline, so CARD_CACHE would never serve them.
+      caches.open(STATIC_CACHE).then((cache) => cache.addAll(PAGES)),
+    ])
       .then(() => self.skipWaiting())
       .catch(() => self.skipWaiting())
   );

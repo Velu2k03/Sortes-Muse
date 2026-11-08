@@ -22,7 +22,8 @@ export default function GuidesPage() {
         The deck, how to ask a question, the Celtic Cross, topic spreads, and how tarot differs from a birth chart. Free, no account needed.
       </p>
       <div className="mt-10">
-        <GuidesSearch guides={GUIDES} />
+        {/* AF-083: search stays hidden until there are >9 guides (5 now). */}
+        <GuidesSearch guides={GUIDES} showSearch={GUIDES.length > 9} />
       </div>
       <p className="mt-10 text-sm text-mist">
         Or try it instead:
