@@ -13,6 +13,10 @@ export interface IntakeCategory {
   name: string;
   tagline: string;
   fields: IntakeField[];
+  // AF-046: example questions shown as tap-to-start chips on the
+  // form step. Per category, so the Love form never shows a career
+  // chip (the old hardcoded set did).
+  examples: string[];
 }
 
 /**
@@ -25,11 +29,11 @@ export const INTAKE_CATEGORIES: IntakeCategory[] = [
     name: "Love and Relationships",
     tagline: "Relationships and connection.",
     fields: [
-      { key: "yourName", label: "Your first name", type: "text", placeholder: "Maya", required: true },
-      { key: "partnerName", label: "Their first name", type: "text", placeholder: "Alex", required: true },
+      { key: "yourName", label: "Your first name", type: "text", placeholder: "e.g. Maya", required: true },
+      { key: "partnerName", label: "Their first name", type: "text", placeholder: "e.g. Alex", required: true },
       { key: "nickname", label: "A nickname for them (optional)", type: "text", placeholder: "How you fondly refer to them" },
-      { key: "yourAge", label: "Your age (optional)", type: "text", placeholder: "28" },
-      { key: "partnerAge", label: "Their age (optional)", type: "text", placeholder: "30" },
+      { key: "yourAge", label: "Your age (optional)", type: "text", placeholder: "e.g. 28" },
+      { key: "partnerAge", label: "Their age (optional)", type: "text", placeholder: "e.g. 30" },
       {
         key: "yourBirthday", label: "Your birthday (optional)", type: "date",
         hint: "Stays on your device. Never sent to the AI.",
@@ -43,6 +47,11 @@ export const INTAKE_CATEGORIES: IntakeCategory[] = [
         options: ["Single", "Dating", "In a relationship", "Engaged", "Married", "Separated", "Divorced", "It's complicated", "Other"],
       },
       { key: "situation", label: "Current situation", type: "textarea", required: true, placeholder: "Where do things stand between you right now?" },
+    ],
+    examples: [
+      "What is blocking my relationship right now?",
+      "What does my partner need from me that I am not seeing?",
+      "Should I tell them how I really feel?",
     ],
   },
   {
@@ -58,6 +67,11 @@ export const INTAKE_CATEGORIES: IntakeCategory[] = [
       { key: "dreamGoal", label: "Dream goal", type: "text", placeholder: "Where do you want to be?", required: true },
       { key: "challenge", label: "The challenge", type: "textarea", required: true, placeholder: "What is standing in the way?" },
     ],
+    examples: [
+      "Should I take the new role or stay where I am?",
+      "What is holding back my next step at work?",
+      "Is it time to change direction?",
+    ],
   },
   {
     key: "finances",
@@ -68,6 +82,11 @@ export const INTAKE_CATEGORIES: IntakeCategory[] = [
       { key: "goal", label: "Financial goal", type: "text", placeholder: "What are you working toward?", required: true },
       { key: "struggle", label: "The struggle", type: "textarea", required: true, placeholder: "What feels hard about money right now?" },
       { key: "desiredOutcome", label: "Desired outcome", type: "text", placeholder: "What would good look like?", required: true },
+    ],
+    examples: [
+      "What should I do about my debt?",
+      "How can I make my money last the month?",
+      "What is stopping me from saving?",
     ],
   },
   {
@@ -82,6 +101,11 @@ export const INTAKE_CATEGORIES: IntakeCategory[] = [
       { key: "course", label: "Course or field of study", type: "text", placeholder: "e.g. Biology, Computer Science", required: true },
       { key: "challenges", label: "Challenges", type: "textarea", required: true, placeholder: "What is difficult about your studies right now?" },
     ],
+    examples: [
+      "How do I get through my exams?",
+      "What should I focus on in my studies?",
+      "Is this course the right one for me?",
+    ],
   },
   {
     key: "health",
@@ -91,6 +115,11 @@ export const INTAKE_CATEGORIES: IntakeCategory[] = [
       { key: "concern", label: "Wellness concern", type: "text", placeholder: "e.g. Sleep, stress, energy", required: true },
       { key: "currentSituation", label: "Current situation", type: "textarea", required: true, placeholder: "How have you been feeling lately?" },
       { key: "desiredOutcome", label: "Desired outcome", type: "text", placeholder: "What would feeling well look like?", required: true },
+    ],
+    examples: [
+      "What does my body need most right now?",
+      "How can I sleep better?",
+      "What is draining my energy?",
     ],
   },
 ];

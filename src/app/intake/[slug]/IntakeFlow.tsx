@@ -295,7 +295,7 @@ export default function IntakeFlow({ slug }: { slug: string }) {
             className="text-center"
           >
             <p className="text-xs uppercase tracking-[0.35em] text-gold">
-              Step 1 of 3
+              Step 1 of 4
             </p>
             <h1 className="mt-3 font-display text-4xl text-goldbright sm:text-5xl">
               What is on your mind?
@@ -334,7 +334,7 @@ export default function IntakeFlow({ slug }: { slug: string }) {
             exit={{ opacity: 0, y: -12 }}
           >
             <p className="text-center text-xs uppercase tracking-[0.35em] text-gold">
-              Step 2 of 3
+              Step 2 of 4
             </p>
             <h1 className="mt-3 text-center font-display text-4xl text-goldbright">
               {category.name}
@@ -424,16 +424,14 @@ export default function IntakeFlow({ slug }: { slug: string }) {
                   type="text"
                   value={question}
                   onChange={(e) => setQuestion(e.target.value)}
-                  placeholder="e.g. Should I take the new role or stay where I am?"
+                  placeholder={`e.g. ${category.examples[0]}`}
                   className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none"
                 />
                 <p className="mt-2 text-xs text-mist">Ask like this, or tap one to start from it:</p>
                 <div className="mt-1 flex flex-wrap gap-2">
-                  {[
-                    "Should I take the new role or stay where I am?",
-                    "What is blocking my relationship right now?",
-                    "What should I focus on this week?",
-                  ].map((ex) => (
+                  {/* AF-046: chips come from this area's own examples,
+                      so the Love form never shows a career question. */}
+                  {category.examples.map((ex) => (
                     <button key={ex} type="button" onClick={() => setQuestion(ex)} className="rounded-full border border-gold/30 px-3 py-2.5 min-h-[44px] text-xs text-cream/90 hover:bg-gold/10">
                       {ex}
                     </button>
@@ -475,7 +473,7 @@ export default function IntakeFlow({ slug }: { slug: string }) {
             className="text-center"
           >
             <p className="text-xs uppercase tracking-[0.35em] text-gold">
-              Step 3 of 3
+              Step 3 of 4
             </p>
             <h1 className="mt-3 font-display text-4xl text-goldbright sm:text-5xl">
               Ready to cast the lots?
