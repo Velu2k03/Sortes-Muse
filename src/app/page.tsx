@@ -5,11 +5,9 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import { useCanHide } from "@/lib/use-mounted";
 import { MAJORS, cardSlug, getCard } from "@/lib/cards";
-import { TAGLINE } from "@/lib/site";
 import StatsStrip from "@/components/StatsStrip";
 import SampleReading from "@/components/SampleReading";
 import ReturnLoop from "@/components/ReturnLoop";
-import Icon from "@/components/Icon";
 import { Orb } from "@/components/ReactBitsNew";
 
 // AF-042: the audit's "12 simultaneous animations" is stale — Phase
@@ -83,28 +81,15 @@ export default function Home() {
           {/* AF-042: the hero motion wrappers were no-ops (initial
               false, animate to the final values), so they are plain
               elements now — one less animation instance each. */}
-          <p className="text-xs uppercase tracking-[0.35em] text-gold">
-            A Resonant Atlas tarot experience
-          </p>
           {/* AF-071: the H1 is the value proposition with keywords,
               not the one-word brand. The brand still leads the title
               tag and the footer. */}
           <h1 className="mt-6 font-display text-5xl leading-tight text-goldbright sm:text-6xl md:text-7xl">
-            Free tarot reading online, with AI interpretation
+            Sortes: free tarot reading with AI
           </h1>
-          <p className="mt-4 font-display text-2xl italic text-goldbright sm:text-3xl">
-            {TAGLINE}
-          </p>
-          <p className="mt-6 max-w-xl text-base leading-relaxed text-cream/80">
-            Draw a free daily card, explore 78 card meanings, and get a
-            reading for your question.
-          </p>
           {/* AF-034 homepage diet: the Latin etymology line is gone
               (it belongs on /about, which needs Velu's identity copy
               first — AF-036 — so it is dropped, not moved). */}
-          {/* AF-034: one primary CTA, the free reading. "Draw a Card"
-              is the quiet secondary; "See all spreads" is gone (the
-              seek cards below and /spreads cover it). */}
           <div className="mt-10 flex w-full max-w-xl flex-col gap-3 sm:flex-row sm:flex-nowrap sm:justify-center">
             <Link
               href="/spreads/quick-insight"
@@ -112,19 +97,7 @@ export default function Home() {
             >
               Ask your question · First reading free
             </Link>
-            <Link
-              href="/daily"
-              className="btn-ghost shrink-0 whitespace-nowrap rounded-2xl px-8 py-4 text-center text-lg font-semibold"
-            >
-              <Icon name="sparkle" size={20} className="mr-2 inline-block align-[-3px]" />Draw a Card
-            </Link>
           </div>
-          {/* Phase 4C (4.6b): the free-reading promise is stated once,
-              here. The repeats are gone: the Quick Insight seek card
-              below now shows its price (1 Oracle), the spreads
-              preview no longer repeats the sentence, and the daily
-              teaser no longer says "Free, every day" (the hero line
-              above already says the daily card is free). */}
           <p className="mt-5 text-sm text-mist">
             Your first Quick Insight reading is free. No payment card, no account.
           </p>
