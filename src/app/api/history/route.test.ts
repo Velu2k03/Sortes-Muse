@@ -109,3 +109,31 @@ describe("PATCH/DELETE /api/history — per-user write limit (Phase B, R9)", () 
     expect((await DELETE(req("DELETE", { id: "r1" }))).status).toBe(401);
   });
 });
+
+describe("POST /api/history — empty body (AF-096 hang report)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    resetRateLimits();
+    mockedSave.mockResolvedValue(undefined);
+  });
+
+  // The reported hang was POST {} stalling ~15 s then 401. In current
+  // code the unauthenticated path returns 401 before touching the DB
+  // (getSession with no cookie resolves with no query), and the DB
+  // path is bounded by the 12 s withDbTimeout; an empty body is a
+  // valid empty sync, not a hang.
+  it("POST {} without a session returns 401 immediately and saves nothing", async () => {
+    mockedGetSession.mockResolvedValue(null);
+    const res = await POST(req("POST", {}));
+    expect(res.status).toBe(401);
+    expect(mockedSave).not.toHaveBeenCalled();
+  });
+
+  it("POST {} signed in returns 200 with zero synced", async () => {
+    mockedGetSession.mockResolvedValue({ userId: "u1", email: "a@b.co" });
+    const res = await POST(req("POST", {}));
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true, synced: 0 });
+    expect(mockedSave).not.toHaveBeenCalled();
+  });
+});
