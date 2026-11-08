@@ -130,7 +130,7 @@ export default function ReportDetailClient() {
             a.click();
             URL.revokeObjectURL(url);
           }}
-          className="btn-ghost ml-3 rounded-xl px-4 py-3 text-sm font-semibold"
+          className="btn-ghost rounded-xl px-4 py-3 text-sm font-semibold"
         >
           Download Markdown
         </button>
