@@ -10,14 +10,11 @@ const bestValueId = CREDIT_PACKS.reduce((a, b) =>
   b.price / b.readings < a.price / a.readings ? b : a,
 ).id;
 
-const ORACLES_META_DESCRIPTION =
-  "Top up your Sortes Oracles: 5 for $3.99, 12 for $7.99, or 30 for $14.99.";
-
 export const metadata = {
   title: "Oracles",
-  description: ORACLES_META_DESCRIPTION,
+  description: "Top up your Sortes Oracles: 5 for $3.99, 12 for $7.99, or 30 for $14.99. 1 Oracle opens 1 full reading, and Oracles never expire. No subscription, ever.",
   alternates: { canonical: "/oracles" },
-  ...pageSocial({ title: "Oracles", description: ORACLES_META_DESCRIPTION, path: "/oracles" }),
+  ...pageSocial({ title: "Oracles", description: "Top up your Sortes Oracles: 5 for $3.99, 12 for $7.99, or 30 for $14.99. 1 Oracle opens 1 full reading, and Oracles never expire. No subscription, ever.", path: "/oracles" }),
 };
 
 export default function Credits() {
@@ -32,7 +29,8 @@ export default function Credits() {
             "@context": "https://schema.org",
             "@type": "Product",
             name: "Sortes Oracles",
-            description: "Oracle packs for Sortes tarot readings.",
+            description:
+              "Oracle packs for Sortes tarot readings. 1 Oracle opens 1 full reading. Oracles never expire.",
             brand: { "@type": "Brand", name: "Sortes" },
             offers: CREDIT_PACKS.map((p) => ({
               "@type": "Offer",
