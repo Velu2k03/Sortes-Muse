@@ -10,6 +10,10 @@ export const metadata: Metadata = {
   description:
     "That Sortes page does not exist. Try a daily card, a reading, the deck, a birth chart, or a guide instead.",
   robots: { index: false, follow: true },
+  // AF-072: a 404 must not carry the homepage canonical inherited
+  // from the layout. Verified against the build output; if the
+  // canonical still renders, this is a framework merge limitation.
+  alternates: { canonical: undefined },
 };
 
 const PLACES = [

@@ -92,8 +92,19 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="flex min-h-full flex-col font-body">
         {/* Theme before paint: default dark, localStorage
             sortes-theme wins. Runs before React hydration so the
-            first paint is already the saved theme, not a light flash. */}
-        <Script src="/theme.js" strategy="beforeInteractive" />
+            first paint is already the saved theme, not a light flash.
+            AF-093: the old <Script src="/theme.js"
+            beforeInteractive> only preloaded theme.js — the served
+            HTML had the preload link but no script tag, so the theme
+            was not applied before paint. The 315 bytes are inlined
+            here instead (CSP allows 'unsafe-inline'), and
+            public/theme.js is deleted. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "try{var t=localStorage.getItem('sortes-theme');var theme=(t==='light'||t==='dark')?t:'dark';document.documentElement.dataset.theme=theme;var m=document.querySelector('meta[name=\"theme-color\"]');if(m)m.setAttribute('content',theme==='dark'?'#0a0e1a':'#fdf9ee');}catch{document.documentElement.dataset.theme='dark';}",
+          }}
+        />
         {/* Lightsite fix V12: Organization and WebSite JSON-LD, so
             search and AI tools know who runs Sortes. Static constants
             only, no user input, no social links invented. */}

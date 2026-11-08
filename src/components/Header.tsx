@@ -169,7 +169,7 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-40 border-b border-gold/15 bg-ink/85 backdrop-blur-md">
       <div className="relative mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
-        <Link href="/" className="flex shrink-0 items-center gap-2.5">
+        <Link href="/" className="flex shrink-0 items-center gap-2.5 py-1.5">
           <Image
             src="/brand/logo.webp"
             alt=""
@@ -288,7 +288,7 @@ export default function Header() {
               says loading instead of "0 Oracles". */}
           <Link
             href="/oracles"
-            className="flex items-center gap-1.5 rounded-full border border-gold/40 bg-gold/10 px-2.5 py-1.5 text-sm font-semibold text-goldbright"
+            className="flex items-center gap-1.5 rounded-full border border-gold/40 bg-gold/10 px-2.5 py-2.5 text-sm font-semibold text-goldbright"
             aria-label={credits === null ? "Oracle balance loading. Get Oracles." : `Oracle balance: ${credits} Oracles. Get Oracles.`}
             title="Your Oracles — top up"
           >
