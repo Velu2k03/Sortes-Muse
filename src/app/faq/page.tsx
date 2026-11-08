@@ -81,7 +81,7 @@ export const FAQS = [
   },
   {
     q: "How much does a reading cost?",
-    a: "Daily card free. First reading free. Then $0.50-$0.80 per reading. Every reading costs 1 Oracle, whatever the spread. No tiers, no surprises. Packs are 5 Oracles for $3.99, 12 for $7.99, and 30 for $14.99, which works out to about $0.80, $0.67, and $0.50 per reading. Prices are in US dollars (USD). Oracles never expire, and there is no subscription.",
+    a: "Daily card free. First reading free. Then $0.50-$0.80 per reading. After that, a reading costs 1 Oracle. Packs are 5 Oracles for $3.99, 12 for $7.99, and 30 for $14.99, which works out to about $0.80, $0.67, and $0.50 per reading. Prices are in US dollars (USD). Oracles never expire, and there is no subscription.",
   },
   {
     q: "How do I pay?",
