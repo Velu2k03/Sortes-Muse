@@ -6,6 +6,8 @@ import {
   suitElement,
   DEFAULT_DECK_VIEW,
   resolveDeckView,
+  resolveDeckFilter,
+  filterDeckCards,
 } from "@/lib/cards";
 import sitemap from "@/app/sitemap";
 
@@ -88,5 +90,36 @@ describe("sitemap deck URLs", () => {
   it("does not list /journal because the page is noindex", () => {
     const urls = sitemap().map((entry) => entry.url);
     expect(urls).not.toContain("https://sortes.resonantatlas.com/journal");
+  });
+});
+
+describe("resolveDeckFilter / filterDeckCards", () => {
+  it("passes valid filters through and defaults the rest to all", () => {
+    for (const f of ["all", "major", "wands", "cups", "swords", "pentacles"]) {
+      expect(resolveDeckFilter(f)).toBe(f);
+    }
+    expect(resolveDeckFilter("cups")).toBe("cups");
+    expect(resolveDeckFilter(["swords", "cups"])).toBe("swords");
+    expect(resolveDeckFilter(undefined)).toBe("all");
+    expect(resolveDeckFilter("")).toBe("all");
+    expect(resolveDeckFilter("bogus")).toBe("all");
+    expect(resolveDeckFilter([])).toBe("all");
+  });
+
+  it("filters by arcana and suit", () => {
+    expect(filterDeckCards("all", "")).toHaveLength(78);
+    expect(filterDeckCards("major", "")).toHaveLength(22);
+    for (const s of ["wands", "cups", "swords", "pentacles"] as const) {
+      const list = filterDeckCards(s, "");
+      expect(list).toHaveLength(14);
+      expect(list.every((c) => c.suit === s)).toBe(true);
+    }
+  });
+
+  it("matches names case-insensitively on the trimmed query and combines with filter", () => {
+    expect(filterDeckCards("all", "  MOON ").map((c) => c.name)).toContain("The Moon");
+    expect(filterDeckCards("cups", "ace").map((c) => c.name)).toEqual(["Ace of Cups"]);
+    expect(filterDeckCards("major", "ace")).toHaveLength(0);
+    expect(filterDeckCards("all", "   ")).toHaveLength(78);
   });
 });

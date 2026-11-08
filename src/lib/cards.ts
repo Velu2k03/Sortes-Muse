@@ -68,6 +68,23 @@ export function suitLabel(suit: string): string {
   return suit.charAt(0).toUpperCase() + suit.slice(1);
 }
 
+export type DeckFilter = "all" | "major" | "wands" | "cups" | "swords" | "pentacles";
+const DECK_FILTERS: readonly DeckFilter[] = ["all", "major", "wands", "cups", "swords", "pentacles"];
+
+// URL param -> a valid filter; anything missing or unknown is "all".
+export function resolveDeckFilter(value: string | string[] | undefined): DeckFilter {
+  const v = Array.isArray(value) ? value[0] : value;
+  return DECK_FILTERS.find((f) => f === v) ?? "all";
+}
+
+export function filterDeckCards(filter: DeckFilter, query: string): TarotCard[] {
+  let list = CARDS;
+  if (filter === "major") list = MAJORS;
+  else if (filter !== "all") list = cardsBySuit(filter);
+  const q = query.trim().toLowerCase();
+  return q ? list.filter((c) => c.name.toLowerCase().includes(q)) : list;
+}
+
 export function orientationKeywords(card: TarotCard, reversed: boolean): string[] {
   return reversed ? card.keywords.reversed : card.keywords.upright;
 }

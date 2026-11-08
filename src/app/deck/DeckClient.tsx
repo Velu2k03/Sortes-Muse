@@ -1,0 +1,344 @@
+"use client";
+
+import Link from "next/link";
+import Image from "next/image";
+import { useEffect, useMemo, useRef, useState } from "react";
+import dynamic from "next/dynamic";
+import { useRouter, useSearchParams } from "next/navigation";
+import { motion } from "framer-motion";
+import {
+  CARDS,
+  SUITS,
+  suitLabel,
+  cardSlug,
+  DEFAULT_DECK_VIEW,
+  resolveDeckView,
+  filterDeckCards,
+  type DeckFilter,
+  type DeckView,
+} from "@/lib/cards";
+import type { TarotCard } from "@/lib/types";
+// Phase 4C (4.8a): the spiral gallery is code-split. It renders only
+// when the seeker opts into the spiral view (grid is the default), so
+// it is a separate chunk loaded on demand instead of first-paint
+// weight on the deck grid. Plain dynamic() (SSR kept): the component
+// is rendered conditionally, so there is no SSR behaviour to lose.
+const InfiniteSpiral = dynamic(() => import("@/components/InfiniteSpiral"));
+
+type Filter = DeckFilter;
+
+const FILTERS: { key: Filter; label: string }[] = [
+  { key: "all", label: "All 78" },
+  { key: "major", label: "Major Arcana" },
+  { key: "wands", label: "Wands" },
+  { key: "cups", label: "Cups" },
+  { key: "swords", label: "Swords" },
+  { key: "pentacles", label: "Pentacles" },
+];
+
+// Phase 4A (4.4): the card grid is the default view; the spiral is an
+// opt-in "Spiral gallery". Every card is a link to its own
+// /deck/[slug] page (deep-linkable, shareable). The old ?card=
+// deep link (used by the home orbit) redirects to the card page, so
+// existing links keep working.
+export default function DeckClient({
+  initialFilter,
+  initialQuery,
+}: {
+  initialFilter: DeckFilter;
+  initialQuery: string;
+}) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [filter, setFilter] = useState<Filter>(initialFilter);
+  const [query, setQuery] = useState(initialQuery);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [view, setView] = useState<DeckView>(DEFAULT_DECK_VIEW);
+  const [reducedMotion, setReducedMotion] = useState(false);
+  // The spiral sets pointer capture on press, so a real tap's click event
+  // is retargeted to the spiral root and never lands on a card. Detect
+  // taps ourselves on press and release instead, and look the card up
+  // from the pointer position, so a tap opens the detail and a drag
+  // (moved more than 12px) still only spins the helix.
+  const tapStartRef = useRef<{ x: number; y: number } | null>(null);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const sync = () => setReducedMotion(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+
+  useEffect(() => {
+    const cardId = new URLSearchParams(window.location.search).get("card");
+    const card = cardId ? CARDS.find((c) => c.id === cardId) : undefined;
+    if (!card) return;
+    router.replace(`/deck/${cardSlug(card.name)}`);
+  }, [router]);
+
+  const cards = useMemo(() => filterDeckCards(filter, query), [filter, query]);
+
+  // Mirror filter/search into the URL (shareable, SSR-renderable). The
+  // other param is preserved; "all" and empty are omitted; `card` is
+  // never written.
+  const syncUrl = (next: { filter?: Filter; q?: string }) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("card");
+    if (next.filter !== undefined) {
+      if (next.filter === "all") params.delete("filter");
+      else params.set("filter", next.filter);
+    }
+    if (next.q !== undefined) {
+      if (next.q.trim()) params.set("q", next.q);
+      else params.delete("q");
+    }
+    const qs = params.toString();
+    router.replace(qs ? `/deck?${qs}` : "/deck", { scroll: false });
+  };
+  useEffect(() => () => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+  }, []);
+
+  // Reduced motion forces the grid, whatever the toggle says.
+  const effectiveView = resolveDeckView(view, reducedMotion);
+  const openCard = (card: TarotCard) =>
+    router.push(`/deck/${cardSlug(card.name)}`);
+
+  return (
+    <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
+      <div className="text-center">
+        <p className="text-xs uppercase tracking-[0.35em] text-gold">The deck</p>
+        <h1 className="mt-2 font-display text-4xl text-goldbright sm:text-5xl">
+          {filter === "all" && !query.trim()
+            ? "All 78 cards"
+            : `${cards.length} ${cards.length === 1 ? "card" : "cards"}`}
+        </h1>
+        <p className="mx-auto mt-3 max-w-xl text-sm text-cream/75">
+          The complete Rider-Waite deck with upright and reversed meanings.
+          Free forever. Tap any card to read its story.
+        </p>
+        <Link href="/daily" className="mt-2 inline-block text-sm font-semibold text-goldbright underline underline-offset-4">
+          Draw today&apos;s card
+        </Link>
+      </div>
+
+      {/* Phase 4A (4.4): one sticky toolbar, one row: search, suit
+          filter pills, view toggle. It stays under the sticky header
+          (h-16) so the cards start above the fold. */}
+      <div className="sticky top-16 z-30 -mx-4 mt-6 border-y border-gold/15 bg-ink/90 px-4 py-3 backdrop-blur-md sm:-mx-6 sm:px-6">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-3">
+          <label htmlFor="deck-search" className="sr-only">
+            Search cards
+          </label>
+          <input
+            id="deck-search"
+            type="search"
+            value={query}
+            onChange={(e) => {
+              const v = e.target.value;
+              setQuery(v);
+              if (debounceRef.current) clearTimeout(debounceRef.current);
+              debounceRef.current = setTimeout(() => syncUrl({ q: v }), 300);
+            }}
+            placeholder="Search cards, e.g. moon, strength…"
+            className="min-w-52 flex-1 rounded-xl border border-gold/25 bg-panel/70 px-4 py-2.5 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none sm:max-w-xs"
+          />
+          {/* Validator fix (kept): these are filter toggles, not tabs,
+              and there is no tabpanel on the page, so role=tab is
+              wrong. aria-pressed says the same thing, correctly. */}
+          <div role="group" className="flex flex-wrap justify-center gap-2" aria-label="Filter cards">
+            {FILTERS.map((f) => (
+              <button
+                key={f.key}
+                type="button"
+                aria-pressed={filter === f.key}
+                onClick={() => {
+                  setFilter(f.key);
+                  syncUrl({ filter: f.key });
+                }}
+                className={`rounded-full px-3 py-3 text-sm font-semibold transition ${
+                  filter === f.key
+                    ? "bg-gold text-ink"
+                    : "border border-gold/30 text-cream/80 hover:border-gold/60 hover:text-goldbright"
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+          <div role="group" className="flex gap-2" aria-label="Deck view">
+            <button
+              type="button"
+              aria-pressed={effectiveView === "grid"}
+              onClick={() => setView("grid")}
+              className={`rounded-full px-4 py-3 text-sm font-semibold transition ${
+                effectiveView === "grid"
+                  ? "bg-gold text-ink"
+                  : "border border-gold/30 text-cream/80 hover:border-gold/60 hover:text-goldbright"
+              }`}
+            >
+              Card grid
+            </button>
+            <button
+              type="button"
+              aria-pressed={effectiveView === "spiral"}
+              onClick={() => setView("spiral")}
+              className={`rounded-full px-4 py-3 text-sm font-semibold transition ${
+                effectiveView === "spiral"
+                  ? "bg-gold text-ink"
+                  : "border border-gold/30 text-cream/80 hover:border-gold/60 hover:text-goldbright"
+              }`}
+            >
+              Spiral gallery
+            </button>
+          </div>
+          <p className="w-full text-center text-xs text-mist sm:w-auto" aria-live="polite">
+            {cards.length} {cards.length === 1 ? "card" : "cards"}
+            {filter !== "all" && filter !== "major" && ` · ${suitLabel(filter)}`}
+            {reducedMotion && " · reduced motion: grid view"}
+          </p>
+        </div>
+      </div>
+
+      {effectiveView === "spiral" ? (
+        <div className="mt-6">
+          <p className="mb-3 text-center text-sm text-mist">Spiral is a visual browse. To browse cards by keyboard, switch to Card grid above.</p>
+          <p className="text-center text-sm text-cream/75">
+            Drag to spin, tap a card to read it.
+          </p>
+          <div
+            className="h-[560px]"
+            style={{
+              maskImage:
+                "linear-gradient(to bottom, transparent 0%, black 12%, black 88%, transparent 100%)",
+              WebkitMaskImage:
+                "linear-gradient(to bottom, transparent 0%, black 12%, black 88%, transparent 100%)",
+            }}
+            onClick={(e) => {
+              const item = (e.target as HTMLElement).closest('[role="listitem"]');
+              const name = item?.getAttribute("aria-label");
+              const card = cards.find((c) => c.name === name);
+              if (card) openCard(card);
+            }}
+            onPointerDown={(e) => {
+              tapStartRef.current = { x: e.clientX, y: e.clientY };
+            }}
+            onPointerUp={(e) => {
+              const start = tapStartRef.current;
+              tapStartRef.current = null;
+              if (!start) return;
+              const moved = Math.hypot(e.clientX - start.x, e.clientY - start.y);
+              if (moved > 12) return;
+              const under = document.elementFromPoint(e.clientX, e.clientY);
+              const item = under?.closest('[role="listitem"]');
+              const name = item?.getAttribute("aria-label");
+              const card = cards.find((c) => c.name === name);
+              if (card) openCard(card);
+            }}
+          >
+            <InfiniteSpiral
+              items={cards.map((c) => ({
+                id: c.id,
+                src: c.image,
+                alt: "",
+                label: c.name,
+              }))}
+              animationMode="all"
+              speed={0.55}
+              direction="up"
+              grayscale={0}
+              radius={170}
+              cardWidth={120}
+              cardHeight={180}
+              verticalSpacing={58}
+              perspective={1000}
+              cardsPerTurn={7}
+              rotation={0}
+              cardTilt={0}
+              cardRadius={10}
+              centerScale={1.2}
+              edgeFade={0.3}
+              edgeBlur={6}
+              pauseOnHover
+              imageFit="cover"
+            />
+          </div>
+          {cards.length === 0 && (
+            <div className="mt-8 text-center">
+              <p className="text-mist">
+                No cards match {query.trim() ? `"${query.trim()}"` : "your search"}. Try another name, or reset the filters.
+              </p>
+              <button
+                type="button"
+                onClick={() => { setQuery(""); setFilter("all"); syncUrl({ filter: "all", q: "" }); }}
+                className="mt-3 rounded-full border border-gold/30 px-4 py-3 text-sm font-semibold text-goldbright hover:border-gold/60"
+              >
+                Reset filters
+              </button>
+            </div>
+          )}
+        </div>
+      ) : (
+        <>
+        <div className="mt-6 grid grid-cols-3 gap-3 sm:grid-cols-4 sm:gap-4 md:grid-cols-6">
+        {cards.map((c, i) => (
+          <motion.div
+            key={c.id}
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: Math.min(i * 0.02, 0.5), duration: 0.4 }}
+          >
+          <Link
+            href={`/deck/${cardSlug(c.name)}`}
+            className="group block overflow-hidden rounded-xl border border-gold/20 bg-panel/50 transition hover:-translate-y-1 hover:border-gold/60 hover:shadow-[0_12px_30px_rgba(212,175,55,0.15)]"
+            aria-label={`View meaning of ${c.name}`}
+          >
+            {/* Validator fix: a link may only contain phrasing
+                content, so the tile image wrapper and name are spans
+                with block display, not div and p. Same layout. */}
+            <span className="relative block aspect-[3/5] w-full">
+              {/* Axe fix: the link already carries aria-label
+                  "View meaning of {name}" and the name is visible
+                  below, so a named alt would repeat it 78 times. */}
+              <Image
+                src={c.image}
+                alt=""
+                fill
+                sizes="(max-width: 640px) 33vw, (max-width: 1024px) 25vw, 16vw"
+                className="object-cover"
+                loading={i < 12 ? "eager" : "lazy"}
+              />
+            </span>
+            <span className="block truncate px-2 py-2 text-xs font-medium text-cream/90 group-hover:text-goldbright">
+              {c.name}
+            </span>
+          </Link>
+          </motion.div>
+        ))}
+      </div>
+
+      {cards.length === 0 && (
+        <div className="mt-16 text-center">
+          <p className="text-mist">
+            No cards match {query.trim() ? `"${query.trim()}"` : "your search"}. Try another name, or reset the filters.
+          </p>
+          <button
+            type="button"
+            onClick={() => { setQuery(""); setFilter("all"); syncUrl({ filter: "all", q: "" }); }}
+            className="mt-3 rounded-full border border-gold/30 px-4 py-3 text-sm font-semibold text-goldbright hover:border-gold/60"
+          >
+            Reset filters
+          </button>
+        </div>
+      )}
+      </>
+      )}
+
+      <p className="mt-10 text-center text-xs text-mist">
+        Card imagery: the public-domain Rider-Waite deck (1909). Meanings are
+        original to {SUITS.length ? "Sortes" : ""} and written for reflection.
+      </p>
+    </div>
+  );
+}
