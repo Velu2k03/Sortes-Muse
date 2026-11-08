@@ -37,6 +37,10 @@ export default function SpreadsPage() {
 
   const canBegin = (slug: string) =>
     slug === "quick-insight" ? !usedFree || balance >= 1 : balance >= 1;
+  // AF-013: while the balance is unknown, a balance-gated card is
+  // "pending", not locked. It shows a skeleton, never Locked.
+  const isPending = (slug: string) =>
+    credits === null && !(slug === "quick-insight" && !usedFree);
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
@@ -105,7 +109,8 @@ export default function SpreadsPage() {
 
       <div className="mt-10 grid gap-6 md:grid-cols-3">
         {SPREADS.map((s, i) => {
-          const locked = !canBegin(s.slug);
+          const pending = isPending(s.slug);
+          const locked = !pending && !canBegin(s.slug);
           return (
           <motion.article
             id={`spread-${s.slug}`}
@@ -176,7 +181,14 @@ export default function SpreadsPage() {
                   </p>
                 </div>
               </details>
-              {locked ? (
+              {pending ? (
+                <div
+                  className="mt-5 h-12 animate-pulse rounded-xl bg-gold/20"
+                  role="status"
+                  aria-busy="true"
+                  aria-label="Checking your Oracle balance"
+                />
+              ) : locked ? (
                 <>
                   <button
                     type="button"

@@ -114,7 +114,18 @@ export default function CreditsPage() {
           H1 is in the initial HTML. Balance stays centered here. */}
       <div className="mt-6 flex flex-col items-center gap-3 text-center sm:flex-row sm:items-end sm:justify-between sm:text-left">
         <div>
-          {reducedMotion ? (
+          {credits === null ? (
+            // AF-013: balance unknown, so show a skeleton, never 0.
+            <div
+              className="flex items-baseline justify-center gap-2 sm:justify-start"
+              role="status"
+              aria-busy="true"
+              aria-label="Oracle balance loading"
+            >
+              <span className="inline-block h-14 w-20 animate-pulse rounded bg-gold/30" aria-hidden="true" />
+              <span className="font-body text-lg text-mist">Oracles</span>
+            </div>
+          ) : reducedMotion ? (
             <p className="num text-6xl font-bold text-cream">
               {credits ?? 0}
               <span className="ml-2 align-middle font-body text-lg text-mist">
