@@ -405,13 +405,12 @@ export default function ReportsClient() {
       <p className="text-center text-xs uppercase tracking-[0.35em] text-gold">Reports</p>
       <h1 className="mt-2 text-center font-display text-5xl text-goldbright">Keep-forever reports</h1>
       <p className="mt-3 text-center text-cream/80">
-        1 Oracle per report. No free first report. Reports never expire.
+        1 Oracle per report. Reports never expire.
       </p>
       {/* Phase E (item 9): delivery format and length, stated before
           anyone spends an Oracle. */}
       <p className="mx-auto mt-2 max-w-xl text-center text-sm text-mist">
-        Delivered on screen as a keep-forever report, printable as PDF:
-        about 350-550 words of interpretation (year-ahead 500-700),
+        Delivered on screen as a keep-forever report, printable as PDF,
         plus the tables for your type.
       </p>
       <p className="mt-2 text-center text-sm text-mist">
