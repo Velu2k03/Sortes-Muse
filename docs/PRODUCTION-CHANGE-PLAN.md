@@ -271,7 +271,8 @@ above). **Risk if left undone at launch: HIGH** for `users` and
 
 **What it is:** the dedicated secret that signs Sortes' own session
 cookies. The fallback chain in `src/lib/auth.ts` is
-`AUTH_SECRET → NEXTAUTH_SECRET → SUPABASE_JWT_SECRET`. Production
+`AUTH_SECRET → SUPABASE_JWT_SECRET` (AF-005, 2026-11-08: the
+`NEXTAUTH_SECRET` alias was removed from the chain). Production
 currently has only `SUPABASE_JWT_SECRET` set, so sessions work
 today — but that secret also signs Supabase tokens, so sharing it
 means a Supabase secret rotation invalidates every Sortes session

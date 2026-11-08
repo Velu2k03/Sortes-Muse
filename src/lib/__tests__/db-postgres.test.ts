@@ -60,13 +60,14 @@ describe.skipIf(SKIP)("money paths on real Postgres (staging only)", () => {
       ["auth_codes", "free_interpretations", "free_readings", "readings", "reports", "transactions", "users"]
     );
     const ledger = (await raw`SELECT version FROM schema_migrations ORDER BY version`) as Array<{ version: string }>;
-    expect(ledger.map((r) => r.version)).toEqual(["001", "002", "003", "006"]);
+    expect(ledger.map((r) => r.version)).toEqual(["001", "002", "003", "006", "007"]);
     const indexes = (await raw`
       SELECT indexname FROM pg_indexes WHERE schemaname = 'public'
         AND indexname LIKE 'idx\_%'`) as Array<{ indexname: string }>;
     expect(indexes.map((i) => i.indexname).sort()).toEqual([
       "idx_readings_user_created",
       "idx_reports_user_created",
+      "idx_transactions_order_id_unique",
       "idx_transactions_pack_type",
       "idx_transactions_user_created",
     ]);
@@ -408,6 +409,26 @@ describe.skipIf(SKIP)("money paths on real Postgres (staging only)", () => {
     expect(await db.getUserById(userB.id)).not.toBeNull();
     expect(await db.listReadingsForUser(userB.id)).toHaveLength(1);
     expect(await db.deleteUser("u_does-not-exist")).toBe(false);
+  });
+
+  it("AF-004: fulfilled orders carry a DB-level UNIQUE order_id", async () => {
+    const user = await db.createUser("af004-a@example.com");
+    const res = await db.fulfillOrder({
+      userId: user.id,
+      email: user.email,
+      packType: "pack5 (lemonsqueezy:af004-order)",
+      amount: 3.99,
+      readings: 5,
+      orderId: "af004-order",
+    });
+    expect(res.duplicate).toBe(false);
+    const stored = (await raw`SELECT order_id FROM transactions WHERE id = ${res.transaction!.id}`) as Array<{ order_id: string | null }>;
+    expect(stored[0].order_id).toBe("af004-order");
+    // Direct SQL cannot create a second row for the same order.
+    await expect(
+      raw`INSERT INTO transactions (id, user_id, email, pack_type, amount, readings, created_at, order_id)
+        VALUES (${"t_af004_dup"}, ${user.id}, ${user.email}, ${"pack5 (lemonsqueezy:af004-order)"}, 3.99, 5, NOW(), ${"af004-order"})`
+    ).rejects.toThrow(/idx_transactions_order_id_unique|unique/i);
   });
 
   it("Phase B (F5): prefix orderId is not treated as a duplicate (anchored pattern)", async () => {
