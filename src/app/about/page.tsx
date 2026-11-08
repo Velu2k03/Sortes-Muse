@@ -54,14 +54,17 @@ export default function AboutPage() {
           </p>
         </section>
       </div>
+      {/* AF-035: .btn-gold/.btn-ghost carry no padding themselves, so
+          these links need the shared px-5 py-3 rounded-full shape
+          instead of rendering as unpadded text. */}
       <div className="mt-10 flex flex-wrap gap-3">
-        <Link href="/guides" className="btn-gold">
+        <Link href="/guides" className="btn-gold rounded-full px-5 py-3 font-semibold">
           Read the guides
         </Link>
-        <Link href="/privacy" className="btn-ghost">
+        <Link href="/privacy" className="btn-ghost rounded-full px-5 py-3 font-semibold">
           Privacy Policy
         </Link>
-        <Link href="/terms" className="btn-ghost">
+        <Link href="/terms" className="btn-ghost rounded-full px-5 py-3 font-semibold">
           Terms of Service
         </Link>
       </div>
