@@ -1,6 +1,7 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { getUserById } from "@/lib/db";
+import { checkRateLimit, clientIp, rateLimitExceeded, RATE_LIMITS } from "@/lib/rateLimit";
 
 export const dynamic = "force-dynamic";
 
@@ -21,7 +22,12 @@ export const dynamic = "force-dynamic";
  * routes or a new explicitly-scoped endpoint, not a revival of
  * this handler.
  */
-export async function GET() {
+export async function GET(req: NextRequest) {
+  // AF-005: the sibling transactions route already uses the moneyIp
+  // bucket (60/min/IP); this money read had no limit at all.
+  if (!checkRateLimit(`balance:${clientIp(req)}`, RATE_LIMITS.moneyIp).allowed) {
+    return rateLimitExceeded();
+  }
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
   const user = await getUserById(session.userId);
