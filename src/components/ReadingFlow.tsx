@@ -135,11 +135,11 @@ function GateScreen({
                 onClick={() => router.push(`/intake/${spread.slug}`)}
                 className="btn-gold w-full rounded-2xl px-8 py-4 text-lg font-bold sm:w-auto"
               >
-                ✦ Begin your free reading
+                ✦ Start my free reading
               </button>
             </ClickSpark>
             <p className="mt-3 text-sm text-mist">
-              Free, no card required. One free Quick Insight per device.
+              Free, no payment card required. One free Quick Insight per device.
             </p>
           </>
         ) : credits >= 1 ? (

@@ -1,9 +1,12 @@
 import { APP_SHORT, CONTACT_EMAIL } from "@/lib/site";
+import { pageSocial } from "@/lib/seo";
 
 export const metadata = {
   title: "Terms of Service",
-  description: `The terms governing your use of ${APP_SHORT}.`,
+  description:
+    "The terms governing your use of Sortes: readings for reflection only, how Oracles and refunds work, and acceptable use of the site.",
   alternates: { canonical: "/terms" },
+  ...pageSocial({ title: "Terms of Service", description: "The terms governing your use of Sortes: readings for reflection only, how Oracles and refunds work, and acceptable use of the site.", path: "/terms" }),
 };
 
 const UPDATED = "November 7, 2026";

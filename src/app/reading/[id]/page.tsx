@@ -3,6 +3,7 @@ import ReadingDetail from "./ReadingDetailClient";
 export const metadata = {
   title: "Reading",
   description: "Your saved tarot reading.",
+  robots: { index: false, follow: true },
 };
 
 export default async function ReadingPage({

@@ -33,8 +33,10 @@ export const metadata: Metadata = {
     default: `${APP_NAME} | ${TAGLINE}`,
     template: `%s | ${APP_SHORT}`,
   },
+  // AF-071: 140-160 characters. AF-081: the obsolete keywords meta
+  // tag is deleted (search engines ignore it; it only leaks terms).
   description:
-    "Sortes is a modern tarot reading app by Resonant Atlas. Draw your free daily card, explore all 78 card meanings, and receive personalized AI readings. Cast the lots. Read your story.",
+    "Free tarot reading online, with AI interpretation. Draw a free daily card, explore 78 card meanings, and get a reading for your question. First reading free.",
   applicationName: APP_SHORT,
   alternates: { canonical: SITE_URL },
   manifest: "/manifest.webmanifest",
@@ -48,18 +50,21 @@ export const metadata: Metadata = {
     type: "website",
     url: SITE_URL,
     siteName: APP_NAME,
-    title: APP_NAME,
-    description: TAGLINE,
+    title: "Free tarot reading online, with AI interpretation",
+    description:
+      "Free tarot reading online, with AI interpretation. Draw a free daily card, explore 78 card meanings, and get a reading for your question. First reading free.",
     images: [{ url: "/og-image.jpg", width: 1200, height: 630, alt: APP_NAME }],
   },
   twitter: {
     card: "summary_large_image",
-    title: APP_NAME,
-    description: TAGLINE,
+    title: "Free tarot reading online, with AI interpretation",
+    description:
+      "Free tarot reading online, with AI interpretation. Draw a free daily card, explore 78 card meanings, and get a reading for your question. First reading free.",
     images: ["/og-image.jpg"],
   },
   icons: {
     icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
       { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
       { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
       { url: "/icons/icon-192.webp", sizes: "192x192", type: "image/webp" },
@@ -67,15 +72,6 @@ export const metadata: Metadata = {
     apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
     shortcut: "/favicon.ico",
   },
-  keywords: [
-    "tarot",
-    "tarot reading",
-    "daily tarot card",
-    "tarot card meanings",
-    "celtic cross",
-    "AI tarot",
-    "Sortes",
-  ],
 };
 
 export const viewport: Viewport = {
@@ -96,8 +92,19 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="flex min-h-full flex-col font-body">
         {/* Theme before paint: default dark, localStorage
             sortes-theme wins. Runs before React hydration so the
-            first paint is already the saved theme, not a light flash. */}
-        <Script src="/theme.js" strategy="beforeInteractive" />
+            first paint is already the saved theme, not a light flash.
+            AF-093: the old <Script src="/theme.js"
+            beforeInteractive> only preloaded theme.js — the served
+            HTML had the preload link but no script tag, so the theme
+            was not applied before paint. The 315 bytes are inlined
+            here instead (CSP allows 'unsafe-inline'), and
+            public/theme.js is deleted. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "try{var t=localStorage.getItem('sortes-theme');var theme=(t==='light'||t==='dark')?t:'dark';document.documentElement.dataset.theme=theme;var m=document.querySelector('meta[name=\"theme-color\"]');if(m)m.setAttribute('content',theme==='dark'?'#0a0e1a':'#fdf9ee');}catch{document.documentElement.dataset.theme='dark';}",
+          }}
+        />
         {/* Lightsite fix V12: Organization and WebSite JSON-LD, so
             search and AI tools know who runs Sortes. Static constants
             only, no user input, no social links invented. */}

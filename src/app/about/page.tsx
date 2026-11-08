@@ -1,11 +1,13 @@
 import Link from "next/link";
+import { pageSocial } from "@/lib/seo";
 import { APP_NAME, CONTACT_EMAIL } from "@/lib/site";
 
 export const metadata = {
   title: "About",
   description:
-    "Sortes by Resonant Atlas: a tarot reading app for reflection. Who runs it, what it offers, how it handles your data, and how to contact it.",
+    "Sortes by Resonant Atlas: a tarot reading app for reflection. Who runs it, what it offers, how your data is handled, and how to reach us by email.",
   alternates: { canonical: "/about" },
+  ...pageSocial({ title: "About Sortes", description: "Sortes by Resonant Atlas: a tarot reading app for reflection. Who runs it, what it offers, how your data is handled, and how to reach us by email.", path: "/about" }),
 };
 
 export default function AboutPage() {

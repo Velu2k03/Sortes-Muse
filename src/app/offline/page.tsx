@@ -3,6 +3,7 @@ import Link from "next/link";
 export const metadata = {
   title: "Offline",
   description: "You appear to be offline.",
+  robots: { index: false, follow: true },
 };
 
 export default function OfflinePage() {

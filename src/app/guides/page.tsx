@@ -1,12 +1,14 @@
 import Link from "next/link";
+import { pageSocial } from "@/lib/seo";
 import { GUIDES } from "@/lib/guides";
 import GuidesSearch from "@/components/GuidesSearch";
 
 export const metadata = {
   title: "Guides",
   description:
-    "Short, substantive guides to tarot, spreads, and birth charts, written for Sortes. Reflection, not prediction.",
+    "Short, substantive guides to tarot, spreads, and birth charts, written for Sortes. Learn how spreads work, how to ask, and what charts can say.",
   alternates: { canonical: "/guides" },
+  ...pageSocial({ title: "Guides", description: "Short, substantive guides to tarot, spreads, and birth charts, written for Sortes. Learn how spreads work, how to ask, and what charts can say.", path: "/guides" }),
 };
 
 export default function GuidesPage() {

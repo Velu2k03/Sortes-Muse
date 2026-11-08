@@ -60,7 +60,7 @@ const PRESETS: { label: string; latitude: number; longitude: number }[] = [
 
 export default function ChartsClient() {
   const { credits, spend, add, persistReading, user, refresh } = useAuth();
-  const [system, setSystem] = useState<ChartSystem>("ziwei");
+  const [system, setSystem] = useState<ChartSystem>("western");
   const [reducedMotion, setReducedMotion] = useState(false);
   useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -80,7 +80,7 @@ export default function ChartsClient() {
     obs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
     return () => obs.disconnect();
   }, []);
-  const SYSTEM_ORDER: ChartSystem[] = ["ziwei", "western", "vedic"];
+  const SYSTEM_ORDER: ChartSystem[] = ["western", "ziwei", "vedic"];
   // Phase F: one plain line per system under the picker, mirroring the
   // reports page blurbs, so a newcomer picks by meaning, not by name.
   const SYSTEM_BLURBS: Record<ChartSystem, string> = {
@@ -124,16 +124,22 @@ export default function ChartsClient() {
   const [shareBusy, setShareBusy] = useState(false);
   const shareRef = useRef<HTMLDivElement>(null);
   const [date, setDate] = useState("");
-  const [time, setTime] = useState("08:00");
+  // AF-060: the form starts empty. No 08:00, no Female, no Manila
+  // coordinates: a prefilled form reads as the seeker's own data.
+  const [time, setTime] = useState("");
   const [unknownTime, setUnknownTime] = useState(false);
   // Phase 4B (4.3): optional IANA timezone override. Blank means
   // auto-detect from the birthplace coordinates; a wrong auto-detected
   // zone can be corrected here and the chart recalculated.
   const [timeZoneOverride, setTimeZoneOverride] = useState("");
-  const [gender, setGender] = useState<"male" | "female">("female");
-  const [preset, setPreset] = useState(PRESETS[0].label);
-  const [latitude, setLatitude] = useState(String(PRESETS[0].latitude));
-  const [longitude, setLongitude] = useState(String(PRESETS[0].longitude));
+  // AF-060/AF-066: gender starts unchosen, the same "" / Male /
+  // Female / "Prefer not to say" set as /reports. Ziwei needs a
+  // choice at submit (the engine places stars by gender); Western
+  // and Vedic do not use it, so "" is sent as the API default there.
+  const [gender, setGender] = useState<"" | "male" | "female">("");
+  const [preset, setPreset] = useState("");
+  const [latitude, setLatitude] = useState("");
+  const [longitude, setLongitude] = useState("");
   // Deep UX Batch A2: per-system cache. Switching system used to
   // wipe the result, interpretation, and saved state, so comparing
   // systems meant re-entering everything. The cache keeps one
@@ -400,7 +406,7 @@ export default function ChartsClient() {
     try {
       if (!signedIn && !guestFree) {
         if ((credits ?? 0) < 1) {
-          throw new Error("You need 1 Oracle for this interpretation. The calculation above stays free. Top up from the Oracles page.");
+          throw new Error("You need 1 Oracle for this interpretation. The calculation above stays free. Get Oracles from the Oracles page.");
         }
         const ok = await spend(1);
         if (!ok) throw new Error("Could not spend 1 Oracle. Your balance was not changed by this page.");
@@ -512,6 +518,12 @@ export default function ChartsClient() {
       setError("Please choose a birth date.");
       return;
     }
+    // AF-060: Ziwei places stars by gender, so it needs a choice;
+    // Western and Vedic do not use gender at all.
+    if (system === "ziwei" && gender === "") {
+      setError("Please choose a gender for the Ziwei chart, or pick Western or Vedic instead.");
+      return;
+    }
     // A typed place that was never resolved must not calculate with
     // the preset coordinates. Resolve it first, and stop on failure
     // so the user sees the lookup error instead of a wrong chart.
@@ -529,6 +541,12 @@ export default function ChartsClient() {
       }
       calcLatitude = found.latitude;
       calcLongitude = found.longitude;
+    }
+    // AF-060: the form starts empty, so a place is required: without
+    // coordinates there is nothing to calculate from.
+    if (!Number.isFinite(calcLatitude) || !Number.isFinite(calcLongitude)) {
+      setError("Please choose a birthplace, or search for a place and press Find.");
+      return;
     }
     let hour: number | null = null;
     let minute = 0;
@@ -565,7 +583,9 @@ export default function ChartsClient() {
           hour,
           minute,
           unknownTime,
-          gender,
+          // AF-066: only Ziwei uses gender; "" (Prefer not to say)
+          // is sent as the API default for the other systems.
+          gender: system === "ziwei" ? gender : "female",
           latitude: calcLatitude,
           longitude: calcLongitude,
           timeZone: timeZoneOverride.trim() || undefined,
@@ -596,6 +616,12 @@ export default function ChartsClient() {
     }
   }
 
+  // AF-060: the saved-profile picker and the Clear control only
+  // appear once there is data to save or clear. A first-time visitor
+  // sees the form, not controls for a past they do not have.
+  const hasData =
+    date !== "" || time !== "" || placeSearch !== "" || preset !== "" || result !== null;
+
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
       <div className="text-center">
@@ -610,9 +636,6 @@ export default function ChartsClient() {
           successful calculation, remembered on this device so you do
           not re-enter it next time. AI gets only chart positions,
           never birth data.
-          {system === "ziwei" &&
-            " Ziwei time uses the birthplace timezone (with daylight saving), then a longitude correction to solar time."}
-
         </p>
         {/* Audit 6: this long block used to sit above the form, so a
             first-time user had to scroll to the system tabs and the
@@ -623,10 +646,10 @@ export default function ChartsClient() {
         <details className="mx-auto mt-4 max-w-xl rounded-2xl border border-gold/20 bg-panel/50 p-4 text-left text-sm leading-relaxed text-cream/75">
           <summary className="cursor-pointer font-semibold text-goldbright">How your inputs are used</summary>
           <ul className="mt-2 list-disc space-y-1 pl-5">
-            <li>Gender: Ziwei only.</li>
-            <li>Birthplace: Rising and houses for Western and Vedic, longitude correction for Ziwei.</li>
-            <li>Birth time: clock time at the birthplace. Western converts with a timezone database that includes DST rules. Vedic and Ziwei use the same lookup: the timezone for the birthplace, with DST rules for the birth date, and Ziwei then corrects by longitude to solar time. If no timezone resolves for the coordinates, they fall back to longitude only (Vedic: longitude divided by 15 only; Ziwei: longitude correction only, 4 minutes per degree) and the chart says so. Unknown time uses noon for planets and withholds Rising, Midheaven, and houses. Ziwei needs a birth hour.</li>
-            <li>Near a boundary: for Vedic or Ziwei times near a sign, nakshatra, or double-hour boundary, a fallback longitude-only time can fall on either side, so treat borderline placements as approximate, not timezone-exact.</li>
+            <li>Gender: Ziwei only. Western and Vedic do not use it.</li>
+            <li>Birthplace: sets the rising sign and houses for Western and Vedic, and the local time for Ziwei.</li>
+            <li>Birth time: clock time at the birthplace. The chart names the timezone it used, so you can correct it if it is wrong. If no timezone can be found for the place, the chart falls back to a rough estimate from longitude and says so. Unknown time uses noon for planets and withholds Rising, Midheaven, and houses. Ziwei needs a birth hour.</li>
+            <li>Near a boundary: for times near a sign or palace boundary, a fallback estimate can fall on either side, so treat borderline placements as approximate. The full time rules are on the Methodology page.</li>
           </ul>
         </details>
       </div>
@@ -656,8 +679,8 @@ export default function ChartsClient() {
           <div className="mt-2">
             <GlideSelect
               options={[
-                { value: "ziwei", label: "Ziwei" },
                 { value: "western", label: "Western" },
+                { value: "ziwei", label: "Ziwei" },
                 { value: "vedic", label: "Vedic" },
               ]}
               value={system}
@@ -677,6 +700,8 @@ export default function ChartsClient() {
 
       <p className="mx-auto mt-3 max-w-lg text-center text-sm text-cream/75">{SYSTEM_BLURBS[system]}</p>
 
+      {hasData && (
+      <>
       <div className="mx-auto mt-6 flex max-w-xl flex-wrap items-center justify-between gap-3">
         <p className="text-xs text-mist">
           Your birth details are remembered on this device after a successful calculation.
@@ -687,12 +712,12 @@ export default function ChartsClient() {
             birthSaveEpochRef.current += 1;
             try { window.localStorage.removeItem("sortes-birth-details"); } catch {}
             setDate("");
-            setTime("08:00");
+            setTime("");
             setUnknownTime(false);
             setTimeZoneOverride("");
-            setPreset(PRESETS[0].label);
-            setLatitude(String(PRESETS[0].latitude));
-            setLongitude(String(PRESETS[0].longitude));
+            setPreset("");
+            setLatitude("");
+            setLongitude("");
             setResult(null);
             setInterpretation("");
             setSaved(false);
@@ -729,6 +754,8 @@ export default function ChartsClient() {
           }}
         />
       </div>
+      </>
+      )}
       <form ref={formRef} onSubmit={onSubmit} className="mx-auto mt-8 max-w-xl rounded-3xl border border-gold/25 bg-panel/70 p-6">
         {/* Audit 6: Use example lives at the top of the form, not only
             at its bottom, so it is visible without scrolling once the
@@ -738,25 +765,8 @@ export default function ChartsClient() {
             Use example: 1990-01-01, 08:00, Manila
           </button>
         </div>
-        {system === "ziwei" && (
-          <div className="mb-5">
-            <span className={labelClass}>Chart language (English is the default)</span>
-            <div role="group" className="mt-1 flex flex-wrap gap-3" aria-label="Chart language">
-              {(["en", "zh"] as const).map((l) => (
-                <button
-                  key={l}
-                  type="button"
-                  onClick={() => setZiweiLangSaved(l)}
-                  className={`rounded-full px-4 py-3 text-sm font-bold ${ziweiLang === l ? "btn-gold" : "border border-gold/40 text-goldbright"}`}
-                  aria-pressed={ziweiLang === l}
-                >
-                  {l === "en" ? "English" : "中文"}
-                </button>
-              ))}
-            </div>
-            <p className="mt-1 text-xs text-cream/80">This changes the chart labels, summary, and detail together. The form stays in English.</p>
-          </div>
-        )}
+        {/* AF-060: the English/中文 toggle lives with the Ziwei chart
+            result below, not mid-form. The form itself stays English. */}
         <div className="grid gap-5 sm:grid-cols-2">
           <div>
             <label htmlFor="chart-date" className={labelClass}>
@@ -786,24 +796,31 @@ export default function ChartsClient() {
             />
             <p className="mt-1 text-xs text-cream/80">Type the time as HH:MM, or tap the field to pick it. Clock time at the birthplace.</p>
           </div>
-          {system === "ziwei" && (
-            <div>
-              <span className={labelClass}>Gender</span>
-              <div role="group" className="mt-1 flex flex-wrap gap-3" aria-label="Gender">
-                {(["female", "male"] as const).map((g) => (
-                  <button
-                    key={g}
-                    type="button"
-                    onClick={() => setGender(g)}
-                    className={`rounded-full px-4 py-3 text-sm font-bold ${gender === g ? "btn-gold" : "border border-gold/40 text-goldbright"}`}
-                    aria-pressed={gender === g}
-                  >
-                    {g === "female" ? "Female" : "Male"}
-                  </button>
-                ))}
-              </div>
+          {/* AF-060: field order is system, date, time, place search.
+              The place search comes before the city list, not after it. */}
+          <div className="sm:col-span-2">
+            <label htmlFor="chart-place-search" className={labelClass}>
+              Birthplace — search a place name (free, no key)
+            </label>
+            <div className="flex gap-2">
+              <input
+                id="chart-place-search"
+                type="text"
+                value={placeSearch}
+                onChange={(e) => setPlaceSearch(e.target.value)}
+                placeholder="e.g. Santa Rosa City, Laguna"
+                className={inputClass}
+              />
+              <button type="button" onClick={lookupPlace} disabled={placeBusy} className="shrink-0 rounded-xl border border-gold/40 px-4 py-3 text-sm font-bold text-goldbright disabled:opacity-100 disabled:saturate-50">
+                {placeBusy ? "Searching…" : "Find"}
+              </button>
             </div>
-          )}
+            {placeStatus && <p className="mt-2 text-sm text-cream/75">{placeStatus}</p>}
+            <p className="mt-1 text-xs text-cream/80">
+              The place name is used only for this lookup. Only its coordinates are kept for the calculation, and the
+              place name is never stored and never sent to AI. Calculate chart also resolves a typed place first.
+            </p>
+          </div>
           <div>
             <span className={labelClass}>Birthplace</span>
             {reducedMotion ? (
@@ -820,6 +837,7 @@ export default function ChartsClient() {
                 }}
                 className={inputClass}
               >
+                <option value="">Choose a birthplace…</option>
                 {PRESETS.map((p) => (
                   <option key={p.label} value={p.label}>
                     {p.label}
@@ -830,6 +848,7 @@ export default function ChartsClient() {
             ) : (
               <GlideSelect
                 options={[
+                  { value: "", label: "Choose a birthplace…" },
                   ...PRESETS.map((p) => ({ value: p.label, label: p.label })),
                   { value: "Custom", label: "Custom coordinates" },
                 ]}
@@ -853,17 +872,44 @@ export default function ChartsClient() {
               />
             )}
           </div>
+          {/* AF-066: same gender options as /reports — Female, Male,
+              and Prefer not to say. Ziwei needs a choice at submit;
+              the other systems ignore it. */}
+          {system === "ziwei" && (
+            <div>
+              <span className={labelClass}>Gender</span>
+              <div role="group" className="mt-1 flex flex-wrap gap-3" aria-label="Gender">
+                {(["female", "male", ""] as const).map((g) => (
+                  <button
+                    key={g || "unset"}
+                    type="button"
+                    onClick={() => setGender(g)}
+                    className={`rounded-full px-4 py-3 text-sm font-bold ${gender === g ? "btn-gold" : "border border-gold/40 text-goldbright"}`}
+                    aria-pressed={gender === g}
+                  >
+                    {g === "female" ? "Female" : g === "male" ? "Male" : "Prefer not to say"}
+                  </button>
+                ))}
+              </div>
+              <p className="mt-1 text-xs text-cream/80">Ziwei places stars by gender, so a choice is needed for a Ziwei chart.</p>
+            </div>
+          )}
+          {/* AF-060: latitude, longitude, and timezone live under
+              Advanced. Most seekers only ever use the place search. */}
+          <details className="rounded-2xl border border-gold/20 bg-panel/50 p-4 sm:col-span-2">
+            <summary className="cursor-pointer text-sm font-semibold text-goldbright">Advanced: coordinates and timezone</summary>
+            <div className="mt-4 grid gap-5 sm:grid-cols-2">
           <div>
             <label htmlFor="chart-lat" className={labelClass}>
               Latitude
             </label>
-            <input id="chart-lat" type="number" step="any" required value={latitude} onChange={(e) => setLatitude(e.target.value)} className={inputClass} />
+            <input id="chart-lat" type="number" step="any" value={latitude} onChange={(e) => setLatitude(e.target.value)} className={inputClass} />
           </div>
           <div>
             <label htmlFor="chart-lon" className={labelClass}>
               Longitude
             </label>
-            <input id="chart-lon" type="number" step="any" required value={longitude} onChange={(e) => setLongitude(e.target.value)} className={inputClass} />
+            <input id="chart-lon" type="number" step="any" value={longitude} onChange={(e) => setLongitude(e.target.value)} className={inputClass} />
           </div>
           <div className="sm:col-span-2">
             <label htmlFor="chart-timezone" className={labelClass}>
@@ -886,29 +932,8 @@ export default function ChartsClient() {
               here (for example America/New_York) and recalculate.
             </p>
           </div>
-          <div className="sm:col-span-2">
-            <label htmlFor="chart-place-search" className={labelClass}>
-              Or search a place name (free, no key)
-            </label>
-            <div className="flex gap-2">
-              <input
-                id="chart-place-search"
-                type="text"
-                value={placeSearch}
-                onChange={(e) => setPlaceSearch(e.target.value)}
-                placeholder="e.g. Santa Rosa City, Laguna"
-                className={inputClass}
-              />
-              <button type="button" onClick={lookupPlace} disabled={placeBusy} className="shrink-0 rounded-xl border border-gold/40 px-4 py-3 text-sm font-bold text-goldbright disabled:opacity-100 disabled:saturate-50">
-                {placeBusy ? "Searching…" : "Find"}
-              </button>
             </div>
-            {placeStatus && <p className="mt-2 text-sm text-cream/75">{placeStatus}</p>}
-            <p className="mt-1 text-xs text-cream/80">
-              The place name is used only for this lookup. Only its coordinates are kept for the calculation, and the
-              place name is never stored and never sent to AI. Calculate chart also resolves a typed place first.
-            </p>
-          </div>
+          </details>
         </div>
         {error && (
           <p role="alert" className="mt-5 rounded-xl border border-red-400/40 bg-red-500/10 px-4 py-3 text-sm alert-error-text">
@@ -1112,7 +1137,7 @@ export default function ChartsClient() {
               birth inputs come from the form that calculated this
               chart; Ziwei results always carry a known birth hour,
               since unknown hours are refused. Nothing new is stored. */}
-          {result.system === "ziwei" && !unknownTime && (
+          {result.system === "ziwei" && !unknownTime && gender !== "" && (
             <ZiweiStacks
               date={date}
               hour={Number(time.split(":")[0])}

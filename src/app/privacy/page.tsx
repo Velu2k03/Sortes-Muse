@@ -1,12 +1,15 @@
 import { APP_NAME, APP_SHORT, CONTACT_EMAIL, SITE_URL } from "@/lib/site";
+import { pageSocial } from "@/lib/seo";
 
 export const metadata = {
   title: "Privacy Policy",
-  description: `How ${APP_SHORT} collects, uses, and deletes your data.`,
+  description:
+    "How Sortes collects, uses, and deletes your data: what we store, who processes it, your rights, and how to ask for export or deletion.",
   alternates: { canonical: "/privacy" },
+  ...pageSocial({ title: "Privacy Policy", description: "How Sortes collects, uses, and deletes your data: what we store, who processes it, your rights, and how to ask for export or deletion.", path: "/privacy" }),
 };
 
-const UPDATED = "November 7, 2026";
+const UPDATED = "November 8, 2026";
 
 export default function PrivacyPage() {
   return (
@@ -14,6 +17,14 @@ export default function PrivacyPage() {
       <p className="text-xs uppercase tracking-[0.35em] text-gold">Legal</p>
       <h1 className="mt-3 font-display text-5xl text-goldbright">Privacy Policy</h1>
       <p className="mt-2 text-sm text-mist">Last updated: {UPDATED}</p>
+
+      <p className="mt-4 rounded-lg border border-gold/30 p-4 text-[15px] leading-relaxed text-cream/85">
+        <strong>In short:</strong> we keep your account email, your Oracle
+        balance, purchase records, and the readings you save. Birth date, time,
+        and place are used in memory for a chart and are never stored. A small
+        set of service providers help us run the site; they are listed in
+        section 8, and you can ask for export or deletion at any time.
+      </p>
 
       <div className="mt-8 space-y-8 text-[15px] leading-relaxed text-cream/85">
         <section>
@@ -133,6 +144,58 @@ export default function PrivacyPage() {
             </a>
             .
           </p>
+        </section>
+
+        <section>
+          <h2 className="font-display text-2xl text-goldbright">8. Who processes your data</h2>
+          <p className="mt-2">
+            The data controller is Resonant Atlas, operator of {APP_SHORT}.
+            Contact:{" "}
+            <a className="text-goldbright underline" href={`mailto:${CONTACT_EMAIL}`}>
+              {CONTACT_EMAIL}
+            </a>
+            . These providers process data on our behalf:
+          </p>
+          <div className="mt-3 overflow-x-auto">
+            <table className="w-full min-w-[32rem] border-collapse text-left text-sm">
+              <thead>
+                <tr className="border-b border-gold/30 text-goldbright">
+                  <th className="py-2 pr-4 font-medium">Provider</th>
+                  <th className="py-2 font-medium">Purpose</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="border-b border-gold/10">
+                  <td className="py-2 pr-4">Supabase</td>
+                  <td className="py-2">Sign-in and database</td>
+                </tr>
+                <tr className="border-b border-gold/10">
+                  <td className="py-2 pr-4">Vercel</td>
+                  <td className="py-2">Website hosting</td>
+                </tr>
+                <tr className="border-b border-gold/10">
+                  <td className="py-2 pr-4">Lemon Squeezy</td>
+                  <td className="py-2">Payments for Oracle packs</td>
+                </tr>
+                <tr className="border-b border-gold/10">
+                  <td className="py-2 pr-4">Google</td>
+                  <td className="py-2">&quot;Continue with Google&quot; sign-in, only if you choose it</td>
+                </tr>
+                <tr className="border-b border-gold/10">
+                  <td className="py-2 pr-4">OpenRouter</td>
+                  <td className="py-2">AI-written reading text (see section 3)</td>
+                </tr>
+                <tr className="border-b border-gold/10">
+                  <td className="py-2 pr-4">OpenStreetMap Nominatim</td>
+                  <td className="py-2">Place-name lookup for charts (see section 2)</td>
+                </tr>
+                <tr>
+                  <td className="py-2 pr-4">Plausible</td>
+                  <td className="py-2">Cookie-free analytics, only when enabled</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </section>
       </div>
     </div>

@@ -24,13 +24,15 @@ describe("home page: first-visit comprehension", () => {
   });
 
   it("states what is free", () => {
-    expect(src).toContain("Your first Quick Insight reading is free. No card, no account.");
+    expect(src).toContain("Your first Quick Insight reading is free. No payment card, no account.");
     expect(src).toContain("Free Western, Vedic, and Ziwei birth chart calculations.");
     expect(src).toContain("FIRST FREE");
   });
 
   it("states what costs credits", () => {
-    expect(src).toContain("After that, a reading is 1 Oracle.");
+    // AF-081: one label per action — the Oracle definition is now
+    // "1 Oracle = 1 reading", not "a reading is 1 Oracle".
+    expect(src).toContain("After that, 1 Oracle = 1 reading.");
     expect(src).toContain("$3.99 for 5 Oracles");
     expect(src).toContain("Oracles never expire. No subscription.");
     expect(src).toContain("First free · then 1 Oracle");

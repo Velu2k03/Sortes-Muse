@@ -13,7 +13,7 @@ export const SPREAD_SAMPLES: Record<Spread["slug"], string> = {
   "quick-insight":
     "Sample question: \u201CWhat do I most need to see about today?\u201D The single card lands on the heart of it: not the loudest worry, but the quiet one underneath, the part of the day you have been avoiding naming. A one-card reading does not decide anything; it points at the one thing worth sitting with before you act.",
   "past-present-future":
-    "Sample question: \u201CShould I take the new job, or stay where I am?\u201D The Past card honours the work already done rather than calling it wasted. The Present card names the crossroads plainly: the choice is real, and waiting has its own cost. The Future card does not promise an outcome; it shows what the path looks like if the present choice is made with open eyes.",
+    "Sample question: \u201CShould I take the new job, or stay where I am?\u201D The Past card honors the work already done rather than calling it wasted. The Present card names the crossroads plainly: the choice is real, and waiting has its own cost. The Future card does not promise an outcome; it shows what the path looks like if the present choice is made with open eyes.",
   "love-insight":
     "Sample question: \u201CWhere do we actually stand?\u201D The You card reflects what you are bringing, including the part you have not said out loud. The Them card reads as a perspective, not a verdict on another person. The Connection card names what the two of you keep circling, and what a single honest conversation could change.",
   "career-path":

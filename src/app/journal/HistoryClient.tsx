@@ -28,6 +28,14 @@ import {
 export default function HistoryPage() {
   const { user, deleteReading } = useAuth();
   const [history, setHistory] = useState<Reading[] | null>(null);
+  // AF-089: false on the server and first client render, so the HTML
+  // carries the real empty-state block. After mount, while the journal
+  // is still loading, it is replaced by "Loading" so a user who has
+  // readings is never told they have none.
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => {
+    queueMicrotask(() => setHydrated(true));
+  }, []);
   // M2.2: delete arms on first tap and deletes on the second, so a
   // stray tap cannot wipe a reading. The row says one-tap delete;
   // this keeps it one action per entry while guarding the data.
@@ -92,11 +100,11 @@ export default function HistoryPage() {
         )}
       </div>
 
-      {history === null && (
+      {history === null && hydrated && (
         <p className="py-16 text-center text-mist">Loading your journal…</p>
       )}
 
-      {history !== null && history.length === 0 && (
+      {((history === null && !hydrated) || (history !== null && history.length === 0)) && (
         <div className="mx-auto mt-12 max-w-md rounded-3xl border border-gold/20 bg-panel/60 p-8 text-center">
           <p className="flex items-center justify-center gap-2 font-display text-2xl text-cream"><Icon name="iconoirBook" size={24} />No readings yet</p>
           <p className="mt-2 text-sm text-cream/75">
@@ -111,8 +119,16 @@ export default function HistoryPage() {
             href="/spreads/quick-insight"
             className="btn-gold mt-6 inline-block rounded-xl px-8 py-3 font-bold"
           >
-            Begin free reading
+            Start my free reading
           </Link>
+          {!user && (
+            <p className="mt-4 text-sm text-cream/75">
+              Already have readings?{" "}
+              <Link href="/account" className="font-semibold text-goldbright underline">
+                Sign in to sync
+              </Link>
+            </p>
+          )}
         </div>
       )}
 
@@ -520,6 +536,13 @@ export default function HistoryPage() {
             >
               Export journal as JSON
             </button>
+            <button
+              type="button"
+              onClick={() => window.print()}
+              className="btn-ghost rounded-xl px-4 py-3 text-sm font-semibold"
+            >
+              Print / save as PDF
+            </button>
           </div>
           {/* Codex re-review, correct: with a blank search this
               message asked users to clear a search they never made,
@@ -528,6 +551,32 @@ export default function HistoryPage() {
           {filteredHistory.length === 0 && search.trim() !== "" && (
             <p className="mt-8 text-center text-sm text-mist">No readings match that search. Try a different word, or clear the search.</p>
           )}
+
+          {/* AF-017: print-to-PDF. Hidden on screen; window.print()
+              shows only this sheet (see .journal-print-sheet in
+              globals.css). Real text from the same data as the
+              Markdown export, so the saved PDF is selectable. */}
+          <div className="journal-print-sheet">
+            <h1 className="heirloom-title">Sortes journal</h1>
+            <hr className="heirloom-rule" />
+            {groupReadingsByDay(filteredHistory).map((group) => (
+              <section key={group.label} className="heirloom-section">
+                <h2 className="heirloom-heading">{group.label}</h2>
+                {group.readings.map((r) => (
+                  <p key={r.id} className="heirloom-body">
+                    {r.spreadName}
+                    {r.question ? ` · “${r.question}”` : ""}
+                    {r.cards?.length
+                      ? `\n${r.cards
+                          .map((d) => `${getCard(d.cardId).name}${d.reversed ? " (reversed)" : ""}`)
+                          .join(", ")}`
+                      : ""}
+                    {r.interpretation ? `\n${r.interpretation}` : ""}
+                  </p>
+                ))}
+              </section>
+            ))}
+          </div>
 
           {/* M2.2: timeline, grouped by day, in the chosen sort order. */}
           <div className="mt-10 space-y-8">
@@ -551,7 +600,7 @@ export default function HistoryPage() {
                             >
                               <Image
                                 src={getCard(d.cardId).image}
-                                alt=""
+                                alt={`${getCard(d.cardId).name}${d.reversed ? ", reversed" : ""}`}
                                 fill
                                 sizes="48px"
                                 className="object-cover"

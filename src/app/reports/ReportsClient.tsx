@@ -46,14 +46,17 @@ interface BirthFormState {
 }
 
 function emptyBirth(): BirthFormState {
+  // AF-066: same empty start as /charts. No 08:00 hour, no Manila
+  // city: a prefilled hour and city read as the seeker's own data
+  // while the birth date sits empty.
   return {
     date: "",
     unknownTime: false,
-    hour: "8",
-    minute: "0",
-    preset: PRESETS[0].label,
-    latitude: String(PRESETS[0].latitude),
-    longitude: String(PRESETS[0].longitude),
+    hour: "",
+    minute: "",
+    preset: "",
+    latitude: "",
+    longitude: "",
     gender: "",
   };
 }
@@ -175,6 +178,7 @@ function BirthForm({
               });
             }}
           >
+            <option value="">Choose a birth city…</option>
             {PRESETS.map((p) => (
               <option key={p.label} value={p.label}>
                 {p.label}
@@ -321,6 +325,21 @@ export default function ReportsClient() {
     setToastOpen(false);
     if (!birth.date) {
       setError("Please enter a birth date.");
+      return;
+    }
+    // AF-066: the form starts empty, so an empty hour or city must
+    // say so instead of silently becoming midnight in Manila.
+    if (!birth.unknownTime && birth.hour === "") {
+      setError("Please enter a birth hour, or tick birth time unknown.");
+      return;
+    }
+    if (
+      birth.latitude === "" ||
+      birth.longitude === "" ||
+      !Number.isFinite(Number(birth.latitude)) ||
+      !Number.isFinite(Number(birth.longitude))
+    ) {
+      setError("Please choose a birth city.");
       return;
     }
     if (type === "year-ahead" && birth.gender === "") {
@@ -495,7 +514,7 @@ export default function ReportsClient() {
         <div className="mt-6 rounded-2xl border border-gold/25 bg-panel/70 p-4 text-center text-sm text-cream">
           You are out of Oracles. Reports cost 1 Oracle each.{" "}
           <Link href="/oracles" className="font-semibold text-goldbright underline">
-            Top up Oracles
+            Get Oracles
           </Link>
         </div>
       )}
@@ -504,7 +523,7 @@ export default function ReportsClient() {
           {error}{" "}
           {error.includes("1 Oracle") && (
             <Link href="/oracles" className="font-semibold underline">
-              Top up Oracles
+              Get Oracles
             </Link>
           )}
         </div>

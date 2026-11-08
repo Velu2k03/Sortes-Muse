@@ -41,7 +41,7 @@ export default function GuidesSearch({ guides }: { guides: Guide[] }) {
             <h2 className="font-display text-3xl text-goldbright">{g.title}</h2>
             <p className="mt-2 text-sm leading-relaxed text-cream/75">{g.description}</p>
             <span className="mt-3 inline-block text-sm font-semibold text-goldbright underline underline-offset-4">
-              Read the guide
+              Read the guide<span className="sr-only">: {g.title}</span>
             </span>
           </Link>
         ))}

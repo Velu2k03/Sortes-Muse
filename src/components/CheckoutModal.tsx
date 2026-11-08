@@ -96,7 +96,7 @@ export default function CheckoutModal({ open, onClose, reason, initialPackId }: 
           onClick={onClose}
           role="dialog"
           aria-modal="true"
-          aria-label="Top up Oracles"
+          aria-label="Get Oracles"
         >
           <motion.div
             className="w-full max-w-lg rounded-t-3xl border border-gold/30 bg-navydeep p-6 sm:rounded-3xl sm:p-8"
@@ -107,7 +107,7 @@ export default function CheckoutModal({ open, onClose, reason, initialPackId }: 
             onClick={(e) => e.stopPropagation()}
           >
             <h2 className="text-center font-display text-3xl text-goldbright">
-              Top up Oracles
+              Get Oracles
             </h2>
             {reason && (
               <p className="mt-2 text-center text-sm text-cream/75">{reason}</p>
@@ -162,7 +162,7 @@ export default function CheckoutModal({ open, onClose, reason, initialPackId }: 
                       </p>
                     </div>
                     <div className="flex items-center gap-3">
-                      <p className="font-display text-2xl text-goldbright">
+                      <p className="font-display text-2xl text-goldbright lining-nums tabular-nums">
                         ${p.price.toFixed(2)}
                       </p>
                       <button
@@ -171,7 +171,7 @@ export default function CheckoutModal({ open, onClose, reason, initialPackId }: 
                         onClick={() => void buyReal(p.id)}
                         className="btn-gold rounded-xl px-5 py-3 text-sm font-bold disabled:opacity-100 disabled:saturate-50"
                       >
-                        {processing === p.id ? "…" : "Checkout"}
+                        {processing === p.id ? "…" : <>Checkout<span className="sr-only">: {p.name} pack</span></>}
                       </button>
                     </div>
                   </div>

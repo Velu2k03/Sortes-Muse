@@ -10,6 +10,7 @@ import {
   suitLabel,
 } from "@/lib/cards";
 import { APP_SHORT } from "@/lib/site";
+import { breadcrumbJsonLd, pageSocial } from "@/lib/seo";
 
 // Phase 4A (4.4): one deep-linkable, shareable page per card, all 78
 // statically generated from src/data/cards.json. No per-card spread
@@ -30,10 +31,22 @@ export async function generateMetadata({
   // Phase 4C (4.10a): the title must NOT carry "| Sortes" itself.
   // The root layout template is "%s | Sortes", so the old suffix here
   // rendered "The Fool Tarot Card Meaning | Sortes | Sortes".
+  // AF-070/AF-071: per-card OG/Twitter with the card art, and a
+  // description capped at 160 characters.
+  const description =
+    card.meaning.upright.length > 160
+      ? `${card.meaning.upright.slice(0, 157)}…`
+      : card.meaning.upright;
   return {
     title: `${card.name} Tarot Card Meaning`,
-    description: card.meaning.upright,
+    description,
     alternates: { canonical: `/deck/${slug}` },
+    ...pageSocial({
+      title: `${card.name} Tarot Card Meaning`,
+      description,
+      path: `/deck/${slug}`,
+      image: card.image,
+    }),
   };
 }
 
@@ -59,6 +72,19 @@ export default async function CardPage({
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+      {/* AF-070: BreadcrumbList JSON-LD for every card page. */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(
+            breadcrumbJsonLd([
+              ["Home", "/"],
+              ["Deck", "/deck"],
+              [card.name, `/deck/${slug}`],
+            ]),
+          ),
+        }}
+      />
       <Breadcrumbs
         trail={[
           { href: "/", label: "Home" },
@@ -145,7 +171,7 @@ export default async function CardPage({
                 Quick Insight, free first
               </Link>
               <Link href="/spreads/past-present-future" className="rounded-xl border border-gold/30 px-5 py-2.5 text-sm font-semibold text-goldbright hover:border-gold/60">
-                Past / Present / Future
+                Past · Present · Future
               </Link>
               <Link href="/spreads/celtic-cross" className="rounded-xl border border-gold/30 px-5 py-2.5 text-sm font-semibold text-goldbright hover:border-gold/60">
                 Celtic Cross

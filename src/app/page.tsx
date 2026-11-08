@@ -82,12 +82,15 @@ export default function Home() {
           >
             A Resonant Atlas tarot experience
           </motion.p>
+          {/* AF-071: the H1 is the value proposition with keywords,
+              not the one-word brand. The brand still leads the title
+              tag and the footer. */}
           <motion.h1
             initial={false}
             animate={{ opacity: 1, y: 0 }}
-            className="mt-6 font-display text-6xl leading-tight text-goldbright sm:text-7xl md:text-8xl"
+            className="mt-6 font-display text-5xl leading-tight text-goldbright sm:text-6xl md:text-7xl"
           >
-            Sortes
+            Free tarot reading online, with AI interpretation
           </motion.h1>
           <motion.p
             initial={false}
@@ -130,7 +133,7 @@ export default function Home() {
               href="/daily"
               className="btn-gold shrink-0 whitespace-nowrap rounded-2xl px-8 py-4 text-center text-lg font-bold"
             >
-              <Icon name="sparkle" size={20} className="mr-2 inline-block align-[-3px]" />Draw a Card
+              <Icon name="sparkle" size={20} className="mr-2 inline-block align-[-3px]" />Draw today&apos;s card
             </Link>
             {/* Phase 2: one dominant action. Draw a Card stays gold.
                 Begin a Reading is now a quiet secondary button, same
@@ -154,7 +157,7 @@ export default function Home() {
             animate={{ opacity: 1 }}
             className="mt-5 text-sm text-mist"
           >
-            Your first Quick Insight reading is free. No card, no account.
+            Your first Quick Insight reading is free. No payment card, no account.
           </motion.p>
           {/* Phase 2: Oracle value in plain cash terms, without a
               fixed per-Oracle price, because that price varies by
@@ -168,11 +171,11 @@ export default function Home() {
             animate={{ opacity: 1 }}
             className="mt-3 text-sm text-cream/75"
           >
-            After that, a reading is 1 Oracle. Oracle packs start at{" "}
+            After that, 1 Oracle = 1 reading. Oracle packs start at{" "}
             <Link href="/oracles" className="font-semibold text-goldbright underline underline-offset-4">
               $3.99 for 5 Oracles
             </Link>
-            , and Oracles never expire. No subscription.
+            {" "}($0.80 each), and Oracles never expire. No subscription.
           </motion.p>
           <motion.p
             initial={false}
@@ -261,19 +264,22 @@ export default function Home() {
                 <p className="mt-4 font-display text-2xl text-goldbright">
                   {spread.slug === "quick-insight" ? "Free" : (<><span className="font-body">1</span> Oracle</>)}
                 </p>
+                <p className="mt-1 text-xs text-mist">
+                  1 Oracle per reading. You give one question, a few lines of context, and a category.
+                </p>
                 {spread.slug === "quick-insight" ? (
                   <Link
                     href={`/spreads/${spread.slug}`}
                     className="btn-gold mt-5 block rounded-xl px-4 py-3 text-center font-semibold"
                   >
-                    Start free reading
+                    Start my free reading
                   </Link>
                 ) : (
                   <Link
                     href={`/spreads/${spread.slug}`}
                     className="btn-ghost mt-5 block rounded-xl px-4 py-3 text-center font-semibold"
                   >
-                    View spread
+                    View spread<span className="sr-only">: {spread.name}</span>
                   </Link>
                 )}
               </article>
