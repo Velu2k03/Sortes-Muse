@@ -76,8 +76,8 @@ export default function HistoryPage() {
         </h1>
         <p className="mx-auto mt-4 max-w-xl text-cream/75">
           {user
-            ? "Every full reading and saved chart interpretation you complete is kept here and synced to your account, so your journal follows you across devices. Daily cards are not saved as full readings."
-            : "Every full reading and saved chart interpretation you complete is kept here on this device. Sign in to sync your journal across devices. Daily cards are not saved as full readings."}
+            ? "Every full reading and saved chart interpretation you complete is kept here and synced to your account, so your journal follows you across devices. Daily cards are saved here as a one-line entry, not a full reading."
+            : "Every full reading and saved chart interpretation you complete is kept here on this device. Sign in to sync your journal across devices. Daily cards are saved here as a one-line entry, not a full reading."}
         </p>
         {/* Phase 3 (3.5): plain device-only warning for guests. Guest
             entries live in this browser's storage; clearing browser
@@ -222,10 +222,14 @@ export default function HistoryPage() {
                 <p className="text-xs uppercase tracking-[0.25em] text-gold">
                   Pattern Mirror
                 </p>
-                {history.length < PATTERN_MIRROR_MIN_READINGS ? (
+                {/* AF-050: no repeat, no pattern. The section shows
+                    the honest empty state until some card is drawn
+                    more than once (mostDrawn already excludes x1). */}
+                {history.length < PATTERN_MIRROR_MIN_READINGS ||
+                mirror.mostDrawn.length === 0 ? (
                   <p className="mt-2 text-sm text-cream/75">
                     No patterns yet — your first few readings will appear
-                    here.
+                    here once a card starts repeating.
                   </p>
                 ) : (
                   <>

@@ -70,10 +70,32 @@ describe("patternMirror", () => {
     const m = patternMirror(readings, RESOLVER, NOW);
     expect(m.totalReadings).toBe(3);
     expect(m.totalDraws).toBe(6);
-    expect(m.mostDrawn[0]).toEqual({ cardId: "major-00", count: 3 });
+    // AF-050: only the card drawn more than once is most-drawn.
+    expect(m.mostDrawn).toEqual([{ cardId: "major-00", count: 3 }]);
     // A card drawn twice is most-drawn material, not a stalker.
     expect(m.stalkers).toEqual([{ cardId: "major-00", count: 3 }]);
-    expect(m.mostDrawn.map((c) => c.cardId)).toContain("minor-wands-01");
+  });
+
+  it("most-drawn lists only cards drawn more than once (AF-050)", () => {
+    // Five readings, five distinct cards: nothing repeated, so there
+    // is no pattern to mirror — no "5 cards x1" list.
+    const readings = [
+      reading("r1", daysAgo(1), ["major-00"]),
+      reading("r2", daysAgo(2), ["major-01"]),
+      reading("r3", daysAgo(3), ["minor-wands-01"]),
+      reading("r4", daysAgo(4), ["minor-cups-01"]),
+      reading("r5", daysAgo(5), ["minor-swords-01"]),
+    ];
+    expect(patternMirror(readings, RESOLVER, NOW).mostDrawn).toEqual([]);
+    // One repeat among singles: only the repeated card is listed.
+    const mixed = [
+      reading("r1", daysAgo(1), ["major-00"]),
+      reading("r2", daysAgo(2), ["major-00"]),
+      reading("r3", daysAgo(3), ["minor-wands-01"]),
+    ];
+    expect(patternMirror(mixed, RESOLVER, NOW).mostDrawn).toEqual([
+      { cardId: "major-00", count: 2 },
+    ]);
   });
 
   it("balances suits and majors vs minors from the resolver only", () => {
@@ -92,10 +114,8 @@ describe("patternMirror", () => {
     const readings = [reading("r1", daysAgo(1), ["major-00", "no-such-card"])];
     const m = patternMirror(readings, RESOLVER, NOW);
     expect(m.totalDraws).toBe(2);
-    expect(m.mostDrawn).toEqual([
-      { cardId: "major-00", count: 1 },
-      { cardId: "no-such-card", count: 1 },
-    ]);
+    // AF-050: both cards were drawn once, so neither is most-drawn.
+    expect(m.mostDrawn).toEqual([]);
     expect(m.majors).toBe(1);
     expect(m.minors).toBe(0);
   });

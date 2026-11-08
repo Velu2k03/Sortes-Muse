@@ -137,7 +137,9 @@ export function patternMirror(
   return {
     totalReadings: readings.length,
     totalDraws,
-    mostDrawn: ranked.slice(0, 5),
+    // AF-050: "most-drawn" means drawn more than once. Five cards
+    // at x1 is not a pattern, so singles never reach the list.
+    mostDrawn: ranked.filter((c) => c.count >= 2).slice(0, 5),
     suitBalance: SUITS.map((suit) => ({ suit, count: suitCounts.get(suit) ?? 0 })),
     majors,
     minors,
@@ -224,8 +226,11 @@ export function monthlyReview(
     categories: [...categoryCounts.entries()]
       .sort(byCountDesc)
       .map(([name, count]) => ({ name, count })),
+    // AF-050: same rule as mostDrawn — a card seen once did not
+    // "keep appearing", so singles never reach the list.
     topCards: [...cardCounts.entries()]
       .sort(byCountDesc)
+      .filter(([, count]) => count >= 2)
       .slice(0, 3)
       .map(([cardId, count]) => ({ cardId, count })),
     stepsCount,
