@@ -6,6 +6,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { getSupabaseBrowser } from "@/lib/supabase-browser";
 import { clearLocalAccountData } from "@/lib/storage";
 import { fetchWithTimeout, withTimeout } from "@/lib/fetch-timeout";
+import { authErrorMessage, reasonFromSupabaseError } from "@/lib/auth-callback";
 
 interface ServerTx {
   id: string;
@@ -77,6 +78,41 @@ export default function AccountPage() {
       });
     }
   }, [user]);
+
+  // Brutal audit F2 (2026-11-08): /auth/callback lands here with
+  // ?auth=error&reason=<code>, and Supabase falls back to #error=… when
+  // a redirect URL is not on its allow list. Both used to be ignored,
+  // so a failed link silently showed the signed-out form. Show the
+  // mapped message once, then strip the params so a reload is clean.
+  useEffect(() => {
+    try {
+      const url = new URL(window.location.href);
+      const hash = new URLSearchParams(url.hash.replace(/^#/, ""));
+      let message: string | null = null;
+      if (url.searchParams.get("auth") === "error") {
+        message = authErrorMessage(url.searchParams.get("reason"));
+      } else if (hash.get("error") || hash.get("error_code")) {
+        message = authErrorMessage(
+          reasonFromSupabaseError(hash.get("error_code"), hash.get("error_description"))
+        );
+      }
+      if (url.searchParams.has("auth") || url.searchParams.has("reason") || hash.has("error")) {
+        url.searchParams.delete("auth");
+        url.searchParams.delete("reason");
+        url.hash = "";
+        window.history.replaceState(window.history.state, "", url.pathname + url.search);
+      }
+      if (message) {
+        const text = message;
+        queueMicrotask(() => {
+          setAuthTab("link");
+          setError(text);
+        });
+      }
+    } catch {
+      /* URL parsing unavailable; nothing to show. */
+    }
+  }, []);
 
   // Parse JSON defensively: a crashed or proxied API route can return an
   // empty / non-JSON body, which should surface a friendly error, not a

@@ -40,8 +40,11 @@ export default function PackBuyButton({
         body: JSON.stringify({ packId: apiPackId(packId) }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error ?? "Checkout failed.");
-      if (!data.url) throw new Error("Checkout failed.");
+      // Brutal audit F1: an empty or non-JSON body reads as a clear
+      // "temporarily unavailable", not a bare "Checkout failed."
+      const unavailable = "Checkout is temporarily unavailable. Please try again in a moment.";
+      if (!res.ok) throw new Error(data.error ?? unavailable);
+      if (!data.url) throw new Error(unavailable);
       window.location.assign(data.url);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Checkout failed.");
