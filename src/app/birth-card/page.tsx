@@ -58,7 +58,7 @@ export default function BirthCardPage() {
         <ThemedDatePicker id="birth-card-date" value={date} onChange={setDate} />
         {isFuture && (
           <p role="alert" className="mt-3 text-sm font-semibold text-goldbright">
-            Please choose a date in the past. A birth date cannot be in the future.
+            Please choose a date in the past.
           </p>
         )}
         <p className="mt-3 text-sm text-cream/75">
@@ -82,7 +82,7 @@ export default function BirthCardPage() {
               </p>
               <h2 className="mt-3 font-display text-4xl text-goldbright">{personalityCard.name}</h2>
               <p className="mt-2 text-sm leading-relaxed text-cream/75">
-                In this system, the Personality card describes how you
+                The Personality card describes how you
                 meet the world: the lesson you work with in daily life.
               </p>
               <p className="mt-3 leading-relaxed text-cream/85">{personalityCard.meaning.upright}</p>

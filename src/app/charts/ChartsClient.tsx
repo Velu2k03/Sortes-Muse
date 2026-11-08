@@ -1158,7 +1158,7 @@ export default function ChartsClient() {
             <p className="mt-2 text-sm text-cream/75">
               {result.system === "ziwei" && ziweiLang === "zh"
                 ? ZIWEI_LEGEND_ZH.intro
-                : "Free legend. Start here if a word is new, then read your interpretation below."}
+                : "Start here if a word is new, then read your interpretation below."}
             </p>
             {/* Personal Phase 2: the legend list is secondary detail.
                 It stays available behind one tap, instead of filling
@@ -1236,7 +1236,7 @@ export default function ChartsClient() {
                 <><strong className="text-goldbright">下一步：</strong>{ZIWEI_LEGEND_ZH.nextStep}</>
               ) : (
                 <><strong className="text-goldbright">Next step: </strong>
-                read your interpretation, save it, or share it. Calculation is free; interpretation is 1 Oracle, first per system free.</>
+                read your interpretation, save it, or share it.</>
               )}
             </p>
           </section>
