@@ -1,5 +1,4 @@
 "use client";
-import Icon from "@/components/Icon";
 
 import Link from "next/link";
 import { useState } from "react";
@@ -122,18 +121,13 @@ export default function SpreadsPage() {
           >
             {/* Phase 4A (4.5): crisp sacred-geometry diagram of the
                 spread's card positions, gold-on-dark linework. The
-                old blurred card-back "locked" preview is gone; a
-                locked spread shows its layout too, with a small lock
-                chip, and the gate stays on the button below. */}
+                old blurred card-back preview is gone; every spread
+                shows its layout, and the gate stays on the button
+                below (AF-015: no Locked badge). */}
             <div className="relative flex h-52 items-center justify-center overflow-hidden bg-navydeep/60 p-4">
               <div className="h-full w-full max-w-72">
                 <SpreadDiagram spread={s} />
               </div>
-              {locked && (
-                <span className="absolute right-3 top-3 rounded-full border border-gold/50 bg-ink/80 px-3 py-1 text-xs font-semibold text-goldbright">
-                  <span className="inline-flex items-center gap-1.5"><Icon name="lock" size={14} />Locked</span>
-                </span>
-              )}
             </div>
 
             <div className="flex flex-1 flex-col p-6">

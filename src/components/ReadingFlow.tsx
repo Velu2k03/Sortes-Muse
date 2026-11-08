@@ -168,7 +168,7 @@ function GateScreen({
               ✦ Get Oracles · 1 Oracle per reading
             </button>
             <p className="mt-3 text-sm text-mist">
-              You are out of Oracles. Packs start at $3.99 for 5 Oracles.
+              This reading uses 1 Oracle. Packs start at $3.99 for 5 Oracles.
             </p>
           </>
         )}
