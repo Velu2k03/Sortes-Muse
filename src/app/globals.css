@@ -404,7 +404,8 @@ html[data-theme="light"] {
    (the brand display face) with Celestial Indigo ink and a gold
    rule. Real text, not an image, so the saved PDF stays selectable
    and searchable. */
-.heirloom-print-sheet {
+.heirloom-print-sheet,
+.journal-print-sheet {
   display: none;
 }
 @media print {
@@ -415,10 +416,13 @@ html[data-theme="light"] {
     visibility: hidden;
   }
   .heirloom-print-sheet,
-  .heirloom-print-sheet * {
+  .heirloom-print-sheet *,
+  .journal-print-sheet,
+  .journal-print-sheet * {
     visibility: visible;
   }
-  .heirloom-print-sheet {
+  .heirloom-print-sheet,
+  .journal-print-sheet {
     display: block;
     position: absolute;
     inset: 0;
