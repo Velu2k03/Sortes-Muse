@@ -166,7 +166,7 @@ export default function CreditsPage() {
             siteTheme === "light" ? "#7c5e00" : "#f4d03f";
           const body = (
             <div className="flex h-full flex-col text-center">
-              <p className={`font-display text-xl ${nameClass}`}>{p.name}</p>
+              <h2 className={`font-display text-xl ${nameClass}`}>{p.name}</h2>
               {/* Fixed badge row on every card, so the price line
                   sits at the same height whether or not this card
                   carries the badge. The badge is the popular
@@ -186,13 +186,13 @@ export default function CreditsPage() {
                   keeps the display serif and size but does not
                   animate. The balance Counter above is unchanged. */}
               <p
-                className="mt-3 font-display text-[40px] font-bold leading-none"
+                className="mt-3 font-display text-[40px] font-bold leading-none lining-nums tabular-nums"
                 style={{ color: priceColor }}
               >
                 ${p.price.toFixed(2)}
               </p>
               <p className={`mt-2 text-base ${nameClass}`}>
-                <span className="font-display text-xl">{p.readings}</span> Oracles · ${perReadingPrice(p)} per Oracle
+                <span className="font-display text-xl lining-nums tabular-nums">{p.readings}</span> Oracles · ${perReadingPrice(p)} per Oracle
               </p>
 
 
@@ -213,7 +213,7 @@ export default function CreditsPage() {
                   onClick={() => void buyDirect(p.id)}
                   className="btn-gold w-full rounded-xl px-4 py-3 font-bold disabled:opacity-100 disabled:saturate-50"
                 >
-                  {directProcessing === p.id ? "…" : "Checkout"}
+                  {directProcessing === p.id ? "…" : <>Checkout<span className="sr-only">: {p.name} pack</span></>}
                 </button>
               </div>
               {directError && directFailed === p.id && (
@@ -249,7 +249,7 @@ export default function CreditsPage() {
       </div>
 
       <div className="mt-6 rounded-2xl border border-gold/20 bg-panel/50 p-4">
-        <p className="font-display text-xl text-goldbright">Purchase history</p>
+        <h2 className="font-display text-xl text-goldbright">Purchase history</h2>
         {user ? (
           serverTx === null ? (
             <p className="mt-2 text-sm text-mist">Loading…</p>

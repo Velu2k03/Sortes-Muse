@@ -162,7 +162,7 @@ export default function CheckoutModal({ open, onClose, reason, initialPackId }: 
                       </p>
                     </div>
                     <div className="flex items-center gap-3">
-                      <p className="font-display text-2xl text-goldbright">
+                      <p className="font-display text-2xl text-goldbright lining-nums tabular-nums">
                         ${p.price.toFixed(2)}
                       </p>
                       <button
@@ -171,7 +171,7 @@ export default function CheckoutModal({ open, onClose, reason, initialPackId }: 
                         onClick={() => void buyReal(p.id)}
                         className="btn-gold rounded-xl px-5 py-3 text-sm font-bold disabled:opacity-100 disabled:saturate-50"
                       >
-                        {processing === p.id ? "…" : "Checkout"}
+                        {processing === p.id ? "…" : <>Checkout<span className="sr-only">: {p.name} pack</span></>}
                       </button>
                     </div>
                   </div>

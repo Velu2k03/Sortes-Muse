@@ -569,7 +569,7 @@ function Counter({
           fontSize: typeof fontSize === 'number' ? `${fontSize}px` : fontSize,
           fontWeight,
           color: textColor,
-          fontVariantNumeric: tabular ? 'tabular-nums' : undefined,
+          fontVariantNumeric: tabular ? 'lining-nums tabular-nums' : 'lining-nums',
           '--counter-fade': `${Math.max(0, fade)}em`,
           '--counter-gap': `${Math.max(0, gap)}px`,
           '--counter-padding': `${Math.max(0, padding)}px`,

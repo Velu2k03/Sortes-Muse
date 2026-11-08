@@ -551,7 +551,7 @@ export default function HistoryPage() {
                             >
                               <Image
                                 src={getCard(d.cardId).image}
-                                alt=""
+                                alt={`${getCard(d.cardId).name}${d.reversed ? ", reversed" : ""}`}
                                 fill
                                 sizes="48px"
                                 className="object-cover"

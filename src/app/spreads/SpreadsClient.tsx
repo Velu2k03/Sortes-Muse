@@ -198,7 +198,7 @@ export default function SpreadsPage() {
                     href={`/spreads/${s.slug}`}
                     className="mt-3 block text-center text-sm font-semibold text-goldbright underline underline-offset-4"
                   >
-                    View spread detail
+                    View spread detail<span className="sr-only">: {s.name}</span>
                   </Link>
                 </>
               ) : (
@@ -207,6 +207,7 @@ export default function SpreadsPage() {
                   className="btn-ghost mt-5 block rounded-xl border border-gold/30 px-4 py-3 text-center font-semibold"
                 >
                   {s.slug === "quick-insight" && !usedFree ? "Start my free reading" : "Begin reading"}
+                  <span className="sr-only">: {s.name}</span>
                 </Link>
               )}
             </div>
@@ -216,7 +217,7 @@ export default function SpreadsPage() {
       </div>
 
       <div className="mx-auto mt-12 max-w-2xl rounded-2xl border border-gold/20 bg-panel/50 p-6 text-center">
-        <p className="font-display text-2xl text-goldbright">Oracles</p>
+        <h2 className="font-display text-2xl text-goldbright">Oracles</h2>
         <p className="mt-2 text-sm leading-relaxed text-cream/75">
           1 Oracle per reading. First Quick Insight free. Oracles never
           expire, no subscription.{" "}

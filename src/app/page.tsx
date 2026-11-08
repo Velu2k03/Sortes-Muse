@@ -279,7 +279,7 @@ export default function Home() {
                     href={`/spreads/${spread.slug}`}
                     className="btn-ghost mt-5 block rounded-xl px-4 py-3 text-center font-semibold"
                   >
-                    View spread
+                    View spread<span className="sr-only">: {spread.name}</span>
                   </Link>
                 )}
               </article>

@@ -375,11 +375,11 @@ export default function AccountPage() {
 
       {!user ? (
         <div className="mt-8 rounded-3xl border border-gold/20 bg-panel/60 p-6 sm:p-8">
-          <p className="font-display text-2xl text-cream">
+          <h2 className="font-display text-2xl text-cream">
             {mode === "signin"
               ? "Sign in to sync everything"
               : "Create your account"}
-          </p>
+          </h2>
           <p className="mt-2 text-sm leading-relaxed text-cream/75">
             {mode === "signin"
               ? "Your guest Oracles and journal move into your account automatically, then follow you across devices. You stay signed in for 30 days."
@@ -651,7 +651,7 @@ export default function AccountPage() {
           </div>
 
           <div className="mt-6 rounded-3xl border border-gold/20 bg-panel/60 p-6 sm:p-8">
-            <p className="font-display text-2xl text-goldbright">Purchase history</p>
+            <h2 className="font-display text-2xl text-goldbright">Purchase history</h2>
             {transactions === null ? (
               <p className="mt-2 text-sm text-mist">Loading…</p>
             ) : transactions.length === 0 ? (
@@ -680,7 +680,7 @@ export default function AccountPage() {
           </div>
 
           <div className="mt-6 rounded-3xl border border-gold/20 bg-panel/60 p-6 sm:p-8">
-            <p className="font-display text-xl text-cream">Password</p>
+            <h2 className="font-display text-xl text-cream">Password</h2>
             <p className="mt-1 text-sm text-cream/75">
               Set a password so you can sign in with email + password instead
               of a link each time.
@@ -736,7 +736,7 @@ export default function AccountPage() {
               permanent: account, Oracles, journal, reports, and
               purchase history, including the copies on this device. */}
           <div className="mt-6 rounded-3xl border border-gold/20 bg-panel/60 p-6 sm:p-8">
-            <p className="font-display text-xl text-cream">Your data</p>
+            <h2 className="font-display text-xl text-cream">Your data</h2>
             <p className="mt-1 text-sm text-cream/75">
               Download everything this account holds, or delete the
               account entirely.
