@@ -55,6 +55,9 @@ export default function Credits() {
         <p className="mt-4 text-sm text-cream/75">
           Every pack works for tarot readings, birth charts, and reports.
         </p>
+        <p className="mt-2 text-sm font-semibold text-goldbright">
+          Daily card free. First reading free. Then $0.50-$0.80 per reading.
+        </p>
       </div>
 
       <div className="mt-6 grid items-stretch gap-4 sm:grid-cols-3">

@@ -22,7 +22,14 @@ export const FAQS = [
   },
   {
     q: "What are the five Oracle rules?",
-    a: "1. Your first Quick Insight reading is free, once per device as a guest and once per account when signed in.\n2. A chart interpretation is free the first time per system, Ziwei, Western, and Vedic separately, then 1 Oracle each.\n3. Reports have no free first reading, each report costs 1 Oracle.\n4. A reading follow-up is free the first time per reading, then 1 Oracle each, up to 3 per reading.\n5. The daily card is always free and never uses an Oracle.\nOracles never expire, and there is no subscription.",
+    bullets: [
+      "Your first Quick Insight reading is free, once per device as a guest and once per account when signed in.",
+      "A chart interpretation is free the first time per system, Ziwei, Western, and Vedic separately, then 1 Oracle each.",
+      "Reports have no free first reading, each report costs 1 Oracle.",
+      "A reading follow-up is free the first time per reading, then 1 Oracle each, up to 3 per reading.",
+      "The daily card is always free and never uses an Oracle.",
+    ],
+    a: "Oracles never expire, and there is no subscription.",
   },
   {
     q: "Are readings predictions?",
@@ -74,7 +81,7 @@ export const FAQS = [
   },
   {
     q: "How much does a reading cost?",
-    a: "The daily card is free and your first Quick Insight is free. After that, a reading costs 1 Oracle. Packs are 5 Oracles for $3.99, 12 for $7.99, and 30 for $14.99, which works out to about $0.80, $0.67, and $0.50 per reading. Prices are in US dollars (USD). Oracles never expire, and there is no subscription.",
+    a: "Daily card free. First reading free. Then $0.50-$0.80 per reading. After that, a reading costs 1 Oracle. Packs are 5 Oracles for $3.99, 12 for $7.99, and 30 for $14.99, which works out to about $0.80, $0.67, and $0.50 per reading. Prices are in US dollars (USD). Oracles never expire, and there is no subscription.",
   },
   {
     q: "How do I pay?",
@@ -102,7 +109,10 @@ export default function FaqPage() {
             mainEntity: FAQS.map((f) => ({
               "@type": "Question",
               name: f.q,
-              acceptedAnswer: { "@type": "Answer", text: f.a },
+              acceptedAnswer: {
+                "@type": "Answer",
+                text: f.bullets ? [...f.bullets, f.a].join("\n") : f.a,
+              },
             })),
           }),
         }}

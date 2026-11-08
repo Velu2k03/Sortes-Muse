@@ -12,15 +12,21 @@ import ReturnLoop from "@/components/ReturnLoop";
 import Icon from "@/components/Icon";
 import { Orb } from "@/components/ReactBitsNew";
 
-// Phase 4C (4.6): restrained motion. The homepage animation set is
-// now starfield (global, in the layout) + card lift + section reveal
-// only. The competing gimmicks are gone from this page: GradientText
-// and ShinyText sweeps, StarBorder crawling dots, Magnet pull,
-// SpotlightCard and MagicBento cursor glow, the TarotFan scroll fan,
-// and the OrbitImages carousel. Orb stays: it is the slow ambient
-// hero background, not a competing gimmick, and it is static under
-// prefers-reduced-motion. MotionConfig reducedMotion="user" in the
-// MotionProvider still governs the framer-motion reveals below.
+// AF-042: the audit's "12 simultaneous animations" is stale — Phase
+// 4C had already removed the gimmicks. Counted at fix time, the
+// continuous heavy animations were 3 (Orb loop, global starfield
+// canvas, nebula drift) plus one-shot reveals. The nebula is deleted
+// and the six hero motion wrappers were no-ops (initial false,
+// animate to final values), so they are plain elements now.
+// Continuous heavy on the homepage is now 2: Orb + starfield.
+// The remaining motion is one-shot: 3 fadeUp section reveals (once)
+// and SampleReading's 2 whileInView reveals, all governed by
+// MotionProvider reducedMotion="user". Phase 4C (4.6): the competing
+// gimmicks are gone from this page: GradientText and ShinyText sweeps,
+// StarBorder crawling dots, Magnet pull, SpotlightCard and MagicBento
+// cursor glow, the TarotFan scroll fan, and the OrbitImages carousel.
+// Orb stays: it is the slow ambient hero background, not a competing
+// gimmick, and it is static under prefers-reduced-motion.
 // AF-033: the hidden initial state is applied only after mount and never
 // under reduced motion, so server HTML (and no-JS) renders visible.
 const fadeUpFor = (hide: boolean) => ({
@@ -58,71 +64,48 @@ export default function Home() {
             fill
             priority
             sizes="100vw"
-            className="object-cover opacity-70"
+            className="hero-img object-cover opacity-70"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-ink/60 via-ink/75 to-ink" />
+          <div className="hero-scrim absolute inset-0" />
           {/* Deep UX Batch A2, doc item 11: Orb hero background, app gold only. */}
           <Orb />
-          {/* Ambient drifting glows */}
-          <div
-            className="nebula absolute -left-32 top-1/4 h-[28rem] w-[28rem] rounded-full opacity-25 blur-3xl"
-            style={{
-              background:
-                "radial-gradient(circle, rgba(212,175,55,0.5) 0%, transparent 70%)",
-            }}
-          />
           {/* Batch 10 slop fix: the violet nebula was the classic AI
               purple glow tic from the kill-ai-slop taxonomy. Gold only
-              now, the site already has a gold identity. */}
+              now, the site already has a gold identity. The gold nebula
+              itself is deleted too (AF-042): it was a third continuous
+              homepage animation on top of Orb and the starfield. */}
         </div>
         <div className="relative mx-auto flex max-w-4xl flex-col items-center px-4 pb-24 pt-24 text-center sm:px-6 sm:pt-32">
           {/* Hero text renders at full opacity on first paint: the old
               0.8s fade with up to 0.9s delay left the first frame almost
               empty behind the moon image. Gentle motion stays below the
               fold, in fadeUp, and in the card fan. */}
-          <motion.p
-            initial={false}
-            animate={{ opacity: 1 }}
-            className="text-xs uppercase tracking-[0.35em] text-gold"
-          >
+          {/* AF-042: the hero motion wrappers were no-ops (initial
+              false, animate to the final values), so they are plain
+              elements now — one less animation instance each. */}
+          <p className="text-xs uppercase tracking-[0.35em] text-gold">
             A Resonant Atlas tarot experience
-          </motion.p>
+          </p>
           {/* AF-071: the H1 is the value proposition with keywords,
               not the one-word brand. The brand still leads the title
               tag and the footer. */}
-          <motion.h1
-            initial={false}
-            animate={{ opacity: 1, y: 0 }}
-            className="mt-6 font-display text-5xl leading-tight text-goldbright sm:text-6xl md:text-7xl"
-          >
+          <h1 className="mt-6 font-display text-5xl leading-tight text-goldbright sm:text-6xl md:text-7xl">
             Free tarot reading online, with AI interpretation
-          </motion.h1>
-          <motion.p
-            initial={false}
-            animate={{ opacity: 1, y: 0 }}
-            className="mt-4 font-display text-2xl italic text-goldbright sm:text-3xl"
-          >
+          </h1>
+          <p className="mt-4 font-display text-2xl italic text-goldbright sm:text-3xl">
             {TAGLINE}
-          </motion.p>
-          <motion.p
-            initial={false}
-            animate={{ opacity: 1 }}
-            className="mt-6 max-w-xl text-base leading-relaxed text-cream/80"
-          >
+          </p>
+          <p className="mt-6 max-w-xl text-base leading-relaxed text-cream/80">
             Draw a free daily card, explore 78 card meanings, and get a
             reading for your question.
-          </motion.p>
+          </p>
           {/* AF-034 homepage diet: the Latin etymology line is gone
               (it belongs on /about, which needs Velu's identity copy
               first — AF-036 — so it is dropped, not moved). */}
           {/* AF-034: one primary CTA, the free reading. "Draw a Card"
               is the quiet secondary; "See all spreads" is gone (the
               seek cards below and /spreads cover it). */}
-          <motion.div
-            initial={false}
-            animate={{ opacity: 1, y: 0 }}
-            className="mt-10 flex w-full max-w-xl flex-col gap-3 sm:flex-row sm:flex-nowrap sm:justify-center"
-          >
+          <div className="mt-10 flex w-full max-w-xl flex-col gap-3 sm:flex-row sm:flex-nowrap sm:justify-center">
             <Link
               href="/spreads/quick-insight"
               className="btn-gold shrink-0 whitespace-nowrap rounded-2xl px-8 py-4 text-center text-lg font-bold"
@@ -135,20 +118,16 @@ export default function Home() {
             >
               <Icon name="sparkle" size={20} className="mr-2 inline-block align-[-3px]" />Draw a Card
             </Link>
-          </motion.div>
+          </div>
           {/* Phase 4C (4.6b): the free-reading promise is stated once,
               here. The repeats are gone: the Quick Insight seek card
               below now shows its price (1 Oracle), the spreads
               preview no longer repeats the sentence, and the daily
               teaser no longer says "Free, every day" (the hero line
               above already says the daily card is free). */}
-          <motion.p
-            initial={false}
-            animate={{ opacity: 1 }}
-            className="mt-5 text-sm text-mist"
-          >
+          <p className="mt-5 text-sm text-mist">
             Your first Quick Insight reading is free. No payment card, no account.
-          </motion.p>
+          </p>
           {/* AF-034: the pricing line and the charts line are gone
               from the hero. Pricing lives on /oracles; charts have
               their own nav entry. The hero is one promise + one CTA. */}

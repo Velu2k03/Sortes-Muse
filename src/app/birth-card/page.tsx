@@ -115,6 +115,9 @@ export default function BirthCardPage() {
             <Link href="/deck" className="btn-gold">
               Browse the deck
             </Link>
+            <Link href="/spreads/quick-insight" className="btn-secondary">
+              Start a free reading
+            </Link>
             <Link href="/spreads" className="btn-secondary">
               Get a reading
             </Link>

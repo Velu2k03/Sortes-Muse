@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 
-export type FaqItem = { q: string; a: string };
+export type FaqItem = { q: string; a: string; bullets?: string[] };
 
 function slug(q: string): string {
   return q
@@ -82,6 +82,13 @@ export default function FaqList({ faqs }: { faqs: FaqItem[] }) {
             <summary className="cursor-pointer font-display text-2xl text-goldbright">
               {f.q}
             </summary>
+            {f.bullets ? (
+              <ul className="mt-3 list-disc space-y-1.5 pl-5 leading-relaxed text-cream/85">
+                {f.bullets.map((b) => (
+                  <li key={b}>{b}</li>
+                ))}
+              </ul>
+            ) : null}
             <p className="mt-3 whitespace-pre-line leading-relaxed text-cream/85">{f.a}</p>
           </details>
         ))}
