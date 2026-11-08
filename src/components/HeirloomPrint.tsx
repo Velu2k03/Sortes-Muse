@@ -12,8 +12,10 @@
  * font files for Cormorant Garamond, for a worse result than the
  * browser's own typesetting of the real loaded fonts. Print-to-PDF
  * keeps real selectable text, the brand fonts already on the page,
- * zero bundle cost, and zero new-dependency risk. The button copy
- * says so plainly: pick "Save as PDF" in the print dialog.
+ * zero bundle cost, and zero new-dependency risk. AF-049: the button
+ * used to promise "Download keepsake (PDF)" while only opening the
+ * print dialog, so it is relabelled "Print keepsake" and the helper
+ * text says plainly to pick "Save as PDF" in the dialog.
  * The sheet contains only the caller's real content — nothing is
  * invented here.
  */
@@ -45,10 +47,10 @@ export default function HeirloomPrint({
         onClick={() => window.print()}
         className="btn-ghost rounded-xl px-6 py-3 font-semibold"
       >
-        Download keepsake (PDF)
+        Print keepsake
       </button>
       <p className="mt-1 text-xs text-mist">
-        Opens your browser&apos;s print dialog — choose &ldquo;Save as PDF&rdquo; to keep it.
+        Opens your browser&apos;s print dialog — choose &ldquo;Save as PDF&rdquo; to keep a PDF copy.
       </p>
 
       {/* Print-only heirloom sheet. Hidden on screen (and from
