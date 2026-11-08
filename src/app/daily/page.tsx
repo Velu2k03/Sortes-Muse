@@ -165,7 +165,7 @@ export default function DailyPage() {
                   visitors used to stall here; the Phase 3 single-trigger
                   rule is superseded by this fix. */}
               <p className="mt-6 max-w-xs text-center text-sm text-cream/75">
-                Press and hold the button until the gold fills it — or tap
+                Press and hold the button until the gold fills it, or tap
                 Draw now.
               </p>
               <StarBorder radius="1rem" className="mt-4" animated>

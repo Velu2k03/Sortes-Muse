@@ -148,7 +148,7 @@ export default function SpreadsPage() {
                 {s.cards} {s.cards === 1 ? "card" : "cards"} · personalized AI interpretation
               </p>
               <p className="mt-2 text-xs text-mist">
-                1 Oracle per reading. You give one question, a few lines of context, and a category.
+                You give one question, a few lines of context, and a category.
               </p>
               <p className="mt-3 flex-1 text-sm leading-relaxed text-cream/75">
                 {s.description}
@@ -227,8 +227,7 @@ export default function SpreadsPage() {
       <div className="mx-auto mt-12 max-w-2xl rounded-2xl border border-gold/20 bg-panel/50 p-6 text-center">
         <h2 className="font-display text-2xl text-goldbright">Oracles</h2>
         <p className="mt-2 text-sm leading-relaxed text-cream/75">
-          1 Oracle per reading. First Quick Insight free. Oracles never
-          expire, no subscription.{" "}
+          Oracles never expire, no subscription.{" "}
           <Link href="/faq#what-are-the-five-oracle-rules" className="font-semibold text-goldbright underline underline-offset-4">
             See all five Oracle rules
           </Link>
