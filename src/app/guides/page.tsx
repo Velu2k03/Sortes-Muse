@@ -19,7 +19,7 @@ export default function GuidesPage() {
         Guides to tarot and charts
       </h1>
       <p className="mt-4 max-w-xl text-cream/75">
-        Free, no account needed.
+        The deck, how to ask a question, the Celtic Cross, topic spreads, and how tarot differs from a birth chart. Free, no account needed.
       </p>
       <div className="mt-10">
         {/* AF-083: search stays hidden until there are >9 guides (5 now). */}

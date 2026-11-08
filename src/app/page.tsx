@@ -186,7 +186,7 @@ export default function Home() {
 
       {/* WHAT IS TAROT */}
       <section className="mx-auto max-w-4xl px-4 py-16 sm:px-6">
-        <motion.div key={revealKey} {...fadeUp}>
+        <motion.div key={`${revealKey}-intro`} {...fadeUp}>
           <div className="rule-gold mx-auto w-24" />
           <h2 className="mt-6 text-center font-display text-4xl text-goldbright sm:text-5xl">
             What is tarot?
@@ -196,7 +196,7 @@ export default function Home() {
           </p>
         </motion.div>
 
-        <motion.div key={revealKey} {...fadeUp} className="mt-12 grid gap-4 sm:grid-cols-3">
+        <motion.div key={`${revealKey}-steps`} {...fadeUp} className="mt-12 grid gap-4 sm:grid-cols-3">
           {[
             {
               title: "Draw",
