@@ -1,12 +1,14 @@
 import Link from "next/link";
+import { pageSocial } from "@/lib/seo";
 import { APP_NAME, CONTACT_EMAIL } from "@/lib/site";
 import FaqList from "@/components/FaqList";
 
 export const metadata = {
   title: "Frequently asked questions",
   description:
-    "Sortes answers: what is free, how Oracles work, whether readings are predictions, how birth data is handled, and how sign-in works.",
+    "Sortes answers: what is free, how Oracles work, whether readings are predictions, how birth data is handled, how sign-in works, and refunds.",
   alternates: { canonical: "/faq" },
+  ...pageSocial({ title: "Frequently asked questions", description: "Sortes answers: what is free, how Oracles work, whether readings are predictions, how birth data is handled, how sign-in works, and refunds.", path: "/faq" }),
 };
 
 export const FAQS = [

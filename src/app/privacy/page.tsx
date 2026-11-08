@@ -1,9 +1,12 @@
 import { APP_NAME, APP_SHORT, CONTACT_EMAIL, SITE_URL } from "@/lib/site";
+import { pageSocial } from "@/lib/seo";
 
 export const metadata = {
   title: "Privacy Policy",
-  description: `How ${APP_SHORT} collects, uses, and deletes your data.`,
+  description:
+    "How Sortes collects, uses, and deletes your data: what we store, who processes it, your rights, and how to ask for export or deletion.",
   alternates: { canonical: "/privacy" },
+  ...pageSocial({ title: "Privacy Policy", description: "How Sortes collects, uses, and deletes your data: what we store, who processes it, your rights, and how to ask for export or deletion.", path: "/privacy" }),
 };
 
 const UPDATED = "November 7, 2026";

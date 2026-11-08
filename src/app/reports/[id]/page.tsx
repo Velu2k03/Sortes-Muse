@@ -4,6 +4,7 @@ import ReportDetailClient from "./ReportDetailClient";
 export const metadata: Metadata = {
   title: "Report",
   description: "A saved Sortes keep-forever report: its interpretation and its data tables.",
+  robots: { index: false, follow: true },
 };
 
 export default function ReportDetail() {

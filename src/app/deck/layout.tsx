@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { pageSocial } from "@/lib/seo";
 import { APP_SHORT } from "@/lib/site";
 
 // Phase 4C (4.10a): this layout defines a plain-string title, and a
@@ -13,8 +14,9 @@ export const metadata: Metadata = {
     template: `%s | ${APP_SHORT}`,
     default: "Card Meanings",
   },
-  description: "Browse all 78 Rider-Waite tarot card meanings.",
+  description: "Browse all 78 Rider-Waite tarot card meanings: upright and reversed, love, career, and yes-or-no guidance for every card in the deck, plus its story.",
   alternates: { canonical: "/deck" },
+  ...pageSocial({ title: "Card Meanings", description: "Browse all 78 Rider-Waite tarot card meanings: upright and reversed, love, career, and yes-or-no guidance for every card in the deck, plus its story.", path: "/deck" }),
 };
 
 export default function DeckLayout({ children }: { children: React.ReactNode }) {

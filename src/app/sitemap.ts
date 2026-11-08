@@ -1,4 +1,6 @@
 import type { MetadataRoute } from "next";
+import { statSync } from "node:fs";
+import { join } from "node:path";
 import { SITE_URL } from "@/lib/site";
 import { CARDS, cardSlug } from "@/lib/cards";
 
@@ -35,6 +37,7 @@ const PAGES = [
   "/oracles",
   "/methodology",
   "/about",
+  "/contact",
   "/faq",
   "/birth-card",
   "/guides",
@@ -48,15 +51,41 @@ const PAGES = [
 ];
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const now = new Date();
   const pages = [
     ...PAGES,
     ...CARDS.map((c) => `/deck/${cardSlug(c.name)}`),
   ];
   return pages.map((path) => ({
     url: `${SITE_URL}${path}`,
-    lastModified: now,
+    // AF-070: a real per-page lastmod, from the source file's mtime,
+    // instead of one identical build stamp on all 105 entries.
+    lastModified: lastModifiedFor(path),
     changeFrequency: path === "/" || path === "/daily" ? "daily" : "weekly",
     priority: path === "/" ? 1 : path === "/deck" || path === "/charts" ? 0.9 : path.startsWith("/deck/") ? 0.7 : 0.8,
   }));
+}
+
+// Each canonical path maps to the file that renders it; card pages
+// share the [slug] page. Unmapped paths fall back to now.
+function lastModifiedFor(path: string): Date {
+  const file =
+    path === "/"
+      ? "src/app/page.tsx"
+      : path.startsWith("/deck/")
+        ? "src/app/deck/[slug]/page.tsx"
+        : path.startsWith("/spreads/")
+          ? "src/app/spreads/[slug]/page.tsx"
+          : path.startsWith("/guides/")
+            ? "src/app/guides/[slug]/page.tsx"
+            : `src/app${path}/page.tsx`;
+  try {
+    return statSync(join(process.cwd(), file)).mtime;
+  } catch {
+    try {
+      // Layout-routed pages (daily, deck index, horoscope, birth-card).
+      return statSync(join(process.cwd(), `src/app${path}/layout.tsx`)).mtime;
+    } catch {
+      return new Date();
+    }
+  }
 }

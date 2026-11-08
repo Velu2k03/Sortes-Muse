@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
+import { pageSocial } from "@/lib/seo";
 
 export const metadata: Metadata = {
   title: "Methodology",
   description:
-    "How Sortes calculates Western, Vedic, and Ziwei charts, transits, and panchanga: engines, time rules, orb tables, and stated limits.",
+    "How Sortes calculates Western, Vedic, and Ziwei charts, transits, and panchanga: engines, time rules, orb tables, and stated limits, in plain language.",
   alternates: { canonical: "/methodology" },
+  ...pageSocial({ title: "Methodology", description: "How Sortes calculates Western, Vedic, and Ziwei charts, transits, and panchanga: engines, time rules, orb tables, and stated limits, in plain language.", path: "/methodology" }),
 };
 
 // M3.2: methodology page. Every claim here is either computed by the

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { GUIDES, getGuide } from "@/lib/guides";
 import { APP_NAME, SITE_URL, CONTACT_EMAIL } from "@/lib/site";
+import { breadcrumbJsonLd, pageSocial } from "@/lib/seo";
 
 export function generateStaticParams() {
   return GUIDES.map((g) => ({ slug: g.slug }));
@@ -14,7 +15,18 @@ export async function generateMetadata({
 }) {
   const guide = getGuide((await params).slug);
   if (!guide) return {};
-  return { title: guide.title, description: guide.description, alternates: { canonical: `/guides/${guide.slug}` } };
+  // AF-070: per-guide OG/Twitter (the Article JSON-LD below already
+  // existed and is verified, not added here).
+  return {
+    title: guide.title,
+    description: guide.description,
+    alternates: { canonical: `/guides/${guide.slug}` },
+    ...pageSocial({
+      title: guide.title,
+      description: guide.description,
+      path: `/guides/${guide.slug}`,
+    }),
+  };
 }
 
 export default async function GuidePage({
@@ -26,6 +38,18 @@ export default async function GuidePage({
   if (!guide) notFound();
   return (
     <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(
+            breadcrumbJsonLd([
+              ["Home", "/"],
+              ["Guides", "/guides"],
+              [guide.title, `/guides/${guide.slug}`],
+            ]),
+          ),
+        }}
+      />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{

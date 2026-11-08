@@ -10,6 +10,7 @@ export const metadata = {
   title: "Personalize your reading",
   description:
     "Tell your story so your tarot reading can be woven around it. Only your first name is ever shared with the AI.",
+  robots: { index: false, follow: true },
 };
 
 export default async function IntakePage({

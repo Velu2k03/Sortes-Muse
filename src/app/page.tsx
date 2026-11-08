@@ -82,12 +82,15 @@ export default function Home() {
           >
             A Resonant Atlas tarot experience
           </motion.p>
+          {/* AF-071: the H1 is the value proposition with keywords,
+              not the one-word brand. The brand still leads the title
+              tag and the footer. */}
           <motion.h1
             initial={false}
             animate={{ opacity: 1, y: 0 }}
-            className="mt-6 font-display text-6xl leading-tight text-goldbright sm:text-7xl md:text-8xl"
+            className="mt-6 font-display text-5xl leading-tight text-goldbright sm:text-6xl md:text-7xl"
           >
-            Sortes
+            Free tarot reading online, with AI interpretation
           </motion.h1>
           <motion.p
             initial={false}
