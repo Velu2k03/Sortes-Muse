@@ -36,10 +36,89 @@ What would change if you trusted that the steadiness of The Star is already your
  * (what stands out, tension and opportunity, what is overlooked, one
  * practical step, exactly one reflection question). The word count
  * and structure are pinned in sample-reading.test.ts.
+ *
+ * AF-034: `collapsed` hides the full 505-word sample behind a
+ * <details> on the homepage diet, so the page shows the heading and
+ * one tap instead of the whole reading. /oracles keeps the full
+ * version (collapsed=false).
  */
-export default function SampleReading() {
+export default function SampleReading({ collapsed = false }: { collapsed?: boolean }) {
   const hide = useCanHide();
   const revealKey = hide ? "reveal" : "static";
+  const body = (
+    <motion.div
+      key={`${revealKey}-b`}
+      initial={hide ? { opacity: 0, y: 24 } : false}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-60px" }}
+      transition={{ duration: 0.6, ease: "easeOut", delay: 0.1 }}
+      className={
+        collapsed
+          ? "overflow-hidden border-t border-gold/15 bg-panel/70"
+          : "mt-10 overflow-hidden rounded-3xl border border-gold/25 bg-panel/70"
+      }
+    >
+      <div className="flex items-center justify-between border-b border-gold/15 px-6 py-4">
+        <p className="text-xs uppercase tracking-[0.25em] text-mist">
+          Past · Present · Future
+        </p>
+        <span className="rounded-full border border-gold/40 bg-gold/10 px-3 py-1 text-xs font-semibold text-goldbright">
+          Sample reading
+        </span>
+      </div>
+
+      <div className="flex flex-wrap items-start justify-center gap-5 px-6 pt-8">
+        {SAMPLE_CARDS.map((s) => {
+          const card = getCard(s.id);
+          return (
+            <div key={s.id} className="flex flex-col items-center gap-2">
+              <div className="relative h-40 w-24 overflow-hidden rounded-xl border border-gold/40 shadow-[0_8px_30px_rgba(0,0,0,0.6)] sm:h-48 sm:w-28">
+                <Image
+                  src={card.image}
+                  alt={card.name}
+                  fill
+                  sizes="112px"
+                  className="object-cover"
+                />
+              </div>
+              <p className="text-xs uppercase tracking-[0.2em] text-gold">
+                {s.position}
+              </p>
+              <p className="font-display text-sm text-cream">{card.name}</p>
+              <p className="max-w-[8rem] text-center text-xs italic text-mist">
+                {s.note}
+              </p>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="px-6 py-8 sm:px-10">
+        <p className="text-center text-sm italic text-cream/75">
+          “Should I take the new job offer, or stay where I am?”
+        </p>
+        <div className="mx-auto mt-6 max-w-2xl whitespace-pre-line text-[15px] leading-relaxed text-cream/90">
+          {SAMPLE_INTERPRETATION}
+        </div>
+      </div>
+
+      <div className="border-t border-gold/15 px-6 py-6 text-center sm:px-10">
+        <Link
+          href="/spreads/past-present-future"
+          className="btn-gold mt-4 inline-block rounded-2xl px-8 py-3.5 font-bold"
+        >
+          Get my reading · 1 Oracle
+        </Link>
+        <p className="mt-3 text-xs text-mist">
+          Your first Quick Insight reading is free. No card required.
+        </p>
+        <p className="mt-1 text-xs text-mist">
+          Real readings are written by AI from your cards, question, and
+          story — 300-600 words, on screen in under a minute.
+        </p>
+      </div>
+    </motion.div>
+  );
   return (
     <section className="border-y border-gold/10 bg-navydeep/40 py-16">
       <div className="mx-auto max-w-4xl px-4 sm:px-6">
@@ -63,74 +142,16 @@ export default function SampleReading() {
           </p>
         </motion.div>
 
-        <motion.div
-          key={`${revealKey}-b`}
-          initial={hide ? { opacity: 0, y: 24 } : false}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-60px" }}
-          transition={{ duration: 0.6, ease: "easeOut", delay: 0.1 }}
-          className="mt-10 overflow-hidden rounded-3xl border border-gold/25 bg-panel/70"
-        >
-          <div className="flex items-center justify-between border-b border-gold/15 px-6 py-4">
-            <p className="text-xs uppercase tracking-[0.25em] text-mist">
-              Past · Present · Future
-            </p>
-            <span className="rounded-full border border-gold/40 bg-gold/10 px-3 py-1 text-xs font-semibold text-goldbright">
-              Sample reading
-            </span>
-          </div>
-
-          <div className="flex flex-wrap items-start justify-center gap-5 px-6 pt-8">
-            {SAMPLE_CARDS.map((s) => {
-              const card = getCard(s.id);
-              return (
-                <div key={s.id} className="flex flex-col items-center gap-2">
-                  <div className="relative h-40 w-24 overflow-hidden rounded-xl border border-gold/40 shadow-[0_8px_30px_rgba(0,0,0,0.6)] sm:h-48 sm:w-28">
-                    <Image
-                      src={card.image}
-                      alt={card.name}
-                      fill
-                      sizes="112px"
-                      className="object-cover"
-                    />
-                  </div>
-                  <p className="text-xs uppercase tracking-[0.2em] text-gold">
-                    {s.position}
-                  </p>
-                  <p className="font-display text-sm text-cream">{card.name}</p>
-                  <p className="max-w-[8rem] text-center text-xs italic text-mist">
-                    {s.note}
-                  </p>
-                </div>
-              );
-            })}
-          </div>
-
-          <div className="px-6 py-8 sm:px-10">
-            <p className="text-center text-sm italic text-cream/75">
-              “Should I take the new job offer, or stay where I am?”
-            </p>
-            <div className="mx-auto mt-6 max-w-2xl whitespace-pre-line text-[15px] leading-relaxed text-cream/90">
-              {SAMPLE_INTERPRETATION}
-            </div>
-          </div>
-
-          <div className="border-t border-gold/15 px-6 py-6 text-center sm:px-10">
-            <Link
-              href="/spreads/past-present-future"
-              className="btn-gold mt-4 inline-block rounded-2xl px-8 py-3.5 font-bold"
-            >
-              Get my reading · 1 Oracle
-            </Link>
-            <p className="mt-3 text-xs text-mist">
-              Your first Quick Insight reading is free. No card required.
-            </p>
-            <p className="mt-1 text-xs text-mist">
-              Real readings are written by AI from your cards, question, and
-              story — 300-600 words, on screen in under a minute.
-            </p>
-          </div>
-        </motion.div>
+        {collapsed ? (
+          <details className="mt-10 overflow-hidden rounded-3xl border border-gold/25 bg-panel/70">
+            <summary className="cursor-pointer px-6 py-4 text-center font-semibold text-goldbright">
+              Read the full sample reading
+            </summary>
+            {body}
+          </details>
+        ) : (
+          body
+        )}
       </div>
     </section>
   );
