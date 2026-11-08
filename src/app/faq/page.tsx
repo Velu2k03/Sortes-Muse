@@ -14,11 +14,11 @@ export const metadata = {
 export const FAQS = [
   {
     q: "What is free in Sortes?",
-    a: "The daily card is free every day, the deck browser with all 78 card meanings is free forever, chart calculation is free, and your first Quick Insight reading and your first chart interpretation per system are free. No account and no payment are needed for the free parts. These free parts are fixed in writing: they stay free, and if that ever changes, this page will say so first.",
+    a: "The daily card is free every day, the deck browser with all 78 card meanings is free forever, chart calculation is free, and your first Quick Insight reading and your first chart interpretation per system are free. No account and no payment are needed for the free parts. They stay free, and if that ever changes, this page will say so first.",
   },
   {
     q: "How do Oracles work?",
-    a: "One Oracle opens one full reading, any spread, or one chart interpretation after the first free one per system. Oracles never expire. Packs are sold on the Oracles page: 5 Oracles, 12 Oracles, and 30 Oracles. The daily card never uses an Oracle.",
+    a: "One Oracle opens one full reading, any spread, or one chart interpretation after the first free one per system. Oracles never expire. Packs are sold on the Oracles page: 5, 12, and 30 Oracles. The daily card never uses an Oracle.",
   },
   {
     q: "What are the five Oracle rules?",
@@ -33,11 +33,11 @@ export const FAQS = [
   },
   {
     q: "Are readings predictions?",
-    a: "No. Readings and chart interpretations in Sortes are for reflection and perspective only. They are never guaranteed predictions, and they never replace professional advice about health, money, or legal matters.",
+    a: "No. Readings and chart interpretations are for reflection and perspective only. They are never guaranteed predictions, and they never replace professional advice about health, money, or legal matters.",
   },
   {
     q: "How is my birth data handled for charts?",
-    a: "Sortes calculates positions and stores only those positions, signs, and palaces. It does not store your raw birth date, time, or place in the database, and it never sends raw birth data to an AI prompt. The AI interpretation receives only positions, signs, houses, and stars, plus your question or focus.",
+    a: "Sortes calculates positions and stores only those positions, signs, and palaces. It does not store your raw birth date, time, or place, and it never sends raw birth data to an AI prompt. The AI interpretation receives only positions, signs, houses, and stars, plus your question or focus.",
   },
   {
     q: "How long is tarot intake data kept?",
@@ -45,7 +45,7 @@ export const FAQS = [
   },
   {
     q: "How do I sign in?",
-    a: "On the account page, choose Continue with Google to sign in with your Google account, or choose Email link to have a sign-in link sent to your email, then click the link in the email to sign in. Or choose Password to sign in with email and password. After you sign in, your guest Oracles and journal move into your account, and you stay signed in for 30 days.",
+    a: "On the account page, choose Continue with Google, or choose Email link to have a sign-in link sent to your email, then click the link in the email. Or choose Password to sign in with email and password. After you sign in, your guest Oracles and journal move into your account, and you stay signed in for 30 days.",
   },
   {
     q: "What if I bought Oracles with a different email?",
@@ -53,7 +53,7 @@ export const FAQS = [
   },
   {
     q: "What is the difference between a tarot spread and a birth chart?",
-    a: "A tarot spread answers a specific question in the moment, with cards drawn for that situation. A birth chart maps a birth moment, with planets in signs and houses, or stars in palaces, and it does not change with your question. The guides page explains both in more detail.",
+    a: "A tarot spread answers a specific question in the moment. A birth chart maps a birth moment, with planets in signs and houses, or stars in palaces, and it does not change with your question.",
   },
   {
     q: "Can I get a refund?",
@@ -69,11 +69,11 @@ export const FAQS = [
   },
   {
     q: "What does a reading include?",
-    a: "Each reading is a written interpretation of your cards (or chart) around your question, about 300 to 600 words, shown on screen in under a minute and saved to your journal. It includes what stands out, the tension and opportunity, what you may be overlooking, one practical step, and one reflection question. A reading costs 1 Oracle, and your first Quick Insight is free. Your first follow-up question for each reading is free, then each follow-up costs 1 Oracle, up to 3 per reading.",
+    a: "Each reading is a written interpretation of your cards (or chart) around your question, about 300 to 600 words, shown on screen in under a minute and saved to your journal. It includes what stands out, the tension and opportunity, what you may be overlooking, one practical step, and one reflection question.",
   },
   {
     q: "How do I delete my data?",
-    a: "You can delete saved readings and journal entries yourself, and you can delete your account from the account page. To ask for deletion or an export by email, write to " + CONTACT_EMAIL + ".",
+    a: "You can delete saved readings and journal entries yourself, and delete your account from the account page. To ask for deletion or an export by email, write to " + CONTACT_EMAIL + ".",
   },
   {
     q: "Who runs Sortes, and how do I contact you?",
@@ -81,7 +81,7 @@ export const FAQS = [
   },
   {
     q: "How much does a reading cost?",
-    a: "Daily card free. First reading free. Then $0.50-$0.80 per reading. After that, a reading costs 1 Oracle. Packs are 5 Oracles for $3.99, 12 for $7.99, and 30 for $14.99, which works out to about $0.80, $0.67, and $0.50 per reading. Prices are in US dollars (USD). Oracles never expire, and there is no subscription.",
+    a: "Daily card free. First reading free. After that, a reading costs 1 Oracle. Packs are 5 Oracles for $3.99, 12 for $7.99, and 30 for $14.99, which works out to about $0.80, $0.67, and $0.50 per reading. Prices are in US dollars (USD). Oracles never expire, and there is no subscription.",
   },
   {
     q: "How do I pay?",
