@@ -25,12 +25,14 @@ const src = readFileSync(path.resolve(process.cwd(), "src/app/page.tsx"), "utf8"
 
 describe("home page: first-visit comprehension", () => {
   it("states what Sortes does", () => {
-    expect(src).toContain("Draw a free daily card, explore 78 card meanings, and get a reading for your question.");
+    // Round 3 hero trim: the H1 now states what Sortes does.
+    expect(src).toContain("Sortes: free tarot reading with AI");
     expect(src).toContain("78 cards. A mirror for the mind, not a verdict on your future.");
   });
 
   it("states what is free", () => {
-    expect(src).toContain("Your first Quick Insight reading is free. No payment card, no account.");
+    // Round-3 sample text for the hero small print.
+    expect(src).toContain("No card, no account.");
     expect(src).toContain("First free · then 1 Oracle");
   });
 
