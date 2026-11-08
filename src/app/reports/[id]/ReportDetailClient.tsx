@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
 import { getReport, deleteReport } from "@/lib/storage";
+import { buildReportMarkdown } from "@/lib/report-markdown";
 import type { SavedReport } from "@/lib/reports";
 import SplitText from "@/components/SplitText";
 import HeirloomPrint from "@/components/HeirloomPrint";
@@ -118,6 +119,21 @@ export default function ReportDetailClient() {
           date={report.createdAt}
           sections={[{ heading: "Interpretation", body: report.interpretation }]}
         />
+        <button
+          type="button"
+          onClick={() => {
+            const blob = new Blob([buildReportMarkdown(report)], { type: "text/markdown" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `sortes-report-${new Date().toISOString().slice(0, 10)}.md`;
+            a.click();
+            URL.revokeObjectURL(url);
+          }}
+          className="btn-ghost ml-3 rounded-xl px-4 py-3 text-sm font-semibold"
+        >
+          Download Markdown
+        </button>
       </div>
 
       <div className="mt-10 space-y-8">
