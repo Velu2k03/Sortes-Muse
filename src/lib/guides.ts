@@ -87,7 +87,7 @@ export const GUIDES: Guide[] = [
     slug: "celtic-cross-explained",
     title: "The Celtic Cross, position by position",
     description:
-      "The classic ten-card spread as it works in Sortes, with each of the ten positions explained in the order the app shows them.",
+      "The classic ten-card spread, each position explained in the order the app shows them.",
     sections: [
       {
         heading: "Why ten cards",
