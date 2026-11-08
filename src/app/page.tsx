@@ -108,7 +108,7 @@ export default function Home() {
           <div className="mt-10 flex w-full max-w-xl flex-col gap-3 sm:flex-row sm:flex-nowrap sm:justify-center">
             <Link
               href="/spreads/quick-insight"
-              className="btn-gold shrink-0 whitespace-nowrap rounded-2xl px-8 py-4 text-center text-lg font-bold"
+              className="btn-gold rounded-2xl px-6 py-4 text-center text-base font-bold leading-snug sm:shrink-0 sm:px-8 sm:text-lg"
             >
               Ask your question · First reading free
             </Link>
