@@ -410,7 +410,7 @@ export default function ReportsClient() {
       {/* Phase E (item 9): delivery format and length, stated before
           anyone spends an Oracle. */}
       <p className="mx-auto mt-2 max-w-xl text-center text-sm text-mist">
-        Delivered on screen as a keep-forever report, printable as PDF,
+        Delivered on screen, printable as PDF,
         plus the tables for your type.
       </p>
       <p className="mt-2 text-center text-sm text-mist">
@@ -461,7 +461,7 @@ export default function ReportsClient() {
       </details>
       {type === "comparison" && (
         <p className="mt-2 text-center text-sm text-mist">
-          You enter both charts. Dynamics only, never a verdict, never a prediction about whether a relationship will last.
+          You enter both charts. Never a prediction about whether a relationship will last.
         </p>
       )}
 
