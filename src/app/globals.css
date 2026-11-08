@@ -111,6 +111,13 @@ html[data-theme="light"] select option {
 
 html {
   scroll-behavior: smooth;
+  /* AF-037: the sticky header is 64px (h-16). Anchor jumps and
+     scrollIntoView land under it for any target that is not a
+     section/article (the old scroll-margin rule covered only those,
+     so plain-div H1s like "Choose your spread" and "Your account"
+     were clipped). scroll-padding on the scroll container covers
+     every target; the section rule below stays as a backstop. */
+  scroll-padding-top: 6rem;
 }
 
 /* Phase 6 (D3): no page may scroll sideways. The header row was
