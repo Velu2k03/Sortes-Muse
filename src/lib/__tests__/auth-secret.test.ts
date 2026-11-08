@@ -12,6 +12,8 @@ import { authConfigured } from "@/lib/auth";
 describe("authConfigured() secret chain (AF-005)", () => {
   const KEYS = ["AUTH_SECRET", "NEXTAUTH_SECRET", "SUPABASE_JWT_SECRET"] as const;
   const saved: Record<string, string | undefined> = {};
+  // NODE_ENV is typed read-only; write it through a cast.
+  const env = process.env as Record<string, string | undefined>;
   let savedNodeEnv: string | undefined;
 
   beforeEach(() => {
@@ -22,7 +24,7 @@ describe("authConfigured() secret chain (AF-005)", () => {
     }
     // authConfigured() returns true in non-production regardless of
     // secrets, so the chain is only observable as production.
-    process.env.NODE_ENV = "production";
+    env.NODE_ENV = "production";
   });
 
   afterEach(() => {
@@ -30,8 +32,8 @@ describe("authConfigured() secret chain (AF-005)", () => {
       if (saved[k] === undefined) delete process.env[k];
       else process.env[k] = saved[k];
     }
-    if (savedNodeEnv === undefined) delete process.env.NODE_ENV;
-    else process.env.NODE_ENV = savedNodeEnv;
+    if (savedNodeEnv === undefined) delete env.NODE_ENV;
+    else env.NODE_ENV = savedNodeEnv;
   });
 
   it("NEXTAUTH_SECRET alone does not configure auth", () => {

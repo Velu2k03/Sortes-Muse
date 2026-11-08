@@ -146,7 +146,7 @@ describe("trust: no self-grant of credits", () => {
   });
 
   it("balance GET still requires a session (401 without one)", async () => {
-    const res = await balanceGET();
+    const res = await balanceGET(new NextRequest("http://localhost/api/credits/balance"));
     expect(res.status).toBe(401);
   });
 
