@@ -81,7 +81,6 @@ export default function CreditsPage() {
           ) : isGuest ? (
             // Guests have no balance to show; point to the free reading.
             <p className="font-body text-lg text-cream">
-              Your first Quick Insight reading is free.{" "}
               <Link href="/spreads/quick-insight" className="text-goldbright underline">
                 Ask your question
               </Link>
@@ -109,7 +108,7 @@ export default function CreditsPage() {
           {user && <p className="mt-1 text-sm text-mist">Signed in as {user.email}</p>}
         </div>
         <p className="max-w-md text-sm text-cream/75">
-          1 Oracle = 1 full reading. Daily card free. Oracles never expire,
+          1 Oracle = 1 full reading. Oracles never expire,
           no subscription. An Oracle opens a reading, not a prediction or promise.{" "}
           <Link href="/faq#what-are-the-five-oracle-rules" className="text-goldbright underline">
             See all five Oracle rules
@@ -171,10 +170,7 @@ export default function CreditsPage() {
       </div>
 
       <p className="mx-auto mt-6 max-w-md text-center text-xs leading-relaxed text-mist">
-        Pay-per-reading, no subscriptions. Prices are in US dollars
-        (USD). The checkout shows the full amount, including any
-        applicable taxes or fees; there are no hidden fees. Secure
-        checkout is powered by Lemon Squeezy.
+        Secure checkout is powered by Lemon Squeezy.
       </p>
 
       {/* Phase E (item 9): the same full sample reading as the home
