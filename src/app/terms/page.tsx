@@ -53,7 +53,7 @@ export default function TermsPage() {
               or store your card details.
             </li>
             <li>
-              Refunds: unused Oracle packs may be refunded within 14 days of
+              Refunds: unused Oracle packs will be refunded within 14 days of
               purchase by emailing {CONTACT_EMAIL}. Oracles already spent on
               readings are non-refundable.
             </li>
