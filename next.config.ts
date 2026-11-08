@@ -37,8 +37,16 @@ const nextConfig: NextConfig = {
   // need middleware to mint per-request nonces — a follow-up, not
   // this phase); no 'unsafe-eval'; no third-party script origins
   // beyond Plausible; frame-ancestors 'none' matches the
-  // X-Frame-Options: DENY below. HSTS is already sent by Vercel
-  // and is not duplicated here.
+  // X-Frame-Options: DENY below.
+  // HSTS (AF-006, 2026-11-08): Vercel's automatic HSTS
+  // (max-age=63072000, no includeSubDomains) is NOT applied once
+  // next.config declares headers, so this app previously shipped no
+  // HSTS at all on the custom domain. It is set here explicitly
+  // with includeSubDomains. No `preload`: preloading is a
+  // near-irreversible browser-list commitment and needs Velu's
+  // explicit go-ahead. includeSubDomains assumes every
+  // *.resonantatlas.com subdomain serves HTTPS (true for anything
+  // Vercel-hosted, which auto-provisions certs).
   async headers() {
     const csp = [
       "default-src 'self'",
@@ -61,6 +69,7 @@ const nextConfig: NextConfig = {
         source: "/:path*",
         headers: [
           { key: "Content-Security-Policy", value: csp },
+          { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains" },
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "X-Frame-Options", value: "DENY" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
