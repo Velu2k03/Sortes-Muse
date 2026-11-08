@@ -9,7 +9,7 @@ export const SPREADS: Spread[] = [
     name: "Quick Insight",
     cards: 1,
     description:
-      "One card, one clear mirror. Your first Quick Insight reading is free, no payment card required.",
+      "One card, one clear mirror. Your first Quick Insight reading is free, no payment card required. Draw a single card for a focused answer to your question.",
     positions: [
       {
         key: "insight",
@@ -83,7 +83,7 @@ export const SPREADS: Spread[] = [
       { key: "past", label: "Past", hint: "The foundation behind you" },
       { key: "future", label: "Future", hint: "What is approaching" },
       { key: "above", label: "Above", hint: "Your goal or best outcome" },
-      { key: "below", label: "Below", hint: "The deeper foundation" },
+      { key: "below", label: "Below", hint: "What lies beneath, out of sight" },
       { key: "advice", label: "Advice", hint: "How to approach it" },
       { key: "external", label: "External", hint: "Outside influences" },
       { key: "hopes", label: "Hopes & Fears", hint: "What you hope for or dread" },

@@ -84,4 +84,9 @@ describe("sitemap deck URLs", () => {
     }
     expect(new Set(urls).size).toBe(urls.length);
   });
+
+  it("does not list /journal because the page is noindex", () => {
+    const urls = sitemap().map((entry) => entry.url);
+    expect(urls).not.toContain("https://sortes.resonantatlas.com/journal");
+  });
 });

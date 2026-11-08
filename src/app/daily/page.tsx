@@ -134,7 +134,7 @@ export default function DailyPage() {
         Your Daily Card
       </h1>
       <p className="mt-4 max-w-md text-center text-cream/75">
-        One card, free forever, no questions asked. A small mirror for the day
+        One card, free forever. A small mirror for the day
         ahead.
       </p>
       {practice.total >= 1 && (
