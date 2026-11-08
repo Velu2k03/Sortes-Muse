@@ -44,6 +44,10 @@ export interface DbTransaction {
   amount: number;
   readings: number;
   created_at: string;
+  // AF-004 (migration 007): the Lemon Squeezy order id of a fulfilled
+  // order, UNIQUE where not null. Null/absent on refund rows, markers,
+  // and rows written before 007.
+  order_id?: string | null;
 }
 
 const usePostgres = Boolean(
@@ -953,6 +957,7 @@ export async function fulfillOrder(args: {
     amount: args.amount,
     readings: args.readings,
     created_at: new Date().toISOString(),
+    order_id: args.orderId,
   };
   if (usePostgres) {
     if (!pg) throw new Error("Database not configured");
@@ -967,7 +972,7 @@ export async function fulfillOrder(args: {
       if (locked.length === 0) throw new Error("User not found during fulfillment");
       // After a refund, a redelivered order_created is treated as a duplicate
       // and is not re-granted (the duplicate check does not exclude refund rows).
-      const dup = await tx`SELECT id FROM transactions WHERE pack_type LIKE ${"%" + marker + "%"} LIMIT 1`;
+      const dup = await tx`SELECT id FROM transactions WHERE order_id = ${args.orderId} LIMIT 1`;
       if (dup.length > 0) {
         const cur = await tx`SELECT credits FROM users WHERE id = ${args.userId}`;
         return {
@@ -993,8 +998,8 @@ export async function fulfillOrder(args: {
           duplicate: true,
         };
       }
-      await tx`INSERT INTO transactions (id, user_id, email, pack_type, amount, readings, created_at)
-        VALUES (${row.id}, ${row.user_id}, ${row.email}, ${row.pack_type}, ${row.amount}, ${row.readings}, NOW())`;
+      await tx`INSERT INTO transactions (id, user_id, email, pack_type, amount, readings, order_id, created_at)
+        VALUES (${row.id}, ${row.user_id}, ${row.email}, ${row.pack_type}, ${row.amount}, ${row.readings}, ${args.orderId}, NOW())`;
       const upd = await tx`UPDATE users SET credits = credits + ${args.readings} WHERE id = ${args.userId} RETURNING credits`;
       if (upd.length === 0) throw new Error("User not found during fulfillment");
       return { transaction: row, credits: (upd[0] as { credits: number }).credits, duplicate: false };
@@ -1004,7 +1009,9 @@ export async function fulfillOrder(args: {
   const db = await readLocal();
   // After a refund, a redelivered order_created is treated as a duplicate
   // and is not re-granted (the duplicate check does not exclude refund rows).
-  if (db.transactions.some((t) => t.pack_type.includes(marker))) {
+  // Local files written before AF-004 have no order_id, so the old
+  // pack_type marker still counts as a duplicate too.
+  if (db.transactions.some((t) => t.order_id === args.orderId || t.pack_type.includes(marker))) {
     const u = db.users.find((x) => x.id === args.userId);
     return { transaction: null, credits: u?.credits ?? 0, duplicate: true };
   }
