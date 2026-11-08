@@ -12,11 +12,13 @@ import { SITE_URL } from "@/lib/site";
 export const dynamic = "force-dynamic";
 
 /**
- * Magic-link callback. Supabase returns here with a code, the server
+ * Auth callback. Supabase returns here with a code, the server
  * exchanges it for a Supabase session, then bridges to a Sortes
  * session exactly like the OTP bridge, and redirects to /account.
- * If anything fails, the user lands on /account with an error flag
- * instead of a broken page, and can retry with the magic-link flow.
+ * Serves both the magic-link flow and Google OAuth (signInWithOAuth):
+ * both come back with a `code` on this route. If anything fails, the
+ * user lands on /account with an error flag instead of a broken
+ * page, and can retry with the magic-link flow.
  */
 export async function GET(req: NextRequest) {
   // Use the request origin, not the hardcoded canonical domain, so the
@@ -30,8 +32,24 @@ export async function GET(req: NextRequest) {
     if (!code) return fail;
     const supabase = await getSupabaseServer();
     if (!supabase) return fail;
-    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
-    if (error || !data.user?.email) return fail;
+    // PKCE flow id: signInWithOtp and signInWithOAuth append
+    // `sb_flow_id` to the callback URL, and the server-side exchange
+    // can only look up the flow-specific verifier slot when given
+    // the flow id. Without it, the SDK falls back to a deprecated
+    // legacy fixed-key cookie and the exchange can fail.
+    const flowId = req.nextUrl.searchParams.get("sb_flow_id");
+    const { data, error } = await supabase.auth.exchangeCodeForSession(
+      code,
+      flowId ? { flowId } : undefined
+    );
+    if (error) {
+      console.error("auth callback exchange failed:", error.message, error.code ?? "");
+      return fail;
+    }
+    if (!data.user?.email) {
+      console.error("auth callback exchange failed: no user email in session");
+      return fail;
+    }
     const email = data.user.email.trim().toLowerCase();
     const user = (await getUserByEmail(email)) ?? (await createUser(email));
     // Phase B (R5): pass the user's current session version so a

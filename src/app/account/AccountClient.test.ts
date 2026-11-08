@@ -32,7 +32,22 @@ describe("AccountClient magic-link redirect", () => {
 
   it("sends no other Supabase email-link flow from this component", () => {
     expect(src).not.toContain("resetPasswordForEmail");
-    expect(src).not.toContain("signInWithOAuth");
     expect(src).not.toContain("inviteUserByEmail");
+  });
+});
+
+describe("AccountClient Google sign-in", () => {
+  it("has exactly one Google entry point, and it is the pinned one", () => {
+    const signInWithOAuth = src.match(/signInWithOAuth/g) ?? [];
+    expect(signInWithOAuth).toHaveLength(1);
+    expect(src).toContain('signInWithOAuth({ provider: "google"');
+    expect(src).toContain(
+      "redirectTo: `${window.location.origin}/auth/callback`"
+    );
+  });
+
+  it("shows a Continue with Google button and no longer claims there is no Google sign-in", () => {
+    expect(src).toContain("Continue with Google");
+    expect(src).not.toContain("There is no Google sign-in.");
   });
 });

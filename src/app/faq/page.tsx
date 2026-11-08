@@ -36,7 +36,7 @@ export const FAQS = [
   },
   {
     q: "How do I sign in?",
-    a: "On the account page, choose Email link to have a sign-in link sent to your email, then click the link in the email to sign in. Or choose Password to sign in with email and password. There is no Google sign-in. After you sign in, your guest Oracles and journal move into your account, and you stay signed in for 30 days.",
+    a: "On the account page, choose Continue with Google to sign in with your Google account, or choose Email link to have a sign-in link sent to your email, then click the link in the email to sign in. Or choose Password to sign in with email and password. After you sign in, your guest Oracles and journal move into your account, and you stay signed in for 30 days.",
   },
   {
     q: "What if I bought Oracles with a different email?",

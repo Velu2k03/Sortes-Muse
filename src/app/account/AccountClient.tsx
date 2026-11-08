@@ -25,6 +25,7 @@ export default function AccountPage() {
   const [pwBusy, setPwBusy] = useState(false);
   const [linkBusy, setLinkBusy] = useState(false);
   const [codeBusy, setCodeBusy] = useState(false);
+  const [googleBusy, setGoogleBusy] = useState(false);
   const [savePwBusy, setSavePwBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [devCode, setDevCode] = useState<string | null>(null);
@@ -134,6 +135,33 @@ export default function AccountPage() {
       setError(err instanceof Error ? err.message : "Something went wrong.");
     } finally {
       setSavePwBusy(false);
+    }
+  };
+
+  // Google OAuth via Supabase: redirects to Google, which returns to
+  // /auth/callback with a code, the same route the magic link uses.
+  // The browser client is the one the email-link flow already uses.
+  // On success the page navigates away, so googleBusy is only reset
+  // on error.
+  const signInWithGoogle = async () => {
+    const supabase = getSupabaseBrowser();
+    if (!supabase) {
+      setError("Google sign-in is not available right now. Please use an email link or password.");
+      return;
+    }
+    setGoogleBusy(true);
+    setError(null);
+    try {
+      const { error } = await withTimeout(
+        supabase.auth.signInWithOAuth({
+          provider: "google",
+          options: { redirectTo: `${window.location.origin}/auth/callback` },
+        })
+      );
+      if (error) throw new Error(error.message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong.");
+      setGoogleBusy(false);
     }
   };
 
@@ -355,7 +383,7 @@ export default function AccountPage() {
           <p className="mt-2 text-sm leading-relaxed text-cream/75">
             {mode === "signin"
               ? "Your guest Oracles and journal move into your account automatically, then follow you across devices. You stay signed in for 30 days."
-              : "One account keeps your Oracles, journal, and reports synced across devices. Sign in with an email link or a password. There is no Google sign-in."}
+              : "One account keeps your Oracles, journal, and reports synced across devices. Sign in with Google, an email link, or a password."}
           </p>
 
           {/* Phase 3 (3.6): two equal paths. */}
@@ -378,6 +406,29 @@ export default function AccountPage() {
                 {m === "signin" ? "Sign in" : "Create account"}
               </button>
             ))}
+          </div>
+
+          {/* Google OAuth: one tap, same /auth/callback as the magic
+              link, so a Google sign-in bridges to a Sortes session
+              the same way. Shown for both sign-in and create-account. */}
+          <button
+            type="button"
+            onClick={() => void signInWithGoogle()}
+            disabled={googleBusy}
+            className="btn-ghost mt-4 flex w-full items-center justify-center rounded-xl px-6 py-3.5 font-bold disabled:opacity-100 disabled:saturate-50"
+          >
+            <span
+              aria-hidden="true"
+              className="mr-2.5 inline-flex h-5 w-5 items-center justify-center rounded-full border border-gold/40 text-sm font-bold text-goldbright"
+            >
+              G
+            </span>
+            {googleBusy ? "Redirecting to Google…" : "Continue with Google"}
+          </button>
+          <div className="mt-4 flex items-center gap-3 text-xs text-mist">
+            <span className="h-px flex-1 bg-gold/20" aria-hidden="true" />
+            <span>or continue with email</span>
+            <span className="h-px flex-1 bg-gold/20" aria-hidden="true" />
           </div>
 
           <div className="mt-3 grid grid-cols-2 gap-1 rounded-xl border border-gold/25 bg-panel/70 p-1">
