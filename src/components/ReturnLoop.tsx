@@ -88,7 +88,7 @@ export default function ReturnLoop() {
               <p className="mt-2 text-cream/90">You have not drawn today&apos;s card yet.</p>
             )}
             <Link href="/daily" className="mt-3 inline-block font-semibold text-goldbright underline underline-offset-4">
-              {dailyName ? "See today's card" : "Draw today's card, free"}
+              {dailyName ? "See today's card" : "Draw today's card"}
             </Link>
             {streak >= 2 && (
               <p className="mt-2 text-sm text-mist">
@@ -112,7 +112,7 @@ export default function ReturnLoop() {
               <>
                 <p className="mt-2 text-cream/90">No readings saved yet. Your first Quick Insight is free.</p>
                 <Link href="/spreads/quick-insight" className="mt-3 inline-block font-semibold text-goldbright underline underline-offset-4">
-                  Begin my free reading
+                  Start my free reading
                 </Link>
               </>
             )}

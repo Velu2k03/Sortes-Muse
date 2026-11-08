@@ -638,7 +638,7 @@ export default function AccountPage() {
                 href="/oracles"
                 className="btn-gold rounded-xl px-6 py-3 font-bold"
               >
-                Top up Oracles
+                Get Oracles
               </Link>
               <button
                 type="button"

@@ -9,7 +9,7 @@ export const SPREADS: Spread[] = [
     name: "Quick Insight",
     cards: 1,
     description:
-      "One card, one clear mirror. Your first Quick Insight reading is free, no card required.",
+      "One card, one clear mirror. Your first Quick Insight reading is free, no payment card required.",
     positions: [
       {
         key: "insight",
@@ -21,7 +21,7 @@ export const SPREADS: Spread[] = [
   },
   {
     slug: "past-present-future",
-    name: "Past / Present / Future",
+    name: "Past · Present · Future",
     cards: 3,
     description:
       "Three cards tracing where you have been, where you stand, and where the path leads.",

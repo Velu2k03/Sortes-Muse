@@ -96,7 +96,7 @@ export default function CheckoutModal({ open, onClose, reason, initialPackId }: 
           onClick={onClose}
           role="dialog"
           aria-modal="true"
-          aria-label="Top up Oracles"
+          aria-label="Get Oracles"
         >
           <motion.div
             className="w-full max-w-lg rounded-t-3xl border border-gold/30 bg-navydeep p-6 sm:rounded-3xl sm:p-8"
@@ -107,7 +107,7 @@ export default function CheckoutModal({ open, onClose, reason, initialPackId }: 
             onClick={(e) => e.stopPropagation()}
           >
             <h2 className="text-center font-display text-3xl text-goldbright">
-              Top up Oracles
+              Get Oracles
             </h2>
             {reason && (
               <p className="mt-2 text-center text-sm text-cream/75">{reason}</p>

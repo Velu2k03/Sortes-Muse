@@ -97,7 +97,7 @@ export default function DeckPage() {
           Free forever. Tap any card to read its story.
         </p>
         <Link href="/daily" className="mt-2 inline-block text-sm font-semibold text-goldbright underline underline-offset-4">
-          Draw today&apos;s card, free
+          Draw today&apos;s card
         </Link>
       </div>
 

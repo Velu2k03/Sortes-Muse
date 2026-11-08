@@ -54,8 +54,8 @@ export default function SampleReading() {
             See what a personalized reading feels like
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-cream/75">
-            An invented example, showing the format. Yours is written around
-            your story and question.
+            An invented example: Maya&apos;s question, answered the way yours
+            will be. Yours is written around your own story and question.
           </p>
         </motion.div>
 
@@ -112,13 +112,13 @@ export default function SampleReading() {
 
           <div className="border-t border-gold/15 px-6 py-6 text-center sm:px-10">
             <Link
-              href="/spreads/past-present-future"
+              href="/spreads/quick-insight"
               className="btn-gold mt-4 inline-block rounded-2xl px-8 py-3.5 font-bold"
             >
-              Get my reading · 1 Oracle
+              Start my free reading
             </Link>
             <p className="mt-3 text-xs text-mist">
-              Your first Quick Insight reading is free. No card required.
+              Your first Quick Insight reading is free. No payment card required.
             </p>
           </div>
         </motion.div>

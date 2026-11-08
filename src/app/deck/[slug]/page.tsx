@@ -171,7 +171,7 @@ export default async function CardPage({
                 Quick Insight, free first
               </Link>
               <Link href="/spreads/past-present-future" className="rounded-xl border border-gold/30 px-5 py-2.5 text-sm font-semibold text-goldbright hover:border-gold/60">
-                Past / Present / Future
+                Past · Present · Future
               </Link>
               <Link href="/spreads/celtic-cross" className="rounded-xl border border-gold/30 px-5 py-2.5 text-sm font-semibold text-goldbright hover:border-gold/60">
                 Celtic Cross

@@ -111,7 +111,7 @@ export default function HistoryPage() {
             href="/spreads/quick-insight"
             className="btn-gold mt-6 inline-block rounded-xl px-8 py-3 font-bold"
           >
-            Begin free reading
+            Start my free reading
           </Link>
         </div>
       )}

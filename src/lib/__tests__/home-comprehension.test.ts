@@ -24,7 +24,7 @@ describe("home page: first-visit comprehension", () => {
   });
 
   it("states what is free", () => {
-    expect(src).toContain("Your first Quick Insight reading is free. No card, no account.");
+    expect(src).toContain("Your first Quick Insight reading is free. No payment card, no account.");
     expect(src).toContain("Free Western, Vedic, and Ziwei birth chart calculations.");
     expect(src).toContain("FIRST FREE");
   });

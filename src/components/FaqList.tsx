@@ -82,7 +82,7 @@ export default function FaqList({ faqs }: { faqs: FaqItem[] }) {
             <summary className="cursor-pointer font-display text-2xl text-goldbright">
               {f.q}
             </summary>
-            <p className="mt-3 leading-relaxed text-cream/85">{f.a}</p>
+            <p className="mt-3 whitespace-pre-line leading-relaxed text-cream/85">{f.a}</p>
           </details>
         ))}
       </div>

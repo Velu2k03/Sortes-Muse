@@ -66,14 +66,14 @@ export default function SpreadsPage() {
             Start here, it is free
           </p>
           <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-cream/75">
-            One question. No Oracle, no card, no account.
+            One question. No Oracle, no payment card, no account.
           </p>
           <GlareHover className="mt-4 rounded-xl">
             <Link
               href="/spreads/quick-insight"
               className="btn-gold inline-block rounded-xl px-8 py-3 font-bold"
             >
-              Begin my free reading
+              Start my free reading
             </Link>
           </GlareHover>
         </div>
@@ -132,7 +132,7 @@ export default function SpreadsPage() {
             </div>
 
             <div className="flex flex-1 flex-col p-6">
-              {/* Phase 4A (4.5): the long "Past / Present / Future"
+              {/* Phase 4A (4.5): the long "Past · Present · Future"
                   title used to collide with the price on one
                   no-wrap row. The row now wraps, and the title may
                   shrink, so the price drops below instead of
@@ -145,6 +145,9 @@ export default function SpreadsPage() {
               </div>
               <p className="mt-1 text-xs uppercase tracking-[0.2em] text-mist">
                 {s.cards} {s.cards === 1 ? "card" : "cards"} · personalized AI interpretation
+              </p>
+              <p className="mt-2 text-xs text-mist">
+                1 Oracle per reading. You give one question, a few lines of context, and a category.
               </p>
               <p className="mt-3 flex-1 text-sm leading-relaxed text-cream/75">
                 {s.description}
@@ -203,7 +206,7 @@ export default function SpreadsPage() {
                   href={`/spreads/${s.slug}`}
                   className="btn-ghost mt-5 block rounded-xl border border-gold/30 px-4 py-3 text-center font-semibold"
                 >
-                  {s.slug === "quick-insight" && !usedFree ? "Begin free reading" : "Begin reading"}
+                  {s.slug === "quick-insight" && !usedFree ? "Start my free reading" : "Begin reading"}
                 </Link>
               )}
             </div>

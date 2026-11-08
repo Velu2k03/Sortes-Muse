@@ -22,7 +22,7 @@ export const FAQS = [
   },
   {
     q: "What are the five Oracle rules?",
-    a: "One: your first Quick Insight reading is free, once per device as a guest and once per account when signed in. Two: a chart interpretation is free the first time per system, Ziwei, Western, and Vedic separately, then 1 Oracle each. Three: reports have no free first reading, each report costs 1 Oracle. Four: a reading follow-up is free the first time per reading, then 1 Oracle each, up to 3 per reading. Five: the daily card is always free and never uses an Oracle. Oracles never expire, and there is no subscription.",
+    a: "1. Your first Quick Insight reading is free, once per device as a guest and once per account when signed in.\n2. A chart interpretation is free the first time per system, Ziwei, Western, and Vedic separately, then 1 Oracle each.\n3. Reports have no free first reading, each report costs 1 Oracle.\n4. A reading follow-up is free the first time per reading, then 1 Oracle each, up to 3 per reading.\n5. The daily card is always free and never uses an Oracle.\nOracles never expire, and there is no subscription.",
   },
   {
     q: "Are readings predictions?",
@@ -47,6 +47,26 @@ export const FAQS = [
   {
     q: "What is the difference between a tarot spread and a birth chart?",
     a: "A tarot spread answers a specific question in the moment, with cards drawn for that situation. A birth chart maps a birth moment, with planets in signs and houses, or stars in palaces, and it does not change with your question. The guides page explains both in more detail.",
+  },
+  {
+    q: "Can I get a refund?",
+    a: "Unused Oracle packs may be refunded within 14 days of purchase. Readings that have already been delivered are non-refundable. See the Terms page for the full wording.",
+  },
+  {
+    q: "How do I pay for Oracles?",
+    a: "Oracle packs are paid through a secure checkout powered by Lemon Squeezy. Packs are 5 Oracles for $3.99, 12 for $7.99, and 30 for $14.99, one-time, with no subscription.",
+  },
+  {
+    q: "What if a payment fails?",
+    a: "If a payment fails, no Oracles are added to your balance. You can try again from the Oracles page. If you were charged and no Oracles appeared, email " + CONTACT_EMAIL + ".",
+  },
+  {
+    q: "What does a reading include?",
+    a: "Each reading is a written interpretation of your cards (or chart) around your question, about 300 to 600 words on screen. It includes what stands out, the tension and opportunity, what you may be overlooking, one practical step, and one reflection question. A reading costs 1 Oracle, and your first Quick Insight is free.",
+  },
+  {
+    q: "How do I delete my data?",
+    a: "You can delete saved readings and journal entries yourself, and you can delete your account from the account page. To ask for deletion or an export by email, write to " + CONTACT_EMAIL + ".",
   },
   {
     q: "Who runs Sortes, and how do I contact you?",
