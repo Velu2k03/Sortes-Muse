@@ -65,8 +65,13 @@ export default function CheckoutModal({ open, onClose, reason, initialPackId }: 
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ packId: apiPackId(packId), email: trimmed || undefined }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Checkout failed.");
+      // Brutal audit F1 (2026-11-08): never surface a raw JSON parse
+      // exception. An empty or non-JSON body becomes a readable error.
+      const data: { url?: string; error?: string } = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.error ?? "Checkout is temporarily unavailable. Please try again in a moment.");
+      }
+      if (!data.url) throw new Error("Checkout is temporarily unavailable. Please try again in a moment.");
       trackPurchaseCompleted(packId, 0);
       // Remember the purchase email so /account can prefill the sign-in
       // form after the payment redirect.

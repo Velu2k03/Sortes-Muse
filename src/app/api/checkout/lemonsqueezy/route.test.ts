@@ -99,4 +99,33 @@ describe("POST /api/checkout/lemonsqueezy", () => {
       )
     ).toBe(true);
   });
+
+  // Brutal audit F1 (2026-11-08): a database failure in the session
+  // lookup used to throw out of the handler, and Next sent a 500 with
+  // an EMPTY body ("Unexpected end of JSON input" in the modal).
+  it("returns 503 JSON, never an empty body, when the session lookup throws", async () => {
+    mockedGetSession.mockRejectedValueOnce(new Error("The request timed out. Please try again."));
+    const res = await POST(req({ packId: "pack5", email: "buyer@example.com" }));
+    expect(res.status).toBe(503);
+    const text = await res.text();
+    expect(text.length).toBeGreaterThan(0);
+    expect(JSON.parse(text)).toEqual({
+      error: "Checkout is temporarily unavailable. Please try again in a moment.",
+    });
+    expect(mockedCreateCheckout).not.toHaveBeenCalled();
+  });
+
+  it("returns 503 JSON when the signed-in user lookup throws", async () => {
+    mockedGetSession.mockResolvedValueOnce({ userId: "u-1", email: "s@example.com" });
+    mockedGetUserById.mockRejectedValueOnce(new Error("db down"));
+    const res = await POST(req({ packId: "pack5" }));
+    expect(res.status).toBe(503);
+    expect(await res.json()).toHaveProperty("error");
+  });
+
+  it("returns 400 JSON for a null JSON body instead of crashing", async () => {
+    const res = await POST(req(null));
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: "Invalid request." });
+  });
 });

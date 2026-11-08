@@ -20,6 +20,11 @@ export async function POST(req: NextRequest) {
   } catch {
     return NextResponse.json({ error: "Invalid request." }, { status: 400 });
   }
+  // A JSON body of null or a primitive would throw on property access
+  // below and produce an empty-body 500 (F1). Reject it as JSON.
+  if (!body || typeof body !== "object") {
+    return NextResponse.json({ error: "Invalid request." }, { status: 400 });
+  }
   const packId = body.packId ?? "";
   if (!["pack5", "pack12", "pack30"].includes(packId)) {
     return NextResponse.json({ error: "Invalid pack." }, { status: 400 });
@@ -31,13 +36,34 @@ export async function POST(req: NextRequest) {
   // for that address and forced its owner into the OTP path (a 409
   // on password signup). Guests have no session, so body.email is
   // their only address and is kept.
-  const session = await getSession();
+  // Brutal audit F1 (2026-11-08): getSession() and getUserById() hit
+  // the database and were outside any try/catch. When the database did
+  // not answer, the handler threw and Next sent a 500 with an EMPTY
+  // body, which the checkout modal surfaced as "Failed to execute
+  // 'json' on 'Response': Unexpected end of JSON input". This route now
+  // always answers with JSON and a readable error.
+  let session: Awaited<ReturnType<typeof getSession>>;
   let email = "";
-  if (session) {
-    const user = await getUserById(session.userId);
-    email = user?.email ?? "";
-  } else {
-    email = (body.email ?? "").trim();
+  try {
+    session = await getSession();
+    if (session) {
+      const user = await getUserById(session.userId);
+      email = user?.email ?? "";
+    } else {
+      email = (body.email ?? "").trim();
+    }
+  } catch (err) {
+    console.error(
+      JSON.stringify({
+        source: "sortes-lemonsqueezy",
+        event: "checkout-session-lookup-failed",
+        error: err instanceof Error ? err.message : String(err),
+      })
+    );
+    return NextResponse.json(
+      { error: "Checkout is temporarily unavailable. Please try again in a moment." },
+      { status: 503 }
+    );
   }
   // Guests must supply an email: the webhook delivers credits to that
   // address and it becomes their account on sign-in.
