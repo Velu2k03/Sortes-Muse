@@ -46,18 +46,11 @@ const nextConfig: NextConfig = {
       { source: "/intake", destination: "/spreads", permanent: false },
     ];
   },
-  // Security headers audit (Phase 1, 2026-11-05): CSP added and
-  // smoke-tested with `npm run build` + `npm run start` + curl on /
-  // and /credits. Lemon Squeezy checkout is a full-page redirect
-  // (window.location.href), not an iframe or script, so frame-src
-  // 'none' does not block it; Supabase auth runs from the browser
-  // client, so connect-src allows *.supabase.co. Deliberately left
-  // out: script-src 'unsafe-inline' is KEPT because Next.js needs
-  // it for its inline bootstrap scripts (a nonce-based CSP would
-  // need middleware to mint per-request nonces — a follow-up, not
-  // this phase); no 'unsafe-eval'; no third-party script origins
-  // beyond Plausible; frame-ancestors 'none' matches the
-  // X-Frame-Options: DENY below.
+  // CSP moved to src/proxy.ts (Round 3, 2026-11-08): it is now a
+  // per-request nonce CSP minted in Proxy, with no script-src
+  // 'unsafe-inline'. It must NOT also be set here: browsers enforce
+  // every CSP header they receive, so a static one would still block
+  // (or still allow) whatever the nonce policy does not.
   // HSTS (AF-006, 2026-11-08): Vercel's automatic HSTS
   // (max-age=63072000, no includeSubDomains) is NOT applied once
   // next.config declares headers, so this app previously shipped no
@@ -68,22 +61,6 @@ const nextConfig: NextConfig = {
   // *.resonantatlas.com subdomain serves HTTPS (true for anything
   // Vercel-hosted, which auto-provisions certs).
   async headers() {
-    const csp = [
-      "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' https://plausible.io",
-      "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: blob:",
-      "font-src 'self'",
-      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://plausible.io",
-      "frame-src 'none'",
-      "frame-ancestors 'none'",
-      "form-action 'self'",
-      "object-src 'none'",
-      "base-uri 'self'",
-      "worker-src 'self'",
-      "manifest-src 'self'",
-      "upgrade-insecure-requests",
-    ].join("; ");
     return [
       // AF-092 (audit-fixes W3): static images are content-hashed by
       // Next, so they can be immutable for a year instead of
@@ -115,7 +92,6 @@ const nextConfig: NextConfig = {
       {
         source: "/:path*",
         headers: [
-          { key: "Content-Security-Policy", value: csp },
           { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains" },
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "X-Frame-Options", value: "DENY" },
