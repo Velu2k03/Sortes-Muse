@@ -18,7 +18,8 @@ interface ServerTx {
 }
 
 export default function CreditsPage() {
-  const { credits, user } = useAuth();
+  const { credits, user, loading } = useAuth();
+  const isGuest = !loading && !user;
   const searchParams = useSearchParams();
   const justPurchased = searchParams.get("purchase") === "success";
   const [reducedMotion, setReducedMotion] = useState(false);
@@ -77,6 +78,14 @@ export default function CreditsPage() {
               <span className="inline-block h-14 w-20 animate-pulse rounded bg-gold/30" aria-hidden="true" />
               <span className="font-body text-lg text-mist">Oracles</span>
             </div>
+          ) : isGuest ? (
+            // Guests have no balance to show; point to the free reading.
+            <p className="font-body text-lg text-cream">
+              Your first Quick Insight reading is free.{" "}
+              <Link href="/spreads/quick-insight" className="text-goldbright underline">
+                Ask your question
+              </Link>
+            </p>
           ) : reducedMotion ? (
             <p className="num text-6xl font-bold text-cream">
               {credits ?? 0}
