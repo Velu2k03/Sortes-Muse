@@ -15,8 +15,10 @@ import { CARDS, cardSlug } from "@/lib/cards";
 // Dead typed URLs are handled by redirects in next.config.ts, not
 // by adding non-canonical pages to this list. Intake and reading
 // detail pages are flows, not canonical content, so they stay out.
-// Phase 3 (3.3): /journal and /oracles are the canonical routes now;
-// /history and /credits redirect to them permanently.
+// Phase 3 (3.3): /history and /credits redirect permanently to /journal
+// and /oracles. /journal stays OUT of the sitemap because
+// src/app/journal/page.tsx sets robots index:false (AF-072); /oracles
+// stays listed.
 // Phase 4A (4.4): all 78 /deck/[slug] card pages are canonical too,
 // generated from the same slug helper as the routes themselves.
 const PAGES = [
@@ -33,7 +35,6 @@ const PAGES = [
   "/spreads/career-path",
   "/spreads/weekly-outlook",
   "/spreads/celtic-cross",
-  "/journal",
   "/oracles",
   "/methodology",
   "/about",
