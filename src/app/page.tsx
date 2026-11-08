@@ -3,8 +3,8 @@
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
+import { useCanHide } from "@/lib/use-mounted";
 import { MAJORS, cardSlug, getCard } from "@/lib/cards";
-import { SPREADS } from "@/lib/tarot";
 import { TAGLINE } from "@/lib/site";
 import StatsStrip from "@/components/StatsStrip";
 import SampleReading from "@/components/SampleReading";
@@ -21,12 +21,14 @@ import { Orb } from "@/components/ReactBitsNew";
 // hero background, not a competing gimmick, and it is static under
 // prefers-reduced-motion. MotionConfig reducedMotion="user" in the
 // MotionProvider still governs the framer-motion reveals below.
-const fadeUp = {
-  initial: { opacity: 0, y: 24 },
+// AF-033: the hidden initial state is applied only after mount and never
+// under reduced motion, so server HTML (and no-JS) renders visible.
+const fadeUpFor = (hide: boolean) => ({
+  initial: hide ? { opacity: 0, y: 24 } : (false as const),
   whileInView: { opacity: 1, y: 0 },
   viewport: { once: true, margin: "-60px" },
   transition: { duration: 0.6, ease: "easeOut" as const },
-};
+});
 
 // Phase 4C (4.6): the orbit carousel is replaced by a static grid of
 // the same six Major Arcana cards, each linking to its own card page.
@@ -40,6 +42,9 @@ const EXPLORE_CARD_IDS = [
 ];
 
 export default function Home() {
+  const hide = useCanHide();
+  const fadeUp = fadeUpFor(hide);
+  const revealKey = hide ? "reveal" : "static";
   const fanCards = MAJORS.slice(0, 5);
   const middle = (fanCards.length - 1) / 2;
   return (
@@ -107,43 +112,28 @@ export default function Home() {
             Draw a free daily card, explore 78 card meanings, and get a
             reading for your question.
           </motion.p>
-          {/* Phase E (item 9): one line saying what "sortes" means. */}
-          <motion.p
-            initial={false}
-            animate={{ opacity: 1 }}
-            className="mt-3 text-sm italic text-mist"
-          >
-            Sortes is Latin for lots: the lots cast to decide, and to listen.
-          </motion.p>
-          {/* Audit 4: hero CTAs wrapped on the very first load, then
-              were single-line on warm reloads, so whitespace-nowrap
-              alone did not prove stability. Definitive enforcement:
-              flex-nowrap at sm+, shrink-0 on both links so neither
-              link can shrink and then wrap, and the container stays
-              max-w-xl (576px), which fits both buttons even at a
-              wider fallback-font width (about 460px at loaded font,
-              under 576px with a 20% fallback widening). On mobile
-              the column stack is intentional and unchanged. */}
+          {/* AF-034 homepage diet: the Latin etymology line is gone
+              (it belongs on /about, which needs Velu's identity copy
+              first — AF-036 — so it is dropped, not moved). */}
+          {/* AF-034: one primary CTA, the free reading. "Draw a Card"
+              is the quiet secondary; "See all spreads" is gone (the
+              seek cards below and /spreads cover it). */}
           <motion.div
             initial={false}
             animate={{ opacity: 1, y: 0 }}
             className="mt-10 flex w-full max-w-xl flex-col gap-3 sm:flex-row sm:flex-nowrap sm:justify-center"
           >
             <Link
-              href="/daily"
+              href="/spreads/quick-insight"
               className="btn-gold shrink-0 whitespace-nowrap rounded-2xl px-8 py-4 text-center text-lg font-bold"
             >
-              <Icon name="sparkle" size={20} className="mr-2 inline-block align-[-3px]" />Draw today&apos;s card
+              Ask your question · First reading free
             </Link>
-            {/* Phase 2: one dominant action. Draw a Card stays gold.
-                Begin a Reading is now a quiet secondary button, same
-                size, no gold fill, so the first view has one clear
-                primary action instead of two equally strong ones. */}
             <Link
-              href="/spreads"
+              href="/daily"
               className="btn-ghost shrink-0 whitespace-nowrap rounded-2xl px-8 py-4 text-center text-lg font-semibold"
             >
-              See all spreads <Icon name="arrowRight" size={20} className="ml-2 inline-block align-[-3px]" />
+              <Icon name="sparkle" size={20} className="mr-2 inline-block align-[-3px]" />Draw a Card
             </Link>
           </motion.div>
           {/* Phase 4C (4.6b): the free-reading promise is stated once,
@@ -159,34 +149,9 @@ export default function Home() {
           >
             Your first Quick Insight reading is free. No payment card, no account.
           </motion.p>
-          {/* Phase 2: Oracle value in plain cash terms, without a
-              fixed per-Oracle price, because that price varies by
-              pack ($0.80 at 5 for $3.99, $0.67 at 12 for $7.99,
-              $0.50 at 30 for $14.99). After the free first reading,
-              every reading is 1 Oracle, packs start at $3.99, and
-              Oracles never expire. No subscription is mentioned
-              because there is none to sell. */}
-          <motion.p
-            initial={false}
-            animate={{ opacity: 1 }}
-            className="mt-3 text-sm text-cream/75"
-          >
-            After that, 1 Oracle = 1 reading. Oracle packs start at{" "}
-            <Link href="/oracles" className="font-semibold text-goldbright underline underline-offset-4">
-              $3.99 for 5 Oracles
-            </Link>
-            {" "}($0.80 each), and Oracles never expire. No subscription.
-          </motion.p>
-          <motion.p
-            initial={false}
-            animate={{ opacity: 1 }}
-            className="mt-3 text-sm text-cream/75"
-          >
-            Free Western, Vedic, and Ziwei birth chart calculations.{" "}
-            <Link href="/charts" className="font-semibold text-goldbright underline underline-offset-4">
-              Cast a birth chart
-            </Link>
-          </motion.p>
+          {/* AF-034: the pricing line and the charts line are gone
+              from the hero. Pricing lives on /oracles; charts have
+              their own nav entry. The hero is one promise + one CTA. */}
         </div>
       </section>
 
@@ -218,75 +183,9 @@ export default function Home() {
         </div>
       </section>
 
-      {/* SPREADS PREVIEW */}
-      <section className="border-y border-gold/10 bg-navydeep/40 py-16">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <motion.div {...fadeUp} className="text-center">
-            <h2 className="font-display text-4xl text-goldbright sm:text-5xl">
-              All spreads, one Oracle each
-            </h2>
-            <p className="mx-auto mt-4 max-w-xl text-cream/75">
-              The cards above answer by intention. Below, every spread
-              by size, from one card to the full ten-card spread. Your
-              first Quick Insight is free.
-            </p>
-            <p className="mx-auto mt-3 max-w-xl text-sm text-cream/75">
-              For reflection, not prediction.
-            </p>
-          </motion.div>
-          {/* Phase 4C (4.6a): MagicBento's cursor glow is gone. Same
-              spreads, same bento layout, same prices, plain cards
-              with a hover lift instead of a pointer-following glow. */}
-          <div className="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-6">
-            {SPREADS.map((spread) => (
-              <article
-                key={spread.slug}
-                className={`relative overflow-hidden rounded-3xl border border-gold/25 bg-panel/70 p-7 transition-transform duration-300 hover:-translate-y-1 hover:border-gold/60 ${
-                  spread.slug === "quick-insight"
-                    ? "lg:col-span-2 lg:row-span-2"
-                    : spread.slug === "past-present-future"
-                      ? "lg:col-span-4"
-                      : "lg:col-span-2"
-                }`}
-              >
-                {spread.slug === "quick-insight" && (
-                  <span className="absolute right-4 top-4 rounded-full bg-gold px-3 py-1 text-xs font-bold text-ink">
-                    FIRST FREE
-                  </span>
-                )}
-                <p className="text-xs uppercase tracking-[0.25em] text-mist">
-                  {spread.cards} {spread.cards === 1 ? "card" : "cards"}
-                </p>
-                <h3 className="mt-2 font-display text-3xl text-cream">{spread.name}</h3>
-                <p className="mt-3 min-h-[3.5rem] text-sm leading-relaxed text-cream/75">
-                  {spread.description}
-                </p>
-                <p className="mt-4 font-display text-2xl text-goldbright">
-                  {spread.slug === "quick-insight" ? "Free" : (<><span className="font-body">1</span> Oracle</>)}
-                </p>
-                <p className="mt-1 text-xs text-mist">
-                  1 Oracle per reading. You give one question, a few lines of context, and a category.
-                </p>
-                {spread.slug === "quick-insight" ? (
-                  <Link
-                    href={`/spreads/${spread.slug}`}
-                    className="btn-gold mt-5 block rounded-xl px-4 py-3 text-center font-semibold"
-                  >
-                    Start my free reading
-                  </Link>
-                ) : (
-                  <Link
-                    href={`/spreads/${spread.slug}`}
-                    className="btn-ghost mt-5 block rounded-xl px-4 py-3 text-center font-semibold"
-                  >
-                    View spread<span className="sr-only">: {spread.name}</span>
-                  </Link>
-                )}
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* AF-034: the duplicate "All spreads" grid lived here (the
+          full list is /spreads). Deleted; the "What do you seek?"
+          cards above stay as the spread entry. */}
 
       {/* EXPLORE THE DECK */}
       <section className="border-y border-gold/10 bg-navydeep/40 py-16">
@@ -332,7 +231,7 @@ export default function Home() {
 
       {/* WHAT IS TAROT */}
       <section className="mx-auto max-w-4xl px-4 py-16 sm:px-6">
-        <motion.div {...fadeUp}>
+        <motion.div key={revealKey} {...fadeUp}>
           <div className="rule-gold mx-auto w-24" />
           <h2 className="mt-6 text-center font-display text-4xl text-goldbright sm:text-5xl">
             What is tarot?
@@ -342,7 +241,7 @@ export default function Home() {
           </p>
         </motion.div>
 
-        <motion.div {...fadeUp} className="mt-12 grid gap-4 sm:grid-cols-3">
+        <motion.div key={revealKey} {...fadeUp} className="mt-12 grid gap-4 sm:grid-cols-3">
           {[
             {
               title: "Draw",
@@ -368,8 +267,9 @@ export default function Home() {
         </motion.div>
       </section>
 
-      {/* SAMPLE READING TEASER */}
-      <SampleReading />
+      {/* SAMPLE READING TEASER — AF-034: collapsed on the homepage
+          diet; the full sample is one tap away. */}
+      <SampleReading collapsed />
 
       {/* Deep UX Batch B: return loop, daily quote, today's card,
           and journal preview, on home itself, before the seek cards. */}
@@ -377,7 +277,7 @@ export default function Home() {
 
       {/* DAILY CARD TEASER */}
       <section className="mx-auto max-w-4xl px-4 py-16 text-center sm:px-6">
-        <motion.div {...fadeUp}>
+        <motion.div key={revealKey} {...fadeUp}>
           <p className="text-xs uppercase tracking-[0.35em] text-gold">
             A daily ritual
           </p>

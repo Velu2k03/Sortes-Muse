@@ -3,12 +3,14 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { getSpread } from "@/lib/tarot";
+import { useCanHide } from "@/lib/use-mounted";
+import { getSpread, SPREADS } from "@/lib/tarot";
 import type { Spread } from "@/lib/types";
 import { freeReadingUsed } from "@/lib/storage";
 import { useAuth } from "@/components/AuthProvider";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import CheckoutModal from "@/components/CheckoutModal";
+import SpreadDiagram from "@/components/SpreadDiagram";
 import Link from "next/link";
 import { ClickSpark } from "@/components/ReactBits";
 
@@ -74,9 +76,11 @@ function GateScreen({
   onTopUp: () => void;
 }) {
   const router = useRouter();
+  const hide = useCanHide();
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      key={hide ? "reveal" : "static"}
+      initial={hide ? { opacity: 0, y: 20 } : false}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0 }}
       className="mx-auto max-w-2xl text-center"
@@ -89,21 +93,32 @@ function GateScreen({
       </h1>
       <p className="mx-auto mt-4 max-w-lg text-cream/80">{spread.description}</p>
 
+      {/* AF-045: the layout diagram sits next to the position list,
+          so a 1-card spread page is not a short list over a long
+          empty page, and the layout itself teaches the spread. */}
       <div className="mt-8 rounded-3xl border border-gold/20 bg-panel/60 p-6 text-left">
         <p className="text-xs uppercase tracking-[0.25em] text-gold">
           The positions
         </p>
-        <ol className="mt-3 space-y-2.5">
-          {spread.positions.map((p, i) => (
-            <li key={p.key} className="flex gap-3 text-sm">
-              <span className="font-display text-lg text-goldbright">{i + 1}</span>
-              <span>
-                <span className="font-semibold text-cream">{p.label}</span>
-                <span className="text-mist">: {p.hint}</span>
-              </span>
-            </li>
-          ))}
-        </ol>
+        <div className="mt-4 flex flex-col items-center gap-6 sm:flex-row sm:items-start">
+          <div className="w-40 shrink-0 sm:w-48">
+            <SpreadDiagram spread={spread} />
+          </div>
+          <ol className="w-full space-y-2.5">
+            {spread.positions.map((p, i) => (
+              <li key={p.key} className="flex gap-3 text-sm">
+                <span className="shrink-0 font-display text-lg leading-snug text-goldbright">{i + 1}</span>
+                <span>
+                  {/* AF-045: the label and its colon are one
+                      non-breaking unit, so "1" and "Insight:" never
+                      split across lines at 390px. */}
+                  <span className="whitespace-nowrap font-semibold text-cream">{p.label}:</span>{" "}
+                  <span className="text-mist">{p.hint}</span>
+                </span>
+              </li>
+            ))}
+          </ol>
+        </div>
       </div>
 
       {(() => {
@@ -125,6 +140,16 @@ function GateScreen({
           </p>
         );
       })()}
+
+      <div className="mx-auto mt-8 max-w-xl rounded-2xl border border-gold/15 px-5 py-4 text-left text-sm text-mist">
+        <p className="font-semibold text-cream/90">What your reading includes</p>
+        <ul className="mt-2 list-disc space-y-1 pl-5">
+          <li>300-600 words, shown on screen</li>
+          <li>AI-written from your cards, question, and story</li>
+          <li>Ready in under a minute</li>
+          <li>First follow-up free, then 1 Oracle each, up to 3</li>
+        </ul>
+      </div>
 
       <div className="mt-8">
         {isFreeAvailable ? (
@@ -168,7 +193,7 @@ function GateScreen({
               ✦ Get Oracles · 1 Oracle per reading
             </button>
             <p className="mt-3 text-sm text-mist">
-              You are out of Oracles. Packs start at $3.99 for 5 Oracles.
+              This reading uses 1 Oracle. Packs start at $3.99 for 5 Oracles.
             </p>
           </>
         )}
@@ -178,6 +203,26 @@ function GateScreen({
         Readings are for self-reflection and perspective, not guaranteed
         predictions. Take what resonates, leave the rest.
       </p>
+
+      {/* AF-045: the gate is short, so the page ended in empty black
+          space. A row of the other spreads fills it with the next
+          step instead of a void. */}
+      <div className="mx-auto mt-12 max-w-2xl">
+        <p className="text-xs uppercase tracking-[0.25em] text-gold">
+          More spreads
+        </p>
+        <div className="mt-3 flex flex-wrap justify-center gap-2">
+          {SPREADS.filter((s) => s.slug !== spread.slug).map((s) => (
+            <Link
+              key={s.slug}
+              href={`/spreads/${s.slug}`}
+              className="rounded-full border border-gold/30 px-4 py-2.5 text-sm font-semibold text-cream/90 hover:bg-gold/10"
+            >
+              {s.name} · {s.cards === 1 ? "1 card" : `${s.cards} cards`}
+            </Link>
+          ))}
+        </div>
+      </div>
     </motion.div>
   );
 }

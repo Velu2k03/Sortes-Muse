@@ -72,6 +72,22 @@ export const FAQS = [
     q: "Who runs Sortes, and how do I contact you?",
     a: "Sortes is run by Resonant Atlas. Contact is by email, listed in the footer of every page.",
   },
+  {
+    q: "How much does a reading cost?",
+    a: "The daily card is free and your first Quick Insight is free. After that, a reading costs 1 Oracle. Packs are 5 Oracles for $3.99, 12 for $7.99, and 30 for $14.99, which works out to about $0.80, $0.67, and $0.50 per reading. Prices are in US dollars (USD). Oracles never expire, and there is no subscription.",
+  },
+  {
+    q: "How do I pay?",
+    a: "You can pay by card, PayPal, Apple Pay, or Google Pay through Lemon Squeezy secure checkout. Checkout shows the full amount, including any applicable taxes or fees, before you pay.",
+  },
+  {
+    q: "Can I get a refund?",
+    a: "Unused Oracle packs can be refunded within 14 days of purchase. Readings that have already been used are not refundable.",
+  },
+  {
+    q: "What does a reading include?",
+    a: "A reading is a 300-600 word interpretation written by AI from your cards, your question, and your story. It is shown on screen in under a minute and saved to your journal. Your first follow-up question for each reading is free, then each follow-up costs 1 Oracle, up to 3 per reading.",
+  },
 ];
 
 export default function FaqPage() {

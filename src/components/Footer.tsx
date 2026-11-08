@@ -44,6 +44,7 @@ export default function Footer() {
           <h2 className="text-xs uppercase tracking-[0.2em] text-gold">About &amp; legal</h2>
           <ul className="mt-3 grid grid-cols-2 gap-x-6 gap-y-2 text-sm md:block md:space-y-2">
             <li><Link href="/about" prefetch={false} className="inline-block py-2 text-cream/80 hover:text-goldbright">About Sortes</Link></li>
+            <li><Link href="/account" prefetch={false} className="inline-block py-2 text-cream/80 hover:text-goldbright">Sign in</Link></li>
             <li><Link href="/methodology" prefetch={false} className="inline-block py-2 text-cream/80 hover:text-goldbright">Methodology</Link></li>
             <li><Link href="/privacy" prefetch={false} className="inline-block py-2 text-cream/80 hover:text-goldbright">Privacy Policy</Link></li>
             <li><Link href="/terms" prefetch={false} className="inline-block py-2 text-cream/80 hover:text-goldbright">Terms of Service</Link></li>

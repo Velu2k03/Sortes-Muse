@@ -418,7 +418,6 @@ export default function ReadingDetail({ id }: { id: string }) {
             </p>
             <p className="mt-1 text-xs text-mist">
               AI-generated
-              {reading.model ? ` · Written with ${reading.model}` : ""}
             </p>
             <TypewriterText
               text={reading.interpretation}
@@ -480,6 +479,12 @@ export default function ReadingDetail({ id }: { id: string }) {
             {nextStepSaving ? "Saving…" : "Save step"}
           </button>
         </div>
+        {/* AF-049: a disabled Save says why, inline. */}
+        {!nextStepInput.trim() && (
+          <p className="mt-2 text-xs text-mist">
+            Write your step first — the button works once there is text to save.
+          </p>
+        )}
         {nextStepSaved && (
           <p className="mt-2 text-sm text-goldbright">Saved with this reading.</p>
         )}
@@ -526,6 +531,12 @@ export default function ReadingDetail({ id }: { id: string }) {
             {noteSaving ? "Saving…" : reading.note ? "Update note" : "Save note"}
           </button>
         </div>
+        {/* AF-049: a disabled Save says why, inline. */}
+        {!noteInput.trim() && (
+          <p className="mt-2 text-xs text-mist">
+            Write your note first — the button works once there is text to save.
+          </p>
+        )}
         {noteSaved && (
           <p className="mt-2 text-sm text-goldbright">Saved with this reading.</p>
         )}
@@ -589,6 +600,12 @@ export default function ReadingDetail({ id }: { id: string }) {
                   {revisitSaving ? "Saving…" : "Update revisit note"}
                 </button>
               </div>
+              {/* AF-049: a disabled Save says why, inline. */}
+              {!revisitInput.trim() && (
+                <p className="mt-2 text-xs text-mist">
+                  Write your revisit note first — the button works once there is text to save.
+                </p>
+              )}
               {revisitSaved && (
                 <p className="mt-2 text-sm text-goldbright">
                   Saved with this reading.
@@ -651,6 +668,12 @@ export default function ReadingDetail({ id }: { id: string }) {
                 {revisitSaving ? "Saving…" : "Save revisit note"}
               </button>
             </div>
+            {/* AF-049: a disabled Save says why, inline. */}
+            {!revisitInput.trim() && (
+              <p className="mt-2 text-xs text-mist">
+                Write your revisit note first — the button works once there is text to save.
+              </p>
+            )}
             {revisitSaved && (
               <p className="mt-2 text-sm text-goldbright">
                 Saved with this reading.
@@ -786,6 +809,12 @@ export default function ReadingDetail({ id }: { id: string }) {
                         : "Ask a follow-up \u00b7 1 Oracle"}
                   </button>
                 </div>
+                {/* AF-049: a disabled Ask says why, inline. */}
+                {!followUpQ.trim() && !followUpLoading && (
+                  <p className="text-xs text-mist">
+                    Write your question first — the button works once there is a question to ask.
+                  </p>
+                )}
                 {followUpError && (
                   <p className="text-sm text-danger">{followUpError}</p>
                 )}

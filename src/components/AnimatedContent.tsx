@@ -109,12 +109,14 @@ const AnimatedContent = ({
       const sign = reverse ? -1 : 1;
       const mask = WIPES[wipe];
 
-      gsap.set(el, { visibility: 'visible' });
-
       if (reduce) {
         callbacksRef.current.onComplete?.();
         return;
       }
+
+      // AF-033: markup is visible by default; JS hides it only here, and
+      // the timeline reveals it when the animation starts.
+      gsap.set(el, { visibility: 'hidden' });
 
       const from: gsap.TweenVars = {
         [axis]: distance * sign,
@@ -181,6 +183,7 @@ const AnimatedContent = ({
           if (once && !scrub) disappear();
         }
       });
+      tl.set(el, { visibility: 'visible' }, scrub ? 0 : Math.max(delay, 0));
       tl.fromTo(targets, from, to, scrub ? 0 : Math.max(delay, 0));
 
       if (trigger === 'mount') {
@@ -245,7 +248,7 @@ const AnimatedContent = ({
   ]);
 
   return (
-    <div ref={ref} className={['invisible', className].filter(Boolean).join(' ')} style={style} {...props}>
+    <div ref={ref} className={className} style={style} {...props}>
       {children}
     </div>
   );

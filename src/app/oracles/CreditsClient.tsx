@@ -1,12 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
 import Link from "next/link";
-import { CREDIT_PACKS, apiPackId, perReadingPrice } from "@/lib/site";
 import { getPurchaseHistory, type Purchase } from "@/lib/storage";
 import { useAuth } from "@/components/AuthProvider";
-import CheckoutModal from "@/components/CheckoutModal";
 import PurchaseConfirmer from "@/components/PurchaseConfirmer";
 import SampleReading from "@/components/SampleReading";
 import Counter from "@/components/Counter";
@@ -24,11 +21,6 @@ export default function CreditsPage() {
   const { credits, user } = useAuth();
   const searchParams = useSearchParams();
   const justPurchased = searchParams.get("purchase") === "success";
-  const [open, setOpen] = useState(false);
-  const [modalPack, setModalPack] = useState<string | null>(null);
-  const [directProcessing, setDirectProcessing] = useState<string | null>(null);
-  const [directError, setDirectError] = useState<string | null>(null);
-  const [directFailed, setDirectFailed] = useState<string | null>(null);
   const [reducedMotion, setReducedMotion] = useState(false);
   useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -50,46 +42,6 @@ export default function CreditsPage() {
     obs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
     return () => obs.disconnect();
   }, []);
-  // Direct checkout from a pack card, as approved 2026-11-04: the
-  // card button goes straight to Lemon Squeezy for that pack, no
-  // re-pick in the modal. Signed-in visitors have an email on file,
-  // so they redirect at once. Guests have no email yet and the
-  // checkout API needs one before Lemon Squeezy, so a guest gets
-  // the modal only as the email step, with their pack marked
-  // Selected, not as a second pick.
-  const buyDirect = async (packId: string) => {
-    setDirectError(null);
-    setDirectFailed(null);
-    if (!user) {
-      setModalPack(packId);
-      setOpen(true);
-      return;
-    }
-    setDirectProcessing(packId);
-    try {
-      const enabledRes = await fetch("/api/checkout/lemonsqueezy");
-      const enabledData = await enabledRes.json().catch(() => ({}));
-      if (!enabledData.enabled) {
-        setModalPack(packId);
-        setOpen(true);
-        return;
-      }
-      const res = await fetch("/api/checkout/lemonsqueezy", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ packId: apiPackId(packId) }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error ?? "Checkout failed.");
-      if (!data.url) throw new Error("Checkout failed.");
-      window.location.assign(data.url);
-    } catch (err) {
-      setDirectError(err instanceof Error ? err.message : "Checkout failed.");
-      setDirectFailed(packId);
-    } finally {
-      setDirectProcessing(null);
-    }
-  };
   const [localHistory, setLocalHistory] = useState<Purchase[]>([]);
   const [serverTx, setServerTx] = useState<ServerTx[] | null>(null);
 
@@ -114,7 +66,18 @@ export default function CreditsPage() {
           H1 is in the initial HTML. Balance stays centered here. */}
       <div className="mt-6 flex flex-col items-center gap-3 text-center sm:flex-row sm:items-end sm:justify-between sm:text-left">
         <div>
-          {reducedMotion ? (
+          {credits === null ? (
+            // AF-013: balance unknown, so show a skeleton, never 0.
+            <div
+              className="flex items-baseline justify-center gap-2 sm:justify-start"
+              role="status"
+              aria-busy="true"
+              aria-label="Oracle balance loading"
+            >
+              <span className="inline-block h-14 w-20 animate-pulse rounded bg-gold/30" aria-hidden="true" />
+              <span className="font-body text-lg text-mist">Oracles</span>
+            </div>
+          ) : reducedMotion ? (
             <p className="num text-6xl font-bold text-cream">
               {credits ?? 0}
               <span className="ml-2 align-middle font-body text-lg text-mist">
@@ -145,108 +108,6 @@ export default function CreditsPage() {
         </p>
       </div>
 
-
-      <p className="mt-6 text-center text-sm text-cream/75">
-        Every pack works for tarot readings, birth charts, and reports.
-      </p>
-
-      <div className="mt-4 grid items-stretch gap-4 sm:grid-cols-3">
-
-        {CREDIT_PACKS.map((p, i) => {
-          // Centered cards, approved 2026-11-04: every card is
-          // centered, like the React Bits showcase cards, not left
-          // aligned. Phase 2, 2.5: the popular card used to be a gold
-          // PixelCard with dark text, which made its gold Checkout
-          // button sit on gold at 1.00:1. It is a dark panel with a
-          // gold border now, so all cards use theme text and the gold
-          // button has real contrast; the popular distinction stays
-          // border, shadow, and badge.
-          const nameClass = "text-cream";
-          const priceColor =
-            siteTheme === "light" ? "#7c5e00" : "#f4d03f";
-          const body = (
-            <div className="flex h-full flex-col text-center">
-              <h2 className={`font-display text-xl ${nameClass}`}>{p.name}</h2>
-              {/* Fixed badge row on every card, so the price line
-                  sits at the same height whether or not this card
-                  carries the badge. The badge is the popular
-                  distinction, not extra height. */}
-              <div className="mt-1 flex h-6 items-center justify-center">
-                {p.popular && (
-                  <span className="inline-block rounded-full bg-[#14100a] px-3 py-1 text-xs font-bold text-[#f4d03f]">
-                    Most popular
-                  </span>
-                )}
-              </div>
-              {/* Price is static text, not the rolling Counter.
-                  The Counter intro spin renders digits mid-roll,
-                  which is why screenshots showed scattered,
-                  overlapping price digits. A price must read
-                  correctly at any moment, in any capture, so it
-                  keeps the display serif and size but does not
-                  animate. The balance Counter above is unchanged. */}
-              <p
-                className="mt-3 font-display text-[40px] font-bold leading-none lining-nums tabular-nums"
-                style={{ color: priceColor }}
-              >
-                ${p.price.toFixed(2)}
-              </p>
-              <p className={`mt-2 text-base ${nameClass}`}>
-                <span className="font-display text-xl lining-nums tabular-nums">{p.readings}</span> Oracles · ${perReadingPrice(p)} per Oracle
-              </p>
-
-
-              {/* Audit 4: every pack uses the same solid btn-gold, same
-                  padding, weight, and size. */}
-              {/* Direct checkout, approved 2026-11-04: this button goes
-                  straight to Lemon Squeezy for this card's pack.
-                  The modal stays for spreads, header, and reading
-                  flows, where no pack was picked yet, and for guests
-                  here, where an email step is still needed. */}
-              {/* mt-auto pins every Checkout button to the card
-                  foot, so buttons align across cards even though
-                  the popular card carries the badge row. */}
-              <div className="mt-auto pt-4">
-                <button
-                  type="button"
-                  disabled={directProcessing !== null}
-                  onClick={() => void buyDirect(p.id)}
-                  className="btn-gold w-full rounded-xl px-4 py-3 font-bold disabled:opacity-100 disabled:saturate-50"
-                >
-                  {directProcessing === p.id ? "…" : <>Checkout<span className="sr-only">: {p.name} pack</span></>}
-                </button>
-              </div>
-              {directError && directFailed === p.id && (
-                <p className="mt-2 text-sm alert-error-text">{directError}</p>
-              )}
-            </div>
-          );
-          return (
-            <motion.div
-              key={p.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.04, duration: 0.4 }}
-              className="relative h-full"
-            >
-              {/* Phase 2, 2.5: the popular card is a dark panel with a
-                  gold border, not a gold PixelCard, so the gold
-                  Checkout button has real contrast (7.81:1 in the
-                  default dark theme). The popular distinction stays
-                  border, shadow, and the badge, not a gold fill. */}
-              <div
-                className={`relative h-full rounded-3xl border p-4 ${
-                  p.popular
-                    ? "border-gold/70 bg-panel/80 shadow-[0_24px_48px_-24px_rgba(212,175,55,0.55)]"
-                    : "border-gold/20 bg-panel/60"
-                }`}
-              >
-                {body}
-              </div>
-            </motion.div>
-          );
-        })}
-      </div>
 
       <div className="mt-6 rounded-2xl border border-gold/20 bg-panel/50 p-4">
         <h2 className="font-display text-xl text-goldbright">Purchase history</h2>
@@ -311,8 +172,6 @@ export default function CreditsPage() {
           page, so visitors weighing a pack see exactly what a reading
           reads like before they spend anything. */}
       <SampleReading />
-
-      <CheckoutModal open={open} onClose={() => setOpen(false)} initialPackId={modalPack} />
     </div>
   );
 }

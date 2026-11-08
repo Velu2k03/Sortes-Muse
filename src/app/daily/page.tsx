@@ -159,7 +159,16 @@ export default function DailyPage() {
               className="flex flex-col items-center"
             >
               <TarotCard cardId={null} size="lg" disabled />
-              <StarBorder radius="1rem" className="mt-8" animated>
+              {/* AF-048: the hold gesture is explained BEFORE the first
+                  press, and a tap alternative sits next to it. A tap
+                  on the hold button alone does nothing, so first-time
+                  visitors used to stall here; the Phase 3 single-trigger
+                  rule is superseded by this fix. */}
+              <p className="mt-6 max-w-xs text-center text-sm text-cream/75">
+                Press and hold the button until the gold fills it — or tap
+                Draw now.
+              </p>
+              <StarBorder radius="1rem" className="mt-4" animated>
                 <HoldButton
                   size="lg"
                   holdTime={1200}
@@ -172,12 +181,14 @@ export default function DailyPage() {
                 >
                   Hold to draw today&apos;s card
                 </HoldButton>
-              {/* Phase 3 (3.8): one draw action only. The hold button
-                  is the single trigger (keyboard-operable: hold Space
-                  or Enter, with a screen-reader hint). The second
-                  "Prefer a tap? Draw now" trigger competed with it
-                  and is deleted; tap-the-card is Phase 4's call. */}
               </StarBorder>
+              <button
+                type="button"
+                onClick={draw}
+                className="btn-ghost mt-4 rounded-xl px-6 py-3 text-sm font-semibold"
+              >
+                Draw now
+              </button>
             </motion.div>
           )}
 

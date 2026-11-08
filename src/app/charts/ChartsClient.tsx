@@ -405,8 +405,12 @@ export default function ChartsClient() {
     let guestSpent = false;
     try {
       if (!signedIn && !guestFree) {
-        if ((credits ?? 0) < 1) {
-          throw new Error("You need 1 Oracle for this interpretation. The calculation above stays free. Get Oracles from the Oracles page.");
+        // AF-013: an unresolved balance is not an empty balance.
+        if (credits === null) {
+          throw new Error("Still checking your Oracle balance. Please try again in a moment.");
+        }
+        if (credits < 1) {
+          throw new Error("You need 1 Oracle for this interpretation. The calculation above stays free. Top up from the Oracles page.");
         }
         const ok = await spend(1);
         if (!ok) throw new Error("Could not spend 1 Oracle. Your balance was not changed by this page.");

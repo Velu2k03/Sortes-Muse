@@ -316,9 +316,12 @@ export default function AccountPage() {
   };
 
   if (loading) {
+    // AF-012: a skeleton, not a bare "Loading…" line. The page shell
+    // above (H1 + intro) is already server HTML.
     return (
-      <div className="mx-auto max-w-2xl px-4 py-24 text-center text-mist">
-        Loading your account…
+      <div className="mt-8 space-y-4" role="status" aria-label="Loading your account">
+        <div className="h-40 animate-pulse rounded-3xl border border-gold/20 bg-panel/60" />
+        <div className="h-24 animate-pulse rounded-3xl border border-gold/20 bg-panel/60" />
       </div>
     );
   }
@@ -344,14 +347,10 @@ export default function AccountPage() {
     );
   }
 
+  // AF-012: the H1 + intro live in page.tsx as server HTML, so this
+  // client component renders only the form / account panels.
   return (
-    <div className="mx-auto max-w-2xl px-4 py-12 sm:px-6">
-      <p className="text-center text-xs uppercase tracking-[0.35em] text-gold">
-        Account
-      </p>
-      <h1 className="mt-3 text-center font-display text-5xl text-goldbright">
-        Your account
-      </h1>
+    <div className="mt-8">
 
       {/* P0-1: the auth load timed out or failed, so this page is
           showing the sign-in form as a fallback instead of spinning

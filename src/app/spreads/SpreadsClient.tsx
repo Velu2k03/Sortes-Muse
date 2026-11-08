@@ -1,9 +1,9 @@
 "use client";
-import Icon from "@/components/Icon";
 
 import Link from "next/link";
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { useCanHide } from "@/lib/use-mounted";
 import { SPREADS } from "@/lib/tarot";
 import { SPREAD_SAMPLES } from "@/lib/spread-samples";
 import SpreadDiagram from "@/components/SpreadDiagram";
@@ -22,6 +22,7 @@ import { freeReadingUsed } from "@/lib/storage";
  * "Begin reading" and the gate offers the personalized intake.
  */
 export default function SpreadsPage() {
+  const hide = useCanHide();
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   // Deep UX Batch C: question picker. A newcomer should not have to
   // self-diagnose a spread name; they pick what they are asking
@@ -37,6 +38,10 @@ export default function SpreadsPage() {
 
   const canBegin = (slug: string) =>
     slug === "quick-insight" ? !usedFree || balance >= 1 : balance >= 1;
+  // AF-013: while the balance is unknown, a balance-gated card is
+  // "pending", not locked. It shows a skeleton, never Locked.
+  const isPending = (slug: string) =>
+    credits === null && !(slug === "quick-insight" && !usedFree);
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
@@ -105,30 +110,26 @@ export default function SpreadsPage() {
 
       <div className="mt-10 grid gap-6 md:grid-cols-3">
         {SPREADS.map((s, i) => {
-          const locked = !canBegin(s.slug);
+          const pending = isPending(s.slug);
+          const locked = !pending && !canBegin(s.slug);
           return (
           <motion.article
             id={`spread-${s.slug}`}
-            key={s.slug}
-            initial={{ opacity: 0, y: 24 }}
+            key={`${s.slug}-${hide ? "reveal" : "static"}`}
+            initial={hide ? { opacity: 0, y: 24 } : false}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.05, duration: 0.4 }}
             className={`relative flex flex-col overflow-hidden rounded-3xl border bg-panel/70 ${pickedSlug === s.slug ? "border-gold shadow-[0_0_0_2px_rgba(212,175,55,0.6)]" : "border-gold/25"}`}
           >
             {/* Phase 4A (4.5): crisp sacred-geometry diagram of the
                 spread's card positions, gold-on-dark linework. The
-                old blurred card-back "locked" preview is gone; a
-                locked spread shows its layout too, with a small lock
-                chip, and the gate stays on the button below. */}
+                old blurred card-back preview is gone; every spread
+                shows its layout, and the gate stays on the button
+                below (AF-015: no Locked badge). */}
             <div className="relative flex h-52 items-center justify-center overflow-hidden bg-navydeep/60 p-4">
               <div className="h-full w-full max-w-72">
                 <SpreadDiagram spread={s} />
               </div>
-              {locked && (
-                <span className="absolute right-3 top-3 rounded-full border border-gold/50 bg-ink/80 px-3 py-1 text-xs font-semibold text-goldbright">
-                  <span className="inline-flex items-center gap-1.5"><Icon name="lock" size={14} />Locked</span>
-                </span>
-              )}
             </div>
 
             <div className="flex flex-1 flex-col p-6">
@@ -179,7 +180,14 @@ export default function SpreadsPage() {
                   </p>
                 </div>
               </details>
-              {locked ? (
+              {pending ? (
+                <div
+                  className="mt-5 h-12 animate-pulse rounded-xl bg-gold/20"
+                  role="status"
+                  aria-busy="true"
+                  aria-label="Checking your Oracle balance"
+                />
+              ) : locked ? (
                 <>
                   <button
                     type="button"

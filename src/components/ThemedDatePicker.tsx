@@ -47,6 +47,37 @@ function toValue(y: number, m: number, d: number): string {
   return `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
 }
 
+/**
+ * AF-047: typed dates, so reaching 1990 does not take ~430 month
+ * clicks. Accepts MM/DD/YYYY (or MM-DD-YYYY) and YYYY-MM-DD; returns
+ * the YYYY-MM-DD value or null when the text is not a real calendar
+ * date. Two-digit years are rejected on purpose: "90" is ambiguous.
+ */
+export function parseTypedDate(input: string): string | null {
+  const text = input.trim();
+  const mdy = text.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
+  if (mdy) {
+    const m = Number(mdy[1]);
+    const d = Number(mdy[2]);
+    const y = Number(mdy[3]);
+    if (m < 1 || m > 12 || d < 1 || d > 31 || y < 1900) return null;
+    const days = new Date(y, m, 0).getDate();
+    if (d > days) return null;
+    return toValue(y, m, d);
+  }
+  const ymd = text.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if (ymd) {
+    const y = Number(ymd[1]);
+    const m = Number(ymd[2]);
+    const d = Number(ymd[3]);
+    if (m < 1 || m > 12 || d < 1 || d > 31) return null;
+    const days = new Date(y, m, 0).getDate();
+    if (d > days) return null;
+    return toValue(y, m, d);
+  }
+  return null;
+}
+
 export default function ThemedDatePicker({
   id,
   value,
@@ -61,6 +92,9 @@ export default function ThemedDatePicker({
   const parsed = parseDate(value);
   const [viewYear, setViewYear] = useState(parsed ? parsed.y : today.getFullYear());
   const [viewMonth, setViewMonth] = useState(parsed ? parsed.m : today.getMonth() + 1);
+  // AF-047: typed date, kept as text while the popup is open.
+  const [typed, setTyped] = useState("");
+  const [typedError, setTypedError] = useState<string | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -88,7 +122,27 @@ export default function ThemedDatePicker({
       setViewYear(today.getFullYear());
       setViewMonth(today.getMonth() + 1);
     }
+    // AF-047: the typed field starts from the current value, so
+    // editing a date is editing text, not starting over.
+    setTyped(value ? formatDisplay(value) : "");
+    setTypedError(null);
     setOpen((o) => !o);
+  };
+
+  // AF-047: Enter or leaving the typed field applies a valid date.
+  const applyTyped = () => {
+    if (!typed.trim()) {
+      setTypedError(null);
+      return;
+    }
+    const v = parseTypedDate(typed);
+    if (!v) {
+      setTypedError("Use MM/DD/YYYY, e.g. 03/14/1990.");
+      return;
+    }
+    setTypedError(null);
+    onChange(v);
+    setOpen(false);
   };
 
   const shiftMonth = (delta: number) => {
@@ -150,7 +204,7 @@ export default function ThemedDatePicker({
           aria-label="Choose a birth date"
           className="calendar-pop absolute left-0 top-full z-30 mt-2 w-[300px] max-w-[calc(100vw-3rem)] max-h-[calc(100dvh-6rem)] overflow-y-auto rounded-2xl border border-gold/40 bg-panel p-4 shadow-[0_16px_40px_rgba(0,0,0,0.45)]"
         >
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-2">
             <button
               type="button"
               onClick={() => shiftMonth(-1)}
@@ -159,9 +213,38 @@ export default function ThemedDatePicker({
             >
               <Icon name="chevronLeft" size={18} />
             </button>
-            <p className="font-display text-xl font-bold text-goldbright">
-              {MONTHS[viewMonth - 1]} {viewYear}
-            </p>
+            {/* AF-047: month + year jump. The year select runs
+                1900 to this year, so 1990 is one tap, not ~430
+                month clicks. */}
+            <div className="flex min-w-0 items-center gap-2">
+              <select
+                value={viewMonth}
+                onChange={(e) => setViewMonth(Number(e.target.value))}
+                aria-label="Month"
+                className="num min-w-0 rounded-lg border border-gold/25 bg-panel px-2 py-2 text-sm font-semibold text-cream focus:border-gold/60 focus:outline-none"
+              >
+                {MONTHS.map((m, i) => (
+                  <option key={m} value={i + 1}>
+                    {m}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={viewYear}
+                onChange={(e) => setViewYear(Number(e.target.value))}
+                aria-label="Year"
+                className="num min-w-0 rounded-lg border border-gold/25 bg-panel px-2 py-2 text-sm font-semibold text-cream focus:border-gold/60 focus:outline-none"
+              >
+                {Array.from(
+                  { length: today.getFullYear() - 1900 + 1 },
+                  (_, i) => today.getFullYear() - i,
+                ).map((y) => (
+                  <option key={y} value={y}>
+                    {y}
+                  </option>
+                ))}
+              </select>
+            </div>
             <button
               type="button"
               onClick={() => shiftMonth(1)}
@@ -232,6 +315,35 @@ export default function ThemedDatePicker({
             >
               Today
             </button>
+          </div>
+          {/* AF-047: type the date instead of paging to it. Enter or
+              leaving the field applies a valid MM/DD/YYYY. */}
+          <div className="mt-3 border-t border-gold/20 pt-3">
+            <label htmlFor={`${id}-typed`} className="mb-1.5 block text-xs font-semibold text-mist">
+              Or type a date
+            </label>
+            <input
+              id={`${id}-typed`}
+              type="text"
+              value={typed}
+              onChange={(e) => {
+                setTyped(e.target.value);
+                setTypedError(null);
+              }}
+              onBlur={applyTyped}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  applyTyped();
+                }
+              }}
+              placeholder="MM/DD/YYYY"
+              inputMode="numeric"
+              className="num w-full rounded-xl border border-gold/25 bg-panel/70 px-3 py-2 text-sm text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none"
+            />
+            {typedError && (
+              <p className="mt-1 text-xs text-danger">{typedError}</p>
+            )}
           </div>
         </div>
       )}
