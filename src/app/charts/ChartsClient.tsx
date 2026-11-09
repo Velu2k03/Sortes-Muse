@@ -59,6 +59,38 @@ const PRESETS: { label: string; latitude: number; longitude: number }[] = [
   { label: "Sydney, Australia", latitude: -33.8688, longitude: 151.2093 },
 ];
 
+/** First missing-field message for the birth form, or "" when it is complete. */
+function birthFormError(date: string, system: ChartSystem, gender: string): string {
+  if (!date) return "Please choose a birth date.";
+  // AF-060: Ziwei places stars by gender, so it needs a choice;
+  // Western and Vedic do not use gender at all.
+  if (system === "ziwei" && gender === "") {
+    return "Please choose a gender for the Ziwei chart, or pick Western or Vedic instead.";
+  }
+  return "";
+}
+
+/** Parse the HH:MM birth time; unknown time gives a null hour. */
+function parseBirthTime(
+  unknownTime: boolean,
+  time: string
+): { hour: number | null; minute: number } | { error: string } {
+  if (unknownTime) return { hour: null, minute: 0 };
+  // Native time input, but a cleared field submits an empty
+  // string, and Number("") is 0, so an empty time would silently
+  // become 00:00. Require the HH:MM shape instead.
+  if (!/^\d{2}:\d{2}$/.test(time)) {
+    return { error: "Please choose a birth time, or tick unknown time." };
+  }
+  const parts = time.split(":");
+  const hour = Number(parts[0]);
+  const minute = Number(parts[1] ?? 0);
+  if (!Number.isInteger(hour) || hour < 0 || hour > 23) {
+    return { error: "Please choose a valid birth time, or tick unknown time." };
+  }
+  return { hour, minute };
+}
+
 export default function ChartsClient() {
   const { credits, spend, add, persistReading, user, refresh } = useAuth();
   const [system, setSystem] = useState<ChartSystem>("western");
@@ -389,6 +421,40 @@ export default function ChartsClient() {
     : false;
   const displayFree = user ? (serverFree ?? deviceFree) : deviceFree;
 
+  // Failure path of onInterpret: guest refund, then the right message.
+  async function handleInterpretFailure(
+    err: unknown,
+    guestSpent: boolean,
+    result: ChartResult
+  ) {
+    // Guest refund only: guests pre-spent from the device wallet.
+    // Signed-in users spent nothing client-side.
+    if (guestSpent) await add(1);
+    // Phase D: balance stops keep their own message (they already
+    // say the balance was not changed). A genuine call failure gets
+    // the no-charge line plus the toast and retry UI.
+    const message = err instanceof Error ? err.message : "Could not interpret this chart.";
+    const isBalance =
+      message.startsWith("You need 1 Oracle") || message.startsWith("Could not spend");
+    if (isBalance) {
+      setInterpError(message);
+    } else {
+      setInterpError(message.includes("spent") ? message : `${message} No Oracle was spent.`);
+      setInterpFailed(true);
+      setInterpToastOpen(true);
+      // Phase 2, 2.3: the AI failed, so show the deterministic
+      // standard interpretation built from the computed placements
+      // instead of leaving only an error. It is labelled as
+      // standard, not AI-generated, and it spends nothing: a guest
+      // pre-spend was refunded above, a signed-in user spent
+      // nothing client-side, and the free use is untouched, so a
+      // retry stays free when it was. The retry UI stays live.
+      setInterpretation(buildStaticChartInterpretation(result, focus));
+      setInterpFallback(true);
+      setInterpModel(null);
+    }
+  }
+
   async function onInterpret() {
     if (!result) return;
     setInterpError("");
@@ -442,32 +508,7 @@ export default function ChartsClient() {
         await refresh();
       }
     } catch (err) {
-      // Guest refund only: guests pre-spent from the device wallet.
-      // Signed-in users spent nothing client-side.
-      if (guestSpent) await add(1);
-      // Phase D: balance stops keep their own message (they already
-      // say the balance was not changed). A genuine call failure gets
-      // the no-charge line plus the toast and retry UI.
-      const message = err instanceof Error ? err.message : "Could not interpret this chart.";
-      const isBalance =
-        message.startsWith("You need 1 Oracle") || message.startsWith("Could not spend");
-      if (isBalance) {
-        setInterpError(message);
-      } else {
-        setInterpError(message.includes("spent") ? message : `${message} No Oracle was spent.`);
-        setInterpFailed(true);
-        setInterpToastOpen(true);
-        // Phase 2, 2.3: the AI failed, so show the deterministic
-        // standard interpretation built from the computed placements
-        // instead of leaving only an error. It is labelled as
-        // standard, not AI-generated, and it spends nothing: a guest
-        // pre-spend was refunded above, a signed-in user spent
-        // nothing client-side, and the free use is untouched, so a
-        // retry stays free when it was. The retry UI stays live.
-        setInterpretation(buildStaticChartInterpretation(result, focus));
-        setInterpFallback(true);
-        setInterpModel(null);
-      }
+      await handleInterpretFailure(err, guestSpent, result);
     } finally {
       setInterpLoading(false);
     }
@@ -511,6 +552,43 @@ export default function ChartsClient() {
     }
   }
 
+  // A typed place that was never resolved must not calculate with
+  // the preset coordinates. Resolve it first, and stop on failure
+  // so the user sees the lookup error instead of a wrong chart.
+  // AF-060: the form starts empty, so a place is required: without
+  // coordinates there is nothing to calculate from.
+  async function resolveCalcCoordinates(): Promise<
+    { latitude: number; longitude: number } | { error: string }
+  > {
+    let calcLatitude = Number(latitude);
+    let calcLongitude = Number(longitude);
+    if (placeSearch.trim() && placeResolvedFor !== placeSearch.trim()) {
+      if (placeBusy) {
+        return { error: "The place lookup is still running. Please wait a moment, then try again." };
+      }
+      const found = await lookupPlace();
+      if (!found) {
+        return { error: "Could not find that place. Check the name, or press Find again." };
+      }
+      calcLatitude = found.latitude;
+      calcLongitude = found.longitude;
+    }
+    if (!Number.isFinite(calcLatitude) || !Number.isFinite(calcLongitude)) {
+      return { error: "Please choose a birthplace, or search for a place and press Find." };
+    }
+    return { latitude: calcLatitude, longitude: calcLongitude };
+  }
+
+  // Deep UX Batch A2: remember birth details on this device so
+  // a return visit does not start from a blank form. Raw birth
+  // data stays on device in localStorage, it is not sent anywhere
+  // except the calculate call the user already makes.
+  function rememberBirthDetails() {
+    try {
+      window.localStorage.setItem("sortes-birth-details", JSON.stringify({ date, time, unknownTime, gender, preset, latitude, longitude, timeZone: timeZoneOverride.trim() || undefined }));
+    } catch {}
+  }
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
@@ -519,58 +597,24 @@ export default function ChartsClient() {
     setInterpModel(null);
     setInterpError("");
     setSaved(false);
-    if (!date) {
-      setError("Please choose a birth date.");
+    const formError = birthFormError(date, system, gender);
+    if (formError) {
+      setError(formError);
       return;
     }
-    // AF-060: Ziwei places stars by gender, so it needs a choice;
-    // Western and Vedic do not use gender at all.
-    if (system === "ziwei" && gender === "") {
-      setError("Please choose a gender for the Ziwei chart, or pick Western or Vedic instead.");
+    const coords = await resolveCalcCoordinates();
+    if ("error" in coords) {
+      setError(coords.error);
       return;
     }
-    // A typed place that was never resolved must not calculate with
-    // the preset coordinates. Resolve it first, and stop on failure
-    // so the user sees the lookup error instead of a wrong chart.
-    let calcLatitude = Number(latitude);
-    let calcLongitude = Number(longitude);
-    if (placeSearch.trim() && placeResolvedFor !== placeSearch.trim()) {
-      if (placeBusy) {
-        setError("The place lookup is still running. Please wait a moment, then try again.");
-        return;
-      }
-      const found = await lookupPlace();
-      if (!found) {
-        setError("Could not find that place. Check the name, or press Find again.");
-        return;
-      }
-      calcLatitude = found.latitude;
-      calcLongitude = found.longitude;
-    }
-    // AF-060: the form starts empty, so a place is required: without
-    // coordinates there is nothing to calculate from.
-    if (!Number.isFinite(calcLatitude) || !Number.isFinite(calcLongitude)) {
-      setError("Please choose a birthplace, or search for a place and press Find.");
+    const calcLatitude = coords.latitude;
+    const calcLongitude = coords.longitude;
+    const birthTime = parseBirthTime(unknownTime, time);
+    if ("error" in birthTime) {
+      setError(birthTime.error);
       return;
     }
-    let hour: number | null = null;
-    let minute = 0;
-    if (!unknownTime) {
-      // Native time input, but a cleared field submits an empty
-      // string, and Number("") is 0, so an empty time would silently
-      // become 00:00. Require the HH:MM shape instead.
-      if (!/^\d{2}:\d{2}$/.test(time)) {
-        setError("Please choose a birth time, or tick unknown time.");
-        return;
-      }
-      const parts = time.split(":");
-      hour = Number(parts[0]);
-      minute = Number(parts[1] ?? 0);
-      if (!Number.isInteger(hour) || hour < 0 || hour > 23) {
-        setError("Please choose a valid birth time, or tick unknown time.");
-        return;
-      }
-    }
+    const { hour, minute } = birthTime;
     setLoading(true);
     const saveEpoch = birthSaveEpochRef.current;
     // Codex re-review, correct: if the user switches systems while
@@ -605,13 +649,7 @@ export default function ChartsClient() {
       if (saveEpoch === birthSaveEpochRef.current && requestSystem === systemRef.current) {
         calcFingerprintRef.current = inputFingerprint;
         setResult(data.result as ChartResult);
-        // Deep UX Batch A2: remember birth details on this device so
-        // a return visit does not start from a blank form. Raw birth
-        // data stays on device in localStorage, it is not sent anywhere
-        // except the calculate call the user already makes.
-        try {
-          window.localStorage.setItem("sortes-birth-details", JSON.stringify({ date, time, unknownTime, gender, preset, latitude, longitude, timeZone: timeZoneOverride.trim() || undefined }));
-        } catch {}
+        rememberBirthDetails();
       }
       // A clear control lives in the form reset path, not here.
     } catch (err) {
