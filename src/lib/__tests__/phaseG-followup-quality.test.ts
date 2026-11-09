@@ -138,13 +138,10 @@ describe("follow-up retains the original reading context", () => {
     }
   });
 
-  it("guest: the whitelisted reading object still reaches the prompt intact", async () => {
+  it("guest: refused with 401 before any model call (item 2)", async () => {
     mockedGetSession.mockResolvedValue(null);
     const res = await POST(req({ question: "What does The Fool mean here?", reading: FOOL_READING }, "10.2.0.3"));
-    expect(res.status).toBe(200);
-    const opts = mockedGenerateChat.mock.calls[0][0];
-    expect(opts.system).toContain("Never start a new reading");
-    expect(opts.user).toContain("Original question: What should I focus on next?");
-    expect(opts.user).toContain("The Fool");
+    expect(res.status).toBe(401);
+    expect(mockedGenerateChat).not.toHaveBeenCalled();
   });
 });

@@ -6,7 +6,7 @@ import { PROCESSING_LINES } from "@/components/ReadingWait";
 import { getSpread, drawCards } from "@/lib/tarot";
 import { getCard } from "@/lib/cards";
 import { suggestQuestionRewrite } from "@/lib/question-rewrite";
-import type { DrawnCard } from "@/lib/types";
+import type { DrawnCard, Reading } from "@/lib/types";
 import { getCategory, SENSITIVE_KEYS, type IntakePayload } from "@/lib/intake";
 import {
   makeReading,
@@ -169,7 +169,7 @@ export function useIntakeFlow(slug: string) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           spreadSlug: spread.slug,
-          claimFree: isFreeAvailable,
+          originalQuestion: originalQuestion || undefined,
           cards: cards.map((c) => ({
             cardId: c.cardId,
             reversed: c.reversed,
@@ -184,7 +184,7 @@ export function useIntakeFlow(slug: string) {
       if (!res.ok) {
         // 402 means the server-side spend found no credit; surface the
         // server message so the user is told to top up, not to retry.
-        if (res.status === 402) {
+        if (res.status === 402 || res.status === 401) {
           was402 = true;
           const d = await res.json().catch(() => null);
           if (d?.error) failMessage = d.error;
@@ -201,7 +201,8 @@ export function useIntakeFlow(slug: string) {
         setUsedFree(true);
       }
 
-      const reading = makeReading({
+      // Signed-in: the server already saved this row with the spend.
+      const reading: Reading = data.reading ?? makeReading({
         spreadSlug: spread.slug,
         spreadName: `${spread.name} · ${category.name}`,
         cards,

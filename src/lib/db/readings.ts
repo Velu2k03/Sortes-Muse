@@ -28,6 +28,61 @@ export async function saveReadingForUser(userId: string, reading: { id: string; 
   }
 }
 
+// Item 3: spend the Oracle (or claim the first free Quick Insight) AND
+// write the reading row in ONE transaction, so a paid reading can never
+// be lost when the tab closes before the client save. Mirrors the old
+// route logic: tryFree claims the free use atomically; losing the race
+// falls back to a 1-Oracle spend; insufficient credits writes nothing.
+export async function saveReadingWithSpend(
+  userId: string,
+  reading: { id: string; free: boolean; [k: string]: unknown },
+  tryFree: boolean
+): Promise<{ ok: boolean; free: boolean }> {
+  await ensureSchema();
+  if (usePostgres) {
+    if (!pg) throw new Error("Database not configured");
+    const controller = new AbortController();
+    const begin = pg.begin(async (rawTx) => {
+      const tx = txWithSignal(rawTx, controller.signal);
+      let free = false;
+      if (tryFree) {
+        const c = await tx`INSERT INTO free_readings (user_id) VALUES (${userId}) ON CONFLICT DO NOTHING RETURNING user_id`;
+        free = c.length > 0;
+      }
+      if (!free) {
+        const spent = await tx`UPDATE users SET credits = credits - 1 WHERE id = ${userId} AND credits >= 1 RETURNING credits`;
+        if (spent.length === 0) return { ok: false, free: false };
+      }
+      const data = { ...reading, free };
+      await tx`INSERT INTO readings (id, user_id, data, created_at)
+        VALUES (${reading.id}, ${userId}, ${jsonbParam(data)}, NOW())
+        ON CONFLICT (id) DO NOTHING`;
+      return { ok: true, free };
+    });
+    return await withDbTimeout(begin, controller);
+  }
+  const db = await readLocal();
+  const list = db.freeReadings ?? (db.freeReadings = []);
+  let free = false;
+  if (tryFree && !list.some((x) => x.user_id === userId)) {
+    list.push({ user_id: userId, used_at: new Date().toISOString() });
+    free = true;
+  }
+  if (!free) {
+    const u = db.users.find((x) => x.id === userId);
+    if (!u || u.credits < 1) return { ok: false, free: false };
+    u.credits -= 1;
+  }
+  db.readings.unshift({
+    id: reading.id,
+    user_id: userId,
+    data: { ...reading, free },
+    created_at: new Date().toISOString(),
+  });
+  await writeLocal(db);
+  return { ok: true, free };
+}
+
 // M1.1: merge a patch into a stored reading's JSON. The server copy
 // previously only ever inserted (ON CONFLICT DO NOTHING), so an edit
 // like a chosen next step would silently stay stale server-side.

@@ -17,6 +17,8 @@ import { checkRateLimit, clientIp, rateLimitExceeded, RATE_LIMITS } from "@/lib/
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+// Covers the 170 s AI retry budget plus the DB write (Vercel Fluid: 300 s max on every plan).
+export const maxDuration = 200;
 
 const MAX_FOLLOWUPS = 3;
 
@@ -24,22 +26,6 @@ const HEALTH_CLOSE =
   "This reflection is not medical advice. Please speak with a licensed professional about any health concern.";
 const FINANCES_CLOSE =
   "This reflection is not financial advice. Please speak with a licensed professional about any financial decision.";
-
-// Whitelist for guest-sent reading fields. Never trust extra keys.
-const READING_WHITELIST = [
-  "question",
-  "interpretation",
-  "cards",
-  "category",
-  "firstImpression",
-  "nextStep",
-  "followUps",
-  "aiGenerated",
-  "chartSummary",
-] as const;
-
-// Birth-like keys that must never enter a prompt, even on tarot.
-const BIRTH_KEYS = /birth|dob|dateOfBirth|birthDate|birthTime|birthPlace|birthday/i;
 
 type DeckCard = {
   id: string;
@@ -134,7 +120,6 @@ export async function POST(req: NextRequest) {
   let body: {
     readingId?: string;
     question?: string;
-    reading?: Record<string, unknown>;
   };
   try {
     body = await req.json();
@@ -179,35 +164,12 @@ export async function POST(req: NextRequest) {
       ? (readingData.followUps as FollowUp[])
       : [];
   } else {
-    // Guest: build from whitelisted fields only
-    if (!body.reading || typeof body.reading !== "object") {
-      return NextResponse.json(
-        { error: "reading object is required for guest follow-ups." },
-        { status: 400 }
-      );
-    }
-    // Whitelist: only copy safe keys
-    readingData = {};
-    for (const key of READING_WHITELIST) {
-      if (key in body.reading && !BIRTH_KEYS.test(key)) {
-        readingData[key] = body.reading[key];
-      }
-    }
-    // Strip any birth-like keys from cards too
-    if (Array.isArray(readingData.cards)) {
-      readingData.cards = (readingData.cards as Record<string, unknown>[]).map(
-        (c) => {
-          const safe: Record<string, unknown> = {};
-          for (const [k, v] of Object.entries(c)) {
-            if (!BIRTH_KEYS.test(k)) safe[k] = v;
-          }
-          return safe;
-        }
-      );
-    }
-    existingFollowUps = Array.isArray(readingData.followUps)
-      ? (readingData.followUps as FollowUp[]).slice(0, MAX_FOLLOWUPS)
-      : [];
+    // Guests get no follow-ups: the free/paid state would come from the
+    // request body (an empty followUps array made every follow-up free).
+    return NextResponse.json(
+      { error: "Sign in to ask a follow-up." },
+      { status: 401 }
+    );
   }
 
   // Phase 2, 2.4: guest-sent reading fields are untrusted input.

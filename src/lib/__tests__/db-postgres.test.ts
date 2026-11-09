@@ -496,4 +496,20 @@ describe.skipIf(SKIP)("money paths on real Postgres (staging only)", () => {
     expect(revokePrefix).toEqual({ revoked: false, readings: 0 });
     expect((await db.getUserById(user.id))?.credits).toBe(5);
   });
+  // Item 3: spend/free-claim and the reading row commit together.
+  it("saveReadingWithSpend: one transaction for spend + row; free claim; no credit writes nothing", async () => {
+    const user = await db.createUser("save-spend@example.com");
+    await db.addUserCredits(user.id, 1);
+    const r = (id: string) => ({ id, free: false, interpretation: "text", aiGenerated: true });
+    // First free: claims free_readings, spends nothing, row has free:true.
+    expect(await db.saveReadingWithSpend(user.id, r("sws-1"), true)).toEqual({ ok: true, free: true });
+    expect((await db.getUserById(user.id))?.credits).toBe(1);
+    // Free already used: falls back to a 1-Oracle spend, row free:false.
+    expect(await db.saveReadingWithSpend(user.id, r("sws-2"), true)).toEqual({ ok: true, free: false });
+    expect((await db.getUserById(user.id))?.credits).toBe(0);
+    // No credit: nothing written (no row, no spend).
+    expect(await db.saveReadingWithSpend(user.id, r("sws-3"), false)).toEqual({ ok: false, free: false });
+    const rows = (await raw`SELECT id, data->>'free' AS free FROM readings WHERE user_id = ${user.id} ORDER BY id`) as Array<{ id: string; free: string }>;
+    expect(rows).toEqual([{ id: "sws-1", free: "true" }, { id: "sws-2", free: "false" }]);
+  });
 });

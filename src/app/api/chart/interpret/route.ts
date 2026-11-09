@@ -33,6 +33,8 @@ import { checkRateLimit, clientIp, rateLimitExceeded, RATE_LIMITS } from "@/lib/
 // server account to charge.
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+// Covers the 170 s AI retry budget plus the DB write (Vercel Fluid: 300 s max on every plan).
+export const maxDuration = 200;
 
 const HEALTH_CLOSE =
   "This reflection is not medical advice. Please speak with a licensed professional about any health concern.";

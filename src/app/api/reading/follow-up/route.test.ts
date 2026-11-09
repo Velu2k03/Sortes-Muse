@@ -74,63 +74,45 @@ describe("POST /api/reading/follow-up", () => {
     expect((await res.json()).error).toContain("300");
   });
 
-  it("rejects a guest reading text over 20000 characters with 400", async () => {
+  // Item 2 regression: guests used to send readingData.followUps in the
+  // body; an empty array made every follow-up free (isFree = length 0).
+  // Fails on pre-fix main (200 + free:true); guests now get 401 and no
+  // model call.
+  it.each([
+    ["empty followUps array", { ...GUEST_READING, followUps: [] }],
+    ["no followUps key", { ...GUEST_READING, followUps: undefined }],
+    ["one used follow-up", { ...GUEST_READING, followUps: [{ question: "Q?", answer: "A.", createdAt: "2026-11-05T00:00:00.000Z", free: true }] }],
+  ])("refuses a guest follow-up with 401 and no model call (%s)", async (_n, reading) => {
     const res = await POST(
-      req(
-        {
-          question: "And then?",
-          reading: { ...GUEST_READING, interpretation: "x".repeat(20001) },
-        },
-        "10.0.3.2"
-      )
+      req({ question: "What does The Fool mean here?", reading }, `10.0.3.${Math.floor(Math.random() * 200) + 10}`)
     );
-    expect(res.status).toBe(400);
-    expect((await res.json()).error).toContain("20000");
-  });
-
-  it("answers a guest follow-up for free the first time per reading", async () => {
-    const res = await POST(
-      req({ question: "What does The Fool mean here?", reading: GUEST_READING }, "10.0.3.3")
-    );
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(401);
     const data = await res.json();
-    expect(data.free).toBe(true);
-    expect(data.answer).toContain("sentence number");
+    expect(data.free).toBeUndefined();
+    expect(data.answer).toBeUndefined();
+    expect(globalThis.fetch).not.toHaveBeenCalled();
   });
 
   // Phase 5 (5.3): one real clarifier card, drawn server-side from
   // the cards NOT in the spread, saved with the follow-up.
-  it("draws a clarifier card outside the spread and saves it on the follow-up", async () => {
+  it("signed-in: first follow-up is free and draws a clarifier outside the spread", async () => {
+    mockedGetSession.mockResolvedValue({ userId: "u-1", email: "a@example.com" });
+    mockedGetReading.mockResolvedValue({ ...GUEST_READING, followUps: [] });
+    mockedGetUserById.mockResolvedValue({ id: "u-1", email: "a@example.com", credits: 5, created_at: "" });
+    mockedAppend.mockImplementation(async (_u, _r, fu) => ({ ok: true, followUps: [fu], free: true }));
     const res = await POST(
-      req({ question: "What does The Fool mean here?", reading: GUEST_READING }, "10.0.3.4")
+      req({ question: "What does The Fool mean here?", readingId: "r-1" }, "10.0.3.4")
     );
     expect(res.status).toBe(200);
     const data = await res.json();
+    expect(data.free).toBe(true);
     expect(typeof data.followUps[0].clarifierCardId).toBe("string");
     expect(data.followUps[0].clarifierCardId).not.toBe("major-00");
   });
 
-  // Cost rules unchanged: first follow-up free, then 1 Oracle each,
-  // up to 3 per reading.
-  it("charges the second follow-up (not free) and still draws a clarifier", async () => {
-    const reading = {
-      ...GUEST_READING,
-      followUps: [
-        { question: "First?", answer: "First answer.", createdAt: "2026-11-05T00:00:00.000Z", free: true },
-      ],
-    };
-    const res = await POST(
-      req({ question: "And now?", reading }, "10.0.3.5")
-    );
-    expect(res.status).toBe(200);
-    const data = await res.json();
-    expect(data.free).toBe(false);
-    expect(data.followUps).toHaveLength(2);
-    expect(data.followUps[1].clarifierCardId).not.toBe("major-00");
-  });
-
-  it("refuses a fourth follow-up with 409", async () => {
-    const reading = {
+  it("signed-in: refuses a fourth follow-up with 409", async () => {
+    mockedGetSession.mockResolvedValue({ userId: "u-1", email: "a@example.com" });
+    mockedGetReading.mockResolvedValue({
       ...GUEST_READING,
       followUps: [1, 2, 3].map((n) => ({
         question: `Q${n}?`,
@@ -138,10 +120,8 @@ describe("POST /api/reading/follow-up", () => {
         createdAt: "2026-11-05T00:00:00.000Z",
         free: n === 1,
       })),
-    };
-    const res = await POST(
-      req({ question: "One more?", reading }, "10.0.3.6")
-    );
+    });
+    const res = await POST(req({ question: "One more?", readingId: "r-1" }, "10.0.3.6"));
     expect(res.status).toBe(409);
   });
 

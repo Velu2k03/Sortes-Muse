@@ -179,7 +179,7 @@ export function useFollowUp(reading: Reading | null | undefined, setReading: Set
         // toast and retry UI. A 402 is a balance stop.
         const msg = data.error || "Something went wrong. Please try again.";
         setFollowUpError(msg.includes("spent") ? msg : `${msg} No Oracle was spent.`);
-        if (res.status !== 402) {
+        if (res.status !== 402 && res.status !== 401) {
           setFollowUpFailed(true);
           setFollowUpToastOpen(true);
         }

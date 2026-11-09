@@ -63,6 +63,7 @@ export {
   updateReadingForUser,
   deleteReadingForUser,
   appendFollowUpWithSpend,
+  saveReadingWithSpend,
   getReadingForUser,
   listReadingsForUser,
 } from "./db/readings";

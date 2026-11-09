@@ -111,6 +111,38 @@ export function authConfigured(): boolean {
 }
 
 export const SESSION_COOKIE = COOKIE_NAME;
+
+// Guest first-free Quick Insight: a server-signed, HttpOnly cookie records
+// that the free use was consumed. Nothing the client sends is trusted.
+// shortcut: clearing cookies resets it, so a guest can repeat the free
+// Quick Insight; upgrade to a DB-backed device/IP record if that is abused.
+export const GUEST_FREE_COOKIE = "sortes_guest_free";
+
+export async function guestFreeUsed(): Promise<boolean> {
+  const token = (await cookies()).get(GUEST_FREE_COOKIE)?.value;
+  if (!token) return false;
+  try {
+    const { payload } = await jwtVerify(token, secret());
+    return payload.purpose === "guest-free";
+  } catch {
+    return false;
+  }
+}
+
+export async function setGuestFreeUsed(res: { cookies: { set: (name: string, value: string, opts: object) => unknown } }) {
+  const token = await new SignJWT({ purpose: "guest-free" })
+    .setProtectedHeader({ alg: "HS256" })
+    .setIssuedAt()
+    .setExpirationTime("365d")
+    .sign(secret());
+  res.cookies.set(GUEST_FREE_COOKIE, token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 365 * 24 * 60 * 60,
+  });
+}
 export const SESSION_MAX_AGE = SESSION_DAYS * 24 * 60 * 60;
 
 const scryptAsync = promisify(scrypt);
