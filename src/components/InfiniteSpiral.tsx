@@ -66,7 +66,7 @@ const InfiniteSpiral = ({
   className = ''
 }: InfiniteSpiralProps) => {
   const rootRef = useRef<HTMLDivElement>(null);
-  const cardRefs = useRef<Array<HTMLAnchorElement | HTMLDivElement | null>>([]);
+  const cardRefs = useRef<Array<HTMLLIElement | null>>([]);
   const progressRef = useRef(0);
   const targetProgressRef = useRef(0);
   const autoSpeedRef = useRef(0);
@@ -216,7 +216,7 @@ const InfiniteSpiral = ({
     event.currentTarget.style.cursor = dragEnabled ? 'grab' : 'default';
   };
 
-  const setCardRef = (index: number) => (node: HTMLAnchorElement | HTMLDivElement | null) => {
+  const setCardRef = (index: number) => (node: HTMLLIElement | null) => {
     cardRefs.current[index] = node;
   };
 
@@ -269,7 +269,7 @@ const InfiniteSpiral = ({
         dragMovedRef.current = false;
       }}
     >
-      <div className="absolute inset-0 [transform-style:preserve-3d]" role="list" aria-label="Infinite spiral gallery">
+      <ul className="absolute inset-0 [transform-style:preserve-3d]" role="list" aria-label="Infinite spiral gallery">
         {normalizedItems.map((item, index) => {
           const content = (
             // Phase 4C lint: next/image wraps the image in a positioned
@@ -288,34 +288,36 @@ const InfiniteSpiral = ({
             />
           );
 
-          return item.href ? (
-            <a
+          // The <li> is the transformed card. data-spiral-card is the hook
+          // deck/page.tsx uses to find a tapped card (an attribute selector
+          // cannot match the implicit listitem role of <li>).
+          return (
+            <li
               key={item.id ?? `${item.src}-${index}`}
               ref={setCardRef(index)}
               className={itemClassName}
               style={cardStyle}
-              href={item.href}
-              target={item.target}
-              rel={item.target === '_blank' ? 'noreferrer' : undefined}
-              role="listitem"
-              aria-label={item.label ?? item.alt}
+              data-spiral-card={item.label ?? item.alt}
+              aria-label={item.href ? undefined : item.label ?? item.alt}
             >
-              {content}
-            </a>
-          ) : (
-            <div
-              key={item.id ?? `${item.src}-${index}`}
-              ref={setCardRef(index)}
-              className={itemClassName}
-              style={cardStyle}
-              role="listitem"
-              aria-label={item.label ?? item.alt}
-            >
-              {content}
-            </div>
+              {item.href ? (
+                <a
+                  className="absolute inset-0 block"
+                  href={item.href}
+                  target={item.target}
+                  rel={item.target === '_blank' ? 'noreferrer' : undefined}
+                  aria-label={item.label ?? item.alt}
+                  draggable={false}
+                >
+                  {content}
+                </a>
+              ) : (
+                content
+              )}
+            </li>
           );
         })}
-      </div>
+      </ul>
     </div>
   );
 };

@@ -147,7 +147,7 @@ export default function DeckClient({
           {/* Validator fix (kept): these are filter toggles, not tabs,
               and there is no tabpanel on the page, so role=tab is
               wrong. aria-pressed says the same thing, correctly. */}
-          <div role="group" className="flex flex-wrap justify-center gap-2" aria-label="Filter cards">
+          <fieldset className="m-0 min-w-0 flex flex-wrap justify-center gap-2 border-0 p-0" aria-label="Filter cards">
             {FILTERS.map((f) => (
               <button
                 key={f.key}
@@ -166,8 +166,8 @@ export default function DeckClient({
                 {f.label}
               </button>
             ))}
-          </div>
-          <div role="group" className="flex gap-2" aria-label="Deck view">
+          </fieldset>
+          <fieldset className="m-0 min-w-0 flex gap-2 border-0 p-0" aria-label="Deck view">
             <button
               type="button"
               aria-pressed={effectiveView === "grid"}
@@ -192,7 +192,7 @@ export default function DeckClient({
             >
               Spiral gallery
             </button>
-          </div>
+          </fieldset>
           <p className="w-full text-center text-xs text-mist sm:w-auto" aria-live="polite">
             {cards.length} {cards.length === 1 ? "card" : "cards"}
             {filter !== "all" && filter !== "major" && ` · ${suitLabel(filter)}`}
@@ -216,8 +216,8 @@ export default function DeckClient({
                 "linear-gradient(to bottom, transparent 0%, black 12%, black 88%, transparent 100%)",
             }}
             onClick={(e) => {
-              const item = (e.target as HTMLElement).closest('[role="listitem"]');
-              const name = item?.getAttribute("aria-label");
+              const item = (e.target as HTMLElement).closest("[data-spiral-card]");
+              const name = item?.getAttribute("data-spiral-card");
               const card = cards.find((c) => c.name === name);
               if (card) openCard(card);
             }}
@@ -231,8 +231,8 @@ export default function DeckClient({
               const moved = Math.hypot(e.clientX - start.x, e.clientY - start.y);
               if (moved > 12) return;
               const under = document.elementFromPoint(e.clientX, e.clientY);
-              const item = under?.closest('[role="listitem"]');
-              const name = item?.getAttribute("aria-label");
+              const item = under?.closest("[data-spiral-card]");
+              const name = item?.getAttribute("data-spiral-card");
               const card = cards.find((c) => c.name === name);
               if (card) openCard(card);
             }}
