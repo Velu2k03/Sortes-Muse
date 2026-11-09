@@ -182,9 +182,8 @@ export default function SpreadsPage() {
                 </div>
               </details>
               {pending ? (
-                <div
-                  className="mt-5 h-12 animate-pulse rounded-xl bg-gold/20"
-                  role="status"
+                <output
+                  className="mt-5 block h-12 animate-pulse rounded-xl bg-gold/20"
                   aria-busy="true"
                   aria-label="Checking your Oracle balance"
                 />
