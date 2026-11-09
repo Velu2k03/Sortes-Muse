@@ -10,7 +10,7 @@ still needs Velu's explicit approval.
 ### 1. Local Postgres (primary staging/test database)
 
 - PostgreSQL 16.15 on this VM, cluster `16/main`, port 5432.
-- Role `sortes_test` (password `sortes_test_local` — **local staging
+- Role `sortes_test` (password `<placeholder>` — **local staging
   only, never a production secret**), databases:
   - `sortes_pgtest_money` — money-path tests (fulfil/refund/spend)
   - `sortes_pgtest_migrations` — migration CLI tests
@@ -18,7 +18,7 @@ still needs Velu's explicit approval.
     `authenticated` below, same local password, LOGIN so the test
     can connect as them directly)
   - `sortes_staging` — manual staging checks
-- Roles `anon` and `authenticated` (password `sortes_test_local`,
+- Roles `anon` and `authenticated` (password `<placeholder>`,
   local only) exist for the RLS test only; in real Supabase they are
   NOLOGIN and PostgREST reaches them via SET ROLE.
 - **Durability warning (2026-11-06):** a VM replacement wiped the
@@ -37,9 +37,9 @@ sudo sed -i 's| http://mirror.cogentco.com/pub/linux/ubuntu||' \
 sudo apt-get update -qq
 sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
   postgresql postgresql-contrib
-sudo -u postgres psql -c "CREATE ROLE sortes_test LOGIN PASSWORD 'sortes_test_local';"
-sudo -u postgres psql -c "CREATE ROLE anon LOGIN PASSWORD 'sortes_test_local';"
-sudo -u postgres psql -c "CREATE ROLE authenticated LOGIN PASSWORD 'sortes_test_local';"
+sudo -u postgres psql -c "CREATE ROLE sortes_test LOGIN PASSWORD '<placeholder>';"
+sudo -u postgres psql -c "CREATE ROLE anon LOGIN PASSWORD '<placeholder>';"
+sudo -u postgres psql -c "CREATE ROLE authenticated LOGIN PASSWORD '<placeholder>';"
 for db in sortes_pgtest_money sortes_pgtest_migrations sortes_pgtest_rls sortes_staging; do
   sudo -u postgres createdb -O sortes_test "$db"
 done
@@ -98,7 +98,7 @@ SUPABASE_JWT_SECRET=<staging JWT secret>
 
 ```bash
 # Local Postgres staging DB:
-DATABASE_URL=postgres://sortes_test:sortes_test_local@localhost:5432/sortes_staging \
+DATABASE_URL=postgres://sortes_test:<placeholder>@localhost:5432/sortes_staging \
   npm run db:migrate
 
 # Supabase staging (once the password is available via Secure Vault):
