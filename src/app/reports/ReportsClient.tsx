@@ -84,6 +84,31 @@ function BirthForm({
   genderRequired: boolean;
 }) {
   const set = (patch: Partial<BirthFormState>) => onChange({ ...value, ...patch });
+  // F17: place search through the same geocoder /charts uses, so any
+  // city works. Presets stay as shortcuts; coordinates stay editable.
+  const [placeQuery, setPlaceQuery] = useState("");
+  const [placeStatus, setPlaceStatus] = useState("");
+  const [placeBusy, setPlaceBusy] = useState(false);
+  async function findPlace() {
+    const q = placeQuery.trim();
+    if (!q) {
+      setPlaceStatus("Type a place name first, for example a city.");
+      return;
+    }
+    setPlaceBusy(true);
+    setPlaceStatus("Looking up coordinates…");
+    try {
+      const res = await fetch(`/api/chart/geocode?q=${encodeURIComponent(q)}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Place lookup failed.");
+      set({ preset: "", latitude: String(data.latitude), longitude: String(data.longitude) });
+      setPlaceStatus(`Found coordinates: ${data.latitude}, ${data.longitude}.`);
+    } catch (err) {
+      setPlaceStatus(err instanceof Error ? err.message : "Place lookup failed.");
+    } finally {
+      setPlaceBusy(false);
+    }
+  }
   const prefix = title.toLowerCase().replace(/[^a-z0-9]+/g, "-");
   return (
     <div className="rounded-3xl border border-gold/25 bg-panel/70 p-6">
@@ -162,8 +187,42 @@ function BirthForm({
           </div>
         )}
         <div>
+          <label htmlFor={`${prefix}-place`} className={labelClass}>
+            Search any birthplace
+          </label>
+          <div className="flex gap-2">
+            <input
+              id={`${prefix}-place`}
+              type="text"
+              className={inputClass}
+              placeholder="City, country"
+              value={placeQuery}
+              onChange={(e) => setPlaceQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  void findPlace();
+                }
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => void findPlace()}
+              disabled={placeBusy}
+              className="shrink-0 rounded-xl border border-gold/40 px-4 py-3 text-sm font-semibold text-goldbright hover:bg-gold/15 disabled:opacity-60"
+            >
+              {placeBusy ? "Finding…" : "Find"}
+            </button>
+          </div>
+          {placeStatus && (
+            <p role="status" className="mt-1.5 text-xs text-mist">
+              {placeStatus}
+            </p>
+          )}
+        </div>
+        <div>
           <label htmlFor={`${prefix}-preset`} className={labelClass}>
-            Birth city
+            Or pick a common city
           </label>
           <select
             id={`${prefix}-preset`}
