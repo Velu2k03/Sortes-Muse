@@ -80,6 +80,7 @@ export default function HoloCard({
   const rootRef = useRef<HTMLElement | null>(null);
   const rotorRef = useRef<HTMLSpanElement>(null);
   const shadowRef = useRef<HTMLSpanElement>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
   const settingsRef = useRef<HoloSettings | null>(null);
   const pointerRef = useRef({ x: 0.5, y: 0.5, inside: false });
   const wakeRef = useRef<(() => void) | null>(null);
@@ -115,8 +116,39 @@ export default function HoloCard({
   // same pattern ChartsClient uses for its saved-language restore),
   // so it runs before the new image's load event but is not a
   // synchronous setState inside the effect body.
+  // C4 lint: load/error listeners live here instead of as onLoad/onError
+  // props on the <img> (a non-interactive element). A cached image can be
+  // complete before this runs, so that case is queued AFTER the reset
+  // microtask (microtasks run in order) and still ends ready.
+  // Phase E gate: `cancelled` stops a stale microtask or event from setting
+  // state after a src change or unmount. A broken image can be complete
+  // with naturalWidth 0, so a zero-size load takes the error path.
   useEffect(() => {
-    queueMicrotask(() => setReady(false));
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (!cancelled) setReady(false);
+    });
+    const img = imgRef.current;
+    if (!img) return () => {
+      cancelled = true;
+    };
+    const onError = () => {
+      if (!cancelled) setReady(true);
+    };
+    const onLoad = () => {
+      if (cancelled) return;
+      if (!img.naturalWidth || !img.naturalHeight) return onError();
+      setRatio(img.naturalWidth / img.naturalHeight);
+      setReady(true);
+    };
+    if (img.complete) queueMicrotask(onLoad);
+    img.addEventListener("load", onLoad);
+    img.addEventListener("error", onError);
+    return () => {
+      cancelled = true;
+      img.removeEventListener("load", onLoad);
+      img.removeEventListener("error", onError);
+    };
   }, [image]);
 
   useEffect(() => {
@@ -270,12 +302,6 @@ export default function HoloCard({
     if (flippable) setFlipped((value) => !value);
   };
 
-  const onImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
-    const img = e.currentTarget;
-    if (img.naturalWidth && img.naturalHeight) setRatio(img.naturalWidth / img.naturalHeight);
-    setReady(true);
-  };
-
   // Phase C a11y: a flippable card is a real <button> (native focus,
   // Enter/Space activation). A non-flippable card is a plain image with
   // no click or key handlers. Both keep the pointer handlers, which only
@@ -313,10 +339,10 @@ export default function HoloCard({
             // Phase 4C lint: next/image wraps the image in a positioned
             // span, which breaks this 3D face (the img must be the direct
             // child the rotor transform and sheen overlay expect), and
-            // the onLoad/onError handlers gate the ready state. A plain
+            // the load/error listeners (effect above) gate the ready state. A plain
             // img is correct here.
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={image} alt="" draggable={false} onLoad={onImageLoad} onError={() => setReady(true)} />
+            <img ref={imgRef} src={image} alt="" draggable={false} />
           ) : null}
           <span className="holo-card__sheen" aria-hidden="true" />
         </span>

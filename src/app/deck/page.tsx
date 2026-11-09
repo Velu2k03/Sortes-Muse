@@ -186,8 +186,8 @@ export default function DeckPage() {
                 "linear-gradient(to bottom, transparent 0%, black 12%, black 88%, transparent 100%)",
             }}
             onClick={(e) => {
-              const item = (e.target as HTMLElement).closest('[role="listitem"]');
-              const name = item?.getAttribute("aria-label");
+              const item = (e.target as HTMLElement).closest("[data-spiral-card]");
+              const name = item?.getAttribute("data-spiral-card");
               const card = cards.find((c) => c.name === name);
               if (card) openCard(card);
             }}
@@ -201,8 +201,8 @@ export default function DeckPage() {
               const moved = Math.hypot(e.clientX - start.x, e.clientY - start.y);
               if (moved > 12) return;
               const under = document.elementFromPoint(e.clientX, e.clientY);
-              const item = under?.closest('[role="listitem"]');
-              const name = item?.getAttribute("aria-label");
+              const item = under?.closest("[data-spiral-card]");
+              const name = item?.getAttribute("data-spiral-card");
               const card = cards.find((c) => c.name === name);
               if (card) openCard(card);
             }}

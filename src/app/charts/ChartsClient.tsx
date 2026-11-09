@@ -34,6 +34,7 @@ import BirthProfilePicker from "@/components/BirthProfilePicker";
 import { profileToChartFields } from "@/lib/birth-profiles";
 import { chartInterpretationCost } from "@/lib/chart-pricing";
 import { buildStaticChartInterpretation } from "@/lib/chart-fallback";
+import FieldGroup from "@/components/FieldGroup";
 
 type ChartResult = ZiweiResult | WesternResult | VedicResult;
 type ChartSystem = "ziwei" | "western" | "vedic";
@@ -741,7 +742,7 @@ export default function ChartsClient() {
         {system === "ziwei" && (
           <div className="mb-5">
             <span className={labelClass}>Chart language (English is the default)</span>
-            <div role="group" className="mt-1 flex flex-wrap gap-3" aria-label="Chart language">
+            <FieldGroup className="mt-1 flex flex-wrap gap-3" aria-label="Chart language">
               {(["en", "zh"] as const).map((l) => (
                 <button
                   key={l}
@@ -753,7 +754,7 @@ export default function ChartsClient() {
                   {l === "en" ? "English" : "中文"}
                 </button>
               ))}
-            </div>
+            </FieldGroup>
             <p className="mt-1 text-xs text-cream/80">This changes the chart labels, summary, and detail together. The form stays in English.</p>
           </div>
         )}
@@ -789,7 +790,7 @@ export default function ChartsClient() {
           {system === "ziwei" && (
             <div>
               <span className={labelClass}>Gender</span>
-              <div role="group" className="mt-1 flex flex-wrap gap-3" aria-label="Gender">
+              <FieldGroup className="mt-1 flex flex-wrap gap-3" aria-label="Gender">
                 {(["female", "male"] as const).map((g) => (
                   <button
                     key={g}
@@ -801,7 +802,7 @@ export default function ChartsClient() {
                     {g === "female" ? "Female" : "Male"}
                   </button>
                 ))}
-              </div>
+              </FieldGroup>
             </div>
           )}
           <div>
@@ -995,7 +996,7 @@ export default function ChartsClient() {
           {result.system === "ziwei" && (
             <>
 
-              <div role="group" className="mt-4 flex flex-wrap gap-3" aria-label="Chart language">
+              <FieldGroup className="mt-4 flex flex-wrap gap-3" aria-label="Chart language">
                 {(["en", "zh"] as const).map((l) => (
                   <button
                     key={l}
@@ -1009,7 +1010,7 @@ export default function ChartsClient() {
                     {l === "en" ? "English" : "中文"}
                   </button>
                 ))}
-              </div>
+              </FieldGroup>
               <label className="mt-3 flex items-center gap-2 text-sm text-cream/80">
                 <input type="checkbox" checked={showGlosses} onChange={(e) => setShowGlosses(e.target.checked)} />
                 Show Chinese glosses (default off in English, on in Chinese)
@@ -1019,7 +1020,7 @@ export default function ChartsClient() {
                   {shareBusy ? "Creating image…" : (<span className="inline-flex items-center gap-2"><Icon name="share" size={16} />Share chart as image</span>)}
                 </button>
               </div>
-              <div role="group" className="mt-3 flex flex-wrap gap-3" aria-label="Ziwei chart view">
+              <FieldGroup className="mt-3 flex flex-wrap gap-3" aria-label="Ziwei chart view">
                 {(["ring", "square"] as const).map((v) => (
                   <button
                     key={v}
@@ -1033,7 +1034,7 @@ export default function ChartsClient() {
                     {v === "ring" ? "Circle chart" : "Traditional square"}
                   </button>
                 ))}
-              </div>
+              </FieldGroup>
               {result.solarCorrectionMinutes !== 0 && (
                 <p className="mt-3 text-sm text-cream/75">
                   {result.timeBasis === "iana"
@@ -1230,7 +1231,7 @@ export default function ChartsClient() {
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
               <div>
                 <span className={labelClass}>Focus area</span>
-                <div role="group" className="mt-1 flex flex-wrap gap-2" aria-label="Focus area">
+                <FieldGroup className="mt-1 flex flex-wrap gap-2" aria-label="Focus area">
                   {FOCUS_AREAS.map((f) => (
                     <button
                       key={f}
@@ -1242,7 +1243,7 @@ export default function ChartsClient() {
                       {f}
                     </button>
                   ))}
-                </div>
+                </FieldGroup>
               </div>
               <div>
                 <label htmlFor="chart-question" className={labelClass}>

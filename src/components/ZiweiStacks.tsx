@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import ScrollableRegion from "@/components/ScrollableRegion";
 
 // M3.3: palace activation stacks for a Ziwei chart already
 // calculated on the page. Calculation only: free, unsaved, no
@@ -147,10 +148,8 @@ export default function ZiweiStacks({
               interpretation is attached to it.
             </p>
           </div>
-          <div
-            tabIndex={0}
-            role="region"
-            aria-label="Palace activation stacks table, scroll sideways to see all columns"
+          <ScrollableRegion
+            label="Palace activation stacks table, scroll sideways to see all columns"
             className="mt-4 overflow-x-auto"
           >
             <table className="min-w-[560px] w-full text-left text-sm text-cream/85">
@@ -177,7 +176,7 @@ export default function ZiweiStacks({
                 ))}
               </tbody>
             </table>
-          </div>
+          </ScrollableRegion>
           <p className="mt-2 text-xs text-mist">On a narrow screen, scroll the table sideways to see all columns.</p>
           <p className="mt-4 text-xs leading-relaxed text-mist">
             Stacks are computed by the iztro engine from the same natal chart, using its own

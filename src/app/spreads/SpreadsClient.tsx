@@ -11,6 +11,7 @@ import CheckoutModal from "@/components/CheckoutModal";
 import { GlareHover } from "@/components/ReactBitsNew";
 import { useAuth } from "@/components/AuthProvider";
 import { freeReadingUsed } from "@/lib/storage";
+import FieldGroup from "@/components/FieldGroup";
 
 /**
  * Spread selection.
@@ -79,7 +80,7 @@ export default function SpreadsPage() {
         </div>
       )}
 
-      <div className="mx-auto mt-8 flex max-w-2xl flex-wrap justify-center gap-2" role="group" aria-label="What are you asking about?">
+      <FieldGroup className="mx-auto mt-8 flex max-w-2xl flex-wrap justify-center gap-2" aria-label="What are you asking about?">
         {[
           { label: "A decision", slug: "past-present-future" },
           { label: "A relationship", slug: "love-insight" },
@@ -101,7 +102,7 @@ export default function SpreadsPage() {
             {o.label}
           </button>
         ))}
-      </div>
+      </FieldGroup>
 
       <div className="mt-10 grid gap-6 md:grid-cols-3">
         {SPREADS.map((s, i) => {
