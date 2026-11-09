@@ -35,6 +35,7 @@ export default function Footer() {
             <li><Link href="/horoscope" prefetch={false} className="inline-block py-2 text-cream/80 hover:text-goldbright">Horoscope</Link></li>
             <li><Link href="/oracles" prefetch={false} className="inline-block py-2 text-cream/80 hover:text-goldbright">Oracles</Link></li>
             <li><Link href="/journal" prefetch={false} className="inline-block py-2 text-cream/80 hover:text-goldbright">Journal</Link></li>
+            <li><Link href="/account" prefetch={false} className="inline-block py-2 text-cream/80 hover:text-goldbright">Sign in</Link></li>
             <li><Link href="/guides" prefetch={false} className="inline-block py-2 text-cream/80 hover:text-goldbright">Guides</Link></li>
             <li><Link href="/faq" prefetch={false} className="inline-block py-2 text-cream/80 hover:text-goldbright">FAQ</Link></li>
             <li><Link href="/birth-card" prefetch={false} className="inline-block py-2 text-cream/80 hover:text-goldbright">Birth Card</Link></li>
@@ -44,7 +45,6 @@ export default function Footer() {
           <h2 className="text-xs uppercase tracking-[0.2em] text-gold">About &amp; legal</h2>
           <ul className="mt-3 grid grid-cols-2 gap-x-6 gap-y-2 text-sm md:block md:space-y-2">
             <li><Link href="/about" prefetch={false} className="inline-block py-2 text-cream/80 hover:text-goldbright">About Sortes</Link></li>
-            <li><Link href="/account" prefetch={false} className="inline-block py-2 text-cream/80 hover:text-goldbright">Sign in</Link></li>
             <li><Link href="/methodology" prefetch={false} className="inline-block py-2 text-cream/80 hover:text-goldbright">Methodology</Link></li>
             <li><Link href="/privacy" prefetch={false} className="inline-block py-2 text-cream/80 hover:text-goldbright">Privacy Policy</Link></li>
             <li><Link href="/terms" prefetch={false} className="inline-block py-2 text-cream/80 hover:text-goldbright">Terms of Service</Link></li>
