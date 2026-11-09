@@ -124,7 +124,7 @@ export default function SpreadsPage() {
                 old blurred card-back preview is gone; every spread
                 shows its layout, and the gate stays on the button
                 below (AF-015: no Locked badge). */}
-            <div className={`relative flex items-center justify-center overflow-hidden bg-navydeep/60 p-4 ${s.cards === 10 ? "h-52" : "h-36"}`}>
+            <div className={`relative flex items-center justify-center overflow-hidden bg-navydeep/60 p-4 ${s.cards === 10 ? "h-[22rem]" : "h-36"}`}>
               <div className="h-full w-full max-w-72">
                 <SpreadDiagram spread={s} />
               </div>
