@@ -1,34 +1,34 @@
-src/app/deck/page.tsx|jsx-a11y/click-events-have-key-events
-src/app/deck/page.tsx|jsx-a11y/no-static-element-interactions
-src/components/CardModal.tsx|jsx-a11y/click-events-have-key-events
-src/components/CardModal.tsx|jsx-a11y/click-events-have-key-events
-src/components/CardModal.tsx|jsx-a11y/no-noninteractive-element-interactions
-src/components/CardModal.tsx|jsx-a11y/no-static-element-interactions
-src/components/CardModal.tsx|jsx-a11y/prefer-tag-over-role
-src/components/CheckoutModal.tsx|jsx-a11y/click-events-have-key-events
-src/components/CheckoutModal.tsx|jsx-a11y/click-events-have-key-events
-src/components/CheckoutModal.tsx|jsx-a11y/no-noninteractive-element-interactions
-src/components/CheckoutModal.tsx|jsx-a11y/no-static-element-interactions
-src/components/CheckoutModal.tsx|jsx-a11y/prefer-tag-over-role
-src/components/CustomWesternWheel.tsx|jsx-a11y/prefer-tag-over-role
-src/components/GlideSelect.tsx|jsx-a11y/prefer-tag-over-role
-src/components/GlideSelect.tsx|jsx-a11y/prefer-tag-over-role
-src/components/GlideSelect.tsx|jsx-a11y/prefer-tag-over-role
-src/components/HoloCard.tsx|jsx-a11y/prefer-tag-over-role
-src/components/InfiniteSpiral.tsx|jsx-a11y/no-static-element-interactions
-src/components/OptionWheel.tsx|jsx-a11y/click-events-have-key-events
-src/components/OptionWheel.tsx|jsx-a11y/interactive-supports-focus
-src/components/OptionWheel.tsx|jsx-a11y/prefer-tag-over-role
-src/components/OptionWheel.tsx|jsx-a11y/prefer-tag-over-role
-src/components/ReactBits.tsx|jsx-a11y/click-events-have-key-events
-src/components/ReactBits.tsx|jsx-a11y/no-static-element-interactions
-src/components/RubberSegment.tsx|jsx-a11y/prefer-tag-over-role
-src/components/ScrollableRegion.tsx|jsx-a11y/no-noninteractive-tabindex
-src/components/SlideCommit.tsx|jsx-a11y/prefer-tag-over-role
-src/components/SpreadDiagram.tsx|jsx-a11y/prefer-tag-over-role
-src/components/SwipeToast.tsx|jsx-a11y/no-noninteractive-element-interactions
-src/components/SwipeToast.tsx|jsx-a11y/no-noninteractive-tabindex
-src/components/TarotCard.tsx|jsx-a11y/no-static-element-interactions
-src/components/ThemedDatePicker.tsx|jsx-a11y/prefer-tag-over-role
-src/components/VedicDiamondChart.tsx|jsx-a11y/prefer-tag-over-role
-src/components/WesternWheel.tsx|jsx-a11y/no-noninteractive-tabindex
+src/app/deck/page.tsx	jsx-a11y/click-events-have-key-events	Visible, non-interactive elements with click handlers must have at least one keyboard listener.
+src/app/deck/page.tsx	jsx-a11y/no-static-element-interactions	Avoid non-native interactive elements. If using native HTML is not possible, add an appropriate role and support for tabbing, mouse, keyboard, and touch inputs to an interactive content element.
+src/components/CardModal.tsx	jsx-a11y/click-events-have-key-events	Visible, non-interactive elements with click handlers must have at least one keyboard listener.
+src/components/CardModal.tsx	jsx-a11y/click-events-have-key-events	Visible, non-interactive elements with click handlers must have at least one keyboard listener.
+src/components/CardModal.tsx	jsx-a11y/no-noninteractive-element-interactions	Non-interactive elements should not be assigned mouse or keyboard event listeners.
+src/components/CardModal.tsx	jsx-a11y/no-static-element-interactions	Avoid non-native interactive elements. If using native HTML is not possible, add an appropriate role and support for tabbing, mouse, keyboard, and touch inputs to an interactive content element.
+src/components/CardModal.tsx	jsx-a11y/prefer-tag-over-role	Use <dialog> instead of the "dialog" role to ensure accessibility across all devices.
+src/components/CheckoutModal.tsx	jsx-a11y/click-events-have-key-events	Visible, non-interactive elements with click handlers must have at least one keyboard listener.
+src/components/CheckoutModal.tsx	jsx-a11y/click-events-have-key-events	Visible, non-interactive elements with click handlers must have at least one keyboard listener.
+src/components/CheckoutModal.tsx	jsx-a11y/no-noninteractive-element-interactions	Non-interactive elements should not be assigned mouse or keyboard event listeners.
+src/components/CheckoutModal.tsx	jsx-a11y/no-static-element-interactions	Avoid non-native interactive elements. If using native HTML is not possible, add an appropriate role and support for tabbing, mouse, keyboard, and touch inputs to an interactive content element.
+src/components/CheckoutModal.tsx	jsx-a11y/prefer-tag-over-role	Use <dialog> instead of the "dialog" role to ensure accessibility across all devices.
+src/components/CustomWesternWheel.tsx	jsx-a11y/prefer-tag-over-role	Use <img alt=...>, or <img alt=...> instead of the "img" role to ensure accessibility across all devices.
+src/components/GlideSelect.tsx	jsx-a11y/prefer-tag-over-role	Use <input list=...>, <input list=...>, <input list=...>, <input list=...>, <input list=...>, <input list=...>, or <select multiple=...> instead of the "combobox" role to ensure accessibility across all devices.
+src/components/GlideSelect.tsx	jsx-a11y/prefer-tag-over-role	Use <option> instead of the "option" role to ensure accessibility across all devices.
+src/components/GlideSelect.tsx	jsx-a11y/prefer-tag-over-role	Use <select size=...>, <select multiple=...>, or <datalist> instead of the "listbox" role to ensure accessibility across all devices.
+src/components/HoloCard.tsx	jsx-a11y/prefer-tag-over-role	Use <img alt=...>, or <img alt=...> instead of the "img" role to ensure accessibility across all devices.
+src/components/InfiniteSpiral.tsx	jsx-a11y/no-static-element-interactions	Avoid non-native interactive elements. If using native HTML is not possible, add an appropriate role and support for tabbing, mouse, keyboard, and touch inputs to an interactive content element.
+src/components/OptionWheel.tsx	jsx-a11y/click-events-have-key-events	Visible, non-interactive elements with click handlers must have at least one keyboard listener.
+src/components/OptionWheel.tsx	jsx-a11y/interactive-supports-focus	Elements with the 'option' interactive role must be focusable.
+src/components/OptionWheel.tsx	jsx-a11y/prefer-tag-over-role	Use <option> instead of the "option" role to ensure accessibility across all devices.
+src/components/OptionWheel.tsx	jsx-a11y/prefer-tag-over-role	Use <select size=...>, <select multiple=...>, or <datalist> instead of the "listbox" role to ensure accessibility across all devices.
+src/components/ReactBits.tsx	jsx-a11y/click-events-have-key-events	Visible, non-interactive elements with click handlers must have at least one keyboard listener.
+src/components/ReactBits.tsx	jsx-a11y/no-static-element-interactions	Avoid non-native interactive elements. If using native HTML is not possible, add an appropriate role and support for tabbing, mouse, keyboard, and touch inputs to an interactive content element.
+src/components/RubberSegment.tsx	jsx-a11y/prefer-tag-over-role	Use <input type="radio"> instead of the "radio" role to ensure accessibility across all devices.
+src/components/ScrollableRegion.tsx	jsx-a11y/no-noninteractive-tabindex	`tabIndex` should only be declared on interactive elements.
+src/components/SlideCommit.tsx	jsx-a11y/prefer-tag-over-role	Use <input type="range"> instead of the "slider" role to ensure accessibility across all devices.
+src/components/SpreadDiagram.tsx	jsx-a11y/prefer-tag-over-role	Use <img alt=...>, or <img alt=...> instead of the "img" role to ensure accessibility across all devices.
+src/components/SwipeToast.tsx	jsx-a11y/no-noninteractive-element-interactions	Non-interactive elements should not be assigned mouse or keyboard event listeners.
+src/components/SwipeToast.tsx	jsx-a11y/no-noninteractive-tabindex	`tabIndex` should only be declared on interactive elements.
+src/components/TarotCard.tsx	jsx-a11y/no-static-element-interactions	Avoid non-native interactive elements. If using native HTML is not possible, add an appropriate role and support for tabbing, mouse, keyboard, and touch inputs to an interactive content element.
+src/components/ThemedDatePicker.tsx	jsx-a11y/prefer-tag-over-role	Use <dialog> instead of the "dialog" role to ensure accessibility across all devices.
+src/components/VedicDiamondChart.tsx	jsx-a11y/prefer-tag-over-role	Use <img alt=...>, or <img alt=...> instead of the "img" role to ensure accessibility across all devices.
+src/components/WesternWheel.tsx	jsx-a11y/no-noninteractive-tabindex	`tabIndex` should only be declared on interactive elements.

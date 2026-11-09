@@ -11,6 +11,7 @@ import { AuthProvider } from "@/components/AuthProvider";
 import MotionProvider from "@/components/MotionProvider";
 import { PageTransition } from "@/components/ReactBitsNew";
 import { APP_NAME, APP_SHORT, TAGLINE, SITE_URL, CONTACT_EMAIL } from "@/lib/site";
+import { serializeJsonLd } from "@/lib/json-ld";
 
 const display = Cormorant_Garamond({
   variable: "--font-display",
@@ -104,7 +105,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
+            __html: serializeJsonLd({
               "@context": "https://schema.org",
               "@graph": [
                 {
@@ -115,7 +116,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
                 },
                 { "@type": "WebSite", name: APP_NAME, url: SITE_URL },
               ],
-            }).replace(/</g, "\\u003c"),
+            }),
           }}
         />
         {/* Phase 3: skip link, first in tab order, visible on focus. */}

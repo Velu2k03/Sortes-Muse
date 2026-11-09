@@ -147,3 +147,14 @@ public/sw.js        # Generated service worker (see scripts/generate-sw.js)
 - Analytics events (`reading_started`, `reading_completed`,
   `daily_card_drawn`, `purchase_completed`) log to the console in dev and go
   to Plausible in production.
+- `npm run lint:gate` — the PR lint gate (`scripts/lint-gate.sh`): repo lint
+  must be clean, and the explicit jsx-a11y run may not add any warning beyond
+  `scripts/lint-baseline.txt` (tab-delimited file, rule, message). CI runs it
+  on every PR (`.github/workflows/lint-gate.yml`).
+- Optional pre-push hook (opt-in, once per clone; CI is the real backstop):
+  `git config core.hooksPath .githooks` (skip once with `git push --no-verify`).
+- `python3 scripts/smoke-crawl.py http://localhost:3100` — signed-out page
+  crawl against `npx next start -p 3100`; fails on any page error,
+  `console.error` (hydration warnings included) or 5xx, and parses the
+  JSON-LD. Needs Python Playwright (`pip install playwright`), not a repo
+  dependency.

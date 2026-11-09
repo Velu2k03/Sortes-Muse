@@ -3,9 +3,13 @@
 # 1. Repo lint (`npm run lint`) must be clean: 0 errors, 0 warnings.
 # 2. Explicit jsx-a11y run (eslint.gate.config.mjs: 7 rules + motion.* mapping)
 #    must have 0 errors and no warning outside scripts/lint-baseline.txt.
-# Warnings are matched as `file|rule` pairs (no line numbers, lines shift).
-# Pairs are compared as a multiset: a 2nd warning of the same rule in the same
-# file counts as new. Each baseline row is explained in the lint-fix checklist.
+# Warnings are matched as tab-delimited `file<TAB>rule<TAB>message` keys (no
+# line numbers, lines shift). jsx-a11y messages are fixed rule text (the
+# role-based ones name the role), so the message pins WHICH problem a row
+# covers: e.g. a new "combobox" prefer-tag-over-role cannot hide behind an
+# existing "dialog" row in the same file. Keys are compared as a multiset: a
+# 2nd identical warning in the same file counts as new. Each baseline row is
+# explained in the lint-fix checklist.
 set -uo pipefail
 cd "$(dirname "$0")/.."
 ROOT="$(pwd)"
@@ -41,7 +45,7 @@ elif ! node -e '
     const file = r.filePath.startsWith(root + "/") ? r.filePath.slice(root.length + 1) : r.filePath;
     for (const m of r.messages) {
       if (m.severity === 2) { errors++; console.log(`ERROR ${file}:${m.line} ${m.ruleId ?? "parse"} ${m.message}`); }
-      else pairs.push(`${file}|${m.ruleId ?? "parse"}`);
+      else pairs.push([file, m.ruleId ?? "parse", m.message.replace(/[\t\n\r]+/g, " ")].join("\t"));
     }
   }
   fs.writeFileSync(outPath, pairs.sort().join("\n") + (pairs.length ? "\n" : ""));
@@ -66,7 +70,7 @@ if [ -s "$new" ]; then
   fail=1
 fi
 # Ratchet: baseline rows that no longer occur must be removed, so a later
-# regression of the same file|rule cannot hide behind a stale row.
+# regression of the same file/rule/message cannot hide behind a stale row.
 stale="$(LC_ALL=C comm -23 <(LC_ALL=C sort "$BASELINE") "$current")"
 if [ -n "$stale" ]; then
   echo "STALE baseline rows: baseline has rows that no longer occur, remove them from $BASELINE:"
