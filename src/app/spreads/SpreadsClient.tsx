@@ -11,6 +11,7 @@ import CheckoutModal from "@/components/CheckoutModal";
 import { GlareHover } from "@/components/ReactBitsNew";
 import { useAuth } from "@/components/AuthProvider";
 import { freeReadingUsed } from "@/lib/storage";
+import PageHeader from "@/components/PageHeader";
 
 /**
  * Spread selection.
@@ -46,10 +47,7 @@ export default function SpreadsPage() {
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
       <div className="text-center">
-        <p className="text-xs uppercase tracking-[0.35em] text-gold">Readings</p>
-        <h1 className="mt-3 font-display text-5xl text-goldbright sm:text-6xl">
-          Choose your spread
-        </h1>
+        <PageHeader eyebrow="Readings" title="Choose your spread" titleClassName="sm:text-6xl" />
         <p className="mx-auto mt-4 max-w-xl text-cream/75">
           {usedFree
             ? "Each reading uses 1 Oracle, any spread. Oracles never expire."
@@ -84,7 +82,7 @@ export default function SpreadsPage() {
         </div>
       )}
 
-      <div className="mx-auto mt-8 flex max-w-2xl flex-wrap justify-center gap-2" role="group" aria-label="What are you asking about?">
+      <div className="mx-auto mt-8 grid max-w-2xl grid-cols-2 gap-2 sm:grid-cols-3" role="group" aria-label="What are you asking about?">
         {[
           { label: "A decision", slug: "past-present-future" },
           { label: "A relationship", slug: "love-insight" },
@@ -126,7 +124,7 @@ export default function SpreadsPage() {
                 old blurred card-back preview is gone; every spread
                 shows its layout, and the gate stays on the button
                 below (AF-015: no Locked badge). */}
-            <div className="relative flex h-52 items-center justify-center overflow-hidden bg-navydeep/60 p-4">
+            <div className={`relative flex items-center justify-center overflow-hidden bg-navydeep/60 p-4 ${s.cards === 10 ? "h-52" : "h-36"}`}>
               <div className="h-full w-full max-w-72">
                 <SpreadDiagram spread={s} />
               </div>
@@ -147,10 +145,45 @@ export default function SpreadsPage() {
               <p className="mt-1 text-xs uppercase tracking-[0.2em] text-mist">
                 {s.cards} {s.cards === 1 ? "card" : "cards"} · personalized AI interpretation
               </p>
-              <p className="mt-2 text-xs text-mist">
-                You give one question, a few lines of context, and a category.
-              </p>
-              <p className="mt-3 flex-1 text-sm leading-relaxed text-cream/75">
+              {pending ? (
+                <div
+                  className="mt-4 h-12 animate-pulse rounded-xl bg-gold/20"
+                  role="status"
+                  aria-busy="true"
+                  aria-label="Checking your Oracle balance"
+                />
+              ) : locked ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setCheckoutOpen(true)}
+                    className="btn-ghost mt-4 rounded-xl border border-gold/30 px-4 py-3 text-center font-semibold"
+                  >
+                    Get Oracles to begin
+                  </button>
+                  {/* Phase 5: locked cards used to offer only the
+                      checkout button, so a spread detail page was
+                      not discoverable from the index. This link
+                      goes to the spread detail, which still gates
+                      the reading itself, so nothing about the gate,
+                      cost, or spread data changes. */}
+                  <Link
+                    href={`/spreads/${s.slug}`}
+                    className="mt-3 block text-center text-sm font-semibold text-goldbright underline underline-offset-4"
+                  >
+                    View spread detail<span className="sr-only">: {s.name}</span>
+                  </Link>
+                </>
+              ) : (
+                <Link
+                  href={`/spreads/${s.slug}`}
+                  className="btn-ghost mt-4 block rounded-xl border border-gold/30 px-4 py-3 text-center font-semibold"
+                >
+                  {s.slug === "quick-insight" && !usedFree ? "Start my free reading" : "Begin reading"}
+                  <span className="sr-only">: {s.name}</span>
+                </Link>
+              )}
+              <p className="mt-4 text-sm leading-relaxed text-cream/75">
                 {s.description}
               </p>
               <details className="mt-3">
@@ -180,44 +213,6 @@ export default function SpreadsPage() {
                   </p>
                 </div>
               </details>
-              {pending ? (
-                <div
-                  className="mt-5 h-12 animate-pulse rounded-xl bg-gold/20"
-                  role="status"
-                  aria-busy="true"
-                  aria-label="Checking your Oracle balance"
-                />
-              ) : locked ? (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => setCheckoutOpen(true)}
-                    className="btn-ghost mt-5 rounded-xl border border-gold/30 px-4 py-3 text-center font-semibold"
-                  >
-                    Get Oracles to begin
-                  </button>
-                  {/* Phase 5: locked cards used to offer only the
-                      checkout button, so a spread detail page was
-                      not discoverable from the index. This link
-                      goes to the spread detail, which still gates
-                      the reading itself, so nothing about the gate,
-                      cost, or spread data changes. */}
-                  <Link
-                    href={`/spreads/${s.slug}`}
-                    className="mt-3 block text-center text-sm font-semibold text-goldbright underline underline-offset-4"
-                  >
-                    View spread detail<span className="sr-only">: {s.name}</span>
-                  </Link>
-                </>
-              ) : (
-                <Link
-                  href={`/spreads/${s.slug}`}
-                  className="btn-ghost mt-5 block rounded-xl border border-gold/30 px-4 py-3 text-center font-semibold"
-                >
-                  {s.slug === "quick-insight" && !usedFree ? "Start my free reading" : "Begin reading"}
-                  <span className="sr-only">: {s.name}</span>
-                </Link>
-              )}
             </div>
           </motion.article>
           );

@@ -1,5 +1,6 @@
 import { APP_NAME, APP_SHORT, CONTACT_EMAIL, SITE_URL } from "@/lib/site";
 import { pageSocial } from "@/lib/seo";
+import PageHeader from "@/components/PageHeader";
 
 export const metadata = {
   title: "Privacy Policy",
@@ -14,8 +15,7 @@ const UPDATED = "November 9, 2026";
 export default function PrivacyPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
-      <p className="text-xs uppercase tracking-[0.35em] text-gold">Legal</p>
-      <h1 className="mt-3 font-display text-5xl text-goldbright">Privacy Policy</h1>
+      <PageHeader eyebrow="Legal" title="Privacy Policy" />
       <p className="mt-2 text-sm text-mist">Last updated: {UPDATED}</p>
 
       <p className="mt-4 rounded-lg border border-gold/30 p-4 text-[15px] leading-relaxed text-cream/85">

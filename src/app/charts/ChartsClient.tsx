@@ -34,6 +34,7 @@ import BirthProfilePicker from "@/components/BirthProfilePicker";
 import { profileToChartFields } from "@/lib/birth-profiles";
 import { chartInterpretationCost } from "@/lib/chart-pricing";
 import { buildStaticChartInterpretation } from "@/lib/chart-fallback";
+import PageHeader from "@/components/PageHeader";
 
 type ChartResult = ZiweiResult | WesternResult | VedicResult;
 type ChartSystem = "ziwei" | "western" | "vedic";
@@ -629,8 +630,7 @@ export default function ChartsClient() {
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
       <div className="text-center">
-        <p className="text-xs uppercase tracking-[0.35em] text-gold">Birth Charts</p>
-        <h1 className="mt-3 font-display text-5xl text-goldbright sm:text-6xl">Cast a birth chart</h1>
+        <PageHeader eyebrow="Birth Charts" title="Cast a birth chart" titleClassName="sm:text-6xl" />
         <p className="mx-auto mt-4 max-w-xl text-cream/75">
           Ziwei, Western, and Vedic charts. Calculation is free.
           Interpretation is 1 Oracle, first per system free.

@@ -17,6 +17,7 @@ import {
   PATTERN_MIRROR_MIN_READINGS,
   patternMirror,
 } from "@/lib/journal";
+import PageHeader from "@/components/PageHeader";
 
 /**
  * Journal: reading history (localStorage for guests, DB-synced for
@@ -78,10 +79,7 @@ export default function HistoryPage() {
   return (
     <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6">
       <div className="text-center">
-        <p className="text-xs uppercase tracking-[0.35em] text-gold">Journal</p>
-        <h1 className="mt-3 font-display text-5xl text-goldbright sm:text-6xl">
-          Your readings
-        </h1>
+        <PageHeader eyebrow="Journal" title="Your readings" titleClassName="sm:text-6xl" />
         <p className="mx-auto mt-4 max-w-xl text-cream/75">
           {user
             ? "Every full reading and saved chart interpretation you complete is kept here and synced to your account, so your journal follows you across devices. Daily cards are saved here as a one-line entry, not a full reading."

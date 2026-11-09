@@ -5,6 +5,7 @@ import Link from "next/link";
 import { MAJORS } from "@/lib/cards";
 import { birthCardNumbers } from "@/lib/birth-card";
 import ThemedDatePicker from "@/components/ThemedDatePicker";
+import PageHeader from "@/components/PageHeader";
 
 // Birth card calculator, calculated in memory only. The date you enter
 // is never stored, never sent to a server, and never sent to AI.
@@ -43,8 +44,7 @@ export default function BirthCardPage() {
   return (
     <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6">
       <div className="text-center">
-        <p className="text-xs uppercase tracking-[0.35em] text-gold">Calculator</p>
-        <h1 className="mt-3 font-display text-5xl text-goldbright sm:text-6xl">Your birth card</h1>
+        <PageHeader eyebrow="Calculator" title="Your birth card" titleClassName="sm:text-6xl" />
         <p className="mx-auto mt-4 max-w-xl text-cream/75">
           Two Major Arcana cards from your birth date, calculated in your
           browser. Nothing is stored or sent anywhere. A reflection tool,

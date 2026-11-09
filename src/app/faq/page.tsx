@@ -2,6 +2,7 @@ import Link from "next/link";
 import { pageSocial } from "@/lib/seo";
 import { APP_NAME, CONTACT_EMAIL } from "@/lib/site";
 import FaqList from "@/components/FaqList";
+import PageHeader from "@/components/PageHeader";
 
 export const metadata = {
   title: "Frequently asked questions",
@@ -109,10 +110,7 @@ export default function FaqPage() {
           }),
         }}
       />
-      <p className="text-xs uppercase tracking-[0.35em] text-gold">Help</p>
-      <h1 className="mt-3 font-display text-5xl text-goldbright">
-        Frequently asked questions
-      </h1>
+      <PageHeader eyebrow="Help" title="Frequently asked questions" />
       <FaqList faqs={FAQS} />
       <p className="mt-10 text-sm text-mist">
         Still stuck? Contact {CONTACT_EMAIL}, or read the{" "}
