@@ -13,6 +13,7 @@ import {
 } from "@/lib/reports";
 import type { ReportType, SavedReport } from "@/lib/reports";
 import { generateChat } from "@/lib/ai";
+import { preCheckOracleBalance } from "@/lib/credit-precheck";
 import { validateReportText, anchorTerms } from "@/lib/output-validation";
 import { logGuestGeneration } from "@/lib/guestLogging";
 import { checkRateLimit, clientIp, rateLimitExceeded, RATE_LIMITS } from "@/lib/rateLimit";
@@ -147,15 +148,9 @@ export async function POST(req: NextRequest) {
   // Reports cost 1 Oracle with no free use; a signed-in user with 0
   // credits got a full model call and only then a 402. The spend
   // after generation stays as the atomic enforcement.
-  if (session) {
-    const preUser = await getUserById(session.userId);
-    if (!preUser || preUser.credits < 1) {
-      return NextResponse.json(
-        { error: "You need 1 Oracle for this report. No Oracle was spent." },
-        { status: 402 }
-      );
-    }
-  }
+  // F11: shared helper (src/lib/credit-precheck.ts). No free use here.
+  const preCheck = await preCheckOracleBalance(session?.userId, !!session, "report");
+  if (preCheck.denied) return preCheck.denied;
 
   // One shared client (src/lib/ai.ts): the :free chain, per-model
   // timeout, retry across models, structured failure logging.

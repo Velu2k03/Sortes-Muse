@@ -11,6 +11,7 @@ import { SENSITIVE_KEYS } from "@/lib/intake";
 import { getSpread } from "@/lib/tarot";
 import { computeSpreadFacts, type FactCard } from "@/lib/spread-facts";
 import { generateChat } from "@/lib/ai";
+import { preCheckOracleBalance } from "@/lib/credit-precheck";
 import { validateReadingText } from "@/lib/output-validation";
 import { logGuestGeneration } from "@/lib/guestLogging";
 import { checkRateLimit, clientIp, rateLimitExceeded, RATE_LIMITS } from "@/lib/rateLimit";
@@ -284,16 +285,9 @@ export async function POST(req: NextRequest) {
   // call and only then a 402 — wasted quota on every attempt. The
   // spend after generation stays as the atomic enforcement; this is
   // the early, quota-saving check.
-  let preCheckedUser: Awaited<ReturnType<typeof getUserById>> = null;
-  if (session && !serverFree) {
-    preCheckedUser = await getUserById(session.userId);
-    if (!preCheckedUser || preCheckedUser.credits < 1) {
-      return NextResponse.json(
-        { error: "You need 1 Oracle for this reading. No Oracle was spent." },
-        { status: 402 }
-      );
-    }
-  }
+  // F11: shared helper (src/lib/credit-precheck.ts).
+  const preCheck = await preCheckOracleBalance(session?.userId, !!session && !serverFree, "reading");
+  if (preCheck.denied) return preCheck.denied;
 
   // One shared client (src/lib/ai.ts): the :free chain, per-model
   // timeout, retry across models, and structured failure logging.
@@ -365,7 +359,7 @@ export async function POST(req: NextRequest) {
         );
       }
     }
-    // Phase 6B: re-fetch AFTER the spend. preCheckedUser was read
+    // Phase 6B: re-fetch AFTER the spend. The pre-check user was read
     // before generation and the 1-Oracle spend, so reusing it would
     // report a balance 1 higher than the real post-spend balance.
     // (The other three AI routes already re-fetch; this one did not.)

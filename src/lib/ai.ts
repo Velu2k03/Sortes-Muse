@@ -225,16 +225,31 @@ export async function generateChat(
   const retryDelayMs = opts.retryDelayMs ?? 250;
   const overallStart = Date.now();
 
+  // F23: one budget-exhaustion check for all three sites. Logs the
+  // chain-timeout (naming the overall budget if that one ran out,
+  // otherwise the per-pass budget) and returns true; the caller then
+  // does `break passLoop`. The pass-retry site passes Infinity for
+  // remainingPass, so it checks the overall budget only, as before.
+  const budgetExhausted = (
+    remainingPass: number,
+    remainingOverall: number,
+    elapsedMs: number
+  ): boolean => {
+    if (remainingPass > 0 && remainingOverall > 0) return false;
+    const budget = remainingOverall <= 0 ? overallTimeoutMs : totalTimeoutMs;
+    logFailure(
+      "chain-timeout",
+      null,
+      `AI chain total timeout budget exhausted (${budget}ms)`,
+      elapsedMs
+    );
+    return true;
+  };
+
   passLoop: for (let pass = 1; pass <= maxPasses; pass++) {
     if (pass > 1) {
       const elapsedOverall = Date.now() - overallStart;
-      if (overallTimeoutMs - elapsedOverall <= 0) {
-        logFailure(
-          "chain-timeout",
-          null,
-          `AI chain total timeout budget exhausted (${overallTimeoutMs}ms)`,
-          elapsedOverall
-        );
+      if (budgetExhausted(Infinity, overallTimeoutMs - elapsedOverall, elapsedOverall)) {
         break passLoop;
       }
       console.error(
@@ -255,14 +270,7 @@ export async function generateChat(
       const remainingPass = totalTimeoutMs - elapsedPass;
       const remainingOverall = overallTimeoutMs - elapsedOverall;
 
-      if (remainingPass <= 0 || remainingOverall <= 0) {
-        const budget = remainingOverall <= 0 ? overallTimeoutMs : totalTimeoutMs;
-        logFailure(
-          "chain-timeout",
-          null,
-          `AI chain total timeout budget exhausted (${budget}ms)`,
-          elapsedOverall
-        );
+      if (budgetExhausted(remainingPass, remainingOverall, elapsedOverall)) {
         break passLoop;
       }
 
@@ -282,14 +290,13 @@ export async function generateChat(
       const remainingPassAfterDelay = totalTimeoutMs - (attemptStart - passStart);
       const remainingOverallAfterDelay = overallTimeoutMs - (attemptStart - overallStart);
 
-      if (remainingPassAfterDelay <= 0 || remainingOverallAfterDelay <= 0) {
-        const budget = remainingOverallAfterDelay <= 0 ? overallTimeoutMs : totalTimeoutMs;
-        logFailure(
-          "chain-timeout",
-          null,
-          `AI chain total timeout budget exhausted (${budget}ms)`,
+      if (
+        budgetExhausted(
+          remainingPassAfterDelay,
+          remainingOverallAfterDelay,
           attemptStart - overallStart
-        );
+        )
+      ) {
         break passLoop;
       }
 
