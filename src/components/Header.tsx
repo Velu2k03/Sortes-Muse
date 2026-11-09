@@ -267,6 +267,7 @@ export default function Header() {
                   <div
                     id={`nav-menu-${g.label.toLowerCase()}`}
                     role="menu"
+                    tabIndex={-1}
                     aria-label={g.label}
                     className="absolute left-0 top-full z-50 mt-2 w-56 rounded-2xl border border-gold/25 bg-navydeep p-2 shadow-2xl"
                     onKeyDown={(e) => {

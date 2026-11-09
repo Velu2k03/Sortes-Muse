@@ -272,9 +272,9 @@ const ThoughtLine: React.FC<ThoughtLineProps> = ({
           <HugeiconsIcon icon={ArrowDown01Icon} size="1em" strokeWidth={2.2} />
         </span>
       ) : null}
-      <span className="sr-only" role="status">
+      <output className="sr-only">
         {announce}
-      </span>
+      </output>
     </>
   );
 

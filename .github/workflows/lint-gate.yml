@@ -1,0 +1,38 @@
+# PR lint gate: fails on any lint error, any repo-lint warning, or any
+# explicit jsx-a11y warning not listed in scripts/lint-baseline.txt.
+# Needs no secrets. See scripts/lint-gate.sh.
+name: 'Lint gate'
+
+on:
+  pull_request:
+  push:
+    branches:
+      - sortes-transformation-2026-11-05
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lint-gate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run lint gate
+        run: npm run lint:gate

@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState, useCallback, useEffect, type CSSProperties } from 'react';
+import { useId, useRef, useState, useCallback, useEffect, type CSSProperties } from 'react';
 
 type Side = 'left' | 'right';
 
@@ -98,6 +98,7 @@ const OptionWheel = ({
   const lastTickRef = useRef(0);
   const [selectedIndex, setSelectedIndex] = useState(defaultSelected);
   const [isDragging, setIsDragging] = useState(false);
+  const optionId = useId();
 
   const remPx = typeof window !== 'undefined' ? parseFloat(getComputedStyle(document.documentElement).fontSize) || 16 : 16;
 
@@ -329,6 +330,9 @@ const OptionWheel = ({
       role="listbox"
       tabIndex={0}
       aria-label="Option wheel"
+      // Focus stays on the listbox (arrow keys move the wheel), so point
+      // assistive tech at the selected option (WAI-ARIA APG listbox).
+      aria-activedescendant={selectedIndex < items.length ? `${optionId}-${selectedIndex}` : undefined}
       className={`relative h-full w-full select-none overflow-hidden outline-none [touch-action:none] ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}${className ? ` ${className}` : ''}`}
       style={
         {
@@ -350,6 +354,7 @@ const OptionWheel = ({
           ref={el => {
             itemRefs.current[index] = el;
           }}
+          id={`${optionId}-${index}`}
           role="option"
           aria-selected={selectedIndex === index}
           className={`absolute top-1/2 cursor-pointer whitespace-nowrap leading-none will-change-[transform,opacity,filter] [font-size:var(--ow-font-size)] [color:color-mix(in_srgb,var(--ow-active-color)_calc(var(--ow-p,0)*100%),var(--ow-text-color))] ${

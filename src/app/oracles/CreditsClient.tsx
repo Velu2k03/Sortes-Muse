@@ -69,15 +69,14 @@ export default function CreditsPage() {
         <div>
           {credits === null ? (
             // AF-013: balance unknown, so show a skeleton, never 0.
-            <div
+            <output
               className="flex items-baseline justify-center gap-2 sm:justify-start"
-              role="status"
               aria-busy="true"
               aria-label="Oracle balance loading"
             >
               <span className="inline-block h-14 w-20 animate-pulse rounded bg-gold/30" aria-hidden="true" />
               <span className="font-body text-lg text-mist">Oracles</span>
-            </div>
+            </output>
           ) : isGuest ? (
             // Guests have no balance to show; point to the free reading.
             <p className="font-body text-lg text-cream">

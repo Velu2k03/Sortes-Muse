@@ -73,7 +73,7 @@ const CallChip: React.FC<CallChipProps> = ({
   className = '',
   style
 }) => {
-  const rootRef = useRef<HTMLSpanElement>(null);
+  const rootRef = useRef<HTMLOutputElement>(null);
   const fillRef = useRef<HTMLSpanElement>(null);
   const timerRef = useRef<HTMLSpanElement>(null);
   const mountedRef = useRef(false);
@@ -183,9 +183,8 @@ const CallChip: React.FC<CallChipProps> = ({
   const iconSize = font + 2;
 
   return (
-    <span
+    <output
       ref={rootRef}
-      role="status"
       aria-busy={status === 'running' || undefined}
       data-status={status}
       data-mounted={mounted ? '' : undefined}
@@ -261,7 +260,7 @@ const CallChip: React.FC<CallChipProps> = ({
         />
       ) : null}
       <span className="sr-only">{announce}</span>
-    </span>
+    </output>
   );
 };
 

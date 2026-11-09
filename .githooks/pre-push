@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Runs the PR lint gate before every push. One-time opt-in per clone:
+#   git config core.hooksPath .githooks   (bypass once: git push --no-verify)
+exec npm run --silent lint:gate
