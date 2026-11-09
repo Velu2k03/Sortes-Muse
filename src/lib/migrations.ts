@@ -1,6 +1,6 @@
 import type postgres from "postgres";
 import { MIGRATION_FILES } from "./migrations.generated";
-import { withDbTimeout } from "./db";
+import { withDbTimeout } from "./db-timeout";
 
 /**
  * Phase 6: versioned migrations. Replaces the old ensureSchema()
