@@ -217,7 +217,9 @@ const SwipeToast: React.FC<SwipeToastProps> = ({
     if (phaseRef.current === 'closing') rescue();
     try {
       cardRef.current?.setPointerCapture(e.pointerId);
-    } catch {}
+    } catch {
+      // Capture can fail if the pointer is no longer active; the drag still works without it.
+    }
     y.stop();
     drag.current = {
       id: e.pointerId,
@@ -251,7 +253,9 @@ const SwipeToast: React.FC<SwipeToastProps> = ({
     if (cardRef.current) delete cardRef.current.dataset.swiping;
     try {
       cardRef.current?.releasePointerCapture(e.pointerId);
-    } catch {}
+    } catch {
+      // Release can fail if the pointer was already released; safe to ignore.
+    }
     flags.current.interacting = false;
     const dy = y.get();
     const v = velocityOf(d.hist);
