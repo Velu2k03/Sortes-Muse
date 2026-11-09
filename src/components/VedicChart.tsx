@@ -3,6 +3,7 @@
 import type { VedicResult } from "@/lib/vedic";
 import VedicDiamondChart from "@/components/VedicDiamondChart";
 import { formatUtcOffset } from "@/lib/format-offset";
+import ScrollableRegion from "@/components/ScrollableRegion";
 
 // Vedic D1 chart display (sidereal Lahiri, whole-sign houses).
 export default function VedicChart({ result }: { result: VedicResult }) {
@@ -39,12 +40,7 @@ export default function VedicChart({ result }: { result: VedicResult }) {
           ? `Birth time was converted to UT with ${result.timeZone ?? ""} (${formatUtcOffset(result.utcOffsetMinutes)}), including daylight saving for the birth date.`
           : "No timezone could be resolved for these coordinates, so birth time was converted to UT with a longitude offset only, no timezone database and no DST, so a chart near a sign or nakshatra cusp may differ by one division."}
       </p>
-      <div
-        tabIndex={0}
-        role="region"
-        aria-label="Planet table, scroll sideways to see all columns"
-        className="mt-4 overflow-x-auto"
-      >
+      <ScrollableRegion label="Planet table, scroll sideways to see all columns" className="mt-4 overflow-x-auto">
         <table className="min-w-[520px] w-full text-left text-sm text-cream/85">
           <thead>
             <tr className="border-b border-gold/25 text-cream/80">
@@ -65,7 +61,7 @@ export default function VedicChart({ result }: { result: VedicResult }) {
             ))}
           </tbody>
         </table>
-      </div>
+      </ScrollableRegion>
       <p className="mt-1 text-right text-xs text-mist sm:hidden">Scroll sideways to see more</p>
       {/* Phase 4B (4.2d): North Indian diamond chart from the computed
           placements. Withheld, honestly, when the birth time is
@@ -98,12 +94,7 @@ export default function VedicChart({ result }: { result: VedicResult }) {
             ? ` D9 Lagna: ${result.divisional.lagnaD9}. D10 Lagna: ${result.divisional.lagnaD10}.`
             : " Divisional Lagnas are withheld: the birth time is unknown."}
         </p>
-        <div
-          tabIndex={0}
-          role="region"
-          aria-label="Navamsa (D9) and Dasamsa (D10) table, scroll sideways to see all columns"
-          className="mt-3 overflow-x-auto"
-        >
+        <ScrollableRegion label="Navamsa (D9) and Dasamsa (D10) table, scroll sideways to see all columns">
           <table className="min-w-[420px] w-full text-left text-sm text-cream/85">
             <thead>
               <tr className="border-b border-gold/25 text-cream/80">
@@ -128,7 +119,7 @@ export default function VedicChart({ result }: { result: VedicResult }) {
               ))}
             </tbody>
           </table>
-        </div>
+        </ScrollableRegion>
         <p className="mt-1 text-right text-xs text-mist sm:hidden">Scroll sideways to see more</p>
         <p className="mt-2 text-xs text-mist">On a narrow screen, scroll the table sideways to see all columns.</p>
       </details>
@@ -164,12 +155,7 @@ export default function VedicChart({ result }: { result: VedicResult }) {
               Each planet&apos;s own bindus in the sign it occupies:{" "}
               {Object.entries(result.ashtakavarga.natalBindus).map(([p, n]) => `${p.charAt(0).toUpperCase() + p.slice(1)} ${n}`).join(", ")} (4 is the neutral point).
             </p>
-            <div
-              tabIndex={0}
-              role="region"
-              aria-label="Ashtakavarga table, scroll sideways to see all columns"
-              className="mt-3 overflow-x-auto"
-            >
+            <ScrollableRegion label="Ashtakavarga table, scroll sideways to see all columns">
               <table className="min-w-[520px] w-full text-left text-sm text-cream/85">
                 <thead>
                   <tr className="border-b border-gold/25 text-cream/80">
@@ -200,7 +186,7 @@ export default function VedicChart({ result }: { result: VedicResult }) {
                   ))}
                 </tbody>
               </table>
-            </div>
+            </ScrollableRegion>
             <p className="mt-1 text-right text-xs text-mist sm:hidden">Scroll sideways to see more</p>
             <p className="mt-2 text-xs text-mist">Unreduced BAV only (no Trikona/Ekadhipatya reductions, no Shodhya Pinda). Read as relative strength: more than 30 bindus is traditionally strong, 25 to 30 middling, fewer than 25 weak, with the 6th, 8th and 12th houses read the other way round. Tables follow Raman Ch. XXVI with the three BPHS recension entries noted on the methodology page; the full grid is verified against a published sample chart.</p>
           </>
