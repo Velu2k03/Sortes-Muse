@@ -18,6 +18,7 @@ import { detectYogas, rajaYogas, dhanaYogas, kemadruma, yogakarakas, houseLord }
 import { computeAshtakavarga, type AshtakavargaResult } from "./ashtakavarga.ts";
 import { embeddedData } from "caelus/data-embedded";
 import { resolveBirthTime, type TimeBasis } from "./timezone.ts";
+import { signIndex } from "./angles.ts";
 
 // Vimshottari dasha dates live here, not in a separate module, so
 // node type stripping (used by scripts/charts-check.mjs) can load this
@@ -41,10 +42,6 @@ const SIGNS = [
 
 export function signFromLongitude(lon: number): string {
   return SIGNS[Math.floor(((lon % 360) + 360) % 360 / 30)] ?? "Aries";
-}
-
-function signIndexOf(lon: number): number {
-  return Math.floor((((lon % 360) + 360) % 360) / 30);
 }
 
 // M3.2: divisional charts (vargas), Parashara rules. Both are pure
@@ -277,14 +274,14 @@ export function computeGochara(
     transit.push({ name: "rahu", longitude: rahuLon, sign: signFromLongitude(rahuLon) });
     transit.push({ name: "ketu", longitude: ketuLon, sign: signFromLongitude(ketuLon) });
   }
-  const natalMoonSignIdx = signIndexOf(natalMoonLongitude);
+  const natalMoonSignIdx = signIndex(natalMoonLongitude);
   const planets: GocharaPlanet[] = transit.map((t) => {
-    const tIdx = signIndexOf(t.longitude);
+    const tIdx = signIndex(t.longitude);
     const houseFromMoon = ((tIdx - natalMoonSignIdx + 12) % 12) + 1;
     const rule = DRISHTI[t.name] ?? [7];
     const aspects: GocharaAspect[] = [];
     for (const n of natalPlanets) {
-      const nIdx = signIndexOf(n.longitude);
+      const nIdx = signIndex(n.longitude);
       const away = ((nIdx - tIdx + 12) % 12) + 1;
       if (rule.includes(away)) aspects.push({ natalPlanet: n.name, housesAway: away });
     }
@@ -447,7 +444,6 @@ export function computeYogas(
   if (ascendantLongitude === null) return [];
   const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : "");
   const ordinal = (n: number) => (n === 1 ? "1st" : n === 2 ? "2nd" : n === 3 ? "3rd" : `${n}th`);
-  const signIndex = (lon: number) => Math.floor((((lon % 360) + 360) % 360) / 30);
   const signs: Record<string, number> = {};
   for (const p of planets) signs[p.name.toLowerCase()] = signIndex(p.longitude);
   const ascSign = signIndex(ascendantLongitude);
@@ -580,6 +576,63 @@ function getEngine(): Engine {
   return engine;
 }
 
+type EngineChart = ReturnType<Engine["chart"]>;
+
+const norm180 = (x: number) => ((x + 540) % 360) - 180;
+
+// Caelus returns dasha and lord names lower-case (saturn, mercury).
+// Display capitalises them; the calculation itself is unchanged.
+const cap = (s: string | null | undefined) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : "");
+
+/**
+ * Seven classical planets plus Rahu/Ketu from the natal chart.
+ * Retrograde: same UT moment 24 hours later (`later`); a negative
+ * wrap-aware longitude change means apparent retrograde motion.
+ */
+function buildVedicPlanets(
+  chart: EngineChart,
+  later: EngineChart,
+  unknown: boolean
+): VedicPlanet[] {
+  const bodies = chart.bodies as Record<string, { lon: number; sign: string; house: number }>;
+  const laterBodies = later.bodies as Record<string, { lon: number }>;
+  const retroOf = (name: string, lon: number): boolean => {
+    const laterLon = laterBodies[name]?.lon;
+    return typeof laterLon === "number" ? norm180(laterLon - lon) < 0 : false;
+  };
+  const names = ["sun", "moon", "mercury", "venus", "mars", "jupiter", "saturn"] as const;
+  const planets: VedicPlanet[] = names
+    .filter((k) => bodies[k])
+    .map((k) => ({
+      name: k,
+      longitude: bodies[k].lon,
+      sign: bodies[k].sign,
+      house: unknown ? null : bodies[k].house ?? null,
+      retrograde: retroOf(k, bodies[k].lon),
+    }));
+  // Rahu is the north node; Ketu is its exact opposite point.
+  // Positions keep the existing true-node preference. Direction uses
+  // the MEAN node when available: the true node wobbles and can move
+  // direct for days, while the mean node always regresses, which is
+  // the standard "nodes are always retrograde" convention. Ketu
+  // mirrors Rahu exactly, so it shares the flag.
+  const rahuLon = (bodies.true_node ?? bodies.mean_node)?.lon;
+  const meanRahuLon = bodies.mean_node?.lon;
+  const laterMeanRahuLon = laterBodies.mean_node?.lon;
+  const rahuRetro =
+    typeof meanRahuLon === "number" && typeof laterMeanRahuLon === "number"
+      ? norm180(laterMeanRahuLon - meanRahuLon) < 0
+      : true;
+  if (typeof rahuLon === "number") {
+    const ketuLon = (rahuLon + 180) % 360;
+    const rahuHouse = !unknown && chart.cusps ? Math.floor(((rahuLon - chart.cusps[0] + 360) % 360) / 30) + 1 : null;
+    const ketuHouse = !unknown && chart.cusps ? Math.floor(((ketuLon - chart.cusps[0] + 360) % 360) / 30) + 1 : null;
+    planets.push({ name: "rahu", longitude: rahuLon, sign: signFromLongitude(rahuLon), house: rahuHouse, retrograde: rahuRetro });
+    planets.push({ name: "ketu", longitude: ketuLon, sign: signFromLongitude(ketuLon), house: ketuHouse, retrograde: rahuRetro });
+  }
+  return planets;
+}
+
 export function calculateVedic(input: {
   date: string;
   hour: number | null;
@@ -629,45 +682,7 @@ export function calculateVedic(input: {
   // wrap-aware longitude change means apparent retrograde motion.
   // Nodes regress by nature, so the same test covers them.
   const later = buildChart(new Date(ut.getTime() + 24 * 3600 * 1000));
-  const laterBodies = later.bodies as Record<string, { lon: number }>;
-  const norm180 = (x: number) => ((x + 540) % 360) - 180;
-  const retroOf = (name: string, lon: number): boolean => {
-    const laterLon = laterBodies[name]?.lon;
-    return typeof laterLon === "number" ? norm180(laterLon - lon) < 0 : false;
-  };
-  // Caelus returns dasha and lord names lower-case (saturn, mercury).
-  // Display capitalises them; the calculation itself is unchanged.
-  const cap = (s: string | null | undefined) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : "");
-  const names = ["sun", "moon", "mercury", "venus", "mars", "jupiter", "saturn"] as const;
-  const planets: VedicPlanet[] = names
-    .filter((k) => bodies[k])
-    .map((k) => ({
-      name: k,
-      longitude: bodies[k].lon,
-      sign: bodies[k].sign,
-      house: unknown ? null : bodies[k].house ?? null,
-      retrograde: retroOf(k, bodies[k].lon),
-    }));
-  // Rahu is the north node; Ketu is its exact opposite point.
-  // Positions keep the existing true-node preference. Direction uses
-  // the MEAN node when available: the true node wobbles and can move
-  // direct for days, while the mean node always regresses, which is
-  // the standard "nodes are always retrograde" convention. Ketu
-  // mirrors Rahu exactly, so it shares the flag.
-  const rahuLon = (bodies.true_node ?? bodies.mean_node)?.lon;
-  const meanRahuLon = bodies.mean_node?.lon;
-  const laterMeanRahuLon = laterBodies.mean_node?.lon;
-  const rahuRetro =
-    typeof meanRahuLon === "number" && typeof laterMeanRahuLon === "number"
-      ? norm180(laterMeanRahuLon - meanRahuLon) < 0
-      : true;
-  if (typeof rahuLon === "number") {
-    const ketuLon = (rahuLon + 180) % 360;
-    const rahuHouse = !unknown && chart.cusps ? Math.floor(((rahuLon - chart.cusps[0] + 360) % 360) / 30) + 1 : null;
-    const ketuHouse = !unknown && chart.cusps ? Math.floor(((ketuLon - chart.cusps[0] + 360) % 360) / 30) + 1 : null;
-    planets.push({ name: "rahu", longitude: rahuLon, sign: signFromLongitude(rahuLon), house: rahuHouse, retrograde: rahuRetro });
-    planets.push({ name: "ketu", longitude: ketuLon, sign: signFromLongitude(ketuLon), house: ketuHouse, retrograde: rahuRetro });
-  }
+  const planets = buildVedicPlanets(chart, later, unknown);
   const moonLon = bodies.moon.lon;
   const nak = nakshatra(moonLon);
   const natalJd = julianDay(ut.getUTCFullYear(), ut.getUTCMonth() + 1, ut.getUTCDate(), ut.getUTCHours(), ut.getUTCMinutes(), 0);

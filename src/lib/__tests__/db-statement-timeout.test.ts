@@ -99,11 +99,11 @@ describe.skipIf(!MIGRATIONS_URL)("migrations under the app statement timeout (st
 
   it("runMigrations applies all files through an app-configured client", async () => {
     const done = await runMigrations(sql);
-    expect(done.map((d) => d.version)).toEqual(["001", "002", "003", "006"]);
+    expect(done.map((d) => d.version)).toEqual(["001", "002", "003", "006", "007"]);
     const ledger = (await sql`SELECT version FROM schema_migrations ORDER BY version`) as Array<{
       version: string;
     }>;
-    expect(ledger.map((r) => r.version)).toEqual(["001", "002", "003", "006"]);
+    expect(ledger.map((r) => r.version)).toEqual(["001", "002", "003", "006", "007"]);
   });
 
   it("a second run emits no already-exists NOTICE (ledger check precedes CREATE)", async () => {

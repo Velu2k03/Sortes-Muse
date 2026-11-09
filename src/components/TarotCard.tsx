@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import Image from "next/image";
-import { motion, useMotionValue, useSpring } from "framer-motion";
+import { motion, useMotionValue, useSpring } from "motion/react";
 import { getCard, orientationKeywords } from "@/lib/cards";
 import { CARD_BACK } from "@/lib/tarot";
 import CardBurst from "@/components/CardBurst";

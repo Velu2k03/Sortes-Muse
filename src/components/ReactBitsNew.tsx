@@ -16,7 +16,7 @@ import { motion, useReducedMotion } from "motion/react";
  * Purposeful use only, one interaction type per area:
  * - SpotlightCard: What do you seek cards only, plus journal
  *   repeated questions in Personal Phase 2.
- * - PageTransition: a short fade and rise on navigation, all pages.
+ * - PageTransition: a short rise on navigation (never hidden), all pages.
  * - GlareHover: spreads guided start button only, pointer only.
  * - AnimatedList: guides index list only, one stagger on mount.
  * - Orb: home hero background only, gold orbs in app colours, slow
@@ -236,11 +236,14 @@ export function PageTransition({ children }: { children: ReactNode }) {
   // change, so the short fade and rise actually runs on navigation.
   // No exit animation is faked, and no React Bits page-transition
   // component exists in the free catalogue to install instead.
+  // F5: no opacity:0 start. The server HTML carries the initial style, so
+  // an opacity-0 start painted every page blank until hydration finished.
+  // Content is always visible; only a short rise runs on top.
   return (
     <motion.div
       key={pathname}
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
+      initial={{ y: 10 }}
+      animate={{ y: 0 }}
       transition={{ duration: 0.28, ease: "easeOut" }}
     >
       {children}

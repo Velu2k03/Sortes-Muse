@@ -8,6 +8,7 @@ import {
 import type { FollowUp } from "@/lib/types";
 import cardsData from "@/data/cards.json";
 import { generateChat } from "@/lib/ai";
+import { preCheckOracleBalance } from "@/lib/credit-precheck";
 import { validateFollowUpText } from "@/lib/output-validation";
 import { logGuestGeneration } from "@/lib/guestLogging";
 import { drawClarifierCard } from "@/lib/clarifier";
@@ -282,15 +283,9 @@ export async function POST(req: NextRequest) {
   // non-free follow-ups cost 1 Oracle). Without it a user with 0
   // credits got a full generation and only then a 402. The spend
   // after generation stays as the atomic enforcement.
-  if (session && !isFree) {
-    const preUser = await getUserById(session.userId);
-    if (!preUser || preUser.credits < 1) {
-      return NextResponse.json(
-        { error: "You need 1 Oracle for this follow-up. No Oracle was spent." },
-        { status: 402 }
-      );
-    }
-  }
+  // F11: shared helper (src/lib/credit-precheck.ts).
+  const preCheck = await preCheckOracleBalance(session?.userId, !!session && !isFree, "follow-up");
+  if (preCheck.denied) return preCheck.denied;
 
   // Phase 5 (5.3): draw 1 real clarifier card server-side, from the
   // cards NOT already in this reading's spread, uniformly at random.

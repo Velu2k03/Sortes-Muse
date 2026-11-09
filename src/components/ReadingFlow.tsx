@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { useCanHide } from "@/lib/use-mounted";
 import { getSpread, SPREADS } from "@/lib/tarot";
 import { spreadSample } from "@/lib/spread-samples";

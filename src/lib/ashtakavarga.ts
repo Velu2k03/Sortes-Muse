@@ -23,6 +23,8 @@
 // 48/49/39/54/56/52/39 = 337. See
 // src/lib/__tests__/ashtakavarga.test.ts.
 
+import { signIndex } from "./angles.ts";
+
 export const ASHTAKAVARGA_PLANETS = ["sun", "moon", "mars", "mercury", "jupiter", "venus", "saturn"] as const;
 export type AshtakavargaPlanet = (typeof ASHTAKAVARGA_PLANETS)[number];
 
@@ -134,7 +136,6 @@ export function computeAshtakavarga(
   ascendantLongitude: number | null
 ): AshtakavargaResult | null {
   if (ascendantLongitude === null) return null;
-  const signIndex = (lon: number) => Math.floor((((lon % 360) + 360) % 360) / 30);
   const signs: Record<string, number> = {};
   for (const p of planets) signs[p.name.toLowerCase()] = signIndex(p.longitude);
   const lagna = signIndex(ascendantLongitude);

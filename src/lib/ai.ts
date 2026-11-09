@@ -210,6 +210,109 @@ function logFailure(
 const sleep = (ms: number) =>
   new Promise((resolve) => setTimeout(resolve, ms));
 
+/** Read a short error detail from a non-ok OpenRouter response. */
+async function readErrorDetail(res: Response): Promise<string | undefined> {
+  let detail: string | undefined;
+  try {
+    if (typeof res.json === "function") {
+      const errJson = await res.json();
+      if (
+        errJson &&
+        typeof errJson === "object" &&
+        "error" in errJson &&
+        errJson.error &&
+        typeof errJson.error.message === "string"
+      ) {
+        detail = errJson.error.message;
+      }
+    }
+  } catch {
+    // Body could not be parsed as JSON
+  }
+  if (!detail && res.statusText) {
+    detail = res.statusText;
+  }
+  if (detail) {
+    detail = detail.slice(0, 200);
+  }
+  return detail;
+}
+
+/** One OpenRouter request for one model: send, check status, parse, validate. */
+async function requestCompletion(
+  opts: GenerateChatOptions,
+  fetchFn: typeof fetch,
+  model: string,
+  signal: AbortSignal
+): Promise<GeneratedChat> {
+  const res = await fetchFn(OPENROUTER_URL, {
+    method: "POST",
+    signal,
+    headers: {
+      Authorization: `Bearer ${opts.apiKey}`,
+      "Content-Type": "application/json",
+      "HTTP-Referer": "https://sortes.resonantatlas.com",
+      "X-Title": "Sortes by Resonant Atlas",
+    },
+    body: JSON.stringify({
+      model,
+      messages: [
+        { role: "system", content: opts.system },
+        { role: "user", content: opts.user },
+      ],
+      temperature: opts.temperature ?? 0.8,
+      max_tokens: opts.maxTokens ?? 1200,
+      reasoning: { exclude: true },
+    }),
+  });
+
+  if (!res.ok) {
+    throw new OpenRouterError(`OpenRouter ${res.status}`, await readErrorDetail(res));
+  }
+
+  const data = await res.json();
+  const rawText: string | undefined = data?.choices?.[0]?.message?.content;
+  const text = typeof rawText === "string" ? stripThinking(rawText) : undefined;
+  if (!text) throw new Error("Empty model response");
+  if (opts.validate && !opts.validate(text)) {
+    throw new Error("Model response failed validation");
+  }
+  return { text, model: data?.model ?? model };
+}
+
+/** Start one model attempt racing the request against its own abort timer. */
+function startAttempt(
+  opts: GenerateChatOptions,
+  fetchFn: typeof fetch,
+  model: string,
+  timeoutMs: number
+): { result: Promise<GeneratedChat>; clear: () => void } {
+  const controller = new AbortController();
+  let timer: NodeJS.Timeout | undefined;
+
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      controller.abort();
+      reject(new Error(`Model attempt timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
+  });
+
+  const executionPromise = requestCompletion(
+    opts,
+    fetchFn,
+    model,
+    controller.signal
+  );
+
+  // Prevent unhandled rejection if timeoutPromise settles first
+  executionPromise.catch(() => {});
+
+  return {
+    result: Promise.race([executionPromise, timeoutPromise]),
+    clear: () => clearTimeout(timer),
+  };
+}
+
 export async function generateChat(
   opts: GenerateChatOptions
 ): Promise<GeneratedChat | null> {
@@ -225,16 +328,31 @@ export async function generateChat(
   const retryDelayMs = opts.retryDelayMs ?? 250;
   const overallStart = Date.now();
 
+  // F23: one budget-exhaustion check for all three sites. Logs the
+  // chain-timeout (naming the overall budget if that one ran out,
+  // otherwise the per-pass budget) and returns true; the caller then
+  // does `break passLoop`. The pass-retry site passes Infinity for
+  // remainingPass, so it checks the overall budget only, as before.
+  const budgetExhausted = (
+    remainingPass: number,
+    remainingOverall: number,
+    elapsedMs: number
+  ): boolean => {
+    if (remainingPass > 0 && remainingOverall > 0) return false;
+    const budget = remainingOverall <= 0 ? overallTimeoutMs : totalTimeoutMs;
+    logFailure(
+      "chain-timeout",
+      null,
+      `AI chain total timeout budget exhausted (${budget}ms)`,
+      elapsedMs
+    );
+    return true;
+  };
+
   passLoop: for (let pass = 1; pass <= maxPasses; pass++) {
     if (pass > 1) {
       const elapsedOverall = Date.now() - overallStart;
-      if (overallTimeoutMs - elapsedOverall <= 0) {
-        logFailure(
-          "chain-timeout",
-          null,
-          `AI chain total timeout budget exhausted (${overallTimeoutMs}ms)`,
-          elapsedOverall
-        );
+      if (budgetExhausted(Infinity, overallTimeoutMs - elapsedOverall, elapsedOverall)) {
         break passLoop;
       }
       console.error(
@@ -255,14 +373,7 @@ export async function generateChat(
       const remainingPass = totalTimeoutMs - elapsedPass;
       const remainingOverall = overallTimeoutMs - elapsedOverall;
 
-      if (remainingPass <= 0 || remainingOverall <= 0) {
-        const budget = remainingOverall <= 0 ? overallTimeoutMs : totalTimeoutMs;
-        logFailure(
-          "chain-timeout",
-          null,
-          `AI chain total timeout budget exhausted (${budget}ms)`,
-          elapsedOverall
-        );
+      if (budgetExhausted(remainingPass, remainingOverall, elapsedOverall)) {
         break passLoop;
       }
 
@@ -282,14 +393,13 @@ export async function generateChat(
       const remainingPassAfterDelay = totalTimeoutMs - (attemptStart - passStart);
       const remainingOverallAfterDelay = overallTimeoutMs - (attemptStart - overallStart);
 
-      if (remainingPassAfterDelay <= 0 || remainingOverallAfterDelay <= 0) {
-        const budget = remainingOverallAfterDelay <= 0 ? overallTimeoutMs : totalTimeoutMs;
-        logFailure(
-          "chain-timeout",
-          null,
-          `AI chain total timeout budget exhausted (${budget}ms)`,
+      if (
+        budgetExhausted(
+          remainingPassAfterDelay,
+          remainingOverallAfterDelay,
           attemptStart - overallStart
-        );
+        )
+      ) {
         break passLoop;
       }
 
@@ -298,84 +408,10 @@ export async function generateChat(
         remainingPassAfterDelay,
         remainingOverallAfterDelay
       );
-      const controller = new AbortController();
-      let timer: NodeJS.Timeout | undefined;
-
-      const timeoutPromise = new Promise<never>((_, reject) => {
-        timer = setTimeout(() => {
-          controller.abort();
-          reject(
-            new Error(`Model attempt timed out after ${effectiveTimeoutMs}ms`)
-          );
-        }, effectiveTimeoutMs);
-      });
-
-      const executionPromise = (async (): Promise<GeneratedChat> => {
-        const res = await fetchFn(OPENROUTER_URL, {
-          method: "POST",
-          signal: controller.signal,
-          headers: {
-            Authorization: `Bearer ${opts.apiKey}`,
-            "Content-Type": "application/json",
-            "HTTP-Referer": "https://sortes.resonantatlas.com",
-            "X-Title": "Sortes by Resonant Atlas",
-          },
-          body: JSON.stringify({
-            model,
-            messages: [
-              { role: "system", content: opts.system },
-              { role: "user", content: opts.user },
-            ],
-            temperature: opts.temperature ?? 0.8,
-            max_tokens: opts.maxTokens ?? 1200,
-            reasoning: { exclude: true },
-          }),
-        });
-
-        if (!res.ok) {
-          let detail: string | undefined;
-          try {
-            if (typeof res.json === "function") {
-              const errJson = await res.json();
-              if (
-                errJson &&
-                typeof errJson === "object" &&
-                "error" in errJson &&
-                errJson.error &&
-                typeof errJson.error.message === "string"
-              ) {
-                detail = errJson.error.message;
-              }
-            }
-          } catch {
-            // Body could not be parsed as JSON
-          }
-          if (!detail && res.statusText) {
-            detail = res.statusText;
-          }
-          if (detail) {
-            detail = detail.slice(0, 200);
-          }
-          throw new OpenRouterError(`OpenRouter ${res.status}`, detail);
-        }
-
-        const data = await res.json();
-        const rawText: string | undefined =
-          data?.choices?.[0]?.message?.content;
-        const text =
-          typeof rawText === "string" ? stripThinking(rawText) : undefined;
-        if (!text) throw new Error("Empty model response");
-        if (opts.validate && !opts.validate(text)) {
-          throw new Error("Model response failed validation");
-        }
-        return { text, model: data?.model ?? model };
-      })();
-
-      // Prevent unhandled rejection if timeoutPromise settles first
-      executionPromise.catch(() => {});
+      const attempt = startAttempt(opts, fetchFn, model, effectiveTimeoutMs);
 
       try {
-        const result = await Promise.race([executionPromise, timeoutPromise]);
+        const result = await attempt.result;
         const elapsedMs = Date.now() - attemptStart;
         logSuccess(model, elapsedMs, i, pass, opts.route);
         return result;
@@ -385,7 +421,7 @@ export async function generateChat(
         logFailure("model-failed", model, err, elapsedMs, detail);
         // Fall through to the next model in the chain.
       } finally {
-        clearTimeout(timer);
+        attempt.clear();
       }
     }
   }

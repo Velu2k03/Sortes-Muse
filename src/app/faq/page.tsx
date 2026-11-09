@@ -2,6 +2,7 @@ import Link from "next/link";
 import { pageSocial } from "@/lib/seo";
 import { APP_NAME, CONTACT_EMAIL } from "@/lib/site";
 import FaqList from "@/components/FaqList";
+import PageHeader from "@/components/PageHeader";
 
 export const metadata = {
   title: "Frequently asked questions",
@@ -61,7 +62,7 @@ export const FAQS = [
   },
   {
     q: "How do I pay for Oracles?",
-    a: "Oracle packs are paid through a secure checkout powered by Lemon Squeezy. Packs are 5 Oracles for $3.99, 12 for $7.99, and 30 for $14.99, one-time, with no subscription.",
+    a: "Oracle packs are paid through a secure checkout powered by Lemon Squeezy. You can pay by card, PayPal, Apple Pay, or Google Pay. Checkout shows the full amount, including any applicable taxes or fees, before you pay. Packs are one-time purchases, with no subscription. See \"How much does a reading cost?\" for pack prices.",
   },
   {
     q: "What if a payment fails?",
@@ -82,10 +83,6 @@ export const FAQS = [
   {
     q: "How much does a reading cost?",
     a: "Daily card free. First reading free. After that, a reading costs 1 Oracle. Packs are 5 Oracles for $3.99, 12 for $7.99, and 30 for $14.99, which works out to about $0.80, $0.67, and $0.50 per reading. Prices are in US dollars (USD). Oracles never expire, and there is no subscription.",
-  },
-  {
-    q: "How do I pay?",
-    a: "You can pay by card, PayPal, Apple Pay, or Google Pay through Lemon Squeezy secure checkout. Checkout shows the full amount, including any applicable taxes or fees, before you pay.",
   },
 ];
 
@@ -109,10 +106,7 @@ export default function FaqPage() {
           }),
         }}
       />
-      <p className="text-xs uppercase tracking-[0.35em] text-gold">Help</p>
-      <h1 className="mt-3 font-display text-5xl text-goldbright">
-        Frequently asked questions
-      </h1>
+      <PageHeader eyebrow="Help" title="Frequently asked questions" />
       <FaqList faqs={FAQS} />
       <p className="mt-10 text-sm text-mist">
         Still stuck? Contact {CONTACT_EMAIL}, or read the{" "}

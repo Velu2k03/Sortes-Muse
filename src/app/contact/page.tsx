@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { CONTACT_EMAIL, SITE_URL } from "@/lib/site";
+import PageHeader from "@/components/PageHeader";
 
 export const metadata: Metadata = {
   title: "Contact Sortes",
@@ -28,8 +29,7 @@ export const metadata: Metadata = {
 export default function ContactPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
-      <p className="text-xs uppercase tracking-[0.35em] text-gold">Contact</p>
-      <h1 className="mt-3 font-display text-5xl text-goldbright">Contact Sortes</h1>
+      <PageHeader eyebrow="Contact" title="Contact Sortes" />
       <p className="mt-4 text-[15px] leading-relaxed text-cream/85">
         Email is the only way to reach us. Write to{" "}
         <a

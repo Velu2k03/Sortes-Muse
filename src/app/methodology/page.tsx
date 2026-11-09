@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { pageSocial } from "@/lib/seo";
+import PageHeader from "@/components/PageHeader";
 
 export const metadata: Metadata = {
   title: "Methodology",
@@ -23,10 +24,7 @@ export default function MethodologyPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
       <div className="text-center">
-        <p className="text-xs uppercase tracking-[0.35em] text-gold">Methodology</p>
-        <h1 className="mt-3 font-display text-5xl text-goldbright sm:text-6xl">
-          How Sortes calculates
-        </h1>
+        <PageHeader eyebrow="Methodology" title="How Sortes calculates" titleClassName="sm:text-6xl" />
         <p className="mx-auto mt-4 max-w-xl text-cream/75">
           The methods, engines, and limits behind every chart. If a number
           cannot be traced to a rule below, treat it as a bug.

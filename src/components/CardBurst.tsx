@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 
 /**
  * A brief shower of golden sparks, shown the instant a card is revealed

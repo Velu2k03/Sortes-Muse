@@ -1,6 +1,6 @@
 "use client";
 
-import { useReducedMotion } from "framer-motion";
+import { useReducedMotion } from "motion/react";
 import { useSyncExternalStore } from "react";
 
 const noopSubscribe = () => () => {};

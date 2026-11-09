@@ -1,6 +1,6 @@
 import type postgres from "postgres";
 import { MIGRATION_FILES } from "./migrations.generated";
-import { withDbTimeout } from "./db";
+import { withDbTimeout } from "./db-timeout";
 
 /**
  * Phase 6: versioned migrations. Replaces the old ensureSchema()
@@ -182,14 +182,4 @@ export async function runMigrations(
     done.push({ version: file.version, name: file.name });
   }
   return done;
-}
-
-/** Versions recorded as applied, in order. */
-export async function listAppliedMigrations(
-  pg: postgres.Sql
-): Promise<AppliedMigration[]> {
-  const rows = (await pg`
-    SELECT version, name FROM ${pg(SCHEMA_MIGRATIONS_TABLE)}
-    ORDER BY version ASC`) as AppliedMigration[];
-  return rows;
 }

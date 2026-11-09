@@ -1,4 +1,4 @@
-src/app/account/AccountClient.tsx	jsx-a11y/prefer-tag-over-role	Use <output> instead of the "status" role to ensure accessibility across all devices.
+src/app/account/AccountPanels.tsx	jsx-a11y/prefer-tag-over-role	Use <output> instead of the "status" role to ensure accessibility across all devices.
 src/app/deck/DeckClient.tsx	jsx-a11y/click-events-have-key-events	Visible, non-interactive elements with click handlers must have at least one keyboard listener.
 src/app/deck/DeckClient.tsx	jsx-a11y/no-static-element-interactions	Avoid non-native interactive elements. If using native HTML is not possible, add an appropriate role and support for tabbing, mouse, keyboard, and touch inputs to an interactive content element.
 src/components/CardModal.tsx	jsx-a11y/click-events-have-key-events	Visible, non-interactive elements with click handlers must have at least one keyboard listener.

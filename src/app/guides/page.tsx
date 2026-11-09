@@ -2,6 +2,7 @@ import Link from "next/link";
 import { pageSocial } from "@/lib/seo";
 import { GUIDES } from "@/lib/guides";
 import GuidesSearch from "@/components/GuidesSearch";
+import PageHeader from "@/components/PageHeader";
 
 export const metadata = {
   title: "Guides",
@@ -14,10 +15,7 @@ export const metadata = {
 export default function GuidesPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
-      <p className="text-xs uppercase tracking-[0.35em] text-gold">Guides</p>
-      <h1 className="mt-3 font-display text-5xl text-goldbright">
-        Guides to tarot and charts
-      </h1>
+      <PageHeader eyebrow="Guides" title="Guides to tarot and charts" />
       <p className="mt-4 max-w-xl text-cream/75">
         The deck, how to ask a question, the Celtic Cross, topic spreads, and how tarot differs from a birth chart. Free, no account needed.
       </p>

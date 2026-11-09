@@ -6,6 +6,7 @@
 // so they are loaded with createRequire (works in the Node route and in
 // the Node test script; this file must not be imported by client components).
 import { createRequire } from "node:module";
+import { norm360 } from "./angles.ts";
 import { resolveBirthTime, solarWallTime, type TimeBasis } from "./timezone.ts";
 
 const require = createRequire(import.meta.url);
@@ -503,6 +504,122 @@ export interface WesternResult {
   aspects: WesternAspect[];
 }
 
+type WesternHoroscope = {
+  CelestialBodies: Record<string, {
+    label: string;
+    Sign: { label: string };
+    ChartPosition: { Ecliptic: { DecimalDegrees: number } };
+    House?: { id: number };
+  }>;
+  Houses: { ChartPosition: { StartPosition: { Ecliptic: { DecimalDegrees: number } } } }[];
+  SunSign: { label: string };
+  Ascendant: { Sign: { label: string }; ChartPosition: { Ecliptic: { DecimalDegrees: number } } };
+  Midheaven: { Sign: { label: string }; ChartPosition: { Ecliptic: { DecimalDegrees: number } } };
+  Aspects: { all: { point1Key: string; point1Label: string; point2Key: string; point2Label: string; aspectKey: string; label: string; orb: number }[] };
+};
+
+/** Build the tropical Placidus horoscope for one local date and clock time. */
+function buildHoroscope(
+  input: { latitude: number; longitude: number },
+  hour: number,
+  minute: number,
+  yy: number,
+  mm: number,
+  dd: number
+): WesternHoroscope {
+  const origin = new Origin({
+    year: yy,
+    month: mm - 1,
+    date: dd,
+    hour,
+    minute,
+    latitude: input.latitude,
+    longitude: input.longitude,
+  });
+  return new Horoscope({ origin, houseSystem: "placidus", zodiac: "tropical" }) as WesternHoroscope;
+}
+
+const norm180 = (x: number) => ((x + 540) % 360) - 180;
+
+/** Planets from today's chart; retrograde from the same clock one day later. */
+function buildWesternPlanets(
+  horoscope: WesternHoroscope,
+  later: WesternHoroscope,
+  unknown: boolean
+): WesternPlanet[] {
+  const bodies = horoscope.CelestialBodies;
+  const laterBodies = later.CelestialBodies;
+  return WESTERN_PLANETS.filter((k) => bodies[k]).map((k) => {
+    const lon = bodies[k].ChartPosition.Ecliptic.DecimalDegrees;
+    const laterLon = laterBodies[k]?.ChartPosition.Ecliptic.DecimalDegrees;
+    return {
+      name: bodies[k].label,
+      longitude: lon,
+      sign: bodies[k].Sign.label,
+      house: unknown ? null : bodies[k].House ? bodies[k].House.id : null,
+      retrograde: typeof laterLon === "number" ? norm180(laterLon - lon) < 0 : false,
+    };
+  });
+}
+
+const ASPECT_EXACT_ANGLES: Record<string, number> = {
+  conjunction: 0,
+  opposition: 180,
+  trine: 120,
+  square: 90,
+  sextile: 60,
+  quincunx: 150,
+  quintile: 72,
+  septile: 360 / 7,
+  "semi-square": 45,
+  "semi-sextile": 30,
+};
+
+function pointLongitude(h: WesternHoroscope, key: string): number | null {
+  if (key === "ascendant") return h.Ascendant.ChartPosition.Ecliptic.DecimalDegrees;
+  if (key === "midheaven") return h.Midheaven.ChartPosition.Ecliptic.DecimalDegrees;
+  const body = h.CelestialBodies[key];
+  return body ? body.ChartPosition.Ecliptic.DecimalDegrees : null;
+}
+
+/** Applying/separating state from the 24-hour-later comparison. */
+function aspectState(
+  horoscope: WesternHoroscope,
+  later: WesternHoroscope,
+  a: { point1Key: string; point2Key: string; aspectKey: string }
+): WesternAspect["state"] {
+  const angle = ASPECT_EXACT_ANGLES[a.aspectKey];
+  const lon1 = pointLongitude(horoscope, a.point1Key);
+  const lon2 = pointLongitude(horoscope, a.point2Key);
+  const laterLon1 = pointLongitude(later, a.point1Key);
+  const laterLon2 = pointLongitude(later, a.point2Key);
+  if (typeof angle === "number" && lon1 !== null && lon2 !== null && laterLon1 !== null && laterLon2 !== null) {
+    const sep = (x: number, y: number) => {
+      const d = Math.abs(norm180(x - y));
+      return Math.min(d, 360 - d);
+    };
+    const orbNow = Math.abs(sep(lon1, lon2) - angle);
+    const orbLater = Math.abs(sep(laterLon1, laterLon2) - angle);
+    if (orbLater < orbNow - 0.001) return "applying";
+    if (orbLater > orbNow + 0.001) return "separating";
+  }
+  return "steady";
+}
+
+/** The library's own aspect list, each with its applying/separating state. */
+function buildWesternAspects(
+  horoscope: WesternHoroscope,
+  later: WesternHoroscope
+): WesternAspect[] {
+  return horoscope.Aspects.all.map((a) => ({
+    planet1: a.point1Label,
+    planet2: a.point2Label,
+    label: a.label,
+    orb: a.orb,
+    state: aspectState(horoscope, later, a),
+  }));
+}
+
 export function calculateWestern(input: {
   date: string;
   hour: number | null;
@@ -525,30 +642,8 @@ export function calculateWestern(input: {
   // same coordinates; this resolves the same zone with the same
   // lookup so the page can name it.
   const resolved = resolveBirthTime({ date: input.date, hour, minute, latitude: input.latitude, longitude: input.longitude, timeZone: input.timeZone });
-  const build = (yy: number, mm: number, dd: number) => {
-    const origin = new Origin({
-      year: yy,
-      month: mm - 1,
-      date: dd,
-      hour,
-      minute,
-      latitude: input.latitude,
-      longitude: input.longitude,
-    });
-    return new Horoscope({ origin, houseSystem: "placidus", zodiac: "tropical" }) as {
-      CelestialBodies: Record<string, {
-        label: string;
-        Sign: { label: string };
-        ChartPosition: { Ecliptic: { DecimalDegrees: number } };
-        House?: { id: number };
-      }>;
-      Houses: { ChartPosition: { StartPosition: { Ecliptic: { DecimalDegrees: number } } } }[];
-      SunSign: { label: string };
-      Ascendant: { Sign: { label: string }; ChartPosition: { Ecliptic: { DecimalDegrees: number } } };
-      Midheaven: { Sign: { label: string }; ChartPosition: { Ecliptic: { DecimalDegrees: number } } };
-      Aspects: { all: { point1Key: string; point1Label: string; point2Key: string; point2Label: string; aspectKey: string; label: string; orb: number }[] };
-    };
-  };
+  const build = (yy: number, mm: number, dd: number) =>
+    buildHoroscope(input, hour, minute, yy, mm, dd);
   const horoscope = build(y, m, d);
   // M1.2 retrograde: same local clock one day later. A negative
   // wrap-aware longitude change means apparent retrograde motion.
@@ -559,20 +654,7 @@ export function calculateWestern(input: {
     nextDay.getUTCMonth() + 1,
     nextDay.getUTCDate()
   );
-  const norm180 = (x: number) => ((x + 540) % 360) - 180;
-  const bodies = horoscope.CelestialBodies;
-  const laterBodies = later.CelestialBodies;
-  const planets: WesternPlanet[] = WESTERN_PLANETS.filter((k) => bodies[k]).map((k) => {
-    const lon = bodies[k].ChartPosition.Ecliptic.DecimalDegrees;
-    const laterLon = laterBodies[k]?.ChartPosition.Ecliptic.DecimalDegrees;
-    return {
-      name: bodies[k].label,
-      longitude: lon,
-      sign: bodies[k].Sign.label,
-      house: unknown ? null : bodies[k].House ? bodies[k].House.id : null,
-      retrograde: typeof laterLon === "number" ? norm180(laterLon - lon) < 0 : false,
-    };
-  });
+  const planets = buildWesternPlanets(horoscope, later, unknown);
   return {
     system: "western",
     sunSign: horoscope.SunSign.label,
@@ -598,49 +680,7 @@ export function calculateWestern(input: {
     // same 24-hour-later comparison the retrograde flags use: the
     // separation between the two points now, against the separation
     // a day later, measured against the exact angle for the aspect.
-    aspects: horoscope.Aspects.all.map((a) => {
-      const lonOf = (h: typeof horoscope, key: string): number | null => {
-        if (key === "ascendant") return h.Ascendant.ChartPosition.Ecliptic.DecimalDegrees;
-        if (key === "midheaven") return h.Midheaven.ChartPosition.Ecliptic.DecimalDegrees;
-        const body = h.CelestialBodies[key];
-        return body ? body.ChartPosition.Ecliptic.DecimalDegrees : null;
-      };
-      const exact: Record<string, number> = {
-        conjunction: 0,
-        opposition: 180,
-        trine: 120,
-        square: 90,
-        sextile: 60,
-        quincunx: 150,
-        quintile: 72,
-        septile: 360 / 7,
-        "semi-square": 45,
-        "semi-sextile": 30,
-      };
-      const angle = exact[a.aspectKey];
-      let state: WesternAspect["state"] = "steady";
-      const lon1 = lonOf(horoscope, a.point1Key);
-      const lon2 = lonOf(horoscope, a.point2Key);
-      const laterLon1 = lonOf(later, a.point1Key);
-      const laterLon2 = lonOf(later, a.point2Key);
-      if (typeof angle === "number" && lon1 !== null && lon2 !== null && laterLon1 !== null && laterLon2 !== null) {
-        const sep = (x: number, y: number) => {
-          const d = Math.abs(norm180(x - y));
-          return Math.min(d, 360 - d);
-        };
-        const orbNow = Math.abs(sep(lon1, lon2) - angle);
-        const orbLater = Math.abs(sep(laterLon1, laterLon2) - angle);
-        if (orbLater < orbNow - 0.001) state = "applying";
-        else if (orbLater > orbNow + 0.001) state = "separating";
-      }
-      return {
-        planet1: a.point1Label,
-        planet2: a.point2Label,
-        label: a.label,
-        orb: a.orb,
-        state,
-      };
-    }),
+    aspects: buildWesternAspects(horoscope, later),
   };
 }
 
@@ -682,10 +722,6 @@ const TRANSIT_ASPECTS = [
   { name: "trine", angle: 120, orb: 5 },
   { name: "opposition", angle: 180, orb: 6 },
 ] as const;
-
-function norm360(x: number): number {
-  return ((x % 360) + 360) % 360;
-}
 
 function angularSeparation(a: number, b: number): number {
   const diff = Math.abs(norm360(a) - norm360(b));

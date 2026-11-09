@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { pageSocial } from "@/lib/seo";
+import PageHeader from "@/components/PageHeader";
 
 export const metadata = {
   title: "About",
@@ -12,10 +13,7 @@ export const metadata = {
 export default function AboutPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
-      <p className="text-xs uppercase tracking-[0.35em] text-gold">About</p>
-      <h1 className="mt-3 font-display text-5xl text-goldbright">
-        About Sortes
-      </h1>
+      <PageHeader eyebrow="About" title="About Sortes" />
       <div className="mt-8 space-y-8 text-[15px] leading-relaxed text-cream/85">
         <section>
           <h2 className="font-display text-3xl text-goldbright">Who runs Sortes</h2>

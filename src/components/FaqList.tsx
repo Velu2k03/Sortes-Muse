@@ -21,12 +21,19 @@ export default function FaqList({ faqs }: { faqs: FaqItem[] }) {
   const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const hash = window.location.hash.replace("#", "");
-    if (!hash) return;
-    const el = listRef.current?.querySelector<HTMLElement>(`#${hash}`);
-    if (el && el.tagName === "DETAILS") {
-      (el as HTMLDetailsElement).open = true;
-    }
+    // Open the answer a hash points at, on load and on in-page jump-nav clicks.
+    const openHash = () => {
+      const hash = window.location.hash.replace("#", "");
+      if (!hash) return;
+      const el = listRef.current?.querySelector<HTMLElement>(`#${CSS.escape(hash)}`);
+      if (el && el.tagName === "DETAILS") {
+        (el as HTMLDetailsElement).open = true;
+        el.scrollIntoView();
+      }
+    };
+    openHash();
+    window.addEventListener("hashchange", openHash);
+    return () => window.removeEventListener("hashchange", openHash);
   }, []);
 
   const setAll = (open: boolean) => {

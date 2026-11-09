@@ -1,5 +1,6 @@
 import { APP_SHORT, CONTACT_EMAIL } from "@/lib/site";
 import { pageSocial } from "@/lib/seo";
+import PageHeader from "@/components/PageHeader";
 
 export const metadata = {
   title: "Terms of Service",
@@ -9,13 +10,12 @@ export const metadata = {
   ...pageSocial({ title: "Terms of Service", description: "The terms governing your use of Sortes: readings for reflection only, how Oracles and refunds work, and acceptable use of the site. Please read before use.", path: "/terms" }),
 };
 
-const UPDATED = "November 7, 2026";
+const UPDATED = "November 9, 2026";
 
 export default function TermsPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
-      <p className="text-xs uppercase tracking-[0.35em] text-gold">Legal</p>
-      <h1 className="mt-3 font-display text-5xl text-goldbright">Terms of Service</h1>
+      <PageHeader eyebrow="Legal" title="Terms of Service" />
       <p className="mt-2 text-sm text-mist">Last updated: {UPDATED}</p>
 
       <div className="mt-8 space-y-8 text-[15px] leading-relaxed text-cream/85">

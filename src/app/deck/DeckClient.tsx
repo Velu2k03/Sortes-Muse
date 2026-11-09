@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import {
   CARDS,
   SUITS,
