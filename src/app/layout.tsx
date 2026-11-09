@@ -115,7 +115,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
                 },
                 { "@type": "WebSite", name: APP_NAME, url: SITE_URL },
               ],
-            }),
+            }).replace(/</g, "\\u003c"),
           }}
         />
         {/* Phase 3: skip link, first in tab order, visible on focus. */}
