@@ -96,7 +96,7 @@ const SwipeToast: React.FC<SwipeToastProps> = ({
   const [phase, setPhase] = useState<SwipeToastPhase>('open');
   const [instant, setInstant] = useState(false);
   const [mounted, setMounted] = useState(HAS_STARTING_STYLE);
-  const cardRef = useRef<HTMLDivElement>(null);
+  const cardRef = useRef<HTMLOutputElement>(null);
   const fuseRef = useRef<HTMLElement>(null);
   const anim = useRef<Animation | null>(null);
   const drag = useRef<Drag | null>(null);
@@ -204,7 +204,7 @@ const SwipeToast: React.FC<SwipeToastProps> = ({
     }
     animate(fade, 0, { duration: 0.2, ease: EASE_OUT }).then(() => finish('swipe'));
   };
-  const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+  const onPointerDown = (e: React.PointerEvent<HTMLOutputElement>) => {
     lastInput.current = 'pointer';
     if (
       e.button !== 0 ||
@@ -231,7 +231,7 @@ const SwipeToast: React.FC<SwipeToastProps> = ({
     flags.current.interacting = true;
     syncFuse();
   };
-  const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+  const onPointerMove = (e: React.PointerEvent<HTMLOutputElement>) => {
     const d = drag.current;
     if (!d || d.id !== e.pointerId) return;
     if (d.grab === null) {
@@ -246,7 +246,7 @@ const SwipeToast: React.FC<SwipeToastProps> = ({
     d.hist.push([performance.now(), next]);
     if (d.hist.length > 4) d.hist.shift();
   };
-  const onPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+  const onPointerUp = (e: React.PointerEvent<HTMLOutputElement>) => {
     const d = drag.current;
     if (!d || d.id !== e.pointerId) return;
     drag.current = null;
@@ -301,10 +301,9 @@ const SwipeToast: React.FC<SwipeToastProps> = ({
     >
       <div className="min-h-0">
         <div className="opacity-100 group-data-[inline=true]:mt-[var(--st-gap)] [transform:translateY(0)] [transition:transform_var(--st-slide)_cubic-bezier(0.23,1,0.32,1),opacity_calc(var(--st-slide)*0.6)_ease] starting:opacity-0 starting:[transform:translateY(100%)] group-data-[mounted=false]:opacity-0 group-data-[mounted=false]:[transform:translateY(100%)] group-data-[phase=closing]:opacity-0 group-data-[phase=closing]:[transform:translateY(100%)] group-data-[phase=closing]:[transition:transform_calc(var(--st-slide)*0.7)_cubic-bezier(0.23,1,0.32,1),opacity_calc(var(--st-slide)*0.5)_ease] group-data-[phase=gone]:invisible group-data-[phase=gone]:opacity-0 group-data-[phase=gone]:[transform:translateY(100%)] group-data-[instant]:[transition-duration:0s] motion-reduce:[transform:none]! motion-reduce:[transition:opacity_200ms_ease]">
-          <motion.div
+          <motion.output
             ref={cardRef}
             className="relative flex cursor-grab touch-none items-center gap-2 overflow-hidden p-4 outline-none select-none shadow-[0_1px_2px_rgba(0,0,0,0.05),0_4px_12px_rgba(0,0,0,0.1)] [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [background:var(--st-bg)] [border-radius:var(--st-radius)] data-[swiping]:cursor-grabbing group-data-[dismissible=false]:cursor-default group-data-[dismissible=false]:touch-auto"
-            role="status"
             aria-live="polite"
             aria-atomic="true"
             tabIndex={0}
@@ -386,7 +385,7 @@ const SwipeToast: React.FC<SwipeToastProps> = ({
               className="pointer-events-none absolute right-0 bottom-0 left-0 h-0.5 origin-left [background:linear-gradient(90deg,transparent_0%,color-mix(in_srgb,var(--st-fuse)_18%,transparent)_9%,color-mix(in_srgb,var(--st-fuse)_50%,transparent)_18%,color-mix(in_srgb,var(--st-fuse)_84%,transparent)_28%,var(--st-fuse)_38%,var(--st-fuse)_62%,color-mix(in_srgb,var(--st-fuse)_84%,transparent)_72%,color-mix(in_srgb,var(--st-fuse)_50%,transparent)_82%,color-mix(in_srgb,var(--st-fuse)_18%,transparent)_91%,transparent_100%)] group-data-[fuse=top]:top-0 group-data-[fuse=top]:bottom-auto group-data-[fuse=none]:opacity-0"
               aria-hidden="true"
             />
-          </motion.div>
+          </motion.output>
         </div>
       </div>
     </div>
