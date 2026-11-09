@@ -11,6 +11,7 @@
     "db:migrate": "node scripts/migrate.mjs",
     "db:sync-migrations": "node scripts/sync-migrations.mjs",
     "lint": "eslint",
+    "lint:gate": "bash scripts/lint-gate.sh",
     "db:backup": "node scripts/backup.mjs",
     "db:backup:daily": "bash scripts/backup-daily.sh",
     "db:backup:upload": "node scripts/backup-drive-upload.mjs",
