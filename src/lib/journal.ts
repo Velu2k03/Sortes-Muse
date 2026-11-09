@@ -202,7 +202,10 @@ export function monthlyReview(
   year: number,
   month: number
 ): MonthlyReview {
+  // F15: daily cards are one-line entries, not full readings (the
+  // journal copy says so), so they are not counted as readings here.
   const inMonth = readings.filter((r) => {
+    if (r.spreadSlug === "daily-card") return false;
     const d = new Date(r.createdAt);
     return d.getFullYear() === year && d.getMonth() === month;
   });
