@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { useCanHide } from "@/lib/use-mounted";
 import { SPREADS } from "@/lib/tarot";
 import { SPREAD_SAMPLES } from "@/lib/spread-samples";

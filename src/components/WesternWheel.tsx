@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import CustomWesternWheel from "@/components/CustomWesternWheel";
-import { motion, useReducedMotion } from "framer-motion";
+import { motion, useReducedMotion } from "motion/react";
 import type { WesternResult } from "@/lib/charts";
 
 // Custom wheel (Audit 5): AstroChart could not stagger planet labels

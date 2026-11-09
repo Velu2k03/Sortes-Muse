@@ -1,6 +1,6 @@
 "use client";
 
-import { MotionConfig } from "framer-motion";
+import { MotionConfig } from "motion/react";
 import type { ReactNode } from "react";
 
 // One place for reduced-motion handling: "user" makes every

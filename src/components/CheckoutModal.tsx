@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "motion/react";
 import { CREDIT_PACKS, apiPackId, perReadingPrice } from "@/lib/site";
 import { useAuth } from "@/components/AuthProvider";
 import { trackPurchaseCompleted } from "@/components/Analytics";

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "motion/react";
 import ReadingWait, { PROCESSING_LINES } from "@/components/ReadingWait";
 import TarotCard from "@/components/TarotCard";
 import SlideCommit from "@/components/SlideCommit";
