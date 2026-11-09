@@ -28,7 +28,11 @@ export async function generateMetadata({
       }),
     };
   } catch {
-    return { title: "Reading" };
+    return {
+      title: "Page not found",
+      description: "This spread does not exist. Browse the available tarot spreads.",
+      robots: { index: false, follow: false },
+    };
   }
 }
 

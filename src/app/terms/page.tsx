@@ -9,7 +9,7 @@ export const metadata = {
   ...pageSocial({ title: "Terms of Service", description: "The terms governing your use of Sortes: readings for reflection only, how Oracles and refunds work, and acceptable use of the site. Please read before use.", path: "/terms" }),
 };
 
-const UPDATED = "November 7, 2026";
+const UPDATED = "November 9, 2026";
 
 export default function TermsPage() {
   return (

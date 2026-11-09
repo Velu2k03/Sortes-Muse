@@ -6,6 +6,7 @@
 // so they are loaded with createRequire (works in the Node route and in
 // the Node test script; this file must not be imported by client components).
 import { createRequire } from "node:module";
+import { norm360 } from "./angles.ts";
 import { resolveBirthTime, solarWallTime, type TimeBasis } from "./timezone.ts";
 
 const require = createRequire(import.meta.url);
@@ -682,10 +683,6 @@ const TRANSIT_ASPECTS = [
   { name: "trine", angle: 120, orb: 5 },
   { name: "opposition", angle: 180, orb: 6 },
 ] as const;
-
-function norm360(x: number): number {
-  return ((x % 360) + 360) % 360;
-}
 
 function angularSeparation(a: number, b: number): number {
   const diff = Math.abs(norm360(a) - norm360(b));

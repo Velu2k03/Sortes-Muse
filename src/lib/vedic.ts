@@ -18,6 +18,7 @@ import { detectYogas, rajaYogas, dhanaYogas, kemadruma, yogakarakas, houseLord }
 import { computeAshtakavarga, type AshtakavargaResult } from "./ashtakavarga.ts";
 import { embeddedData } from "caelus/data-embedded";
 import { resolveBirthTime, type TimeBasis } from "./timezone.ts";
+import { signIndex } from "./angles.ts";
 
 // Vimshottari dasha dates live here, not in a separate module, so
 // node type stripping (used by scripts/charts-check.mjs) can load this
@@ -41,10 +42,6 @@ const SIGNS = [
 
 export function signFromLongitude(lon: number): string {
   return SIGNS[Math.floor(((lon % 360) + 360) % 360 / 30)] ?? "Aries";
-}
-
-function signIndexOf(lon: number): number {
-  return Math.floor((((lon % 360) + 360) % 360) / 30);
 }
 
 // M3.2: divisional charts (vargas), Parashara rules. Both are pure
@@ -277,14 +274,14 @@ export function computeGochara(
     transit.push({ name: "rahu", longitude: rahuLon, sign: signFromLongitude(rahuLon) });
     transit.push({ name: "ketu", longitude: ketuLon, sign: signFromLongitude(ketuLon) });
   }
-  const natalMoonSignIdx = signIndexOf(natalMoonLongitude);
+  const natalMoonSignIdx = signIndex(natalMoonLongitude);
   const planets: GocharaPlanet[] = transit.map((t) => {
-    const tIdx = signIndexOf(t.longitude);
+    const tIdx = signIndex(t.longitude);
     const houseFromMoon = ((tIdx - natalMoonSignIdx + 12) % 12) + 1;
     const rule = DRISHTI[t.name] ?? [7];
     const aspects: GocharaAspect[] = [];
     for (const n of natalPlanets) {
-      const nIdx = signIndexOf(n.longitude);
+      const nIdx = signIndex(n.longitude);
       const away = ((nIdx - tIdx + 12) % 12) + 1;
       if (rule.includes(away)) aspects.push({ natalPlanet: n.name, housesAway: away });
     }
@@ -447,7 +444,6 @@ export function computeYogas(
   if (ascendantLongitude === null) return [];
   const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : "");
   const ordinal = (n: number) => (n === 1 ? "1st" : n === 2 ? "2nd" : n === 3 ? "3rd" : `${n}th`);
-  const signIndex = (lon: number) => Math.floor((((lon % 360) + 360) % 360) / 30);
   const signs: Record<string, number> = {};
   for (const p of planets) signs[p.name.toLowerCase()] = signIndex(p.longitude);
   const ascSign = signIndex(ascendantLongitude);

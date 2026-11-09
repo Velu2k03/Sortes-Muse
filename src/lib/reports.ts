@@ -32,6 +32,7 @@ import {
   computeDashaTimeline,
 } from "./vedic";
 import type { GocharaResult, DashaTimeline } from "./vedic";
+import { norm360 } from "./angles";
 
 export type ReportType = "transit" | "year-ahead" | "comparison";
 
@@ -262,10 +263,6 @@ const CROSS_ASPECTS = [
   { name: "trine", angle: 120, orb: 5 },
   { name: "opposition", angle: 180, orb: 6 },
 ] as const;
-
-function norm360(x: number): number {
-  return ((x % 360) + 360) % 360;
-}
 
 function separation(a: number, b: number): number {
   const diff = Math.abs(norm360(a) - norm360(b));

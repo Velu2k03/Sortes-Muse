@@ -183,13 +183,3 @@ export async function runMigrations(
   }
   return done;
 }
-
-/** Versions recorded as applied, in order. */
-export async function listAppliedMigrations(
-  pg: postgres.Sql
-): Promise<AppliedMigration[]> {
-  const rows = (await pg`
-    SELECT version, name FROM ${pg(SCHEMA_MIGRATIONS_TABLE)}
-    ORDER BY version ASC`) as AppliedMigration[];
-  return rows;
-}

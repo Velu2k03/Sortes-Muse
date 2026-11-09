@@ -262,11 +262,6 @@ export function clearLocalAccountData(): void {
 }
 
 // AI cache: re-opening history never triggers a second API call
-export function getCachedInterpretation(key: string): string | null {
-  const cache = read<Record<string, string>>(K.aiCache, {});
-  return cache[key] ?? null;
-}
-
 export function setCachedInterpretation(key: string, text: string): void {
   const cache = read<Record<string, string>>(K.aiCache, {});
   cache[key] = text;

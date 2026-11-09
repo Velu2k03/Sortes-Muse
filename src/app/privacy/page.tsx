@@ -9,7 +9,7 @@ export const metadata = {
   ...pageSocial({ title: "Privacy Policy", description: "How Sortes collects, uses, and deletes your data: what we store, who processes it, your rights, and how to ask us for an export or deletion of your data.", path: "/privacy" }),
 };
 
-const UPDATED = "November 8, 2026";
+const UPDATED = "November 9, 2026";
 
 export default function PrivacyPage() {
   return (
