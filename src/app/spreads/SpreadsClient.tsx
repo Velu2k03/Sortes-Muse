@@ -12,6 +12,7 @@ import { GlareHover } from "@/components/ReactBitsNew";
 import { useAuth } from "@/components/AuthProvider";
 import { freeReadingUsed } from "@/lib/storage";
 import PageHeader from "@/components/PageHeader";
+import FieldGroup from "@/components/FieldGroup";
 
 /**
  * Spread selection.
@@ -82,7 +83,7 @@ export default function SpreadsPage() {
         </div>
       )}
 
-      <div className="mx-auto mt-8 grid max-w-2xl grid-cols-2 gap-2 sm:grid-cols-3" role="group" aria-label="What are you asking about?">
+      <FieldGroup className="mx-auto mt-8 grid max-w-2xl grid-cols-2 gap-2 sm:grid-cols-3" aria-label="What are you asking about?">
         {[
           { label: "A decision", slug: "past-present-future" },
           { label: "A relationship", slug: "love-insight" },
@@ -104,7 +105,7 @@ export default function SpreadsPage() {
             {o.label}
           </button>
         ))}
-      </div>
+      </FieldGroup>
 
       <div className="mt-10 grid gap-6 md:grid-cols-3">
         {SPREADS.map((s, i) => {
@@ -146,9 +147,8 @@ export default function SpreadsPage() {
                 {s.cards} {s.cards === 1 ? "card" : "cards"} · personalized AI interpretation
               </p>
               {pending ? (
-                <div
-                  className="mt-4 h-12 animate-pulse rounded-xl bg-gold/20"
-                  role="status"
+                <output
+                  className="mt-4 block h-12 animate-pulse rounded-xl bg-gold/20"
                   aria-busy="true"
                   aria-label="Checking your Oracle balance"
                 />

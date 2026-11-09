@@ -424,9 +424,9 @@ export function StepDots({ step }: { step: Step }) {
   const labels = ["Area", "Story", "Confirm", "Reading"];
   const current = order.indexOf(step);
   return (
-    <div className="mb-8 flex items-center justify-center gap-2" role="list" aria-label="Reading steps">
+    <ul className="mb-8 flex items-center justify-center gap-2" role="list" aria-label="Reading steps">
       {order.map((s, i) => (
-        <div key={s} role="listitem" aria-current={i === current ? "step" : undefined} className="flex items-center gap-2">
+        <li key={s} aria-current={i === current ? "step" : undefined} className="flex items-center gap-2">
           <div
             className={`flex h-8 w-8 items-center justify-center rounded-full border text-xs font-bold ${
               i <= current
@@ -440,8 +440,8 @@ export function StepDots({ step }: { step: Step }) {
             {labels[i]}
           </span>
           {i < order.length - 1 && <div className="mx-1 h-px w-6 bg-gold/30" />}
-        </div>
+        </li>
       ))}
-    </div>
+    </ul>
   );
 }

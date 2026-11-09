@@ -26,10 +26,10 @@ export default function BirthCardPage() {
   // Future dates are not birth dates: show a plain inline message and
   // no card, instead of silently calculating a card for 2099. The
   // YYYY-MM-DD string compares correctly, so no date library is needed.
-  const todayKey = useMemo(() => {
+  const [todayKey] = useState(() => {
     const t = new Date();
     return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}-${String(t.getDate()).padStart(2, "0")}`;
-  }, []);
+  });
   const isFuture = date !== "" && date > todayKey;
   const pair = useMemo(() => (isFuture ? null : birthCardNumbers(date)), [date, isFuture]);
   const personalityCard = useMemo(

@@ -10,6 +10,7 @@ import type { SavedReport } from "@/lib/reports";
 import SplitText from "@/components/SplitText";
 import HeirloomPrint from "@/components/HeirloomPrint";
 import AnimatedContent from "@/components/AnimatedContent";
+import ScrollableRegion from "@/components/ScrollableRegion";
 
 export default function ReportDetailClient() {
   const params = useParams();
@@ -144,12 +145,7 @@ export default function ReportDetailClient() {
               <p className="mt-1 text-sm text-mist">
                 Natal Sun {data.sunSign}, natal Moon {data.moonSign}, transit Moon in {data.transits.moonSign}.
               </p>
-              <div
-                tabIndex={0}
-                role="region"
-                aria-label={`Western transits on ${data.targetDate}, scroll sideways to see all columns`}
-                className="mt-3 overflow-x-auto"
-              >
+              <ScrollableRegion label={`Western transits on ${data.targetDate}, scroll sideways to see all columns`}>
                 <table className="w-full min-w-[520px] text-left text-sm text-cream/90">
                   <thead>
                     <tr className="text-mist">
@@ -172,7 +168,7 @@ export default function ReportDetailClient() {
                     ))}
                   </tbody>
                 </table>
-              </div>
+              </ScrollableRegion>
               <p className="mt-1 text-right text-xs text-mist sm:hidden">Scroll sideways to see more</p>
               {data.transits.aspects.length === 0 && (
                 <p className="mt-2 text-sm text-mist">No transit within orb on this date.</p>
@@ -184,12 +180,7 @@ export default function ReportDetailClient() {
                 Panchanga: {data.gochara.panchanga.tithi}, {data.gochara.panchanga.nakshatra},{" "}
                 {data.gochara.panchanga.yoga}, {data.gochara.panchanga.vara}, {data.gochara.panchanga.karana}.
               </p>
-              <div
-                tabIndex={0}
-                role="region"
-                aria-label="Vedic Gochara table, scroll sideways to see all columns"
-                className="mt-3 overflow-x-auto"
-              >
+              <ScrollableRegion label="Vedic Gochara table, scroll sideways to see all columns">
                 <table className="w-full min-w-[520px] text-left text-sm text-cream/90">
                   <thead>
                     <tr className="text-mist">
@@ -210,7 +201,7 @@ export default function ReportDetailClient() {
                     ))}
                   </tbody>
                 </table>
-              </div>
+              </ScrollableRegion>
               <p className="mt-1 text-right text-xs text-mist sm:hidden">Scroll sideways to see more</p>
             </section>
             {data.notes.map((n, i) => (
@@ -292,12 +283,7 @@ export default function ReportDetailClient() {
             </section>
             <section>
               <h2 className="font-display text-3xl text-goldbright">Cross-aspects</h2>
-              <div
-                tabIndex={0}
-                role="region"
-                aria-label="Cross-aspects table, scroll sideways to see all columns"
-                className="mt-3 overflow-x-auto"
-              >
+              <ScrollableRegion label="Cross-aspects table, scroll sideways to see all columns">
                 <table className="w-full min-w-[520px] text-left text-sm text-cream/90">
                   <thead>
                     <tr className="text-mist">
@@ -318,7 +304,7 @@ export default function ReportDetailClient() {
                     ))}
                   </tbody>
                 </table>
-              </div>
+              </ScrollableRegion>
               <p className="mt-1 text-right text-xs text-mist sm:hidden">Scroll sideways to see more</p>
               {data.crossAspects.length === 0 && (
                 <p className="mt-2 text-sm text-mist">No cross-aspect within orb.</p>

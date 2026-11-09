@@ -247,15 +247,14 @@ export default function Home() {
               hovered card, no entrance animation. Phone width:
               72 + 4 x 48 = 264px, inside a 360px phone's 328px
               content width, so no horizontal scroll. */}
-          <div className="mt-8 flex justify-center" role="list" aria-label="Tarot cards">
+          <ul role="list" className="mt-8 flex justify-center" aria-label="Tarot cards">
             {fanCards.map((c, i) => {
               const offset = i - middle;
               const tilt = offset * 7;
               const drop = Math.abs(offset) * 6;
               return (
-                <div
+                <li
                   key={c.id}
-                  role="listitem"
                   style={{ zIndex: 10 - Math.abs(offset), transform: `translateY(${drop}px) rotate(${tilt}deg)` }}
                   className="-ml-6 first:ml-0 sm:-ml-8 sm:first:ml-0"
                 >
@@ -274,10 +273,10 @@ export default function Home() {
                       />
                     </div>
                   </Link>
-                </div>
+                </li>
               );
             })}
-          </div>
+          </ul>
           <Link
             href="/daily"
             className="btn-ghost mt-8 inline-block rounded-2xl px-8 py-3.5 font-semibold"

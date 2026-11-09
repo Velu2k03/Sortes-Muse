@@ -1,48 +1,48 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { promises as fs } from "fs";
-import path from "path";
-import {
-  createUser,
-  createUserWithPassword,
-  getUserById,
-  addUserCredits,
-  spendUserCredits,
-  markFreeReadingUsed,
-  hasUsedFreeReading,
-  markFreeInterpretationUsed,
-  hasUsedFreeInterpretation,
-  setUserPassword,
-} from "@/lib/db";
+import { importDbWithIsolatedStore } from "./local-db-test-store";
 
-// Phase B (R5/R7/R10) on the local JSON branch. Same pattern as
-// db-delete.test.ts: backs up data/local-db.json and restores it
-// afterwards, and skips when a Postgres URL is configured (the
-// Postgres branch is covered by db-postgres.test.ts).
+// Phase B (R5/R7/R10) on the local JSON branch. Skips when a
+// Postgres URL is configured (the Postgres branch is covered by
+// db-postgres.test.ts). Each file gets its own temp store via
+// importDbWithIsolatedStore (see that file): no static `@/lib/db`
+// import here, because db.ts binds data/local-db.json from
+// process.cwd() at import time, and a shared store across parallel
+// vitest workers flakes. The real data/local-db.json is never
+// touched.
 const hasPostgres = Boolean(process.env.POSTGRES_URL || process.env.DATABASE_URL);
-const LOCAL_PATH = path.join(process.cwd(), "data", "local-db.json");
 
 describe.skipIf(hasPostgres)("Phase B guards (local JSON branch)", () => {
-  let backup: string | null = null;
-  let hadFile = false;
+  let cleanup: (() => Promise<void>) | null = null;
+  let createUser: typeof import("@/lib/db").createUser;
+  let createUserWithPassword: typeof import("@/lib/db").createUserWithPassword;
+  let getUserById: typeof import("@/lib/db").getUserById;
+  let addUserCredits: typeof import("@/lib/db").addUserCredits;
+  let spendUserCredits: typeof import("@/lib/db").spendUserCredits;
+  let markFreeReadingUsed: typeof import("@/lib/db").markFreeReadingUsed;
+  let hasUsedFreeReading: typeof import("@/lib/db").hasUsedFreeReading;
+  let markFreeInterpretationUsed: typeof import("@/lib/db").markFreeInterpretationUsed;
+  let hasUsedFreeInterpretation: typeof import("@/lib/db").hasUsedFreeInterpretation;
+  let setUserPassword: typeof import("@/lib/db").setUserPassword;
 
   beforeAll(async () => {
-    try {
-      backup = await fs.readFile(LOCAL_PATH, "utf8");
-      hadFile = true;
-    } catch {
-      backup = null;
-      hadFile = false;
-    }
-    await fs.rm(LOCAL_PATH, { force: true });
+    const isolated = await importDbWithIsolatedStore();
+    cleanup = isolated.cleanup;
+    ({
+      createUser,
+      createUserWithPassword,
+      getUserById,
+      addUserCredits,
+      spendUserCredits,
+      markFreeReadingUsed,
+      hasUsedFreeReading,
+      markFreeInterpretationUsed,
+      hasUsedFreeInterpretation,
+      setUserPassword,
+    } = isolated.db);
   });
 
   afterAll(async () => {
-    if (hadFile && backup !== null) {
-      await fs.mkdir(path.dirname(LOCAL_PATH), { recursive: true });
-      await fs.writeFile(LOCAL_PATH, backup);
-    } else {
-      await fs.rm(LOCAL_PATH, { force: true });
-    }
+    await cleanup?.();
   });
 
   it("R10: spendUserCredits rejects zero, negative, and non-finite amounts", async () => {

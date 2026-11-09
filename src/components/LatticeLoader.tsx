@@ -178,9 +178,13 @@ const LatticeLoader: React.FC<LatticeLoaderProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status]);
 
+  // Phase E gate: <style> is metadata content, not phrasing content, so it
+  // sits beside the <output> rather than inside it. Its keyframes read
+  // var(--ll-*) from the animated spans, which inherit them from <output>.
   return (
-    <span
-      role="status"
+    <>
+    <style>{STYLE}</style>
+    <output
       className={`ll-root group relative inline-flex items-center leading-none [font-family:inherit] [gap:calc(var(--ll-font)*0.625)] [font-size:var(--ll-font)]${className ? ` ${className}` : ''}`}
       data-status={status}
       data-shape={shape}
@@ -204,7 +208,6 @@ const LatticeLoader: React.FC<LatticeLoaderProps> = ({
         } as CSSProperties
       }
     >
-      <style>{STYLE}</style>
       <span className="grid shrink-0" aria-hidden="true">
         <span className="ll-run [grid-area:1/1] grid [grid-template-columns:repeat(var(--ll-n),var(--ll-cell))] [gap:var(--ll-gap)] [transition:opacity_200ms_ease] group-data-[status=done]:opacity-0 group-data-[status=error]:opacity-0 group-data-[status=done]:[&>span]:[animation-play-state:paused] group-data-[status=error]:[&>span]:[animation-play-state:paused]">
           {pat.cells.map((unit, i) => (
@@ -261,7 +264,8 @@ const LatticeLoader: React.FC<LatticeLoaderProps> = ({
         </span>
       ) : null}
       <span className="sr-only">{announce}</span>
-    </span>
+    </output>
+    </>
   );
 };
 

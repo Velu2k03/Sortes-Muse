@@ -54,7 +54,6 @@ describe("horoscope honesty: the page labels it as general reflection", () => {
   it("says general reflection, free, unsaved, and not a prediction", () => {
     // AF-088: page.tsx is now a thin server component; the label lives
     // in HoroscopeClient.tsx and renders in the SSR HTML.
-    const src = readFileSync(path.resolve(process.cwd(), "src/app/horoscope/page.tsx"), "utf8").replace(/\s+/g, " ");
     const client = readFileSync(path.resolve(process.cwd(), "src/app/horoscope/HoroscopeClient.tsx"), "utf8").replace(/\s+/g, " ");
     expect(client).toContain("general reflection");
     expect(client).toContain("Free, unsaved");

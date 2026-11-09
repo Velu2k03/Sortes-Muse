@@ -215,9 +215,9 @@ function BirthForm({
             </button>
           </div>
           {placeStatus && (
-            <p role="status" className="mt-1.5 text-xs text-mist">
+            <output className="mt-1.5 block text-xs text-mist">
               {placeStatus}
-            </p>
+            </output>
           )}
         </div>
         <div>

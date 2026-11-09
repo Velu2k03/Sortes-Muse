@@ -1,47 +1,42 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { promises as fs } from "fs";
-import path from "path";
-import {
-  createUser,
-  addUserCredits,
-  getUserById,
-  saveReadingForUser,
-  getReadingForUser,
-  appendFollowUpWithSpend,
-} from "@/lib/db";
+import { importDbWithIsolatedStore } from "./local-db-test-store";
 
 // Phase 6 (N7): appending a follow-up and spending its Oracle must be
 // one atomic step — the cap is re-checked at append time and a failed
 // append never spends a credit. These tests run against the local
-// JSON branch only (same pattern as db-delete.test.ts) and skip when
-// a Postgres URL is configured; the Postgres-branch concurrency
-// cases live in db-postgres.test.ts. The test backs up
-// data/local-db.json and restores it afterwards.
+// JSON branch only and skip when a Postgres URL is configured; the
+// Postgres-branch concurrency cases live in db-postgres.test.ts.
+// Each file gets its own temp store via importDbWithIsolatedStore
+// (see that file): no static `@/lib/db` import here, because db.ts
+// binds data/local-db.json from process.cwd() at import time, and a
+// shared store across parallel vitest workers flakes. The real
+// data/local-db.json is never touched.
 const hasPostgres = Boolean(process.env.POSTGRES_URL || process.env.DATABASE_URL);
-const LOCAL_PATH = path.join(process.cwd(), "data", "local-db.json");
 
 describe.skipIf(hasPostgres)("appendFollowUpWithSpend (local JSON branch)", () => {
-  let backup: string | null = null;
-  let hadFile = false;
+  let cleanup: (() => Promise<void>) | null = null;
+  let createUser: typeof import("@/lib/db").createUser;
+  let addUserCredits: typeof import("@/lib/db").addUserCredits;
+  let getUserById: typeof import("@/lib/db").getUserById;
+  let saveReadingForUser: typeof import("@/lib/db").saveReadingForUser;
+  let getReadingForUser: typeof import("@/lib/db").getReadingForUser;
+  let appendFollowUpWithSpend: typeof import("@/lib/db").appendFollowUpWithSpend;
 
   beforeAll(async () => {
-    try {
-      backup = await fs.readFile(LOCAL_PATH, "utf8");
-      hadFile = true;
-    } catch {
-      backup = null;
-      hadFile = false;
-    }
-    await fs.rm(LOCAL_PATH, { force: true });
+    const isolated = await importDbWithIsolatedStore();
+    cleanup = isolated.cleanup;
+    ({
+      createUser,
+      addUserCredits,
+      getUserById,
+      saveReadingForUser,
+      getReadingForUser,
+      appendFollowUpWithSpend,
+    } = isolated.db);
   });
 
   afterAll(async () => {
-    if (hadFile && backup !== null) {
-      await fs.mkdir(path.dirname(LOCAL_PATH), { recursive: true });
-      await fs.writeFile(LOCAL_PATH, backup);
-    } else {
-      await fs.rm(LOCAL_PATH, { force: true });
-    }
+    await cleanup?.();
   });
 
   const followUp = (n: number) => ({ question: `q${n}`, answer: `a${n}`, free: n === 1 });

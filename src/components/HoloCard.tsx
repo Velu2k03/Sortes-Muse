@@ -77,9 +77,10 @@ export default function HoloCard({
   // Accepted for API compatibility; the rainbow presets no longer
   // change the look. Referenced so the props are not silently dead.
   void preset;
-  const rootRef = useRef<HTMLDivElement>(null);
-  const rotorRef = useRef<HTMLDivElement>(null);
+  const rootRef = useRef<HTMLElement | null>(null);
+  const rotorRef = useRef<HTMLSpanElement>(null);
   const shadowRef = useRef<HTMLSpanElement>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
   const settingsRef = useRef<HoloSettings | null>(null);
   const pointerRef = useRef({ x: 0.5, y: 0.5, inside: false });
   const wakeRef = useRef<(() => void) | null>(null);
@@ -115,8 +116,39 @@ export default function HoloCard({
   // same pattern ChartsClient uses for its saved-language restore),
   // so it runs before the new image's load event but is not a
   // synchronous setState inside the effect body.
+  // C4 lint: load/error listeners live here instead of as onLoad/onError
+  // props on the <img> (a non-interactive element). A cached image can be
+  // complete before this runs, so that case is queued AFTER the reset
+  // microtask (microtasks run in order) and still ends ready.
+  // Phase E gate: `cancelled` stops a stale microtask or event from setting
+  // state after a src change or unmount. A broken image can be complete
+  // with naturalWidth 0, so a zero-size load takes the error path.
   useEffect(() => {
-    queueMicrotask(() => setReady(false));
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (!cancelled) setReady(false);
+    });
+    const img = imgRef.current;
+    if (!img) return () => {
+      cancelled = true;
+    };
+    const onError = () => {
+      if (!cancelled) setReady(true);
+    };
+    const onLoad = () => {
+      if (cancelled) return;
+      if (!img.naturalWidth || !img.naturalHeight) return onError();
+      setRatio(img.naturalWidth / img.naturalHeight);
+      setReady(true);
+    };
+    if (img.complete) queueMicrotask(onLoad);
+    img.addEventListener("load", onLoad);
+    img.addEventListener("error", onError);
+    return () => {
+      cancelled = true;
+      img.removeEventListener("load", onLoad);
+      img.removeEventListener("error", onError);
+    };
   }, [image]);
 
   useEffect(() => {
@@ -250,7 +282,7 @@ export default function HoloCard({
     };
   }, []);
 
-  const track = (e: PointerEvent<HTMLDivElement>) => {
+  const track = (e: PointerEvent<HTMLElement>) => {
     if (e.pointerType === "touch" && e.type === "pointermove" && !e.buttons) return;
     const rect = e.currentTarget.getBoundingClientRect();
     pointerRef.current = {
@@ -270,66 +302,83 @@ export default function HoloCard({
     if (flippable) setFlipped((value) => !value);
   };
 
-  const onImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
-    const img = e.currentTarget;
-    if (img.naturalWidth && img.naturalHeight) setRatio(img.naturalWidth / img.naturalHeight);
-    setReady(true);
+  // Phase C a11y: a flippable card is a real <button> (native focus,
+  // Enter/Space activation). A non-flippable card is a plain image with
+  // no click or key handlers. Both keep the pointer handlers, which only
+  // drive the holo light/tilt effect. The inner rotor and faces are
+  // spans (a button may only hold phrasing content); every one is
+  // position:absolute in HoloCard.css, so they lay out exactly as before.
+  const rootProps = {
+    className: `holo-card${className ? ` ${className}` : ""}`,
+    "aria-label": alt || undefined,
+    "data-ready": ready ? "" : undefined,
+    "data-flippable": flippable ? "" : undefined,
+    onPointerEnter: track,
+    onPointerMove: track,
+    onPointerDown: track,
+    onPointerLeave: leave,
+    onPointerCancel: leave,
+    style: {
+      "--hc-w": `${width}px`,
+      "--hc-ratio": ratio,
+      "--hc-radius": `${radius}px`,
+      "--hc-foil": foilColor,
+      "--hc-intensity": clamp(intensity, 0, 1),
+      ...style,
+    } as CSSProperties,
   };
 
-  return (
-    <div
-      ref={rootRef}
-      className={`holo-card${className ? ` ${className}` : ""}`}
-      role={flippable ? "button" : "img"}
-      tabIndex={flippable ? 0 : undefined}
-      aria-label={alt || undefined}
-      aria-pressed={flippable ? flipped : undefined}
-      data-ready={ready ? "" : undefined}
-      data-flippable={flippable ? "" : undefined}
-      onPointerEnter={track}
-      onPointerMove={track}
-      onPointerDown={track}
-      onPointerLeave={leave}
-      onPointerCancel={leave}
-      onClick={toggle}
-      onKeyDown={(e) => {
-        if (!flippable || (e.key !== "Enter" && e.key !== " ")) return;
-        e.preventDefault();
-        if (!e.repeat) toggle();
-      }}
-      style={{
-        "--hc-w": `${width}px`,
-        "--hc-ratio": ratio,
-        "--hc-radius": `${radius}px`,
-        "--hc-foil": foilColor,
-        "--hc-intensity": clamp(intensity, 0, 1),
-        ...style,
-      } as CSSProperties}
-    >
+  const content = (
+    <>
       {shadow ? (
         <span ref={shadowRef} className="holo-card__shadow" aria-hidden="true" />
       ) : null}
-      <div ref={rotorRef} className="holo-card__rotor">
-        <div className="holo-card__face holo-card__face--front">
+      <span ref={rotorRef} className="holo-card__rotor">
+        <span className="holo-card__face holo-card__face--front">
           {image ? (
             // Phase 4C lint: next/image wraps the image in a positioned
             // span, which breaks this 3D face (the img must be the direct
             // child the rotor transform and sheen overlay expect), and
-            // the onLoad/onError handlers gate the ready state. A plain
+            // the load/error listeners (effect above) gate the ready state. A plain
             // img is correct here.
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={image} alt="" draggable={false} onLoad={onImageLoad} onError={() => setReady(true)} />
+            <img ref={imgRef} src={image} alt="" draggable={false} />
           ) : null}
           <span className="holo-card__sheen" aria-hidden="true" />
-        </div>
+        </span>
         {flippable && backImage ? (
-          <div className="holo-card__face holo-card__face--back">
+          <span className="holo-card__face holo-card__face--back">
             {/* Phase 4C lint: same 3D-face reason as the front image. */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={backImage} alt="" draggable={false} />
-          </div>
+          </span>
         ) : null}
-      </div>
+      </span>
+    </>
+  );
+
+  if (flippable) {
+    return (
+      <button
+        ref={(el) => { rootRef.current = el; }}
+        type="button"
+        {...rootProps}
+        aria-pressed={flipped}
+        onClick={toggle}
+        onKeyDown={(e) => {
+          // The button activates natively on Enter/Space; this only
+          // stops a held key from flipping the card over and over.
+          if (e.repeat && (e.key === "Enter" || e.key === " ")) e.preventDefault();
+        }}
+      >
+        {content}
+      </button>
+    );
+  }
+
+  return (
+    <div ref={(el) => { rootRef.current = el; }} role="img" {...rootProps}>
+      {content}
     </div>
   );
 }
