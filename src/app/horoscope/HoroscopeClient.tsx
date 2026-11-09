@@ -151,9 +151,10 @@ export default function HoroscopeClient({
               ))}
             </select>
           ) : (
-            <div className="h-64">
+            <div className="h-64 overflow-hidden rounded-xl">
               <p className="mb-2 text-xs text-mist">Choose your sign from the grid below, or spin the wheel: drag it, or focus it and use arrow keys.</p>
               <OptionWheel
+                ariaLabel="Sun sign"
                 items={[...SUN_SIGNS]}
                 defaultSelected={SUN_SIGNS.indexOf(sign)}
                 onChange={(index) => { setSign(SUN_SIGNS[index]); resetReveal(); }}

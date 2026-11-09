@@ -25,6 +25,7 @@ export interface OptionWheelProps {
   soundUrl?: string;
   soundVolume?: number;
   className?: string;
+  ariaLabel?: string;
 }
 
 interface WheelConfig {
@@ -79,7 +80,8 @@ const OptionWheel = ({
   draggable = true,
   soundUrl = '',
   soundVolume = 0.5,
-  className = ''
+  className = '',
+  ariaLabel = 'Option wheel'
 }: OptionWheelProps) => {
   const rootRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -323,12 +325,23 @@ const OptionWheel = ({
     []
   );
 
+  const step = (delta: number) => applyTarget(Math.round(targetRef.current) + delta, true);
+  const stepBtn =
+    'absolute right-2 z-10 h-9 w-9 rounded-full border border-gold/30 bg-panel/80 text-cream hover:border-gold/60 focus-visible:outline-2 focus-visible:outline-gold';
+
   return (
+    <div className="relative h-full w-full overflow-hidden">
+    <button type="button" aria-label="Previous option" className={`${stepBtn} top-2`} onClick={() => step(-1)}>
+      <span aria-hidden="true">▲</span>
+    </button>
+    <button type="button" aria-label="Next option" className={`${stepBtn} bottom-2`} onClick={() => step(1)}>
+      <span aria-hidden="true">▼</span>
+    </button>
     <div
       ref={rootRef}
       role="listbox"
       tabIndex={0}
-      aria-label="Option wheel"
+      aria-label={ariaLabel}
       className={`relative h-full w-full select-none overflow-hidden outline-none [touch-action:none] ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}${className ? ` ${className}` : ''}`}
       style={
         {
@@ -360,6 +373,7 @@ const OptionWheel = ({
           {label}
         </div>
       ))}
+    </div>
     </div>
   );
 };
