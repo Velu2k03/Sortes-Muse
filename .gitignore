@@ -43,3 +43,4 @@ next-env.d.ts
 
 # local-only working notes (never commit)
 hidden_files/
+vitest-report.json

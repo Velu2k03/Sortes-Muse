@@ -83,5 +83,12 @@ jobs:
       # One case in db-query-timeout.test.ts (cancel_timeout, direct) fails
       # on a clean main and is skipped under CI=true inside the test file
       # itself; the rest of that file still runs here.
+      # Point 7: the guard above only proves the URLs are set. This step also
+      # asserts the exact skip count from vitest's JSON report, so an RLS or
+      # money suite that skips for any other reason (login failure, setup
+      # drift) fails the job. Expected: 1 = the quarantined cancel_timeout
+      # (direct) case. Change the number only with a reviewed reason.
       - name: Run tests
-        run: npm test
+        run: |
+          npx vitest run --reporter=default --reporter=json --outputFile=vitest-report.json
+          node scripts/assert-skip-count.mjs vitest-report.json 1

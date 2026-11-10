@@ -462,13 +462,21 @@ const POOLER_PLAIN_URL =
   process.env.SORTES_TEST_POOLER_PLAIN_URL ??
   "postgres://sortes_test:sortes_test_local@127.0.0.1:6434/sortes_pgtest_money";
 
+// E2: credentials and the direct target port come from MONEY_URL (the same
+// URL the rest of the suite uses). They used to be hardcoded to
+// sortes_test / sortes_test_local / 5432, which cannot authenticate against
+// any database whose role password differs (the CI service uses
+// ci_only_throwaway; a local role may use another).
+const MONEY = MONEY_URL ? new URL(MONEY_URL) : null;
+const MONEY_PORT = MONEY?.port ? Number(MONEY.port) : 5432;
+
 function plainClient(port: number): postgres.Sql {
   return postgres({
     host: "127.0.0.1",
     port,
     database: "sortes_pgtest_money",
-    username: "sortes_test",
-    password: "sortes_test_local",
+    username: MONEY ? decodeURIComponent(MONEY.username) : "sortes_test",
+    password: MONEY ? decodeURIComponent(MONEY.password) : "sortes_test_local",
     ssl: false,
     max: 1,
     prepare: false, // extended protocol, like the app factory
@@ -542,8 +550,18 @@ describeIfPg("cancel_timeout closes the connection on an unanswered cancel (post
     }
   }, 30_000);
 
-  // Fails on a clean main (postgres.js timing); skipped in CI so the
-  // required check stays green. Still runs locally. Re-enable once fixed.
+  // E2 root-cause finding (static analysis; could not be reproduced on the
+  // authoring machine, whose shared Postgres rejected the test role):
+  // the failure was test-environment, not a product bug. The case built its
+  // client with hardcoded sortes_test/sortes_test_local credentials and a
+  // hardcoded 5432 proxy target, so on any database whose role password
+  // differs (CI: ci_only_throwaway) it dies at login before cancel_timeout is
+  // exercised. Both now come from MONEY_URL. The postgres.js 4.1.0 cancel
+  // path itself (connection.js quiet/expect/unanswered) is covered by the
+  // passing plain-query tests above. Still skipped under CI until a run with
+  // Postgres confirms the fix; the CI guard asserts that exactly this one
+  // case is skipped. Remove the skipIf (and set the expected skips to 0 in
+  // lint-gate.yml) once it passes there.
   it.skipIf(!!process.env.CI)("a backend stuck mid-message inside a transaction is freed by cancel_timeout (direct)", async () => {
     // Direct connection for the pg_stat_activity snapshot. The
     // stuck session is identified by pid: snapshot the matching
@@ -560,7 +578,7 @@ describeIfPg("cancel_timeout closes the connection on an unanswered cancel (post
     // backend, which waits in ClientRead. Through PgBouncer the
     // partial message is buffered by the pooler instead, so the
     // backend-level state is only observable here.
-    const proxy = await startTruncatingProxy(5432, 0);
+    const proxy = await startTruncatingProxy(MONEY_PORT, 0);
     const sql = plainClient(proxy.port);
     try {
       const controller = new AbortController();
