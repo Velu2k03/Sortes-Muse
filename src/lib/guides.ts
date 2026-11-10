@@ -36,7 +36,7 @@ export const GUIDES: Guide[] = [
       {
         heading: "Reflection, not prediction",
         paragraphs: [
-          "Sortes treats tarot as a mirror for reflection. A reading offers language for what you already sense, a different angle on a decision, and questions worth sitting with. It does not guarantee what will happen, and it never replaces professional advice about health, money, or legal matters.",
+          "Sortes treats tarot as a tool for reflection. A reading offers language for what you already sense, a different angle on a decision, and questions worth sitting with. It does not guarantee what will happen, and it never replaces professional advice about health, money, or legal matters.",
           "If a reading feels wrong, that is also information. A useful response is to ask what part felt off, and what you would have wanted it to say instead. That answer often names the real question better than the first one did.",
         ],
       },

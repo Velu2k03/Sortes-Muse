@@ -114,17 +114,17 @@ export default function Home() {
 
       <StatsStrip />
 
-      {/* WHAT DO YOU SEEK */}
+      {/* WHAT'S ON YOUR MIND */}
       <section className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
         <h2 className="text-center font-display text-3xl text-goldbright sm:text-4xl">
-          What do you seek?
+          What&apos;s on your mind?
         </h2>
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {[
             { href: "/spreads/love-insight", label: "Love", text: "You, them, and the connection.", cost: "1 Oracle" },
             { href: "/spreads/career-path", label: "Career", text: "Current, obstacle, and next step.", cost: "1 Oracle" },
             { href: "/spreads/weekly-outlook", label: "The week ahead", text: "Focus, challenge, and opportunity.", cost: "1 Oracle" },
-            { href: "/spreads/quick-insight", label: "A general question", text: "One card, one clear mirror.", cost: "First free · then 1 Oracle" },
+            { href: "/spreads/quick-insight", label: "A general question", text: "One card for one question.", cost: "First free · then 1 Oracle" },
           ].map((s) => (
             <div
               key={s.href}
@@ -141,7 +141,7 @@ export default function Home() {
       </section>
 
       {/* AF-034: the duplicate "All spreads" grid lived here (the
-          full list is /spreads). Deleted; the "What do you seek?"
+          full list is /spreads). Deleted; the "What's on your mind?"
           cards above stay as the spread entry. */}
 
       {/* EXPLORE THE DECK */}
@@ -152,7 +152,7 @@ export default function Home() {
               Explore the deck
             </h2>
             <p className="mx-auto mt-4 max-w-xl text-cream/75">
-              Meet a few of the cards and explore the stories held in the deck.
+              Browse all 78 cards.
             </p>
           </div>
           {/* Phase 4C (4.6a): the orbit carousel is a static grid of
@@ -194,7 +194,7 @@ export default function Home() {
             What is tarot?
           </h2>
           <p className="mt-8 text-center text-base leading-relaxed text-cream/85">
-            78 cards. A mirror for the mind, not a verdict on your future.
+            78 cards. Tarot helps you think. It doesn&apos;t predict.
           </p>
         </motion.div>
 
@@ -236,7 +236,7 @@ export default function Home() {
       <section className="mx-auto max-w-4xl px-4 py-16 text-center sm:px-6">
         <motion.div key={revealKey} {...fadeUp}>
           <p className="text-xs uppercase tracking-[0.35em] text-gold">
-            A daily ritual
+            Daily card
           </p>
           <h2 className="mt-4 font-display text-4xl text-goldbright sm:text-5xl">
             One card, every morning

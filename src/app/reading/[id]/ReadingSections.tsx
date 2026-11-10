@@ -248,9 +248,6 @@ export function CardMeanings({ reading }: { reading: Reading }) {
             text={reading.interpretation}
             className="mt-3 whitespace-pre-line leading-relaxed text-cream/90"
           />
-          <p className="mt-4 text-xs italic text-mist">
-            Written for you in this moment.
-          </p>
         </section>
       )}
     </div>
@@ -286,12 +283,6 @@ export function NextStepPanel({ field }: { field: ReadingField }) {
           {field.saving ? "Saving…" : "Save step"}
         </button>
       </div>
-      {/* AF-049: a disabled Save says why, inline. */}
-      {!field.input.trim() && (
-        <p className="mt-2 text-xs text-mist">
-          Write your step first — the button works once there is text to save.
-        </p>
-      )}
       {field.saved && (
         <p className="mt-2 text-sm text-goldbright">Saved with this reading.</p>
       )}
@@ -512,7 +503,7 @@ export function FollowUpThread({
   return (
     <>
       <div className="rule-gold w-24" />
-      <p className="font-display text-2xl text-cream">Still turning it over?</p>
+      <p className="font-display text-2xl text-cream">Ask a follow-up</p>
       <p className="max-w-md text-sm text-cream/75">
         Each follow-up draws one fresh clarifier card from the
         cards not already in this spread, and the answer reads
@@ -651,7 +642,7 @@ export function NewReadingPrompt() {
   return (
     <>
       <div className="rule-gold w-24" />
-      <p className="font-display text-2xl text-cream">Still turning it over?</p>
+      <p className="font-display text-2xl text-cream">Ask a follow-up</p>
       <p className="max-w-md text-sm text-cream/75">
         Start a new clarifying reading on the same question. It draws
         fresh cards; your previous reading stays in your history.

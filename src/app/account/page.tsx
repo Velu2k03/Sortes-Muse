@@ -31,10 +31,6 @@ export default function Account() {
       <h1 className="mt-3 text-center font-display text-5xl text-goldbright">
         Your account
       </h1>
-      <p className="mx-auto mt-3 max-w-md text-center text-sm leading-relaxed text-cream/75">
-        Your Oracles, journal, and purchase history live here. Sign in
-        to sync them across devices.
-      </p>
       <AccountPage />
     </div>
   );

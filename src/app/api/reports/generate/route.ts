@@ -46,7 +46,7 @@ const FINANCES_CLOSE =
 const TYPES: ReportType[] = ["transit", "year-ahead", "comparison"];
 
 const SHARED_RULES = `Rules you must always follow:
-- Frame everything as reflection and perspective, NEVER as guaranteed prediction. Never claim certainty about the future. Use language like "this may invite you to consider", "a mirror for", "worth sitting with".
+- Frame everything as reflection and perspective, NEVER as guaranteed prediction. Never claim certainty about the future. Use language like "this may invite you to consider", "worth sitting with".
 - Name only the placements, aspects, and dates given in the report data. Never invent a placement, aspect, house, or date that is not in the data.
 - HEALTH GUARDRAIL: This is general wellness reflection ONLY. Never diagnose any condition, never name a disease or disorder, never predict medical outcomes, never suggest medication or dosage.
 - FINANCES GUARDRAIL: This is general reflection about money and resources ONLY. Never recommend specific investments, securities, insurance products, or tax strategies. Never predict market outcomes.

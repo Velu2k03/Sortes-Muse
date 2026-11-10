@@ -21,7 +21,7 @@ import { ClickSpark, StarBorder } from "@/components/ReactBits";
 // result appears with a plain sign line and a rise animation body.
 // Phase B adds a short unveiling beat (1200ms, wait-and-reward pacing
 // Velu allowed 2026-11-04). The beat is presentation only: the text is
-// local and already computed, and the status line says unveiling, never
+// local and already computed, and the status line says Loading, never
 // calculating. Under reduced motion the reveal is instant. Changing the
 // sign, date, or view resets to unrevealed.
 // Phase 6 (D2): the date used to be computed at module level
@@ -204,7 +204,7 @@ export default function HoroscopeClient({
       </div>
       {revealing ? (
         <p className="mt-6 animate-pulse text-center text-sm text-gold">
-          Unveiling your reflection…
+          Loading…
         </p>
       ) : mounted && !revealed ? (
         <p className="mt-6 text-center text-sm text-cream/75">

@@ -135,7 +135,7 @@ export default function CardModal({ cardId, onClose }: Props) {
                 </p>
               </section>
               <p className="text-xs italic text-mist">
-                Readings are mirrors for reflection, not predictions of a fixed
+                Readings are for reflection, not predictions of a fixed
                 future.
               </p>
             </div>

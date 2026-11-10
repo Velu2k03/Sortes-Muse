@@ -5,9 +5,9 @@ import ReportsClient from "./ReportsClient";
 export const metadata: Metadata = {
   title: "Reports",
   description:
-    "Keep-forever reports: a transit report for a chosen date, a year-ahead reading, or a relationship comparison. 1 Oracle per report, reports never expire.",
+    "Reports: a transit report for a chosen date, a year-ahead reading, or a relationship comparison. 1 Oracle per report, reports never expire.",
   alternates: { canonical: "/reports" },
-  ...pageSocial({ title: "Reports", description: "Keep-forever reports: a transit report for a chosen date, a year-ahead reading, or a relationship comparison. 1 Oracle per report, reports never expire.", path: "/reports" }),
+  ...pageSocial({ title: "Reports", description: "Reports: a transit report for a chosen date, a year-ahead reading, or a relationship comparison. 1 Oracle per report, reports never expire.", path: "/reports" }),
 };
 
 export default function Reports() {

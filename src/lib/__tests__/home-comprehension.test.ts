@@ -27,7 +27,8 @@ describe("home page: first-visit comprehension", () => {
   it("states what Sortes does", () => {
     // Round 3 hero trim: the H1 now states what Sortes does.
     expect(src).toContain("Sortes: free tarot reading with AI");
-    expect(src).toContain("78 cards. A mirror for the mind, not a verdict on your future.");
+    // Batch 6a: the "mirror" line is replaced by the plain version.
+    expect(src).toContain("78 cards. Tarot helps you think. It doesn&apos;t predict.");
   });
 
   it("states what is free", () => {

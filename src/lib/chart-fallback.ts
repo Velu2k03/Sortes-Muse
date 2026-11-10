@@ -203,7 +203,7 @@ export function buildStaticChartInterpretation(
     `This is a standard reading of your ${systemName} chart for ${focus}, built from the placements above. The personal AI interpretation could not be generated just now; nothing was spent, and your free interpretation for this system is still unused if you had one. You can retry for the personal version above.`,
     ...body,
     focusPrompt(focus),
-    "Readings are for reflection and perspective, not guaranteed predictions. Take what resonates, leave the rest.",
+    "Readings are for reflection and perspective, not guaranteed predictions.",
   ];
   if (focus === "health") parts.push(HEALTH_CLOSE);
   return parts.join("\n\n");

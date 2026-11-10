@@ -9,7 +9,7 @@ export const SPREADS: Spread[] = [
     name: "Quick Insight",
     cards: 1,
     description:
-      "One card, one clear mirror. Your first Quick Insight reading is free, no payment card required. Draw a single card for a focused answer to your question.",
+      "One card for one question. Your first Quick Insight reading is free, no payment card required. Draw a single card for a focused answer to your question.",
     positions: [
       {
         key: "insight",

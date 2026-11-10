@@ -11,7 +11,7 @@ export const PROCESSING_LINES = [
   "Casting the lots",
   "Drawing your cards",
   "Reading your story",
-  "Weaving the cards together",
+  "Putting it together",
 ];
 
 export default function ReadingWait({
@@ -113,7 +113,7 @@ export default function ReadingWait({
           most ~170 s + overhead. */}
       {!complete && (
         <p className="mt-4 max-w-sm text-sm text-mist">
-          Breathe slowly. Your cards are being drawn and your story woven into their meanings.
+          Writing your reading.
           This can take up to about 3 minutes.
         </p>
       )}

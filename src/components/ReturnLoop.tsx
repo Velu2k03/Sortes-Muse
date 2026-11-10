@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { getCard } from "@/lib/cards";
-import { getDailyCard, getDailyStreak, getHistory } from "@/lib/storage";
+import { getDailyCard, getDailyStreak, getHistory, freeReadingUsed } from "@/lib/storage";
+import { useAuth, deviceHeldSession } from "@/components/AuthProvider";
+import { isFreeAvailableFor } from "@/lib/free-reading";
 
 // Deep UX Batch B, home return loop: a daily quote, today's daily
 // card status, and the latest journal reading, on home itself, so a
@@ -18,7 +20,6 @@ const QUOTES = [
   "A pause is also a choice. Let the day catch up with you.",
   "Ask what this moment is asking of you, not what it owes you.",
   "Write one line about today. Tomorrow will thank you for it.",
-  "The card is a mirror, not a map. Look, then decide for yourself.",
   "End the day by naming one thing you are glad you noticed.",
 ];
 
@@ -28,6 +29,31 @@ export default function ReturnLoop() {
   const [dailyReversed, setDailyReversed] = useState(false);
   const [streak, setStreak] = useState(0);
   const [latest, setLatest] = useState<{ id: string; question?: string; spreadName: string; createdAt: string } | null>(null);
+  // Batch 6a (Batch 1 drift): the "no readings" branch used to
+  // promise a free reading to everyone, but the server charges a
+  // signed-in user who already used it. Same pattern as
+  // SpreadsClient: signed-in users are decided by the server
+  // record, guests by the device flag, and the label fails closed
+  // while auth is loading.
+  const { user, freeReadingAvailable, authFailed, loading: authLoading } = useAuth();
+  const [usedFree, setUsedFree] = useState(false);
+  const [hadSession, setHadSession] = useState(false);
+  useEffect(() => {
+    queueMicrotask(() => {
+      setUsedFree(freeReadingUsed());
+      setHadSession(deviceHeldSession());
+    });
+  }, []);
+  const freeAvailable =
+    !authLoading &&
+    isFreeAvailableFor({
+      slug: "quick-insight",
+      signedIn: !!user,
+      serverFree: freeReadingAvailable,
+      deviceFree: !usedFree,
+      hadSession,
+      authFailed,
+    });
 
   useEffect(() => {
     // Phase 4C lint: the mount restore sets state a microtask past
@@ -110,9 +136,13 @@ export default function ReturnLoop() {
               </>
             ) : (
               <>
-                <p className="mt-2 text-cream/90">No readings saved yet. Your first Quick Insight is free.</p>
+                <p className="mt-2 text-cream/90">
+                  {freeAvailable
+                    ? "No readings saved yet. Your first Quick Insight is free."
+                    : "No readings saved yet."}
+                </p>
                 <Link href="/spreads/quick-insight" className="mt-3 inline-block font-semibold text-goldbright underline underline-offset-4">
-                  Start my free reading
+                  {freeAvailable ? "Start my free reading" : "Start a reading"}
                 </Link>
               </>
             )}

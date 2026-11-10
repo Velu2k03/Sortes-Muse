@@ -12,23 +12,30 @@
 export function suggestQuestionRewrite(question: string): string | null {
   const q = question.trim();
   if (!q) return null;
-  const lower = q.toLowerCase();
+  // Batch 6a: the templates embed the question in quotes and end the
+  // frame with a question mark, so a question that already ends in
+  // one produced `"Will I get a job?"?`. Strip trailing sentence
+  // punctuation first, so the output ends with a single `?` outside
+  // the quotes.
+  const bare = q.replace(/[?!.\s…？]+$/, "");
+  if (!bare) return null;
+  const lower = bare.toLowerCase();
   const first = lower.split(/\s+/)[0] ?? "";
   // Already open-ended: what, how, why (including contractions).
   if (/^(what|how|why|what's|how's|why's)\b/.test(lower)) return null;
   if (first === "should") {
-    return `What do I need to weigh up before deciding: "${q}"?`;
+    return `What do I need to weigh up before deciding: "${bare}"?`;
   }
   if (first === "will" || first === "would") {
-    return `What is in my control, and what is not, when it comes to: "${q}"?`;
+    return `What is in my control, and what is not, when it comes to: "${bare}"?`;
   }
   // Third-party feeling questions: does/do/did + he/she/they.
   if (/^(does|do|did)\s+(he|she|they|his|her|their)\b/.test(lower)) {
-    return `What can I observe, and what could I ask, about: "${q}"?`;
+    return `What can I observe, and what could I ask, about: "${bare}"?`;
   }
   // Any other yes/no opener.
   if (/^(is|are|was|were|am|do|does|did|can|could|has|have|had)\b/.test(lower)) {
-    return `What should I consider about: "${q}"?`;
+    return `What should I consider about: "${bare}"?`;
   }
   return null;
 }

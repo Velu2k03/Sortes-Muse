@@ -116,7 +116,7 @@ export default function BirthCardPage() {
               Browse the deck
             </Link>
             <Link href="/spreads/quick-insight" className="btn-secondary">
-              Start a free reading
+              Start a reading
             </Link>
             <Link href="/spreads" className="btn-secondary">
               Get a reading

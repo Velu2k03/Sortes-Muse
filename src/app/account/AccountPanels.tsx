@@ -104,7 +104,7 @@ export function PurchaseHistory({ transactions }: { transactions: ServerTx[] | n
               className="flex items-center justify-between gap-3 rounded-xl border border-gold/15 bg-panel/40 px-4 py-3 text-sm"
             >
               <span className="text-cream">
-                {t.readings} readings · {t.pack_type}
+                {t.readings} Oracles · {t.pack_type === "admin-test-grant" ? "Test grant" : t.pack_type}
               </span>
               <span className="shrink-0 text-mist">
                 ${Number(t.amount).toFixed(2)} ·{" "}
