@@ -12,6 +12,7 @@ import {
   getCredits,
   setCredits as setLocalCredits,
   getHistory,
+  clearLocalAccountData,
   saveReading,
   updateReading as updateLocalReading,
   deleteReading as deleteLocalReading,
@@ -84,7 +85,7 @@ async function fetchWithTimeout(
 
 /** Parse a JSON response without throwing on empty / non-JSON bodies. */
 interface SafeJsonBody {
-  user?: { id: string; email: string; credits?: number };
+  user?: { id: string; email: string; credits?: number } | null;
   credits?: number;
 }
 async function safeJson(res: Response): Promise<SafeJsonBody> {
@@ -164,6 +165,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setCredits(data.user.credits ?? null);
         }
       } else {
+        // MIGRATED_KEY marks a device that held a signed-in session, so
+        // an explicit {user:null} 200 is an expired session: drop the
+        // previous user's local data. A network failure (catch below),
+        // a 429/5xx, or an unparseable body keeps it.
+        if (res.ok && data.user === null && localStorage.getItem(MIGRATED_KEY)) {
+          clearLocalAccountData();
+          localStorage.removeItem(MIGRATED_KEY);
+        }
         setUser(null);
         setCredits(getCredits());
       }
@@ -205,6 +214,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // silently re-establish a Sortes session on the next visit.
     await getSupabaseBrowser()?.auth.signOut().catch(() => {});
     localStorage.removeItem(MIGRATED_KEY);
+    clearLocalAccountData();
     setUser(null);
     setCredits(getCredits());
   }, []);

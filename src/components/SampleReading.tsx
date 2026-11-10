@@ -114,7 +114,7 @@ export default function SampleReading({ collapsed = false }: { collapsed?: boole
         </p>
         <p className="mt-1 text-xs text-mist">
           Real readings are written by AI from your cards, question, and
-          story — 300-600 words, on screen in under a minute.
+          story — 300-600 words, on screen in up to about 2 minutes.
         </p>
       </div>
     </motion.div>

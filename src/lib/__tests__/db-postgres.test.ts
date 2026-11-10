@@ -172,6 +172,43 @@ describe.skipIf(SKIP)("money paths on real Postgres (staging only)", () => {
     expect(await db.revokeOrder("order-never-existed")).toEqual({ revoked: false, readings: 0 });
   });
 
+  it("audit item 10: partial refund revokes only the prorated Oracles, cumulatively and idempotently", async () => {
+    const user = await db.createUser("refund-prorate@example.com");
+    await db.fulfillOrder({
+      userId: user.id,
+      email: user.email,
+      packType: "pack12 (lemonsqueezy:order-1010)",
+      amount: 7.99,
+      readings: 12,
+      orderId: "order-1010",
+    });
+    // $4.00 of $7.99 refunded: floor(12 * 400 / 799) = 6 Oracles.
+    const part = await db.revokeOrder("order-1010", "", 400);
+    expect(part).toEqual({ revoked: true, readings: 6 });
+    expect((await db.getUserById(user.id))?.credits).toBe(6);
+    // Redelivery of the same refund revokes nothing more.
+    expect((await db.revokeOrder("order-1010", "", 400)).revoked).toBe(false);
+    expect((await db.getUserById(user.id))?.credits).toBe(6);
+    // Cumulative refund now the full $7.99: only the remaining 6 go.
+    expect(await db.revokeOrder("order-1010", "", 799)).toEqual({ revoked: true, readings: 6 });
+    expect((await db.getUserById(user.id))?.credits).toBe(0);
+    expect((await db.revokeOrder("order-1010", "", 799)).revoked).toBe(false);
+  });
+
+  it("audit item 10: full or oversized refund revokes the whole pack once", async () => {
+    const user = await db.createUser("refund-full@example.com");
+    await db.fulfillOrder({
+      userId: user.id,
+      email: user.email,
+      packType: "pack5 (lemonsqueezy:order-1011)",
+      amount: 3.99,
+      readings: 5,
+      orderId: "order-1011",
+    });
+    expect(await db.revokeOrder("order-1011", "", 99999)).toEqual({ revoked: true, readings: 5 });
+    expect((await db.getUserById(user.id))?.credits).toBe(0);
+  });
+
   it("Phase G follow-up: refund before fulfilment records a marker; a later fulfilment grants nothing", async () => {
     // The refund webhook can arrive before the order_created
     // webhook (out-of-order delivery). The refund must leave a

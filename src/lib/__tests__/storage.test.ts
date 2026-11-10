@@ -10,6 +10,8 @@ import {
   getDailyCard,
   getDailyPracticeDays,
   getDailyStreak,
+  markFreeReadingUsed,
+  freeReadingUsed,
   clearLocalAccountData,
 } from "@/lib/storage";
 import type { SavedReport } from "@/lib/reports";
@@ -107,7 +109,7 @@ describe("clearLocalAccountData", () => {
     delete (globalThis as unknown as Record<string, unknown>).window;
   });
 
-  it("clears journal, reports, and Oracle balance but keeps the daily card", () => {
+  it("clears journal, reports, Oracle balance, daily card, streak, and birth data (sign-out leak, audit item 5)", () => {
     saveReading({ id: "h1", spreadName: "Quick Insight" } as unknown as Reading);
     saveReport(report("r1"));
     setCredits(5);
@@ -120,6 +122,13 @@ describe("clearLocalAccountData", () => {
     expect(getHistory()).toHaveLength(0);
     expect(getReports()).toHaveLength(0);
     expect(getCredits()).toBe(0);
-    expect(getDailyCard()).not.toBeNull();
+    expect(getDailyCard()).toBeNull();
+    expect(getDailyStreak()).toBe(0);
+  });
+
+  it("keeps device-level flags (free reading used)", () => {
+    markFreeReadingUsed();
+    clearLocalAccountData();
+    expect(freeReadingUsed()).toBe(true);
   });
 });

@@ -110,7 +110,7 @@ export default function ReadingWait({
       {!complete && (
         <p className="mt-4 max-w-sm text-sm text-mist">
           Breathe slowly. Your cards are being drawn and your story woven into their meanings.
-          This usually takes a few seconds.
+          This can take up to about 2 minutes.
         </p>
       )}
     </div>

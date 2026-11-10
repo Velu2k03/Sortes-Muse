@@ -245,17 +245,20 @@ export function deleteReport(id: string): boolean {
   return true;
 }
 
-// Phase 3 (3.6): clear the device copies of account data after an
-// account deletion (the server data is deleted by the DELETE route).
-// Daily card, streak, AI cache, and install dismissal are device
-// ritual state, not account data, so they stay.
+// Clear the device copies of per-user data: after an account deletion
+// (Phase 3, 3.6), and on sign-out or session expiry (audit item 5), so a
+// signed-out load of / never shows the previous user's reading, daily
+// card, streak, or saved birth details. Only device-level flags stay
+// (free-reading-used, install banner dismissal, theme, chart language).
 export function clearLocalAccountData(): void {
   if (typeof window === "undefined") return;
   try {
-    localStorage.removeItem(K.history);
-    localStorage.removeItem(K.reports);
-    localStorage.removeItem(K.credits);
-    localStorage.removeItem(K.purchases);
+    for (const key of [
+      K.history, K.reports, K.credits, K.purchases, K.dailyCard, K.dailyStreak,
+      K.aiCache, K.birthProfiles, "sortes-birth-details",
+    ]) localStorage.removeItem(key);
+    // Checkout email prefill (per-tab, but still the previous user's).
+    window.sessionStorage?.removeItem("sortes-purchase-email");
   } catch {
     // Storage unavailable; there is nothing to clear.
   }

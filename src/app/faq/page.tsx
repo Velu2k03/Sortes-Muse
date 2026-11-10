@@ -70,7 +70,7 @@ export const FAQS = [
   },
   {
     q: "What does a reading include?",
-    a: "Each reading is a written interpretation of your cards (or chart) around your question, about 300 to 600 words, shown on screen in under a minute and saved to your journal. It includes what stands out, the tension and opportunity, what you may be overlooking, one practical step, and one reflection question.",
+    a: "Each reading is a written interpretation of your cards (or chart) around your question, about 300 to 600 words, shown on screen in up to about 2 minutes and saved to your journal. It includes what stands out, the tension and opportunity, what you may be overlooking, one practical step, and one reflection question.",
   },
   {
     q: "How do I delete my data?",
