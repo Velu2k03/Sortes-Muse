@@ -3,9 +3,11 @@
  * `ssl` option. Mirrors sslFromConnectionString in src/lib/db/client.ts
  * (the scripts are plain .mjs and cannot import the TypeScript mapper).
  *
- * An explicit sslmode in the URL always wins. Otherwise fail closed
- * ("require"), except for localhost / 127.0.0.1, where undefined keeps
- * postgres.js's own default so local no-SSL test databases still work.
+ * Precedence: an explicit sslmode in the URL, then an operator-set
+ * PGSSLMODE (same rule as libpqEnv; postgres.js honoured it before this
+ * helper existed), then fail closed ("require"), except for localhost /
+ * 127.0.0.1, where undefined keeps postgres.js's own default so local
+ * no-SSL test databases still work.
  */
 const MODES = {
   disable: false,
@@ -17,10 +19,16 @@ const MODES = {
   "verify-ca": "verify-full",
 };
 
-export function sslForScriptUrl(connectionString) {
+/**
+ * @param {string} connectionString
+ * @param {Record<string, string | undefined>} [env]
+ */
+export function sslForScriptUrl(connectionString, env = process.env) {
   const raw = /[?&]sslmode=([^&#]*)/i.exec(connectionString)?.[1];
   const mode = raw?.toLowerCase();
   if (mode !== undefined && Object.hasOwn(MODES, mode)) return MODES[mode];
+  const envMode = env.PGSSLMODE?.toLowerCase();
+  if (envMode !== undefined && Object.hasOwn(MODES, envMode)) return MODES[envMode];
   try {
     const { hostname } = new URL(connectionString);
     if (hostname === "localhost" || hostname === "127.0.0.1") return undefined;
