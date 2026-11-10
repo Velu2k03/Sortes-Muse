@@ -115,6 +115,19 @@ describe("Batch 6c wiring (layout)", () => {
     expect(spreads).toContain("spread-${s.slug}");
   });
 
+  it("the Challenge badge sits at the bar's right end, above the cards it overlaps", () => {
+    // Preview 390px check (PR #72): the centred Challenge badge
+    // merged with badge 1 into one blob (their centres are only
+    // ~7px apart at 112px), and the bar's image painted over
+    // badge 1's lower half. The bar's right end is the farthest
+    // point on the bar from badge 1, and z-10 keeps the badge
+    // above any card that overlaps it.
+    const diagram = src("src/components/SpreadDiagram.tsx");
+    expect(diagram).toContain("right-1 top-1/2 -translate-y-1/2");
+    expect(diagram).not.toContain("left-1/2 top-1/2");
+    expect(diagram).toContain("z-10");
+  });
+
   it("/oracles collapses the sample reading behind one tap", () => {
     expect(src("src/app/oracles/CreditsClient.tsx")).toContain(
       "<SampleReading collapsed",
