@@ -31,6 +31,7 @@
  * re-deliver the webhook from the dashboard).
  */
 import postgres from "postgres";
+import { sslForScriptUrl } from "./db-ssl.mjs";
 
 const daysArg = process.argv.find((a) => a.startsWith("--days="));
 const daysEq = daysArg ? Number(daysArg.slice(7)) : undefined;
@@ -70,7 +71,7 @@ if (looksProduction && process.env.SORTES_RECONCILE_PRODUCTION !== "1") {
   process.exit(2);
 }
 
-const sql = postgres(dbUrl, { prepare: false, max: 1 });
+const sql = postgres(dbUrl, { ssl: sslForScriptUrl(dbUrl), prepare: false, max: 1 });
 
 async function listPaidOrders() {
   const orders = [];

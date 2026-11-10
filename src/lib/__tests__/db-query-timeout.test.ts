@@ -470,10 +470,15 @@ const POOLER_PLAIN_URL =
 const MONEY = MONEY_URL ? new URL(MONEY_URL) : null;
 const MONEY_PORT = MONEY?.port ? Number(MONEY.port) : 5432;
 
+// Distinguishes this file's plainClient backends in pg_stat_activity from the
+// other parallel test files that share sortes_pgtest_money.
+const CANCEL_TEST_APP_NAME = "sortes-cancel-timeout-test";
+
 function plainClient(port: number): postgres.Sql {
   return postgres({
     host: "127.0.0.1",
     port,
+    connection: { application_name: CANCEL_TEST_APP_NAME },
     database: "sortes_pgtest_money",
     username: MONEY ? decodeURIComponent(MONEY.username) : "sortes_test",
     password: MONEY ? decodeURIComponent(MONEY.password) : "sortes_test_local",
@@ -571,7 +576,10 @@ describeIfPg("cancel_timeout closes the connection on an unanswered cancel (post
       WHERE datname = 'sortes_pgtest_money'
         AND wait_event = 'ClientRead'
         AND state = 'idle in transaction'
-        AND xact_start IS NOT NULL`)) as Array<{ pid: number }>;
+        AND xact_start IS NOT NULL
+        AND application_name = ${CANCEL_TEST_APP_NAME}`)) as Array<{
+      pid: number;
+    }>;
     const beforePids = new Set(before.map((r) => r.pid));
     // Direct target (no pooler): the truncated Parse reaches a real
     // backend, which waits in ClientRead. Through PgBouncer the
@@ -604,21 +612,33 @@ describeIfPg("cancel_timeout closes the connection on an unanswered cancel (post
       // its transaction. (Production showed state 'active' for the
       // same wait; here the backend reports 'idle in transaction'
       // because no statement is executing — the wait is identical.)
-      await new Promise((r) => setTimeout(r, 2_000));
-      const during = (await withDbTimeout(direct`
-        SELECT pid, state, wait_event, xact_start IS NOT NULL AS in_xact
-        FROM pg_stat_activity
-        WHERE datname = 'sortes_pgtest_money'
-          AND wait_event = 'ClientRead'
-          AND state = 'idle in transaction'
-          AND xact_start IS NOT NULL`)) as Array<{
+      // Poll (not one fixed snapshot): under full-suite load the backend can
+      // take longer than 2 s to reach the state. Stop at 4 s, well before the
+      // backend is freed (~5.5 s: abort at 500 ms + cancel_timeout 5 s).
+      type Row = {
         pid: number;
         state: string;
         wait_event: string;
         in_xact: boolean;
-      }>;
-      const stuck = during.filter((r) => !beforePids.has(r.pid));
-      expect(stuck).toHaveLength(1);
+      };
+      let stuck: Row[] = [];
+      while (true) {
+        await new Promise((r) => setTimeout(r, 250));
+        const during = (await withDbTimeout(direct`
+          SELECT pid, state, wait_event, xact_start IS NOT NULL AS in_xact
+          FROM pg_stat_activity
+          WHERE datname = 'sortes_pgtest_money'
+            AND wait_event = 'ClientRead'
+            AND state = 'idle in transaction'
+            AND xact_start IS NOT NULL
+            AND application_name = ${CANCEL_TEST_APP_NAME}`)) as Row[];
+        stuck = during.filter((r) => !beforePids.has(r.pid));
+        if (stuck.length >= 1 || Date.now() - t0 >= 4_000) break;
+      }
+      expect(
+        stuck,
+        `expected exactly 1 stuck backend named ${CANCEL_TEST_APP_NAME}, saw ${stuck.length}`
+      ).toHaveLength(1);
       expect(stuck[0].in_xact).toBe(true);
       const res = await attempt;
       expect(proxy.truncated()).toBe(true);

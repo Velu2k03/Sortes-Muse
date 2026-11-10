@@ -20,6 +20,7 @@ import { readdirSync, readFileSync } from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import postgres from "postgres";
+import { sslForScriptUrl } from "./db-ssl.mjs";
 
 const connectionString = process.env.POSTGRES_URL || process.env.DATABASE_URL || "";
 if (!connectionString) {
@@ -41,9 +42,7 @@ const files = readdirSync(dir)
   .sort();
 
 const sql = postgres(connectionString, {
-  ssl: connectionString.includes("localhost") || connectionString.includes("127.0.0.1")
-    ? undefined
-    : "require",
+  ssl: sslForScriptUrl(connectionString),
   prepare: false,
   max: 1,
   connect_timeout: 10,
