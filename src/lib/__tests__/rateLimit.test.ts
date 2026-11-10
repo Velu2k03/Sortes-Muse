@@ -9,6 +9,7 @@ import {
   createUpstashStore,
   durationString,
   emailLimitKey,
+  ipLimitKey,
   rateLimitPrefix,
   resetFallbackLog,
   RATE_LIMITS,
@@ -249,6 +250,16 @@ describe("durationString / prefix / emailLimitKey", () => {
   });
 });
 
+describe("Point 4: ipLimitKey", () => {
+  it("hashes the IP (SHA-256 hex), never contains it, and is stable per IP", () => {
+    const k = ipLimitKey("guest-free", "203.0.113.9");
+    expect(k).toMatch(/^guest-free:[0-9a-f]{64}$/);
+    expect(k).not.toContain("203.0.113.9");
+    expect(ipLimitKey("guest-free", "203.0.113.9")).toBe(k);
+    expect(ipLimitKey("guest-free", "203.0.113.10")).not.toBe(k);
+  });
+});
+
 describe("store selection and fail-open (C3/C4)", () => {
   const URL_KEY = "UPSTASH_REDIS_REST_KV_REST_API_URL";
   const TOKEN_KEY = "UPSTASH_REDIS_REST_KV_REST_API_TOKEN";
@@ -315,7 +326,8 @@ describe("store selection and fail-open (C3/C4)", () => {
     expect(errSpy.mock.calls[0][0]).toContain("[rateLimit] FALLBACK ACTIVE");
     expect(await failing.mod.isRateLimited("fresh", r)).toBe(false);
     expect(failing.seenRedis).toEqual([{ url: "https://example.invalid", token: "tok" }]);
-    expect(failing.seenConfig[0]).toMatchObject({ prefix: "rl:" + (process.env.VERCEL_ENV ?? "development"), timeout: 500, enableTelemetry: false, ephemeralCache: false });
+    expect(failing.seenConfig[0]).toMatchObject({ prefix: "rl:" + (process.env.VERCEL_ENV ?? "development"), timeout: 500, enableTelemetry: false });
+    expect(failing.seenConfig[0]).not.toHaveProperty("ephemeralCache");
     errSpy.mockRestore();
   });
 
@@ -353,7 +365,6 @@ describe("store selection and fail-open (C3/C4)", () => {
       prefix: rateLimitPrefix(),
       timeout: 500,
       enableTelemetry: false,
-      ephemeralCache: false,
     });
     expect(typeof rl.limit).toBe("function");
     expect(typeof rl.getRemaining).toBe("function");

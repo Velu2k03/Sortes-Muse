@@ -11,7 +11,7 @@ import { generateChat } from "@/lib/ai";
 import { preCheckOracleBalance } from "@/lib/credit-precheck";
 import { validateReadingText } from "@/lib/output-validation";
 import { logGuestGeneration } from "@/lib/guestLogging";
-import { checkRateLimit, clientIp, rateLimitExceeded, RATE_LIMITS } from "@/lib/rateLimit";
+import { checkRateLimit, clientIp, ipLimitKey, isRateLimited, rateLimitExceeded, recordRateLimit, RATE_LIMITS } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -155,7 +155,7 @@ Write the personalized reading now.`;
 
 export async function POST(req: NextRequest) {
   // Phase 6: shared limiter (was a per-route map: 20/hr/IP).
-  if (!(await checkRateLimit(`generate:${clientIp(req)}`, RATE_LIMITS.aiGenerateIp)).allowed) {
+  if (!(await checkRateLimit(ipLimitKey("generate", clientIp(req)), RATE_LIMITS.aiGenerateIp)).allowed) {
     return rateLimitExceeded();
   }
 
@@ -245,13 +245,13 @@ export async function POST(req: NextRequest) {
       { status: 401 }
     );
   }
-  // Batch D (A1): the cookie above is client-held, so a caller that never
-  // sends it looks like a first-time guest every time. Cap guest free
-  // readings per IP per day on the shared limiter store as well.
-  if (
-    guestFree &&
-    !(await checkRateLimit(`guest-free:${clientIp(req)}`, RATE_LIMITS.guestFreeIp)).allowed
-  ) {
+  // Batch D (A1) / Point 4: the cookie above is client-held, so a caller that
+  // never sends it looks like a first-time guest every time. Cap guest free
+  // readings per IP per day. CHECK here, RECORD only after a successful
+  // generation (below), so failed generations never use up a slot. The
+  // small race (a few extra requests slip past the cap) is accepted.
+  const guestIpKey = ipLimitKey("guest-free", clientIp(req));
+  if (guestFree && (await isRateLimited(guestIpKey, RATE_LIMITS.guestFreeIp))) {
     return NextResponse.json(
       { error: "Your free Quick Insight is used. Sign in to continue." },
       { status: 401 }
@@ -446,6 +446,7 @@ export async function POST(req: NextRequest) {
   // funnel); the successful generation is logged so abuse is
   // visible per route in the log drain.
   logGuestGeneration("reading/generate");
+  if (guestFree) await recordRateLimit(guestIpKey, RATE_LIMITS.guestFreeIp);
   const res = NextResponse.json({
     interpretation: finalText,
     model: generated.model,

@@ -15,7 +15,7 @@ vi.mock("@/lib/auth", () => ({
 import { POST, validateReading } from "@/app/api/reading/generate/route";
 import { getUserById, hasUsedFreeReading, saveReadingWithSpend } from "@/lib/db";
 import { getSession, guestFreeUsed, setGuestFreeUsed } from "@/lib/auth";
-import { RATE_LIMITS, resetRateLimits } from "@/lib/rateLimit";
+import { RATE_LIMITS, resetRateLimits, ipLimitKey, isRateLimited, recordRateLimit } from "@/lib/rateLimit";
 
 const mockedGetUserById = vi.mocked(getUserById);
 const mockedSave = vi.mocked(saveReadingWithSpend);
@@ -274,17 +274,17 @@ describe("POST /api/reading/generate — first free Quick Insight", () => {
     expect(globalThis.fetch).not.toHaveBeenCalled();
   });
 
-  // Batch D (A1): the cookie is client-held, so a caller that never sends
-  // it is a "first" guest every time. A per-IP daily cap on the shared
-  // limiter store brings that to RATE_LIMITS.guestFreeIp.max. Fails on
-  // pre-fix code: all 7 requests return 200.
-  it("caps cookie-less guest Quick Insights per IP: request after the cap is 401 with no model call", async () => {
+  // Point 4: the per-IP cap is checked before the model call and recorded
+  // only after a successful generation. The bucket is seeded directly
+  // because the hourly aiGenerateIp budget (20) would stop a 50-request loop.
+  it("caps cookie-less guest Quick Insights per IP at 50: the request after the cap is 401 with no model call", async () => {
+    expect(RATE_LIMITS.guestFreeIp.max).toBe(50);
     mockedGetSession.mockResolvedValue(null);
     const ip = "10.7.7.7";
-    for (let i = 0; i < RATE_LIMITS.guestFreeIp.max; i++) {
-      const ok = await POST(req(body("quick-insight"), ip));
-      expect(ok.status).toBe(200);
-    }
+    const key = ipLimitKey("guest-free", ip);
+    for (let i = 0; i < RATE_LIMITS.guestFreeIp.max - 1; i++) await recordRateLimit(key, RATE_LIMITS.guestFreeIp);
+    // 49 used: the 50th still succeeds (a cap of 5 would already refuse).
+    expect((await POST(req(body("quick-insight"), ip))).status).toBe(200);
     const fetchCalls = vi.mocked(globalThis.fetch).mock.calls.length;
     const denied = await POST(req(body("quick-insight"), ip));
     expect(denied.status).toBe(401);
@@ -295,6 +295,25 @@ describe("POST /api/reading/generate — first free Quick Insight", () => {
     mockedGetSession.mockResolvedValue({ userId: "u1", email: "a@b.co" });
     mockedHasUsedFree.mockResolvedValue(true);
     expect((await POST(req(body("quick-insight"), ip))).status).toBe(200);
+  });
+
+  it("a failed generation does not consume a guest IP slot; a successful one consumes exactly one", async () => {
+    mockedGetSession.mockResolvedValue(null);
+    const ip = "10.7.7.20";
+    const rule = RATE_LIMITS.guestFreeIp;
+    const key = ipLimitKey("guest-free", ip);
+    // Fill to max-1, then fail more times than the one slot left.
+    for (let i = 0; i < rule.max - 1; i++) await recordRateLimit(key, rule);
+    vi.mocked(globalThis.fetch).mockResolvedValue({ ok: false, status: 500, json: async () => ({}) } as Response);
+    for (let i = 0; i < 3; i++) expect((await POST(req(body("quick-insight"), ip))).status).toBe(503);
+    expect(await isRateLimited(key, rule)).toBe(false);
+    // Success now still works and takes the last slot.
+    vi.mocked(globalThis.fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({ choices: [{ message: { content: READING_TEXT } }], model: "nvidia/nemotron-3-ultra-550b-a55b:free" }),
+    } as Response);
+    expect((await POST(req(body("quick-insight"), ip))).status).toBe(200);
+    expect(await isRateLimited(key, rule)).toBe(true);
   });
 
   // Batch D (B1), regression guard (the code was already right): a

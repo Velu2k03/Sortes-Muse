@@ -47,13 +47,15 @@ export const RATE_LIMITS = {
   moneyIp: { windowMs: 60_000, max: 60 },
   /** AI tarot generation per IP (was the generate route's own map). */
   aiGenerateIp: { windowMs: 60 * 60_000, max: 20 },
-  /** Batch D (A1): guest free Quick Insights per IP per day. The product
-      rule is 1 free reading per device (signed cookie), but a client that
-      never sends the cookie looks like a first-time guest every request.
-      5/day/IP bounds a script to 5 free readings a day (the hourly
-      aiGenerateIp budget alone allowed about 480) while still letting a
-      household or NAT sharing one IP take a few. */
-  guestFreeIp: { windowMs: 24 * 60 * 60_000, max: 5 },
+  /** Batch D (A1) / Point 4: guest free Quick Insights per IP per day. The
+      product rule is 1 free reading per device (signed cookie), which stops
+      casual repeats; this cap only has to stop scripts that never send the
+      cookie. Carrier-grade NAT puts many real users behind one IP, so the
+      cap is high: 50/day still cuts a script from ~480/day (the hourly
+      aiGenerateIp budget alone) to 50, while a shared IP with dozens of
+      real users is unlikely to reach it. Checked before the model call and
+      recorded only after a successful generation, so failures cost nothing. */
+  guestFreeIp: { windowMs: 24 * 60 * 60_000, max: 50 },
   /** AI follow-ups per IP (was the follow-up route's own map). */
   aiFollowUpIp: { windowMs: 60 * 60_000, max: 10 },
   /** Chart calculation per IP — SHARED bucket: calculate, transits,
@@ -204,7 +206,11 @@ function realLimiter(redis: Redis, rule: RateLimitRule): LimiterLike {
     prefix: rateLimitPrefix(),
     timeout: 500,
     enableTelemetry: false,
-    ephemeralCache: false,
+    // Point 5: library default (in-memory block cache) stays ON. It only
+    // short-circuits limit() for keys already blocked, so a flood does not
+    // cost a Redis command per blocked request. getRemaining (used by
+    // isRateLimited) never reads it, so the login "check now, record only
+    // failures" pattern is unaffected. Limiters are cached at module level.
   });
 }
 
@@ -265,10 +271,18 @@ export function resetFallbackLog(): void {
  * store. Salted with AUTH_SECRET (read directly: importing auth.ts would
  * be circular). Hashed keys start new buckets; old plaintext ones expire.
  */
-export function emailLimitKey(prefix: string, email: string): string {
+function hashedKey(prefix: string, value: string): string {
   const salt = process.env.AUTH_SECRET ?? "dev-only-salt";
-  const hash = createHash("sha256").update(`${salt}:${email.trim().toLowerCase()}`).digest("hex");
-  return `${prefix}:${hash}`;
+  return `${prefix}:${createHash("sha256").update(`${salt}:${value}`).digest("hex")}`;
+}
+
+export function emailLimitKey(prefix: string, email: string): string {
+  return hashedKey(prefix, email.trim().toLowerCase());
+}
+
+/** Point 4: same hashing for client IPs, so no raw IP sits in Upstash. */
+export function ipLimitKey(prefix: string, ip: string): string {
+  return hashedKey(prefix, ip.trim());
 }
 
 /**
