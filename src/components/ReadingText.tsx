@@ -2,9 +2,10 @@ import type { ReactNode } from "react";
 import { parseReading, type ReadingBlock } from "@/lib/readingMarkdown";
 
 /**
- * Renders parsed reading blocks as h3 / p / ul / ol / hr. Shared by the
- * animated TypewriterText (limit = words revealed so far) and the static
- * ReadingText (no limit).
+ * Renders parsed reading blocks as h3 / p / ul / ol / hr. ReadingText
+ * renders them in full, at once, with no limit. Batch 2a removed the
+ * word-by-word reveal: saved readings replayed it on every open
+ * (~18s for 600 words), and it cut mid-sentence.
  */
 export function renderReadingBlocks(blocks: ReadingBlock[], limit = Infinity): ReactNode[] {
   let left = limit;

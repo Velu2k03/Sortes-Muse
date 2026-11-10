@@ -541,16 +541,17 @@ console.log("charts-check: all assertions passed");
   const css = fs.readFileSync("src/app/globals.css", "utf8");
   assert.ok(css.includes("--font-number"), "number font token must exist in globals.css");
   assert.ok(css.includes("tabular-nums"), "numbers must use tabular figures");
-  const typewriter = fs.readFileSync("src/components/TypewriterText.tsx", "utf8");
-  assert.ok(typewriter.includes("<button") && !typewriter.includes('role="button"'), "typewriter must be a real button, not a div with role button");
-  assert.ok(!typewriter.includes("useRef"), "typewriter must not access refs during render");
+  const readingText = fs.readFileSync("src/components/ReadingText.tsx", "utf8");
+  assert.ok(!readingText.includes("TypewriterText"), "reading text must not reference the removed typewriter");
+  assert.ok(readingText.includes("renderReadingBlocks"), "reading text must render parsed blocks");
+  assert.ok(!readingText.includes("<button"), "reading text must render statically, with no reveal button");
   const burst = fs.readFileSync("src/components/CardBurst.tsx", "utf8");
   assert.ok(!burst.includes("Math.random()"), "CardBurst must not call Math.random during render");
   const share = fs.readFileSync("src/components/ShareReading.tsx", "utf8");
   assert.ok(share.includes("next/image") || share.includes("from \"next/image\""), "share card must use next/image, not a raw img element");
   const auth = fs.readFileSync("src/lib/auth.ts", "utf8");
   assert.ok(auth.includes("authConfigured"), "auth must expose a fail-fast configured check");
-  console.log("audit5+aislop: custom wheel stagger, Chinese legend heading, interpretation language note, credits tint removed, static theme script, number font, typewriter button, deterministic burst, share next/image, auth fail-fast: all source assertions passed");
+  console.log("audit5+aislop: custom wheel stagger, Chinese legend heading, interpretation language note, credits tint removed, static theme script, number font, static reading text, deterministic burst, share next/image, auth fail-fast: all source assertions passed");
 }
 
 // Audit 6 batch (PR #8): wheel label separation, list intro reword,
