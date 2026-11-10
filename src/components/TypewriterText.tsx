@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { parseReading, type ReadingBlock } from "@/lib/readingMarkdown";
+import { parseReading } from "@/lib/readingMarkdown";
+import { renderReadingBlocks } from "@/components/ReadingText";
 
 interface Props {
   text: string;
@@ -10,36 +11,9 @@ interface Props {
   className?: string;
 }
 
-function renderBlocks(blocks: ReadingBlock[], limit: number) {
-  let left = limit;
-  const out = [];
-  for (let i = 0; i < blocks.length && left > 0; i++) {
-    const words = blocks[i].words.slice(0, left);
-    left -= words.length;
-    const inner = words.map((w, j) => (
-      <span key={j} className={w.bold ? "font-semibold text-cream" : undefined}>
-        {j > 0 ? " " : ""}
-        {w.text}
-      </span>
-    ));
-    out.push(
-      blocks[i].heading ? (
-        <h3 key={i} className="mt-5 font-display text-lg text-goldbright first:mt-0">
-          {inner}
-        </h3>
-      ) : (
-        <p key={i} className="mt-3 first:mt-0">
-          {inner}
-        </p>
-      ),
-    );
-  }
-  return out;
-}
-
 /**
  * Reveals long text word by word, like the reading is being written for you
- * in the moment. Click to skip to the full text. Respects reduced motion.
+ * in the moment. A real "Show full reading" button skips to the full text. Respects reduced motion.
  */
 export default function TypewriterText({ text, speed = 3, className }: Props) {
   const blocks = useMemo(() => parseReading(text), [text]);
@@ -72,32 +46,28 @@ export default function TypewriterText({ text, speed = 3, className }: Props) {
     return () => clearTimeout(t);
   }, [count, done, speed, total]);
 
+  // The revealed blocks are plain h3/p/ul/ol content, so assistive tech still
+  // sees headings and lists. Skipping is a separate native button.
   if (done) {
-    return <div className={className}>{renderBlocks(blocks, total)}</div>;
+    return <div className={className}>{renderReadingBlocks(blocks, total)}</div>;
   }
 
   return (
-    // div role=button: the reveal holds headings and paragraphs, which a
-    // <button> may not contain.
-    <div
-      role="button"
-      tabIndex={0}
-      className={`block w-full cursor-pointer text-left ${className ?? ""}`}
-      onClick={() => setSkipped(true)}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          setSkipped(true);
-        }
-      }}
-      aria-label="Tap to reveal the full reading"
-      title="Tap to reveal all"
-    >
-      {renderBlocks(blocks, count)}
+    <div className={className}>
+      {renderReadingBlocks(blocks, count)}
       <span
         aria-hidden="true"
         className="ml-0.5 inline-block h-[1.1em] w-[2px] translate-y-[3px] animate-pulse bg-gold"
       />
+      <div className="mt-4">
+        <button
+          type="button"
+          onClick={() => setSkipped(true)}
+          className="rounded-full border border-gold/40 px-4 py-2 text-xs font-semibold text-goldbright"
+        >
+          Show full reading
+        </button>
+      </div>
     </div>
   );
 }
