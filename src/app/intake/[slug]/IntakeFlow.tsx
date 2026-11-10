@@ -1,7 +1,6 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
-import ReadingWait from "@/components/ReadingWait";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { useIntakeFlow } from "./useIntakeFlow";
 import {
@@ -9,6 +8,7 @@ import {
   ConfirmStep,
   FormStep,
   ImpressionStep,
+  ProcessingStage,
   SignInGate,
   StepDots,
 } from "./IntakeSteps";
@@ -90,15 +90,7 @@ export default function IntakeFlow({ slug }: { slug: string }) {
         )}
 
         {step === "processing" && (
-          <div
-            key="processing"
-            className="flex min-h-[55vh] flex-col items-center justify-center text-center"
-          >
-            <ReadingWait
-              activeStep={processingLine}
-              complete={processingComplete}
-            />
-          </div>
+          <ProcessingStage key="processing" activeStep={processingLine} complete={processingComplete} />
         )}
       </AnimatePresence>
       )}

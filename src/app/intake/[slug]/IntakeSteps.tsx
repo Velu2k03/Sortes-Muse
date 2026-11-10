@@ -1,7 +1,9 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import Link from "next/link";
-import { motion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
+import ReadingWait from "@/components/ReadingWait";
 import TarotCard from "@/components/TarotCard";
 import SlideCommit from "@/components/SlideCommit";
 import SwipeToast from "@/components/SwipeToast";
@@ -10,6 +12,57 @@ import type { DrawnCard } from "@/lib/types";
 import type { IntakeState, Step } from "./useIntakeFlow";
 
 type IntakeCategory = NonNullable<ReturnType<typeof getCategory>>;
+
+// Batch 3a (Claude H1): on every step change the user stared at the
+// footer, because nothing moved the page or the focus. Each step
+// mounts fresh (AnimatePresence mode="wait"), so its mount effect is
+// the right moment: scroll its heading to the top (below the sticky
+// 64px header) and move focus to it. Reduced motion means an instant
+// jump instead of a smooth scroll. The heading is not in the tab
+// order (tabIndex -1) and shows no focus ring: the scroll itself
+// shows sighted users the move, and screen-reader users get the
+// heading announced.
+//
+// The scroll is conditional (see focusStepElement): on arrival the
+// page is already at the top and the heading is in view, so
+// scrolling would only hide the breadcrumbs; on a step change after
+// the user scrolled down, the heading is off-screen and the scroll
+// is the fix. Focus always moves, with preventScroll, so the
+// screen-reader cursor lands on the new step.
+export type FocusableStepElement = {
+  scrollIntoView: (options: ScrollIntoViewOptions) => void;
+  focus: (options: FocusOptions) => void;
+  getBoundingClientRect: () => { top: number; bottom: number };
+};
+
+export function focusStepElement(el: FocusableStepElement, reduce: boolean, viewportHeight: number) {
+  const rect = el.getBoundingClientRect();
+  // 128px matches the scroll-mt-32 on the targets, so the "Step N
+  // of 4" label above a heading also clears the sticky 64px header.
+  // The heading sits 20px low at mount (enter animation), so a
+  // measured top of 128 means a real top of at least 108.
+  const visible = rect.top >= 128 && rect.bottom <= viewportHeight;
+  if (!visible) {
+    el.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+  }
+  el.focus({ preventScroll: true });
+}
+
+export function useStepFocus<T extends HTMLElement>() {
+  const ref = useRef<T>(null);
+  // useReducedMotion returns boolean | null; null means unknown,
+  // which behaves like "not reduced". In this motion version the
+  // value is frozen at first render, so reading it through a ref
+  // keeps the mount effect from ever re-running.
+  const reduce = useReducedMotion() ?? false;
+  const reduceRef = useRef(reduce);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    focusStepElement(el, reduceRef.current, window.innerHeight);
+  }, []);
+  return ref;
+}
 
 /**
  * Batch D (A3): shown instead of every step when a guest cannot generate
@@ -50,12 +103,13 @@ export function SignInGate({ f }: { f: IntakeState }) {
 /** Step 1: choose the area of life. */
 export function CategoryStep({ f }: { f: IntakeState }) {
   const { setStep, setCategoryKey, setAnswers } = f;
+  const headingRef = useStepFocus<HTMLHeadingElement>();
   return (
     <>
       <p className="text-xs uppercase tracking-[0.35em] text-gold">
         Step 1 of 4
       </p>
-      <h1 className="mt-3 font-display text-4xl text-goldbright sm:text-5xl">
+      <h1 ref={headingRef} tabIndex={-1} className="mt-3 scroll-mt-32 font-display text-4xl text-goldbright outline-none sm:text-5xl">
         What is on your mind?
       </h1>
       <p className="mx-auto mt-3 max-w-md text-cream/75">
@@ -88,12 +142,13 @@ export function CategoryStep({ f }: { f: IntakeState }) {
 /** Step 2: the category's fields, the story, and the question. */
 export function FormStep({ f, category }: { f: IntakeState; category: IntakeCategory }) {
   const { setStep, answers, story, setStory, question, setQuestion, setOriginalQuestion, setSuggestionDismissed, set, formValid } = f;
+  const headingRef = useStepFocus<HTMLHeadingElement>();
   return (
     <>
       <p className="text-center text-xs uppercase tracking-[0.35em] text-gold">
         Step 2 of 4
       </p>
-      <h1 className="mt-3 text-center font-display text-4xl text-goldbright">
+      <h1 ref={headingRef} tabIndex={-1} className="mt-3 scroll-mt-32 text-center font-display text-4xl text-goldbright outline-none">
         {category.name}
       </h1>
       <p className="mx-auto mt-3 max-w-md text-center text-sm text-cream/75">
@@ -232,12 +287,13 @@ export function FormStep({ f, category }: { f: IntakeState; category: IntakeCate
 /** Step 3: review, optional rewrite suggestion, then draw. */
 export function ConfirmStep({ f, category }: { f: IntakeState; category: IntakeCategory }) {
   const { spread, setStep, question, setQuestion, suggestionDismissed, setSuggestionDismissed, error, isFreeAvailable, questionSuggestion, beginDraw } = f;
+  const headingRef = useStepFocus<HTMLHeadingElement>();
   return (
     <>
       <p className="text-xs uppercase tracking-[0.35em] text-gold">
         Step 3 of 4
       </p>
-      <h1 className="mt-3 font-display text-4xl text-goldbright sm:text-5xl">
+      <h1 ref={headingRef} tabIndex={-1} className="mt-3 scroll-mt-32 font-display text-4xl text-goldbright outline-none sm:text-5xl">
         Ready to cast the lots?
       </h1>
 
@@ -322,7 +378,7 @@ export function ConfirmStep({ f, category }: { f: IntakeState; category: IntakeC
       )}
 
       {error && (
-        <p className="mt-4 rounded-xl border border-red-400/40 bg-red-500/10 p-3 text-sm alert-error-text">
+        <p role="alert" className="mt-4 rounded-xl border border-red-400/40 bg-red-500/10 p-3 text-sm alert-error-text">
           {error}
         </p>
       )}
@@ -350,12 +406,13 @@ export function ConfirmStep({ f, category }: { f: IntakeState; category: IntakeC
 /** The drawn cards, a one-word impression, then generation. */
 export function ImpressionStep({ f, drawnCards }: { f: IntakeState; drawnCards: DrawnCard[] }) {
   const { setStep, impression, setImpression, error, busy, generationFailed, toastOpen, setToastOpen, beginGeneration, retryGeneration } = f;
+  const headingRef = useStepFocus<HTMLHeadingElement>();
   return (
     <>
       <p className="text-xs uppercase tracking-[0.35em] text-gold">
         Your cards are drawn
       </p>
-      <h1 className="mt-3 font-display text-4xl text-goldbright sm:text-5xl">
+      <h1 ref={headingRef} tabIndex={-1} className="mt-3 scroll-mt-32 font-display text-4xl text-goldbright outline-none sm:text-5xl">
         First, what do you see?
       </h1>
       <p className="mx-auto mt-3 max-w-md text-sm text-cream/75">
@@ -405,7 +462,7 @@ export function ImpressionStep({ f, drawnCards }: { f: IntakeState; drawnCards: 
       </div>
 
       {error && (
-        <p className="mx-auto mt-4 max-w-md rounded-xl border border-red-400/40 bg-red-500/10 p-3 text-sm alert-error-text">
+        <p role="alert" className="mx-auto mt-4 max-w-md rounded-xl border border-red-400/40 bg-red-500/10 p-3 text-sm alert-error-text">
           {error}
         </p>
       )}
@@ -460,6 +517,23 @@ export function ImpressionStep({ f, drawnCards }: { f: IntakeState; drawnCards: 
         </div>
       </div>
     </>
+  );
+}
+
+/** The wait screen, as its own component so it mounts after the
+ * previous step exits (AnimatePresence mode="wait") and the focus
+ * hook fires at the right moment. An effect in IntakeFlow keyed on
+ * `step` cannot do this: it runs while the old step is still
+ * exiting, the div is not in the DOM yet, and nothing re-runs it
+ * (Batch 3a review B1). The container has aria-live="polite" inside
+ * ReadingWait, so focusing it reads the current line once and later
+ * line updates announce themselves. */
+export function ProcessingStage({ activeStep, complete }: { activeStep: number; complete: boolean }) {
+  const ref = useStepFocus<HTMLDivElement>();
+  return (
+    <div ref={ref} tabIndex={-1} aria-label="Creating your reading" className="flex min-h-[55vh] scroll-mt-32 flex-col items-center justify-center text-center outline-none">
+      <ReadingWait activeStep={activeStep} complete={complete} />
+    </div>
   );
 }
 
