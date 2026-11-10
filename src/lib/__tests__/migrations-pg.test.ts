@@ -3,6 +3,7 @@ import postgres from "postgres";
 import { execFileSync } from "child_process";
 import fs from "fs";
 import path from "path";
+import { pgTestUrl } from "./pg-test-url";
 
 /**
  * Phase 6 migration system, executed against a real Postgres.
@@ -18,7 +19,7 @@ import path from "path";
  *
  *   SORTES_TEST_DATABASE_URL_MIGRATIONS=postgres://sortes_test:sortes_test_local@localhost:5432/sortes_pgtest_migrations npm test -- src/lib/__tests__/migrations-pg.test.ts
  */
-const TEST_URL = process.env.SORTES_TEST_DATABASE_URL_MIGRATIONS ?? "";
+const TEST_URL = pgTestUrl("SORTES_TEST_DATABASE_URL_MIGRATIONS");
 const SKIP = !TEST_URL;
 
 const OLD_SCHEMA = `

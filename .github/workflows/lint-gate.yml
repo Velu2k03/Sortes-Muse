@@ -25,6 +25,12 @@ jobs:
   lint-gate:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # Job-level so every step sees the Postgres suites' URLs. E1: the
+    # suites throw (not skip) when CI is set and a URL is missing.
+    env:
+      SORTES_TEST_DATABASE_URL: postgres://sortes_test:ci_only_throwaway@127.0.0.1:5432/sortes_pgtest_money
+      SORTES_TEST_DATABASE_URL_MIGRATIONS: postgres://sortes_test:ci_only_throwaway@127.0.0.1:5432/sortes_pgtest_migrations
+      SORTES_TEST_DATABASE_URL_RLS: postgres://sortes_test:ci_only_throwaway@127.0.0.1:5432/sortes_pgtest_rls
     services:
       postgres:
         image: postgres:16
@@ -55,11 +61,27 @@ jobs:
       - name: Run lint gate
         run: npm run lint:gate
 
-      # Money-path DB tests read SORTES_TEST_DATABASE_URL and skip when it
-      # is unset. One case in db-query-timeout.test.ts (cancel_timeout,
-      # direct) fails on a clean main and is skipped under CI=true inside
-      # the test file itself; the rest of that file still runs here.
-      - name: Run tests
+      # E1 guard: fail the job if the Postgres service is not reachable or a
+      # test URL is empty, so the money-path tests can never skip silently.
+      # Also creates the extra databases/roles the migrations and RLS suites
+      # need (the service only creates the money database).
+      - name: Guard Postgres test setup
         env:
-          SORTES_TEST_DATABASE_URL: postgres://sortes_test:ci_only_throwaway@127.0.0.1:5432/sortes_pgtest_money
+          PGPASSWORD: ci_only_throwaway
+        run: |
+          for v in SORTES_TEST_DATABASE_URL SORTES_TEST_DATABASE_URL_MIGRATIONS SORTES_TEST_DATABASE_URL_RLS; do
+            if [ -z "${!v}" ]; then echo "::error::$v is empty"; exit 1; fi
+          done
+          pg_isready -h 127.0.0.1 -p 5432 -U sortes_test || { echo "::error::Postgres service not reachable"; exit 1; }
+          psql -h 127.0.0.1 -U sortes_test -d sortes_pgtest_money -v ON_ERROR_STOP=1 <<'SQL'
+          CREATE DATABASE sortes_pgtest_migrations;
+          CREATE DATABASE sortes_pgtest_rls;
+          CREATE ROLE anon LOGIN PASSWORD 'sortes_test_local';
+          CREATE ROLE authenticated LOGIN PASSWORD 'sortes_test_local';
+          SQL
+
+      # One case in db-query-timeout.test.ts (cancel_timeout, direct) fails
+      # on a clean main and is skipped under CI=true inside the test file
+      # itself; the rest of that file still runs here.
+      - name: Run tests
         run: npm test

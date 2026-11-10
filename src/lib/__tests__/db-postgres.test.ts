@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
 import postgres from "postgres";
+import { pgTestUrl } from "./pg-test-url";
 
 /**
  * Phase 6 (P1c, gate G2): the money paths EXECUTED against a real
@@ -20,7 +21,7 @@ import postgres from "postgres";
  * (Local-only staging password: keep the real value out of the repo;
  * set it in your shell when running the suite.)
  */
-const TEST_URL = process.env.SORTES_TEST_DATABASE_URL ?? "";
+const TEST_URL = pgTestUrl("SORTES_TEST_DATABASE_URL");
 const SKIP = !TEST_URL;
 
 type Db = typeof import("@/lib/db");

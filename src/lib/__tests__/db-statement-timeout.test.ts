@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
 import postgres from "postgres";
 import { createAppPostgres, APP_STATEMENT_TIMEOUT_MS } from "@/lib/db";
 import { runMigrations } from "@/lib/migrations";
+import { pgTestUrl } from "./pg-test-url";
 
 /**
  * Bug 3 (2026-11-07): database hangs ate the full 300 s function
@@ -25,8 +26,8 @@ import { runMigrations } from "@/lib/migrations";
  * (Local-only staging password: keep the real value out of the repo;
  * set it in your shell when running the suite.)
  */
-const MONEY_URL = process.env.SORTES_TEST_DATABASE_URL ?? "";
-const MIGRATIONS_URL = process.env.SORTES_TEST_DATABASE_URL_MIGRATIONS ?? "";
+const MONEY_URL = pgTestUrl("SORTES_TEST_DATABASE_URL");
+const MIGRATIONS_URL = pgTestUrl("SORTES_TEST_DATABASE_URL_MIGRATIONS");
 
 describe.skipIf(!MONEY_URL)("statement_timeout on real Postgres (staging only)", () => {
   let sql: postgres.Sql;

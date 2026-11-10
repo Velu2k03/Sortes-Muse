@@ -109,8 +109,9 @@ import {
 } from "../db";
 import { runMigrations } from "../migrations";
 import { withTimeout } from "../fetch-timeout";
+import { pgTestUrl } from "./pg-test-url";
 
-const MONEY_URL = process.env.SORTES_TEST_DATABASE_URL ?? "";
+const MONEY_URL = pgTestUrl("SORTES_TEST_DATABASE_URL");
 // Local PgBouncer 1.22 transaction-mode rig (see header). The app
 // factory's statement_timeout startup parameter is discarded by
 // it, so only the client-side cancellation can stop a stuck query.
