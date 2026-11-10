@@ -107,10 +107,14 @@ export default function ReadingWait({
         </div>
       </div>
 
+      {/* "About 3 minutes" is the 170 s AI retry budget (AI_RETRY_TOTAL_TIMEOUT_MS,
+          2m50s) plus overhead, not a measured p95. A generation that overruns the
+          budget fails with no reading delivered, so a delivered reading takes at
+          most ~170 s + overhead. */}
       {!complete && (
         <p className="mt-4 max-w-sm text-sm text-mist">
           Breathe slowly. Your cards are being drawn and your story woven into their meanings.
-          This usually takes a few seconds.
+          This can take up to about 3 minutes.
         </p>
       )}
     </div>

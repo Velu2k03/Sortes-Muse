@@ -1,6 +1,10 @@
 # PR lint gate: fails on any lint error, any repo-lint warning, or any
 # explicit jsx-a11y warning not listed in scripts/lint-baseline.txt.
 # Needs no secrets. See scripts/lint-gate.sh.
+# Item 8: the same job also runs vitest (incl. the Postgres money-path
+# tests) against a throwaway Postgres service. It stays ONE job named
+# "lint-gate" on purpose: that is the status check branch protection
+# already requires, so the tests become required with no settings change.
 name: 'Lint gate'
 
 on:
@@ -20,7 +24,27 @@ concurrency:
 jobs:
   lint-gate:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
+    # Job-level so every step sees the Postgres suites' URLs. E1: the
+    # suites throw (not skip) when CI is set and a URL is missing.
+    env:
+      SORTES_TEST_DATABASE_URL: postgres://sortes_test:ci_only_throwaway@127.0.0.1:5432/sortes_pgtest_money?sslmode=disable
+      SORTES_TEST_DATABASE_URL_MIGRATIONS: postgres://sortes_test:ci_only_throwaway@127.0.0.1:5432/sortes_pgtest_migrations?sslmode=disable
+      SORTES_TEST_DATABASE_URL_RLS: postgres://sortes_test:ci_only_throwaway@127.0.0.1:5432/sortes_pgtest_rls?sslmode=disable
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: sortes_test
+          POSTGRES_PASSWORD: ci_only_throwaway
+          POSTGRES_DB: sortes_pgtest_money
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U sortes_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - name: Checkout repository
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -36,3 +60,35 @@ jobs:
 
       - name: Run lint gate
         run: npm run lint:gate
+
+      # E1 guard: fail the job if the Postgres service is not reachable or a
+      # test URL is empty, so the money-path tests can never skip silently.
+      # Also creates the extra databases/roles the migrations and RLS suites
+      # need (the service only creates the money database).
+      - name: Guard Postgres test setup
+        env:
+          PGPASSWORD: ci_only_throwaway
+        run: |
+          for v in SORTES_TEST_DATABASE_URL SORTES_TEST_DATABASE_URL_MIGRATIONS SORTES_TEST_DATABASE_URL_RLS; do
+            if [ -z "${!v}" ]; then echo "::error::$v is empty"; exit 1; fi
+          done
+          pg_isready -h 127.0.0.1 -p 5432 -U sortes_test || { echo "::error::Postgres service not reachable"; exit 1; }
+          psql -h 127.0.0.1 -U sortes_test -d sortes_pgtest_money -v ON_ERROR_STOP=1 <<'SQL'
+          CREATE DATABASE sortes_pgtest_migrations;
+          CREATE DATABASE sortes_pgtest_rls;
+          CREATE ROLE anon LOGIN PASSWORD 'sortes_test_local';
+          CREATE ROLE authenticated LOGIN PASSWORD 'sortes_test_local';
+          SQL
+
+      # One case in db-query-timeout.test.ts (cancel_timeout, direct) fails
+      # on a clean main and is skipped under CI=true inside the test file
+      # itself; the rest of that file still runs here.
+      # Point 7: the guard above only proves the URLs are set. This step also
+      # asserts the exact skip count from vitest's JSON report, so an RLS or
+      # money suite that skips for any other reason (login failure, setup
+      # drift) fails the job. Expected: 0 (the cancel_timeout (direct)
+      # case was un-quarantined in round 5). Change the number only with a reviewed reason.
+      - name: Run tests
+        run: |
+          npx vitest run --reporter=default --reporter=json --outputFile=vitest-report.json
+          node scripts/assert-skip-count.mjs vitest-report.json 0

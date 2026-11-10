@@ -15,7 +15,7 @@ export const metadata = {
 export const FAQS = [
   {
     q: "What is free in Sortes?",
-    a: "The daily card is free every day, the deck browser with all 78 card meanings is free forever, chart calculation is free, and your first Quick Insight reading and your first chart interpretation per system are free. No account and no payment are needed for the free parts. They stay free, and if that ever changes, this page will say so first.",
+    a: "The daily card is free every day, the deck browser with all 78 card meanings is free forever, chart calculation is free, and your first Quick Insight reading and your first chart interpretation per system are free. No payment is needed for the free parts, and no account is needed for the daily card, the deck browser, chart calculation, or your first Quick Insight; chart interpretations and reports need you to sign in. They stay free, and if that ever changes, this page will say so first.",
   },
   {
     q: "How do Oracles work?",
@@ -70,7 +70,7 @@ export const FAQS = [
   },
   {
     q: "What does a reading include?",
-    a: "Each reading is a written interpretation of your cards (or chart) around your question, about 300 to 600 words, shown on screen in under a minute and saved to your journal. It includes what stands out, the tension and opportunity, what you may be overlooking, one practical step, and one reflection question.",
+    a: "Each reading is a written interpretation of your cards (or chart) around your question, about 300 to 600 words, shown on screen in up to about 3 minutes and saved to your journal. It includes what stands out, the tension and opportunity, what you may be overlooking, one practical step, and one reflection question.",
   },
   {
     q: "How do I delete my data?",

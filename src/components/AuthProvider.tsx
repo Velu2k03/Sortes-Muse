@@ -12,6 +12,7 @@ import {
   getCredits,
   setCredits as setLocalCredits,
   getHistory,
+  clearLocalAccountData,
   saveReading,
   updateReading as updateLocalReading,
   deleteReading as deleteLocalReading,
@@ -35,7 +36,7 @@ interface AuthContextValue {
   /** Effective credit balance. null while loading. */
   credits: number | null;
   refresh: () => Promise<void>;
-  signOut: () => Promise<void>;
+  signOut: (to?: string) => Promise<void>;
   /** Spend credits; returns true on success. Guest-local only:
       signed-in users never spend client-side (Phase B, R15: the AI
       routes spend server-side after a real generation, and POST
@@ -84,7 +85,7 @@ async function fetchWithTimeout(
 
 /** Parse a JSON response without throwing on empty / non-JSON bodies. */
 interface SafeJsonBody {
-  user?: { id: string; email: string; credits?: number };
+  user?: { id: string; email: string; credits?: number } | null;
   credits?: number;
 }
 async function safeJson(res: Response): Promise<SafeJsonBody> {
@@ -164,6 +165,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setCredits(data.user.credits ?? null);
         }
       } else {
+        // MIGRATED_KEY marks a device that held a signed-in session, so
+        // an explicit {user:null} 200 is an expired session: drop the
+        // previous user's local data. A network failure (catch below),
+        // a 429/5xx, or an unparseable body keeps it.
+        if (res.ok && data.user === null && localStorage.getItem(MIGRATED_KEY)) {
+          clearLocalAccountData();
+          localStorage.removeItem(MIGRATED_KEY);
+          // Full navigation drops in-memory state too (item 5). No loop:
+          // MIGRATED_KEY is gone, so this branch cannot fire again.
+          // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- full reload on purpose: router.push would keep in-memory state
+          window.location.assign("/");
+        }
         setUser(null);
         setCredits(getCredits());
       }
@@ -199,14 +212,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await refresh();
   }, [refresh]);
 
-  const signOut = useCallback(async () => {
+  const signOut = useCallback(async (to: string = "/") => {
     await fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
     // Best effort: clear the Supabase session too, so it does not
     // silently re-establish a Sortes session on the next visit.
     await getSupabaseBrowser()?.auth.signOut().catch(() => {});
     localStorage.removeItem(MIGRATED_KEY);
+    clearLocalAccountData();
     setUser(null);
     setCredits(getCredits());
+    // clearLocalAccountData empties localStorage, not React state already
+    // in memory (a reading on screen). A full navigation drops both (item 5).
+    window.location.assign(to);
   }, []);
 
   const spend = useCallback(

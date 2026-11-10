@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
 import postgres from "postgres";
 import { readFileSync } from "fs";
 import path from "path";
+import { pgTestUrl } from "./pg-test-url";
 
 /**
  * Phase B (R1): migration 005 zero-policy RLS, executed against a
@@ -30,7 +31,7 @@ import path from "path";
  *
  *   SORTES_TEST_DATABASE_URL_RLS=postgres://sortes_test:sortes_test_local@127.0.0.1:5432/sortes_pgtest_rls npm test -- src/lib/__tests__/rls-005.test.ts
  */
-const TEST_URL = process.env.SORTES_TEST_DATABASE_URL_RLS ?? "";
+const TEST_URL = pgTestUrl("SORTES_TEST_DATABASE_URL_RLS");
 const SKIP = !TEST_URL;
 
 const RLS_TABLES = ["users", "auth_codes", "transactions", "readings", "free_readings"] as const;

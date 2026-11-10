@@ -8,6 +8,8 @@ import TarotCard from "@/components/TarotCard";
 import CardModal from "@/components/CardModal";
 import HeirloomPrint from "@/components/HeirloomPrint";
 import TypewriterText from "@/components/TypewriterText";
+import ReadingText from "@/components/ReadingText";
+import { readingToPlainText } from "@/lib/readingMarkdown";
 import SplitText from "@/components/SplitText";
 import SwipeToast from "@/components/SwipeToast";
 import Breadcrumbs from "@/components/Breadcrumbs";
@@ -248,7 +250,7 @@ export function CardMeanings({ reading }: { reading: Reading }) {
             className="mt-3 whitespace-pre-line leading-relaxed text-cream/90"
           />
           <p className="mt-4 text-xs italic text-mist">
-            Written for you in this moment. Tap the text to reveal it all at once.
+            Written for you in this moment. Use Show full reading to see it all at once.
           </p>
         </section>
       )}
@@ -483,13 +485,13 @@ export function ReadingHeirloom({ reading }: { reading: Reading }) {
             })
             .join("\n"),
         },
-        { heading: "Interpretation", body: reading.interpretation ?? "" },
+        { heading: "Interpretation", body: readingToPlainText(reading.interpretation ?? "") },
         { heading: "My next step", body: reading.nextStep ?? "" },
         { heading: "Note", body: reading.note ?? "" },
         {
           heading: "Follow-ups",
           body: (reading.followUps ?? [])
-            .map((fu) => `${fu.question}\n${fu.answer}`)
+            .map((fu) => `${fu.question}\n${readingToPlainText(fu.answer)}`)
             .join("\n\n"),
         },
         { heading: "Revisit note", body: reading.revisitNote ?? "" },
@@ -551,9 +553,7 @@ export function FollowUpThread({
                   </span>
                 </p>
               )}
-              <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-cream/90">
-                {fu.answer}
-              </p>
+              <ReadingText text={fu.answer} className="mt-2 text-sm leading-relaxed text-cream/90" />
             </div>
           ))}
         </div>
@@ -588,7 +588,9 @@ export function FollowUpThread({
             >
               {f.followUpLoading
                 ? "Writing your follow-up…"
-                : (reading.followUps ?? []).length === 0
+                : isGuest
+                  ? "Sign in to ask a follow-up"
+                  : (reading.followUps ?? []).length === 0
                   ? "Ask a follow-up · free"
                   : "Ask a follow-up · 1 Oracle"}
             </button>
@@ -607,7 +609,6 @@ export function FollowUpThread({
               it; and a guest thread lives only on this device. */}
           <p className="text-xs text-mist">
             Your chosen next step, if you saved one above, is sent along with your follow-up question.
-            {isGuest && " As a guest, this thread lives only on this device: sign in to keep it on your account."}
           </p>
           {f.followUpFailed && (
             <div className="space-y-3">

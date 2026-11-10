@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import { getReading, saveReading, updateReading as updateLocalReading } from "@/lib/storage";
 import type { Reading } from "@/lib/types";
+import { postFollowUp } from "@/lib/follow-up-client";
 import { useAuth } from "@/components/AuthProvider";
-import { getCard } from "@/lib/cards";
 
 type SetReading = (r: Reading | null) => void;
 
@@ -104,7 +104,7 @@ export type ReadingField = ReturnType<typeof useReadingField>;
 
 /** M2.1: follow-up thread state and the ask call. */
 export function useFollowUp(reading: Reading | null | undefined, setReading: SetReading) {
-  const { user, spend, add, refresh } = useAuth();
+  const { user, refresh } = useAuth();
   const [followUpQ, setFollowUpQ] = useState("");
   const [followUpLoading, setFollowUpLoading] = useState(false);
   const [followUpError, setFollowUpError] = useState<string | null>(null);
@@ -126,60 +126,25 @@ export function useFollowUp(reading: Reading | null | undefined, setReading: Set
     setFollowUpFailed(false);
     setFollowUpToastOpen(false);
 
-    const existingCount = (reading.followUps ?? []).length;
-    const isFree = existingCount === 0;
-
-    // Guest pre-spend for non-free follow-ups (M0.1 pattern).
-    let guestPreSpent = false;
-    if (!user && !isFree) {
-      const ok = await spend(1);
-      if (!ok) {
-        setFollowUpError("You need 1 Oracle for this follow-up.");
-        setFollowUpLoading(false);
-        return;
-      }
-      guestPreSpent = true;
+    // Guests get no follow-ups (the route returns 401): say so up front
+    // instead of spending from the device wallet and refunding.
+    if (!user) {
+      setFollowUpError("Sign in to ask a follow-up. No Oracle was spent.");
+      setFollowUpLoading(false);
+      return;
     }
 
     try {
-      const payload: Record<string, unknown> = { question: q };
-      if (user) {
-        payload.readingId = reading.id;
-      } else {
-        // Guest: send whitelisted reading fields
-        payload.reading = {
-          question: reading.question,
-          interpretation: reading.interpretation,
-          aiGenerated: reading.aiGenerated,
-          cards: reading.cards.map((c) => ({
-            cardId: c.cardId,
-            position: c.position,
-            name: getCard(c.cardId)?.name,
-          })),
-          category: reading.category,
-          firstImpression: reading.firstImpression,
-          nextStep: reading.nextStep,
-          followUps: reading.followUps,
-        };
-      }
-
-      const res = await fetch("/api/reading/follow-up", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const data = await res.json();
+      const { res, data } = await postFollowUp(reading, q);
 
       if (!res.ok) {
-        // Refund guest pre-spend on failure
-        if (guestPreSpent) await add(1);
         // Phase D: every failure message states that no Oracle was
         // spent (the route spends only after success; guests are
         // refunded above), but only a genuine call failure gets the
         // toast and retry UI. A 402 is a balance stop.
         const msg = data.error || "Something went wrong. Please try again.";
         setFollowUpError(msg.includes("spent") ? msg : `${msg} No Oracle was spent.`);
-        if (res.status !== 402) {
+        if (res.status !== 402 && res.status !== 401) {
           setFollowUpFailed(true);
           setFollowUpToastOpen(true);
         }
@@ -207,7 +172,6 @@ export function useFollowUp(reading: Reading | null | undefined, setReading: Set
 
       setFollowUpQ("");
     } catch {
-      if (guestPreSpent) await add(1);
       setFollowUpError(
         "Could not reach the server. Please try again. No Oracle was spent."
       );

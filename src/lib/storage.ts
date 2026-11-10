@@ -12,6 +12,9 @@ const K = {
   dailyStreak: "sortes-daily-streak",
   reports: "sortes-reports",
   birthProfiles: "sortes-birth-profiles",
+  intakeDraft: "sortes-intake-draft",
+  returnTo: "sortes-return-to",
+  pendingIds: "sortes-pending-ids",
 } as const;
 
 function read<T>(key: string, fallback: T): T {
@@ -171,7 +174,9 @@ export function getHistory(): Reading[] {
 }
 
 export function saveReading(r: Reading): void {
-  const h = getHistory();
+  // Re-saving an id (e.g. a replayed response) moves it to the front
+  // instead of listing it twice.
+  const h = getHistory().filter((x) => x.id !== r.id);
   h.unshift(r);
   write(K.history, h.slice(0, MAX_HISTORY));
 }
@@ -202,13 +207,66 @@ export function deleteReading(id: string): boolean {
   return true;
 }
 
+// The one id minter (readings, reports, chart interpretations). Browsers
+// that expose crypto.randomUUID get a UUID, which the generate routes require.
+export function newId(): string {
+  return typeof crypto !== "undefined" && "randomUUID" in crypto
+    ? crypto.randomUUID()
+    : "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+        // Old browsers without randomUUID: still a valid v4-shaped UUID, since
+        // the save routes reject anything else.
+        const r = Math.floor(Math.random() * 16);
+        return (c === "x" ? r : (r & 0x3) | 0x8).toString(16);
+      });
+}
+
+// Round 3 item 4: one client id per paid attempt (reading / chart
+// interpretation / report) that SURVIVES A PAGE RELOAD. If the server saved
+// and spent but the response was lost, a reload used to mint a fresh id and
+// the next try spent again. The id is kept per scope in localStorage and is
+// dropped only when the success response arrives (clearPendingAttemptId), on
+// sign-out, or after the draft TTL. It is bound to a hash of the request
+// inputs, so changed inputs get a new id; the hash (not the inputs) is
+// stored, because chart/report inputs contain birth details.
+interface PendingAttempt { key: string; id: string; at: number }
+
+function hashInputs(s: string): string {
+  // cyrb53: small, synchronous, non-cryptographic; only distinguishes inputs.
+  let h1 = 0xdeadbeef, h2 = 0x41c6ce57;
+  for (let i = 0; i < s.length; i++) {
+    const c = s.charCodeAt(i);
+    h1 = Math.imul(h1 ^ c, 2654435761);
+    h2 = Math.imul(h2 ^ c, 1597334677);
+  }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(16);
+}
+
+export function pendingAttemptId(scope: string, inputs: string): string {
+  const key = hashInputs(inputs);
+  const all = read<Record<string, PendingAttempt>>(K.pendingIds, {});
+  const hit = all[scope];
+  if (hit && hit.key === key && typeof hit.id === "string" && Date.now() - hit.at <= INTAKE_DRAFT_TTL_MS) {
+    return hit.id;
+  }
+  const id = newId();
+  all[scope] = { key, id, at: Date.now() };
+  write(K.pendingIds, all);
+  return id;
+}
+
+export function clearPendingAttemptId(scope: string): void {
+  const all = read<Record<string, PendingAttempt>>(K.pendingIds, {});
+  if (!(scope in all)) return;
+  delete all[scope];
+  write(K.pendingIds, all);
+}
+
 export function makeReading(partial: Omit<Reading, "id" | "createdAt">): Reading {
   return {
     ...partial,
-    id:
-      typeof crypto !== "undefined" && "randomUUID" in crypto
-        ? crypto.randomUUID()
-        : `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    id: newId(),
     createdAt: new Date().toISOString(),
   };
 }
@@ -245,20 +303,114 @@ export function deleteReport(id: string): boolean {
   return true;
 }
 
-// Phase 3 (3.6): clear the device copies of account data after an
-// account deletion (the server data is deleted by the DELETE route).
-// Daily card, streak, AI cache, and install dismissal are device
-// ritual state, not account data, so they stay.
+// Clear the device copies of per-user data: after an account deletion
+// (Phase 3, 3.6), and on sign-out or session expiry (audit item 5), so a
+// signed-out load of / never shows the previous user's reading, daily
+// card, streak, or saved birth details. Only device-level flags stay
+// (free-reading-used, install banner dismissal, theme, chart language).
 export function clearLocalAccountData(): void {
   if (typeof window === "undefined") return;
   try {
-    localStorage.removeItem(K.history);
-    localStorage.removeItem(K.reports);
-    localStorage.removeItem(K.credits);
-    localStorage.removeItem(K.purchases);
+    for (const key of [
+      K.history, K.reports, K.credits, K.purchases, K.dailyCard, K.dailyStreak,
+      K.aiCache, K.birthProfiles, K.intakeDraft, K.returnTo, K.pendingIds, "sortes-birth-details",
+    ]) localStorage.removeItem(key);
+    // Checkout email prefill (per-tab, but still the previous user's).
+    window.sessionStorage?.removeItem("sortes-purchase-email");
   } catch {
     // Storage unavailable; there is nothing to clear.
   }
+}
+
+// Batch D (A3): the intake draft. Sign-in happens on /account (a full
+// navigation away from the intake page), so what the seeker typed is kept on
+// the device and restored on return. One draft at a time; it is cleared after
+// a successful generation and on sign-out. Birth-sensitive answers are
+// stripped by the caller before saving.
+export interface IntakeDraft {
+  slug: string;
+  categoryKey: string | null;
+  answers: Record<string, string>;
+  story: string;
+  question: string;
+}
+
+// Point 6: the draft holds a whole story (health included) in localStorage, so
+// on a shared device it must not outlive the sitting. 6 hours covers leaving to
+// sign in (even waiting on an email link) and coming back the same day, and is
+// short enough that the next person on the device does not get it pre-filled.
+export const INTAKE_DRAFT_TTL_MS = 6 * 60 * 60 * 1000;
+
+export function getIntakeDraft(slug: string): IntakeDraft | null {
+  const d = read<(Partial<IntakeDraft> & { savedAt?: number }) | null>(K.intakeDraft, null);
+  if (!d) return null;
+  // No timestamp (older build) counts as expired. An expired draft is cleared.
+  if (typeof d.savedAt !== "number" || Date.now() - d.savedAt > INTAKE_DRAFT_TTL_MS) {
+    clearIntakeDraft();
+    return null;
+  }
+  if (d.slug !== slug) return null;
+  return {
+    slug,
+    categoryKey: typeof d.categoryKey === "string" ? d.categoryKey : null,
+    answers: d.answers && typeof d.answers === "object" ? d.answers : {},
+    story: typeof d.story === "string" ? d.story : "",
+    question: typeof d.question === "string" ? d.question : "",
+  };
+}
+
+export function saveIntakeDraft(d: IntakeDraft): void {
+  write(K.intakeDraft, { ...d, savedAt: Date.now() });
+}
+
+export function clearIntakeDraft(): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.removeItem(K.intakeDraft);
+  } catch {
+    // Storage unavailable; there is nothing to clear.
+  }
+}
+
+// Point 6: where to land after signing in. The gate sends the seeker to
+// /account?returnTo=/intake/<slug>. Password and code sign-in finish on that
+// page, but Google and the email link come back through /auth/callback (which
+// drops the query), so the path is also stashed here for an hour and consumed
+// once the session exists. Same-site paths only: never an external URL.
+export function safeReturnTo(raw: string | null | undefined): string | null {
+  if (!raw || !raw.startsWith("/")) return null;
+  // Check the raw value and its percent-decoded form: "/%2F%2Fevil.com" must
+  // not slip past a check that only looks at the literal characters.
+  let decoded: string;
+  try {
+    decoded = decodeURIComponent(raw);
+  } catch {
+    return null;
+  }
+  for (const v of [raw, decoded]) {
+    if (v.startsWith("//") || v.includes("\\")) return null;
+  }
+  // Finally it must parse back to our own origin as a relative path (the URL
+  // parser drops tabs/newlines, so "/\t/evil.com" becomes "//evil.com" here).
+  const base = "http://same-origin.invalid";
+  try {
+    if (new URL(raw, base).origin !== base) return null;
+  } catch {
+    return null;
+  }
+  return raw;
+}
+
+export function stashReturnTo(path: string): void {
+  write(K.returnTo, { path, at: Date.now() });
+}
+
+export function takeReturnTo(): string | null {
+  const v = read<{ path?: string; at?: number } | null>(K.returnTo, null);
+  if (typeof window === "undefined") return null;
+  try { localStorage.removeItem(K.returnTo); } catch { /* nothing to clear */ }
+  if (!v || typeof v.at !== "number" || Date.now() - v.at > 60 * 60 * 1000) return null;
+  return safeReturnTo(v.path);
 }
 
 // AI cache: re-opening history never triggers a second API call

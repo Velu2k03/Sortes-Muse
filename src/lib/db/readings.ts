@@ -1,6 +1,7 @@
 import { usePostgres, pg, sql, jsonbParam, ensureSchema, txWithSignal } from "./client";
 import { readLocal, writeLocal } from "./json-store";
 import { withDbTimeout } from "../db-timeout";
+import { assertUuid, IdTakenError } from "../ids";
 
 /*
  * F9 (2026-11-09): synced readings and follow-ups.
@@ -26,6 +27,101 @@ export async function saveReadingForUser(userId: string, reading: { id: string; 
     });
     await writeLocal(db);
   }
+}
+
+// Item 3: spend the Oracle (or claim the first free Quick Insight) AND
+// write the reading row in ONE transaction, so a paid reading can never
+// be lost when the tab closes before the client save. Mirrors the old
+// route logic: tryFree claims the free use atomically; losing the race
+// falls back to a 1-Oracle spend; insufficient credits writes nothing.
+// Batch D (B4): chart interpretations are saved as journal readings through
+// the same transaction; `freeSystem` makes the free claim target the
+// per-system free_interpretations record instead of free_readings.
+export async function saveReadingWithSpend(
+  userId: string,
+  reading: { id: string; free: boolean; [k: string]: unknown },
+  tryFree: boolean,
+  freeSystem?: string
+): Promise<{ ok: boolean; free: boolean; existing?: boolean; conflict?: boolean }> {
+  assertUuid(reading.id);
+  await ensureSchema();
+  if (usePostgres) {
+    if (!pg) throw new Error("Database not configured");
+    const controller = new AbortController();
+    const begin = pg.begin(async (rawTx) => {
+      const tx = txWithSignal(rawTx, controller.signal);
+      // Point 1: idempotent replay. A retry with the same client id finds
+      // the committed row and spends nothing more.
+      const prior = await tx`SELECT data FROM readings WHERE id = ${reading.id} AND user_id = ${userId}`;
+      if (prior.length > 0) {
+        return { ok: true, free: !!(prior[0] as { data: { free?: boolean } }).data.free, existing: true };
+      }
+      let free = false;
+      if (tryFree) {
+        const c = freeSystem
+          ? await tx`INSERT INTO free_interpretations (user_id, system) VALUES (${userId}, ${freeSystem}) ON CONFLICT DO NOTHING RETURNING user_id`
+          : await tx`INSERT INTO free_readings (user_id) VALUES (${userId}) ON CONFLICT DO NOTHING RETURNING user_id`;
+        free = c.length > 0;
+      }
+      if (!free) {
+        const spent = await tx`UPDATE users SET credits = credits - 1 WHERE id = ${userId} AND credits >= 1 RETURNING credits`;
+        if (spent.length === 0) return { ok: false, free: false };
+      }
+      const data = { ...reading, free };
+      const inserted = await tx`INSERT INTO readings (id, user_id, data, created_at)
+        VALUES (${reading.id}, ${userId}, ${jsonbParam(data)}, NOW())
+        ON CONFLICT (id) DO NOTHING RETURNING id`;
+      // Point 2: 0 rows means the id was taken (lost a race, or another
+      // user's id). Throw so the spend / free claim rolls back with it.
+      if (inserted.length === 0) {
+        const owner = await tx`SELECT user_id FROM readings WHERE id = ${reading.id}`;
+        throw new IdTakenError((owner[0] as { user_id: string } | undefined)?.user_id === userId);
+      }
+      return { ok: true, free };
+    });
+    try {
+      return await withDbTimeout(begin, controller);
+    } catch (err) {
+      if (!(err instanceof IdTakenError)) throw err;
+      // Another user's id: conflict, nothing spent (rolled back).
+      if (!err.sameUser) return { ok: false, free: false, conflict: true };
+      // Lost a race with our own parallel attempt: return the winner's row.
+      const { rows } = await sql`SELECT data FROM readings WHERE id = ${reading.id} AND user_id = ${userId}`;
+      if (rows.length === 0) throw err;
+      return { ok: true, free: !!(rows[0] as { data: { free?: boolean } }).data.free, existing: true };
+    }
+  }
+  const db = await readLocal();
+  const prior = db.readings.find((r) => r.id === reading.id && r.user_id === userId);
+  if (prior) return { ok: true, free: !!(prior.data as { free?: boolean }).free, existing: true };
+  if (db.readings.some((r) => r.id === reading.id)) return { ok: false, free: false, conflict: true };
+  let free = false;
+  if (tryFree && freeSystem) {
+    const list = db.freeInterpretations ?? (db.freeInterpretations = []);
+    if (!list.some((x) => x.user_id === userId && x.system === freeSystem)) {
+      list.push({ user_id: userId, system: freeSystem, used_at: new Date().toISOString() });
+      free = true;
+    }
+  } else if (tryFree) {
+    const list = db.freeReadings ?? (db.freeReadings = []);
+    if (!list.some((x) => x.user_id === userId)) {
+      list.push({ user_id: userId, used_at: new Date().toISOString() });
+      free = true;
+    }
+  }
+  if (!free) {
+    const u = db.users.find((x) => x.id === userId);
+    if (!u || u.credits < 1) return { ok: false, free: false };
+    u.credits -= 1;
+  }
+  db.readings.unshift({
+    id: reading.id,
+    user_id: userId,
+    data: { ...reading, free },
+    created_at: new Date().toISOString(),
+  });
+  await writeLocal(db);
+  return { ok: true, free };
 }
 
 // M1.1: merge a patch into a stored reading's JSON. The server copy

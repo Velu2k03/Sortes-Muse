@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { createCheckout, lemonConfigured } from "@/lib/lemonsqueezy";
 import { getUserById } from "@/lib/db";
-import { checkRateLimit, clientIp, rateLimitExceeded, RATE_LIMITS } from "@/lib/rateLimit";
+import { checkRateLimit, clientIp, ipLimitKey, rateLimitExceeded, RATE_LIMITS } from "@/lib/rateLimit";
 
 export const dynamic = "force-dynamic";
 
@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
   if (!lemonConfigured()) {
     return NextResponse.json({ error: "Checkout not configured." }, { status: 503 });
   }
-  if (!checkRateLimit(`checkout:${clientIp(req)}`, RATE_LIMITS.checkoutIp).allowed) {
+  if (!(await checkRateLimit(ipLimitKey("checkout", clientIp(req)), RATE_LIMITS.checkoutIp)).allowed) {
     return rateLimitExceeded();
   }
   let body: { packId?: string; email?: string };

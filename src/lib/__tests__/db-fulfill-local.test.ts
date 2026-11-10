@@ -1,38 +1,32 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { promises as fs } from "fs";
 import path from "path";
-import { createUser, fulfillOrder } from "@/lib/db";
+import { importDbWithIsolatedStore } from "./local-db-test-store";
 
 // AF-004: duplicate rule for fulfillOrder on the local JSON branch.
 // A row is a duplicate when its order_id matches, or (for files
 // written before order_id existed) when the old pack_type marker
-// matches. Backs up data/local-db.json and restores it afterwards.
+// matches. Isolated temp store.
 const hasPostgres = Boolean(process.env.POSTGRES_URL || process.env.DATABASE_URL);
-const LOCAL_PATH = path.join(process.cwd(), "data", "local-db.json");
+// Each file gets its own temp store via importDbWithIsolatedStore (no static
+// `@/lib/db` import: db.ts binds data/local-db.json from cwd at import time).
 
 describe.skipIf(hasPostgres)("fulfillOrder duplicate rule (local JSON branch)", () => {
-  let backup: string | null = null;
-  let hadFile = false;
+  let cleanup: (() => Promise<void>) | null = null;
+  let createUser: typeof import("@/lib/db").createUser;
+  let fulfillOrder: typeof import("@/lib/db").fulfillOrder;
 
   beforeAll(async () => {
-    try {
-      backup = await fs.readFile(LOCAL_PATH, "utf8");
-      hadFile = true;
-    } catch {
-      backup = null;
-      hadFile = false;
-    }
-    await fs.rm(LOCAL_PATH, { force: true });
+    const isolated = await importDbWithIsolatedStore();
+    cleanup = isolated.cleanup;
+    ({ createUser, fulfillOrder } = isolated.db);
   });
 
   afterAll(async () => {
-    if (hadFile && backup !== null) {
-      await fs.mkdir(path.dirname(LOCAL_PATH), { recursive: true });
-      await fs.writeFile(LOCAL_PATH, backup);
-    } else {
-      await fs.rm(LOCAL_PATH, { force: true });
-    }
+    await cleanup?.();
   });
+  // Resolved after the helper chdirs, so it is the isolated store.
+  const localPath = () => path.join(process.cwd(), "data", "local-db.json");
 
   it("stores order_id and rejects a redelivery by order_id", async () => {
     const user = await createUser("af004-local@example.com");
@@ -55,7 +49,7 @@ describe.skipIf(hasPostgres)("fulfillOrder duplicate rule (local JSON branch)", 
 
   it("treats a legacy row (no order_id, old pack_type marker) as a duplicate", async () => {
     const user = await createUser("af004-legacy@example.com");
-    const db = JSON.parse(await fs.readFile(LOCAL_PATH, "utf8"));
+    const db = JSON.parse(await fs.readFile(localPath(), "utf8"));
     db.transactions.unshift({
       id: "t_legacy",
       user_id: user.id,
@@ -65,7 +59,7 @@ describe.skipIf(hasPostgres)("fulfillOrder duplicate rule (local JSON branch)", 
       readings: 5,
       created_at: new Date().toISOString(),
     });
-    await fs.writeFile(LOCAL_PATH, JSON.stringify(db));
+    await fs.writeFile(localPath(), JSON.stringify(db));
     const res = await fulfillOrder({
       userId: user.id,
       email: user.email,

@@ -21,7 +21,7 @@ export async function GET() {
     return NextResponse.json({ error: "Not signed in." }, { status: 401 });
   }
   // Phase 6 (N3): full-data export was unrated. 10/hour per user.
-  if (!checkRateLimit(`export:${session.userId}`, RATE_LIMITS.accountExportUser).allowed) {
+  if (!(await checkRateLimit(`export:${session.userId}`, RATE_LIMITS.accountExportUser)).allowed) {
     return rateLimitExceeded();
   }
   const user = await getUserById(session.userId);

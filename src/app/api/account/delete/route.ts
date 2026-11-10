@@ -92,7 +92,7 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: "Not signed in." }, { status: 401 });
   }
   // Phase 6 (N3): account deletion was unrated. 3/hour per user.
-  if (!checkRateLimit(`delete:${session.userId}`, RATE_LIMITS.accountDeleteUser).allowed) {
+  if (!(await checkRateLimit(`delete:${session.userId}`, RATE_LIMITS.accountDeleteUser)).allowed) {
     return rateLimitExceeded();
   }
   const user = await getUserById(session.userId);

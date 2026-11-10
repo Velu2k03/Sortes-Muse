@@ -10,6 +10,8 @@ import {
   getDailyCard,
   getDailyPracticeDays,
   getDailyStreak,
+  markFreeReadingUsed,
+  freeReadingUsed,
   clearLocalAccountData,
 } from "@/lib/storage";
 import type { SavedReport } from "@/lib/reports";
@@ -100,6 +102,23 @@ describe("getDailyPracticeDays", () => {
   });
 });
 
+describe("saveReading dedup", () => {
+  beforeEach(() => installLocalStorageStub());
+  afterEach(() => {
+    delete (globalThis as unknown as Record<string, unknown>).localStorage;
+    delete (globalThis as unknown as Record<string, unknown>).window;
+  });
+
+  it("saving the same id twice keeps one entry, the latest copy, at the front", () => {
+    saveReading({ id: "a", spreadName: "old" } as unknown as Reading);
+    saveReading({ id: "b", spreadName: "other" } as unknown as Reading);
+    saveReading({ id: "a", spreadName: "new" } as unknown as Reading);
+    const h = getHistory();
+    expect(h.map((r) => r.id)).toEqual(["a", "b"]);
+    expect(h[0].spreadName).toBe("new");
+  });
+});
+
 describe("clearLocalAccountData", () => {
   beforeEach(() => installLocalStorageStub());
   afterEach(() => {
@@ -107,7 +126,7 @@ describe("clearLocalAccountData", () => {
     delete (globalThis as unknown as Record<string, unknown>).window;
   });
 
-  it("clears journal, reports, and Oracle balance but keeps the daily card", () => {
+  it("clears journal, reports, Oracle balance, daily card, streak, and birth data (sign-out leak, audit item 5)", () => {
     saveReading({ id: "h1", spreadName: "Quick Insight" } as unknown as Reading);
     saveReport(report("r1"));
     setCredits(5);
@@ -120,6 +139,13 @@ describe("clearLocalAccountData", () => {
     expect(getHistory()).toHaveLength(0);
     expect(getReports()).toHaveLength(0);
     expect(getCredits()).toBe(0);
-    expect(getDailyCard()).not.toBeNull();
+    expect(getDailyCard()).toBeNull();
+    expect(getDailyStreak()).toBe(0);
+  });
+
+  it("keeps device-level flags (free reading used)", () => {
+    markFreeReadingUsed();
+    clearLocalAccountData();
+    expect(freeReadingUsed()).toBe(true);
   });
 });

@@ -6,7 +6,7 @@ import {
   SESSION_COOKIE,
   SESSION_MAX_AGE,
   authConfigured,} from "@/lib/auth";
-import { isRateLimited, recordRateLimit, clientIp, RATE_LIMITS } from "@/lib/rateLimit";
+import { isRateLimited, recordRateLimit, clientIp, emailLimitKey, ipLimitKey, RATE_LIMITS } from "@/lib/rateLimit";
 
 export const dynamic = "force-dynamic";
 
@@ -30,19 +30,18 @@ export async function POST(req: NextRequest) {
     // 10 failed logins per email per 15 minutes (best effort, shared
     // limiter). Only failures count, as before; a success does not
     // consume the budget.
-    const limitKey = `login:${email}`;
-    if (isRateLimited(limitKey, RATE_LIMITS.loginEmail)) {
-      return NextResponse.json(
-        { error: "Too many attempts. Please try again in a few minutes." },
-        { status: 429 }
-      );
-    }
+    const limitKey = emailLimitKey("login", email);
     // Phase B (R12): 30 failed logins per IP per 15 minutes, in
     // addition to the per-email limit, so rotating target emails
     // from one IP does not bypass the limit. Checked before the
-    // password verification, recorded only on failure.
-    const ipKey = `login-ip:${clientIp(req)}`;
-    if (isRateLimited(ipKey, RATE_LIMITS.loginIp)) {
+    // password verification, recorded only on failure. Both reads run
+    // together so a slow limiter costs one timeout, not two.
+    const ipKey = ipLimitKey("login-ip", clientIp(req));
+    const [emailLimited, ipLimited] = await Promise.all([
+      isRateLimited(limitKey, RATE_LIMITS.loginEmail),
+      isRateLimited(ipKey, RATE_LIMITS.loginIp),
+    ]);
+    if (emailLimited || ipLimited) {
       return NextResponse.json(
         { error: "Too many attempts. Please try again in a few minutes." },
         { status: 429 }
@@ -54,8 +53,10 @@ export async function POST(req: NextRequest) {
       user?.password_hash &&
       (await verifyPassword(password, user.password_hash));
     if (!ok) {
-      recordRateLimit(limitKey, RATE_LIMITS.loginEmail);
-      recordRateLimit(ipKey, RATE_LIMITS.loginIp);
+      await Promise.all([
+        recordRateLimit(limitKey, RATE_LIMITS.loginEmail),
+        recordRateLimit(ipKey, RATE_LIMITS.loginIp),
+      ]);
       return NextResponse.json(
         { error: "Email or password is not correct." },
         { status: 401 }

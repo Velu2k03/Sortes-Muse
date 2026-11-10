@@ -4,13 +4,15 @@ import { useEffect, useRef, useState } from "react";
 import type { ZiweiLanguage } from "@/lib/ziwei-i18n";
 import type { ZiweiView } from "@/components/ZiweiChartBoard";
 import { useAuth } from "@/components/AuthProvider";
-import { chartFreeUsed, markChartFreeUsed, makeReading, type ChartFreeSystem } from "@/lib/storage";
+import { chartFreeUsed, clearPendingAttemptId, makeReading, pendingAttemptId, type ChartFreeSystem } from "@/lib/storage";
+import { unconfirmedMessage } from "@/lib/generate-failure";
 import { chartInterpretationCost } from "@/lib/chart-pricing";
 import { buildStaticChartInterpretation } from "@/lib/chart-fallback";
 import {
   FOCUS_AREAS,
   PRESETS,
   birthFormError,
+  chartAttemptKey,
   chartSummaryText,
   parseBirthTime,
   type ChartResult,
@@ -24,6 +26,9 @@ import {
  */
 
 /** Display preferences: reduced motion, site theme, Ziwei view/language/glosses. */
+/** An error whose message came from the server's own response body. */
+class ServerError extends Error {}
+
 export function useChartPrefs() {
   const [reducedMotion, setReducedMotion] = useState(false);
   useEffect(() => {
@@ -220,7 +225,7 @@ export type ChartForm = ReturnType<typeof useChartForm>;
 export function useChartSession(form: ChartForm, prefs: ChartPrefs) {
   const { date, time, unknownTime, timeZoneOverride, gender, preset, latitude, longitude, placeSearch, birthSaveEpochRef, resolveCalcCoordinates, rememberBirthDetails } = form;
   const { reducedMotion, ziweiLang } = prefs;
-  const { credits, spend, add, persistReading, user, refresh } = useAuth();
+  const { persistReading, user, refresh } = useAuth();
   const [system, setSystem] = useState<ChartSystem>("western");
   const formRef = useRef<HTMLFormElement | null>(null);
   const [focus, setFocus] = useState<(typeof FOCUS_AREAS)[number]>("general");
@@ -240,6 +245,9 @@ export function useChartSession(form: ChartForm, prefs: ChartPrefs) {
   const [interpFailed, setInterpFailed] = useState(false);
   const [interpToastOpen, setInterpToastOpen] = useState(false);
   const [interpFree, setInterpFree] = useState(false);
+  // Batch D (B4): interpretation needs sign-in; set on a 401 (for example an
+  // expired session) so the panel shows a sign-in prompt, not a generic error.
+  const [interpSignInNeeded, setInterpSignInNeeded] = useState(false);
   // Server free status for signed-in users (null until fetched).
   // Guests never call the status endpoint; they use device flags.
   const [serverFree, setServerFree] = useState<boolean | null>(null);
@@ -378,34 +386,35 @@ export function useChartSession(form: ChartForm, prefs: ChartPrefs) {
     : false;
   const displayFree = user ? (serverFree ?? deviceFree) : deviceFree;
 
-  // Failure path of onInterpret: guest refund, then the right message.
-  async function handleInterpretFailure(
-    err: unknown,
-    guestSpent: boolean,
-    result: ChartResult
-  ) {
-    // Guest refund only: guests pre-spent from the device wallet.
-    // Signed-in users spent nothing client-side.
-    if (guestSpent) await add(1);
+  // Failure path of onInterpret: pick the right message. Nothing is spent
+  // client-side (the route spends only after a real generation).
+  // Point 1: one interpretation id per attempt; a retry of the same chart and
+  // question reuses it, so a row the server already saved is replayed.
+
+  function handleInterpretFailure(err: unknown, result: ChartResult) {
     // Phase D: balance stops keep their own message (they already
     // say the balance was not changed). A genuine call failure gets
     // the no-charge line plus the toast and retry UI.
     const message = err instanceof Error ? err.message : "Could not interpret this chart.";
-    const isBalance =
-      message.startsWith("You need 1 Oracle") || message.startsWith("Could not spend");
+    const isBalance = message.startsWith("You need 1 Oracle");
     if (isBalance) {
       setInterpError(message);
     } else {
-      setInterpError(message.includes("spent") ? message : `${message} No Oracle was spent.`);
+      // Only the server may say "not spent" (its error body, shown verbatim).
+      // A dropped connection or bad JSON can happen after the server committed.
+      setInterpError(
+        err instanceof ServerError
+          ? message
+          : unconfirmedMessage("interpretation", "your journal")
+      );
       setInterpFailed(true);
       setInterpToastOpen(true);
       // Phase 2, 2.3: the AI failed, so show the deterministic
       // standard interpretation built from the computed placements
       // instead of leaving only an error. It is labelled as
-      // standard, not AI-generated, and it spends nothing: a guest
-      // pre-spend was refunded above, a signed-in user spent
-      // nothing client-side, and the free use is untouched, so a
-      // retry stays free when it was. The retry UI stays live.
+      // standard, not AI-generated, and it spends nothing: the free
+      // use is untouched, so a retry stays free when it was. The
+      // retry UI stays live.
       setInterpretation(buildStaticChartInterpretation(result, focus));
       setInterpFallback(true);
       setInterpModel(null);
@@ -419,53 +428,56 @@ export function useChartSession(form: ChartForm, prefs: ChartPrefs) {
     // Phase D: a new attempt clears the previous failure UI.
     setInterpFailed(false);
     setInterpToastOpen(false);
-    // M0.1 credit authority: signed-in users never spend client-side.
-    // The route spends server-side only after a real model generates
-    // text (or marks the server free use), so a failed generation can
-    // never cost a credit. Guests keep the device-local wallet and its
-    // pre-spend plus catch refund.
-    const signedIn = !!user;
-    const guestFree = chartInterpretationCost(chartFreeUsed(result.system as ChartFreeSystem)) === 0;
-    let guestSpent = false;
+    // M0.1 credit authority: the client never spends. The route requires
+    // sign-in, spends (or claims the free use) only after a real model
+    // generates text, and stores the interpretation in the same transaction.
+    setInterpSignInNeeded(false);
     try {
-      if (!signedIn && !guestFree) {
-        // AF-013: an unresolved balance is not an empty balance.
-        if (credits === null) {
-          throw new Error("Still checking your Oracle balance. Please try again in a moment.");
-        }
-        if (credits < 1) {
-          throw new Error("You need 1 Oracle for this interpretation. The calculation above stays free. Top up from the Oracles page.");
-        }
-        const ok = await spend(1);
-        if (!ok) throw new Error("Could not spend 1 Oracle. Your balance was not changed by this page.");
-        guestSpent = true;
-      }
+      const payload = {
+        system: result.system,
+        chart: result,
+        category: focus,
+        question: question.trim(),
+        chartSummary: chartSummaryText(result, ziweiLang),
+      };
+      // Item 4: the id outlives a reload (see pendingAttemptId).
+      // Hash stable inputs only; the chart result has a today-dated dasha.
+      const attemptId = pendingAttemptId(
+        "chart-interpret",
+        chartAttemptKey(result.system, calcFingerprintRef.current, payload.category, payload.question)
+      );
       const res = await fetch("/api/chart/interpret", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ system: result.system, chart: result, category: focus, question: question.trim() }),
+        body: JSON.stringify({ ...payload, readingId: attemptId }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Could not interpret this chart.");
+      if (res.status === 401) {
+        setInterpSignInNeeded(true);
+        setInterpError("Sign in to get a chart interpretation.");
+        return;
+      }
+      if (!res.ok) throw new ServerError(data.error || "Could not interpret this chart.");
+      clearPendingAttemptId("chart-interpret");
       setInterpretation(data.interpretation as string);
       setInterpFallback(Boolean(data.fallback));
       // Phase E (item 2): keep the serving model; the fallback has none.
       setInterpModel(
         !data.fallback && typeof data.model === "string" && data.model ? data.model : null
       );
-      // The server is the authority for signed-in free status; guests
-      // keep their device-local flag.
-      const wasFree = signedIn ? Boolean(data.free) : guestFree;
-      setInterpFree(wasFree);
-      if (!signedIn && guestFree) markChartFreeUsed(result.system as ChartFreeSystem);
-      if (signedIn) {
-        // A successful signed-in interpretation consumes the free use
-        // (or was paid), so the label must stop saying free.
-        setServerFree(false);
-        await refresh();
+      setInterpFree(Boolean(data.free));
+      // A successful interpretation consumes the free use (or was paid),
+      // so the label must stop saying free.
+      setServerFree(false);
+      // The server already saved this row with the spend; mirror it to the
+      // local journal under the SAME id (the server copy is not duplicated).
+      if (data.reading) {
+        await persistReading(data.reading);
+        setSaved(true);
       }
+      await refresh();
     } catch (err) {
-      await handleInterpretFailure(err, guestSpent, result);
+      handleInterpretFailure(err, result);
     } finally {
       setInterpLoading(false);
     }
@@ -586,7 +598,7 @@ export function useChartSession(form: ChartForm, prefs: ChartPrefs) {
   return {
     system, selectSystem, formRef, focus, setFocus, question, setQuestion,
     interpretation, setInterpretation, interpFallback, interpModel, interpLoading, interpError,
-    interpFailed, interpToastOpen, setInterpToastOpen, interpFree, saved, setSaved,
+    interpFailed, interpToastOpen, setInterpToastOpen, interpFree, interpSignInNeeded, user, saved, setSaved,
     shareBusy, shareRef, loading, error, result, setResult, showBurst, resultRef,
     displayFree, onInterpret, onSaveChart, onShareChart, onSubmit, hasData,
   };

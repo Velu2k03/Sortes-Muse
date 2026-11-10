@@ -1,5 +1,8 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
+import { createHmac } from "node:crypto";
+import { Redis } from "@upstash/redis";
+import { Ratelimit, type Duration } from "@upstash/ratelimit";
 
 /**
  * One shared in-memory rate limiter for every route that needs one.
@@ -13,12 +16,10 @@ import { NextResponse } from "next/server";
  * needs its own bucket again, the reason must be written here, not
  * silently re-added as a local map.
  *
- * Best effort by design: the buckets live in process memory, so on a
- * multi-instance host each instance enforces its own budget. The
- * limiter is per-instance in memory and therefore best-effort, not
- * a global cap. That is enough to stop casual abuse and credential
- * stuffing from one client. A distributed store would be needed for
- * a hard global cap; that is out of scope for this phase.
+ * Item 4/C4: counts live in Upstash Redis (via @upstash/ratelimit) when its env vars are set, so the
+ * budget holds across Vercel instances; otherwise (local dev, tests) an
+ * explicit in-memory store is used. If Upstash errors, the limiter fails
+ * open to the in-memory store (see withFallback).
  */
 export interface RateLimitRule {
   /** Sliding window length in milliseconds. */
@@ -46,6 +47,15 @@ export const RATE_LIMITS = {
   moneyIp: { windowMs: 60_000, max: 60 },
   /** AI tarot generation per IP (was the generate route's own map). */
   aiGenerateIp: { windowMs: 60 * 60_000, max: 20 },
+  /** Batch D (A1) / Point 4: guest free Quick Insights per IP per day. The
+      product rule is 1 free reading per device (signed cookie), which stops
+      casual repeats; this cap only has to stop scripts that never send the
+      cookie. Carrier-grade NAT puts many real users behind one IP, so the
+      cap is high: 50/day still cuts a script from ~480/day (the hourly
+      aiGenerateIp budget alone) to 50, while a shared IP with dozens of
+      real users is unlikely to reach it. Checked before the model call and
+      recorded only after a successful generation, so failures cost nothing. */
+  guestFreeIp: { windowMs: 24 * 60 * 60_000, max: 50 },
   /** AI follow-ups per IP (was the follow-up route's own map). */
   aiFollowUpIp: { windowMs: 60 * 60_000, max: 10 },
   /** Chart calculation per IP — SHARED bucket: calculate, transits,
@@ -81,40 +91,273 @@ export const RATE_LIMITS = {
   historyWriteUser: { windowMs: 60 * 60_000, max: 20 },
 } as const satisfies Record<string, RateLimitRule>;
 
-const buckets = new Map<string, number[]>();
+/**
+ * Item 4: storage is pluggable. Production/Preview use Upstash Redis
+ * (shared across Vercel instances); local dev and the test suite use
+ * the in-memory store. The fallback is explicit (see getStore below).
+ */
+export interface LimiterStore {
+  /** Hits inside the window for a key. */
+  count(key: string, rule: RateLimitRule): Promise<number>;
+  /** Records one hit unconditionally. */
+  record(key: string, rule: RateLimitRule): Promise<void>;
+  /** Records a hit only if under budget. Returns hits after the call. */
+  tryRecord(key: string, rule: RateLimitRule): Promise<{ allowed: boolean; used: number }>;
+}
 
-/** Stamps inside the window for a key (pruned as a side effect). */
-function liveStamps(key: string, rule: RateLimitRule): number[] {
+export function createMemoryStore(): LimiterStore & { clear(): void } {
+  const buckets = new Map<string, number[]>();
+  const live = (key: string, rule: RateLimitRule): number[] => {
+    const now = Date.now();
+    const stamps = (buckets.get(key) ?? []).filter((t) => now - t < rule.windowMs);
+    buckets.set(key, stamps);
+    return stamps;
+  };
+  return {
+    async count(key, rule) {
+      return live(key, rule).length;
+    },
+    async record(key, rule) {
+      live(key, rule).push(Date.now());
+    },
+    async tryRecord(key, rule) {
+      const stamps = live(key, rule);
+      if (stamps.length >= rule.max) return { allowed: false, used: stamps.length };
+      stamps.push(Date.now());
+      return { allowed: true, used: stamps.length };
+    },
+    clear() {
+      buckets.clear();
+    },
+  };
+}
+
+/** The slice of an @upstash/ratelimit instance the store uses. */
+export interface LimiterLike {
+  limit(identifier: string): Promise<{ success: boolean; remaining: number; reason?: string }>;
+  getRemaining(identifier: string): Promise<{ remaining: number; reset?: number }>;
+}
+
+/**
+ * Windows in the largest exact unit @upstash/ratelimit accepts:
+ * 60_000 -> "1 m", 15 min -> "15 m", 60 min -> "60 m", 24 h -> "1 d".
+ */
+export function durationString(windowMs: number): string {
+  const DAY = 86_400_000;
+  if (windowMs % DAY === 0) return `${windowMs / DAY} d`;
+  if (windowMs % 60_000 === 0) return `${windowMs / 60_000} m`;
+  if (windowMs % 1000 === 0) return `${windowMs / 1000} s`;
+  return `${windowMs} ms`;
+}
+
+/**
+ * C1: every key is prefixed per deployment environment, so Preview and
+ * Production never share buckets on the one Upstash database. Keys are
+ * `rl:<env>:<key>` (was `rl:<key>`); old keys expire via their TTL.
+ */
+export function rateLimitPrefix(): string {
+  return "rl:" + (process.env.VERCEL_ENV ?? "development");
+}
+
+/** Raised when the library reports its own 500 ms timeout (it fails open). */
+export class RateLimitTimeoutError extends Error {
+  constructor() {
+    super("upstash call timed out");
+  }
+}
+
+/** Same 500 ms the library applies to limit(); getRemaining has none of its own. */
+const GET_REMAINING_TIMEOUT_MS = 500;
+
+/**
+ * Store backed by @upstash/ratelimit (atomic Lua sliding window). The
+ * limiter factory is injectable so the wrapper can be tested without Redis.
+ */
+export function createUpstashStore(makeLimiter: (rule: RateLimitRule) => LimiterLike): LimiterStore {
+  const cache = new Map<string, LimiterLike>();
+  const limiterFor = (rule: RateLimitRule) => {
+    const id = `${rule.windowMs}:${rule.max}`;
+    let l = cache.get(id);
+    if (!l) cache.set(id, (l = makeLimiter(rule)));
+    return l;
+  };
+  const hit = async (key: string, rule: RateLimitRule) => {
+    const r = await limiterFor(rule).limit(key);
+    // Timeout resolves success:true with remaining:0: not a real decision.
+    if (r.reason === "timeout") throw new RateLimitTimeoutError();
+    return r;
+  };
+  // Keys already at their cap -> reset time (ms). Refused locally until then,
+  // so a flood past the cap costs no further Redis reads. Pruned on write.
+  const blockedUntil = new Map<string, number>();
+  const readRemaining = async (key: string, rule: RateLimitRule) => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      return await Promise.race([
+        limiterFor(rule).getRemaining(key),
+        new Promise<never>((_, reject) => {
+          timer = setTimeout(() => reject(new RateLimitTimeoutError()), GET_REMAINING_TIMEOUT_MS);
+        }),
+      ]);
+    } finally {
+      clearTimeout(timer);
+    }
+  };
+  return {
+    async count(key, rule) {
+      const id = `${rule.windowMs}:${rule.max}:${key}`;
+      const now = Date.now();
+      const until = blockedUntil.get(id);
+      if (until !== undefined && until > now) return rule.max;
+      const { remaining, reset } = await readRemaining(key, rule);
+      if (remaining <= 0 && typeof reset === "number" && reset > now) {
+        for (const [k, t] of blockedUntil) if (t <= now) blockedUntil.delete(k);
+        blockedUntil.set(id, reset);
+      } else {
+        blockedUntil.delete(id);
+      }
+      return Math.max(0, rule.max - remaining);
+    },
+    async record(key, rule) {
+      await hit(key, rule);
+    },
+    async tryRecord(key, rule) {
+      const r = await hit(key, rule);
+      return { allowed: r.success, used: Math.max(0, rule.max - r.remaining) };
+    },
+  };
+}
+
+function realLimiter(redis: Redis, rule: RateLimitRule): LimiterLike {
+  return new Ratelimit({
+    redis,
+    limiter: Ratelimit.slidingWindow(rule.max, durationString(rule.windowMs) as Duration),
+    prefix: rateLimitPrefix(),
+    timeout: 500,
+    enableTelemetry: false,
+    // Point 5: library default (in-memory block cache) stays ON. It only
+    // short-circuits limit() for keys already blocked, so a flood does not
+    // cost a Redis command per blocked request. getRemaining (used by
+    // isRateLimited) never reads it, so the login "check now, record only
+    // failures" pattern is unaffected. Limiters are cached at module level.
+  });
+}
+
+const memory = createMemoryStore();
+let redisStore: LimiterStore | null | undefined;
+
+/**
+ * Explicit store choice. Upstash is used only when BOTH env vars are set
+ * (names come from the Vercel Upstash integration; Redis.fromEnv() would
+ * not find them). Otherwise the in-memory store is used on purpose, with
+ * a one-time warning in production.
+ */
+function getStore(): LimiterStore {
+  if (redisStore === undefined) {
+    const url = process.env.UPSTASH_REDIS_REST_KV_REST_API_URL;
+    const token = process.env.UPSTASH_REDIS_REST_KV_REST_API_TOKEN;
+    if (url && token) {
+      const redis = new Redis({ url, token });
+      redisStore = createUpstashStore((rule) => realLimiter(redis, rule));
+    } else {
+      redisStore = null;
+      if (process.env.NODE_ENV === "production") {
+        console.warn("[rateLimit] Upstash env vars missing: using per-instance in-memory limiter.");
+      }
+    }
+  }
+  return redisStore ?? memory;
+}
+
+let lastFallbackLog = 0;
+let suppressed = 0;
+
+/**
+ * C3: loud, throttled log for every fallback (first immediately, then at
+ * most once a minute with a count). Covers timeouts, outages and the
+ * Upstash command cap, where every call errors and we degrade silently.
+ */
+function logFallback(reason: unknown): void {
   const now = Date.now();
-  const stamps = (buckets.get(key) ?? []).filter((t) => now - t < rule.windowMs);
-  buckets.set(key, stamps);
-  return stamps;
+  if (lastFallbackLog && now - lastFallbackLog < 60_000) {
+    suppressed++;
+    return;
+  }
+  const extra = suppressed ? ` (${suppressed} fallbacks since last log)` : "";
+  suppressed = 0;
+  lastFallbackLog = now;
+  console.error(`[rateLimit] FALLBACK ACTIVE — ${reason === "timeout" ? "timeout" : String(reason)}${extra}`);
+}
+
+/** Test-only: reset the fallback log throttle. */
+export function resetFallbackLog(): void {
+  lastFallbackLog = 0;
+  suppressed = 0;
+}
+
+/**
+ * C2: email- and IP-keyed limits are hashed so no address sits in the
+ * third-party store. HMAC-SHA256 keyed by "ratelimit:" + AUTH_SECRET (read
+ * directly: importing auth.ts would be circular), so the session-signing
+ * secret itself is never the key. Hashed keys start new buckets; old ones
+ * expire via TTL.
+ */
+function hashedKey(prefix: string, value: string): string {
+  const secret = process.env.AUTH_SECRET ?? "dev-only-salt";
+  return `${prefix}:${createHmac("sha256", `ratelimit:${secret}`).update(value).digest("hex")}`;
+}
+
+export function emailLimitKey(prefix: string, email: string): string {
+  return hashedKey(prefix, email.trim().toLowerCase());
+}
+
+/** Point 4: same hashing for client IPs, so no raw IP sits in Upstash. */
+export function ipLimitKey(prefix: string, ip: string): string {
+  return hashedKey(prefix, ip.trim());
+}
+
+/**
+ * FAIL OPEN: if the shared store errors (Upstash outage, timeout), log
+ * and serve the decision from the per-instance memory store instead.
+ * A limiter outage must never lock every user out of sign-in; the
+ * degraded mode is the old per-instance behaviour, never a hard deny.
+ */
+async function withFallback<T>(
+  op: (s: LimiterStore) => Promise<T>,
+  fallback: (s: LimiterStore) => Promise<T>
+): Promise<T> {
+  const store = getStore();
+  if (store === memory) return fallback(memory);
+  try {
+    return await op(store);
+  } catch (err) {
+    logFallback(err instanceof RateLimitTimeoutError ? "timeout" : err);
+    return fallback(memory);
+  }
 }
 
 /** True when the key is already at its budget, without recording a hit. */
-export function isRateLimited(key: string, rule: RateLimitRule): boolean {
-  return liveStamps(key, rule).length >= rule.max;
+export async function isRateLimited(key: string, rule: RateLimitRule): Promise<boolean> {
+  const n = await withFallback((s) => s.count(key, rule), (m) => m.count(key, rule));
+  return n >= rule.max;
 }
 
 /** Records one hit against the key's budget. */
-export function recordRateLimit(key: string, rule: RateLimitRule): void {
-  const stamps = liveStamps(key, rule);
-  stamps.push(Date.now());
-  buckets.set(key, stamps);
+export async function recordRateLimit(key: string, rule: RateLimitRule): Promise<void> {
+  await withFallback((s) => s.record(key, rule), (m) => m.record(key, rule));
 }
 
-export function checkRateLimit(
+export async function checkRateLimit(
   key: string,
   rule: RateLimitRule
-): { allowed: boolean; remaining: number } {
-  if (isRateLimited(key, rule)) return { allowed: false, remaining: 0 };
-  recordRateLimit(key, rule);
-  return { allowed: true, remaining: rule.max - liveStamps(key, rule).length };
+): Promise<{ allowed: boolean; remaining: number }> {
+  const r = await withFallback((s) => s.tryRecord(key, rule), (m) => m.tryRecord(key, rule));
+  return { allowed: r.allowed, remaining: Math.max(0, rule.max - r.used) };
 }
 
-/** Test-only: drop every bucket. Never called from a route. */
+/** Test-only: drop every in-memory bucket. Never called from a route. */
 export function resetRateLimits(): void {
-  buckets.clear();
+  memory.clear();
 }
 
 /** Best-effort client IP behind Vercel / a proxy. */

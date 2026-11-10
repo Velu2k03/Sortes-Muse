@@ -164,7 +164,7 @@ export default function InstallBanner() {
           <p className="mt-0.5 text-xs leading-relaxed text-mist">
             {showIOS
               ? "Tap Share, then Add to Home Screen for the full app experience and offline readings."
-              : "Add Sortes to your home screen for instant readings, offline access, and daily card reminders."}
+              : "Add Sortes to your home screen for quick access to readings, offline access, and daily card reminders."}
           </p>
         </div>
         <button

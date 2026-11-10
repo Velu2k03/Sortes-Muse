@@ -1,56 +1,42 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { promises as fs } from "fs";
-import path from "path";
-import {
-  createUser,
-  getUserById,
-  saveReadingForUser,
-  listReadingsForUser,
-  saveReportForUser,
-  listReportsForUser,
-  createTransaction,
-  listTransactions,
-  markFreeReadingUsed,
-  hasUsedFreeReading,
-  markFreeInterpretationUsed,
-  hasUsedFreeInterpretation,
-  storeAuthCode,
-  getAuthCode,
-  deleteUser,
-} from "@/lib/db";
+import { importDbWithIsolatedStore } from "./local-db-test-store";
 
 // Phase 3 (3.6): deleting an account must delete the user and ALL
 // their data — readings, reports, transactions, free-use records,
 // and auth codes — and must not touch anyone else.
 // Live Postgres cannot be verified from this environment, so these
 // tests run against the local JSON branch only and skip when a
-// Postgres URL is configured. The test backs up data/local-db.json
-// and restores it afterwards, so no dev data is lost.
+// Postgres URL is configured. The real data/local-db.json is never touched.
 const hasPostgres = Boolean(process.env.POSTGRES_URL || process.env.DATABASE_URL);
-const LOCAL_PATH = path.join(process.cwd(), "data", "local-db.json");
+// Each file gets its own temp store via importDbWithIsolatedStore (no static
+// `@/lib/db` import: db.ts binds data/local-db.json from cwd at import time).
 
 describe.skipIf(hasPostgres)("deleteUser (local JSON branch)", () => {
-  let backup: string | null = null;
-  let hadFile = false;
+  let cleanup: (() => Promise<void>) | null = null;
+  let createUser: typeof import("@/lib/db").createUser;
+  let getUserById: typeof import("@/lib/db").getUserById;
+  let saveReadingForUser: typeof import("@/lib/db").saveReadingForUser;
+  let listReadingsForUser: typeof import("@/lib/db").listReadingsForUser;
+  let saveReportForUser: typeof import("@/lib/db").saveReportForUser;
+  let listReportsForUser: typeof import("@/lib/db").listReportsForUser;
+  let createTransaction: typeof import("@/lib/db").createTransaction;
+  let listTransactions: typeof import("@/lib/db").listTransactions;
+  let markFreeReadingUsed: typeof import("@/lib/db").markFreeReadingUsed;
+  let hasUsedFreeReading: typeof import("@/lib/db").hasUsedFreeReading;
+  let markFreeInterpretationUsed: typeof import("@/lib/db").markFreeInterpretationUsed;
+  let hasUsedFreeInterpretation: typeof import("@/lib/db").hasUsedFreeInterpretation;
+  let storeAuthCode: typeof import("@/lib/db").storeAuthCode;
+  let getAuthCode: typeof import("@/lib/db").getAuthCode;
+  let deleteUser: typeof import("@/lib/db").deleteUser;
 
   beforeAll(async () => {
-    try {
-      backup = await fs.readFile(LOCAL_PATH, "utf8");
-      hadFile = true;
-    } catch {
-      backup = null;
-      hadFile = false;
-    }
-    await fs.rm(LOCAL_PATH, { force: true });
+    const isolated = await importDbWithIsolatedStore();
+    cleanup = isolated.cleanup;
+    ({ createUser, getUserById, saveReadingForUser, listReadingsForUser, saveReportForUser, listReportsForUser, createTransaction, listTransactions, markFreeReadingUsed, hasUsedFreeReading, markFreeInterpretationUsed, hasUsedFreeInterpretation, storeAuthCode, getAuthCode, deleteUser } = isolated.db);
   });
 
   afterAll(async () => {
-    if (hadFile && backup !== null) {
-      await fs.mkdir(path.dirname(LOCAL_PATH), { recursive: true });
-      await fs.writeFile(LOCAL_PATH, backup);
-    } else {
-      await fs.rm(LOCAL_PATH, { force: true });
-    }
+    await cleanup?.();
   });
 
   it("deletes the user and every dependent row, and leaves other users alone", async () => {

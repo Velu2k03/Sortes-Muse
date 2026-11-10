@@ -213,12 +213,45 @@ async function recordPendingRefund(refundMarker: string, email: string): Promise
   }
 }
 
+/**
+ * Audit item 10: Oracles still to take back for a refund. `refundedCents`
+ * is the order's cumulative refunded_amount (undefined/0 = unknown, treated
+ * as a full refund, as before). Rounds DOWN, so a customer is never revoked
+ * more than the refund covers; capped at the pack. Minus what earlier
+ * refund rows already took back, so redelivery or a second partial refund
+ * never double-revokes.
+ */
+export function prorateRevoke(
+  readings: number,
+  amountDollars: number,
+  refundedCents: number | undefined,
+  alreadyRevoked: number
+): number {
+  const totalCents = Math.round(amountDollars * 100);
+  const full = !refundedCents || refundedCents <= 0 || totalCents <= 0 || refundedCents >= totalCents;
+  const target = full ? readings : Math.floor((readings * refundedCents) / totalCents);
+  return Math.max(0, Math.min(readings, target) - alreadyRevoked);
+}
+
+function buildRefundRow(orig: DbTransaction, userId: string, refundMarker: string, delta: number): DbTransaction {
+  return {
+    id: newTransactionId(),
+    user_id: userId,
+    email: orig.email,
+    pack_type: `refund (${refundMarker})`,
+    // Full revoke keeps the exact original amount; a part is its share, to the cent.
+    amount: delta === orig.readings ? -orig.amount : -Math.round((orig.amount * delta * 100) / orig.readings) / 100,
+    readings: -delta,
+    created_at: new Date().toISOString(),
+  };
+}
+
 /** Postgres branch of revokeOrder: lock the user, dedupe the refund, record it, take back the grant. */
 async function revokeOrderPostgres(
   orig: DbTransaction,
   userId: string,
-  refundRow: DbTransaction,
-  refundMarker: string
+  refundMarker: string,
+  refundedCents: number | undefined
 ): Promise<{ revoked: boolean; readings: number }> {
   if (!pg) throw new Error("Database not configured");
   const controller = new AbortController();
@@ -228,12 +261,14 @@ async function revokeOrderPostgres(
     // a clear error instead of a foreign-key error at the INSERT.
     const locked = await tx`SELECT id FROM users WHERE id = ${userId} FOR UPDATE`;
     if (locked.length === 0) throw new Error("User not found during refund");
-    const existing = await tx`SELECT id FROM transactions WHERE pack_type LIKE ${"%" + refundMarker + ")%"} LIMIT 1`;
-    if (existing.length > 0) return { revoked: false, readings: orig.readings };
+    const prior = await tx`SELECT COALESCE(SUM(-readings), 0)::int AS done FROM transactions WHERE pack_type LIKE ${"%" + refundMarker + ")%"}`;
+    const delta = prorateRevoke(orig.readings, orig.amount, refundedCents, (prior[0] as { done: number }).done);
+    if (delta <= 0) return { revoked: false, readings: orig.readings };
+    const refundRow = buildRefundRow(orig, userId, refundMarker, delta);
     await tx`INSERT INTO transactions (id, user_id, email, pack_type, amount, readings, created_at)
       VALUES (${refundRow.id}, ${refundRow.user_id}, ${refundRow.email}, ${refundRow.pack_type}, ${refundRow.amount}, ${refundRow.readings}, NOW())`;
-    await tx`UPDATE users SET credits = GREATEST(0, credits - ${orig.readings}) WHERE id = ${userId}`;
-    return { revoked: true, readings: orig.readings };
+    await tx`UPDATE users SET credits = GREATEST(0, credits - ${delta}) WHERE id = ${userId}`;
+    return { revoked: true, readings: delta };
   });
   return await withDbTimeout(begin, controller);
 }
@@ -242,24 +277,27 @@ async function revokeOrderPostgres(
 async function revokeOrderLocal(
   orig: DbTransaction,
   userId: string,
-  refundRow: DbTransaction,
-  refundMarker: string
+  refundMarker: string,
+  refundedCents: number | undefined
 ): Promise<{ revoked: boolean; readings: number }> {
   const db = await readLocal();
-  if (db.transactions.some((t) => t.pack_type.includes(`${refundMarker})`))) {
-    return { revoked: false, readings: orig.readings };
-  }
+  const done = db.transactions
+    .filter((t) => t.pack_type.includes(`${refundMarker})`))
+    .reduce((n, t) => n - t.readings, 0);
+  const delta = prorateRevoke(orig.readings, orig.amount, refundedCents, done);
+  if (delta <= 0) return { revoked: false, readings: orig.readings };
   const u = db.users.find((x) => x.id === userId);
   if (!u) return { revoked: false, readings: orig.readings };
-  db.transactions.unshift(refundRow);
-  u.credits = Math.max(0, u.credits - orig.readings);
+  db.transactions.unshift(buildRefundRow(orig, userId, refundMarker, delta));
+  u.credits = Math.max(0, u.credits - delta);
   await writeLocal(db);
-  return { revoked: true, readings: orig.readings };
+  return { revoked: true, readings: delta };
 }
 
 /**
  * Phase 1 (1.4): revoke a refunded order's grant, idempotently.
- * Removes exactly the readings the original fulfillment granted,
+ * Removes the readings the original fulfillment granted, prorated to
+ * refundedCents when the refund is partial (see prorateRevoke),
  * never drives the balance below 0 (GREATEST(0, ...) server-side),
  * and records a negative refund transaction so a retried refund
  * cannot revoke twice. Returns revoked: false when there was no
@@ -280,7 +318,7 @@ async function revokeOrderLocal(
  * The optional email parameter is that payload email; callers that
  * do not have one pass nothing and the marker records "".
  */
-export async function revokeOrder(orderId: string, email = ""): Promise<{ revoked: boolean; readings: number }> {
+export async function revokeOrder(orderId: string, email = "", refundedCents?: number): Promise<{ revoked: boolean; readings: number }> {
   await ensureSchema();
   if (!orderId) return { revoked: false, readings: 0 };
   const refundMarker = `lemonsqueezy:${orderId}:refund`;
@@ -295,15 +333,6 @@ export async function revokeOrder(orderId: string, email = ""): Promise<{ revoke
     userId = u?.id ?? null;
   }
   if (!userId) return { revoked: false, readings: orig.readings };
-  const refundRow: DbTransaction = {
-    id: newTransactionId(),
-    user_id: userId,
-    email: orig.email,
-    pack_type: `refund (${refundMarker})`,
-    amount: -orig.amount,
-    readings: -orig.readings,
-    created_at: new Date().toISOString(),
-  };
-  if (usePostgres) return revokeOrderPostgres(orig, userId, refundRow, refundMarker);
-  return revokeOrderLocal(orig, userId, refundRow, refundMarker);
+  if (usePostgres) return revokeOrderPostgres(orig, userId, refundMarker, refundedCents);
+  return revokeOrderLocal(orig, userId, refundMarker, refundedCents);
 }

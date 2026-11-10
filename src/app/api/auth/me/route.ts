@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { getUserById } from "@/lib/db";
-import { checkRateLimit, clientIp, rateLimitExceeded, RATE_LIMITS } from "@/lib/rateLimit";
+import { checkRateLimit, clientIp, ipLimitKey, rateLimitExceeded, RATE_LIMITS } from "@/lib/rateLimit";
 
 export const dynamic = "force-dynamic";
 
@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
   // bounds unauthenticated polling without touching normal use; a
   // tripped limit reads as signed-out in AuthProvider until the next
   // refresh, same as any other non-200 here.
-  if (!checkRateLimit(`me:${clientIp(req)}`, RATE_LIMITS.readIp).allowed) {
+  if (!(await checkRateLimit(ipLimitKey("me", clientIp(req)), RATE_LIMITS.readIp)).allowed) {
     return rateLimitExceeded();
   }
   const session = await getSession();

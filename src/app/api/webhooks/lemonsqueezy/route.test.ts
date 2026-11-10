@@ -158,6 +158,18 @@ describe("POST /api/webhooks/lemonsqueezy", () => {
     });
   });
 
+  // F2: the stored amount (the later proration base) is the order total the
+  // customer paid, tax included, not the pack list price (3.99).
+  it("F2: stores the order total (tax included) as the amount, not the list price", async () => {
+    mockedGetUserByEmail.mockResolvedValue(null);
+    mockedCreateUser.mockResolvedValue({ id: "u1", email: "buyer@example.com", credits: 0, created_at: "2026-11-05T00:00:00Z" });
+    mockedFulfill.mockResolvedValue({ transaction: null, credits: 5, duplicate: false });
+    mockedGetOrder.mockResolvedValue(apiOrder({ total: 450, subtotal: 399 }));
+    const res = await POST(signedReq(orderCreated({ total: 450, subtotal: 399 })));
+    expect(res.status).toBe(200);
+    expect(mockedFulfill).toHaveBeenCalledWith(expect.objectContaining({ amount: 4.5, readings: 5 }));
+  });
+
   // Bug 1 fix: a signed-in purchase must be credited to the
   // signed-in account, not to the email Lemon Squeezy reports. The
   // checkout binds the signed-in user id into
@@ -315,6 +327,14 @@ describe("POST /api/webhooks/lemonsqueezy", () => {
     expect(mockedFulfill).not.toHaveBeenCalled();
   });
 
+  it("passes refunded_amount through for proration (audit item 10)", async () => {
+    mockedRevoke.mockResolvedValue({ revoked: true, readings: 6 });
+    await POST(
+      signedReq({ meta: { event_name: "order_refunded" }, data: { id: "ord_p", attributes: { refunded_amount: 400 } } })
+    );
+    expect(mockedRevoke).toHaveBeenCalledWith("ord_p", "", 400);
+  });
+
   it("revokes credits on order_refunded", async () => {
     mockedRevoke.mockResolvedValue({ revoked: true, readings: 5 });
     const res = await POST(
@@ -322,7 +342,7 @@ describe("POST /api/webhooks/lemonsqueezy", () => {
     );
     expect(res.status).toBe(200);
     expect(await res.json()).toMatchObject({ ok: true, refunded: true });
-    expect(mockedRevoke).toHaveBeenCalledWith("ord_1", "");
+    expect(mockedRevoke).toHaveBeenCalledWith("ord_1", "", undefined);
     expect(mockedFulfill).not.toHaveBeenCalled();
   });
 
@@ -442,7 +462,7 @@ describe("POST /api/webhooks/lemonsqueezy", () => {
       })
     );
     expect(res.status).toBe(200);
-    expect(mockedRevoke).toHaveBeenCalledWith("ord_1", "");
+    expect(mockedRevoke).toHaveBeenCalledWith("ord_1", "", undefined);
   });
 
   // Phase G follow-up: an order_created with no order id can never

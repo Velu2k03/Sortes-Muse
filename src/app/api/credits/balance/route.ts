@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { getUserById } from "@/lib/db";
-import { checkRateLimit, clientIp, rateLimitExceeded, RATE_LIMITS } from "@/lib/rateLimit";
+import { checkRateLimit, clientIp, ipLimitKey, rateLimitExceeded, RATE_LIMITS } from "@/lib/rateLimit";
 
 export const dynamic = "force-dynamic";
 
@@ -25,7 +25,7 @@ export const dynamic = "force-dynamic";
 export async function GET(req: NextRequest) {
   // AF-005: the sibling transactions route already uses the moneyIp
   // bucket (60/min/IP); this money read had no limit at all.
-  if (!checkRateLimit(`balance:${clientIp(req)}`, RATE_LIMITS.moneyIp).allowed) {
+  if (!(await checkRateLimit(ipLimitKey("balance", clientIp(req)), RATE_LIMITS.moneyIp)).allowed) {
     return rateLimitExceeded();
   }
   const session = await getSession();

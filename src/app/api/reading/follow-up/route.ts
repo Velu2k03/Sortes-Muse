@@ -13,10 +13,13 @@ import { validateFollowUpText } from "@/lib/output-validation";
 import { logGuestGeneration } from "@/lib/guestLogging";
 import { drawClarifierCard } from "@/lib/clarifier";
 import { CARDS } from "@/lib/cards";
-import { checkRateLimit, clientIp, rateLimitExceeded, RATE_LIMITS } from "@/lib/rateLimit";
+import { checkRateLimit, clientIp, ipLimitKey, rateLimitExceeded, RATE_LIMITS } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+// Covers the 170 s AI retry budget plus the DB write (Vercel Fluid: 300 s max on every plan).
+// 300 s Fluid ceiling on Hobby; 170 s AI budget leaves 130 s margin (see reading/generate).
+export const maxDuration = 300;
 
 const MAX_FOLLOWUPS = 3;
 
@@ -24,22 +27,6 @@ const HEALTH_CLOSE =
   "This reflection is not medical advice. Please speak with a licensed professional about any health concern.";
 const FINANCES_CLOSE =
   "This reflection is not financial advice. Please speak with a licensed professional about any financial decision.";
-
-// Whitelist for guest-sent reading fields. Never trust extra keys.
-const READING_WHITELIST = [
-  "question",
-  "interpretation",
-  "cards",
-  "category",
-  "firstImpression",
-  "nextStep",
-  "followUps",
-  "aiGenerated",
-  "chartSummary",
-] as const;
-
-// Birth-like keys that must never enter a prompt, even on tarot.
-const BIRTH_KEYS = /birth|dob|dateOfBirth|birthDate|birthTime|birthPlace|birthday/i;
 
 type DeckCard = {
   id: string;
@@ -127,14 +114,13 @@ Answer this follow-up now.`.trim();
 
 export async function POST(req: NextRequest) {
   // Phase 6: shared limiter (was a per-route map: 10/hr/IP).
-  if (!checkRateLimit(`follow-up:${clientIp(req)}`, RATE_LIMITS.aiFollowUpIp).allowed) {
+  if (!(await checkRateLimit(ipLimitKey("follow-up", clientIp(req)), RATE_LIMITS.aiFollowUpIp)).allowed) {
     return rateLimitExceeded();
   }
 
   let body: {
     readingId?: string;
     question?: string;
-    reading?: Record<string, unknown>;
   };
   try {
     body = await req.json();
@@ -179,35 +165,12 @@ export async function POST(req: NextRequest) {
       ? (readingData.followUps as FollowUp[])
       : [];
   } else {
-    // Guest: build from whitelisted fields only
-    if (!body.reading || typeof body.reading !== "object") {
-      return NextResponse.json(
-        { error: "reading object is required for guest follow-ups." },
-        { status: 400 }
-      );
-    }
-    // Whitelist: only copy safe keys
-    readingData = {};
-    for (const key of READING_WHITELIST) {
-      if (key in body.reading && !BIRTH_KEYS.test(key)) {
-        readingData[key] = body.reading[key];
-      }
-    }
-    // Strip any birth-like keys from cards too
-    if (Array.isArray(readingData.cards)) {
-      readingData.cards = (readingData.cards as Record<string, unknown>[]).map(
-        (c) => {
-          const safe: Record<string, unknown> = {};
-          for (const [k, v] of Object.entries(c)) {
-            if (!BIRTH_KEYS.test(k)) safe[k] = v;
-          }
-          return safe;
-        }
-      );
-    }
-    existingFollowUps = Array.isArray(readingData.followUps)
-      ? (readingData.followUps as FollowUp[]).slice(0, MAX_FOLLOWUPS)
-      : [];
+    // Guests get no follow-ups: the free/paid state would come from the
+    // request body (an empty followUps array made every follow-up free).
+    return NextResponse.json(
+      { error: "Sign in to ask a follow-up." },
+      { status: 401 }
+    );
   }
 
   // Phase 2, 2.4: guest-sent reading fields are untrusted input.

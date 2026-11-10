@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { parseReading } from "@/lib/readingMarkdown";
+import { renderReadingBlocks } from "@/components/ReadingText";
 
 interface Props {
   text: string;
@@ -11,13 +13,14 @@ interface Props {
 
 /**
  * Reveals long text word by word, like the reading is being written for you
- * in the moment. Click to skip to the full text. Respects reduced motion.
+ * in the moment. A real "Show full reading" button skips to the full text. Respects reduced motion.
  */
 export default function TypewriterText({ text, speed = 3, className }: Props) {
-  const words = useMemo(() => text.split(/\s+/), [text]);
+  const blocks = useMemo(() => parseReading(text), [text]);
+  const total = useMemo(() => blocks.reduce((n, b) => n + b.words.length, 0), [blocks]);
   const [count, setCount] = useState(0);
   const [skipped, setSkipped] = useState(false);
-  const done = skipped || count >= words.length;
+  const done = skipped || count >= total;
 
   useEffect(() => {
     // Deferred reset: a new text restarts the reveal on the next tick,
@@ -38,28 +41,33 @@ export default function TypewriterText({ text, speed = 3, className }: Props) {
       return;
     }
     const t = setTimeout(() => {
-      setCount((c) => Math.min(c + speed, words.length));
+      setCount((c) => Math.min(c + speed, total));
     }, 90);
     return () => clearTimeout(t);
-  }, [count, done, speed, words.length]);
+  }, [count, done, speed, total]);
 
+  // The revealed blocks are plain h3/p/ul/ol content, so assistive tech still
+  // sees headings and lists. Skipping is a separate native button.
   if (done) {
-    return <div className={className}>{words.join(" ")}</div>;
+    return <div className={className}>{renderReadingBlocks(blocks, total)}</div>;
   }
 
   return (
-    <button
-      type="button"
-      className={`block w-full text-left ${className ?? ""}`}
-      onClick={() => setSkipped(true)}
-      aria-label="Tap to reveal the full reading"
-      title="Tap to reveal all"
-    >
-      {words.slice(0, count).join(" ")}
+    <div className={className}>
+      {renderReadingBlocks(blocks, count)}
       <span
         aria-hidden="true"
         className="ml-0.5 inline-block h-[1.1em] w-[2px] translate-y-[3px] animate-pulse bg-gold"
       />
-    </button>
+      <div className="mt-4">
+        <button
+          type="button"
+          onClick={() => setSkipped(true)}
+          className="rounded-full border border-gold/40 px-4 py-2 text-xs font-semibold text-goldbright"
+        >
+          Show full reading
+        </button>
+      </div>
+    </div>
   );
 }

@@ -63,11 +63,13 @@ export {
   updateReadingForUser,
   deleteReadingForUser,
   appendFollowUpWithSpend,
+  saveReadingWithSpend,
   getReadingForUser,
   listReadingsForUser,
 } from "./db/readings";
 export {
   saveReportForUser,
+  saveReportWithSpend,
   getReportForUser,
   listReportsForUser,
   deleteReportForUser,

@@ -9,6 +9,7 @@ import {
   ConfirmStep,
   FormStep,
   ImpressionStep,
+  SignInGate,
   StepDots,
 } from "./IntakeSteps";
 
@@ -32,9 +33,14 @@ export default function IntakeFlow({ slug }: { slug: string }) {
           { label: spread.name },
         ]}
       />
+      {f.gate === "signin" && <SignInGate f={f} />}
+      {f.gate === "loading" && (
+        <output className="mt-16 block text-center text-cream/75">Checking your account…</output>
+      )}
       {/* The impression step is part of the reading phase in the dots. */}
-      <StepDots step={step === "impression" ? "processing" : step} />
+      {!f.gate && <StepDots step={step === "impression" ? "processing" : step} />}
 
+      {!f.gate && (
       <AnimatePresence mode="wait">
         {step === "category" && (
           <motion.div
@@ -95,6 +101,7 @@ export default function IntakeFlow({ slug }: { slug: string }) {
           </div>
         )}
       </AnimatePresence>
+      )}
     </div>
   );
 }

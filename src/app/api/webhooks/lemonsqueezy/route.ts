@@ -57,6 +57,7 @@ export async function POST(req: NextRequest) {
         attributes?: {
           user_email?: string;
           total?: number;
+          refunded_amount?: number;
           subtotal?: number;
           currency?: string;
           store_id?: number;
@@ -106,7 +107,12 @@ export async function POST(req: NextRequest) {
       // pending-refund marker (revokeOrder records the email on
       // the marker row when there is no fulfilment to link to).
       const refundEmail = (event.data?.attributes?.user_email ?? "").trim().toLowerCase();
-      const result = await revokeOrder(orderId, refundEmail);
+      const result = await revokeOrder(
+        orderId,
+        refundEmail,
+        // Audit item 10: cumulative refunded amount in cents; absent = full.
+        typeof event.data?.attributes?.refunded_amount === "number" ? event.data.attributes.refunded_amount : undefined
+      );
       if (!result.revoked) {
         console.warn(`[webhook] refund for order ${orderId}: nothing to revoke (no fulfillment, or already revoked).`);
       } else {

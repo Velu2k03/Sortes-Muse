@@ -1,11 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
-import {
-  getUserById,
-  spendUserCredits,
-  hasUsedFreeReading,
-  markFreeReadingUsed,
-} from "@/lib/db";
+import { randomUUID } from "crypto";
+import { getSession, guestFreeUsed, setGuestFreeUsed } from "@/lib/auth";
+import { getReadingForUser, getUserById, hasUsedFreeReading, saveReadingWithSpend } from "@/lib/db";
+import { isUuid } from "@/lib/ids";
 import cardsData from "@/data/cards.json";
 import { SENSITIVE_KEYS } from "@/lib/intake";
 import { getSpread } from "@/lib/tarot";
@@ -14,10 +11,15 @@ import { generateChat } from "@/lib/ai";
 import { preCheckOracleBalance } from "@/lib/credit-precheck";
 import { validateReadingText } from "@/lib/output-validation";
 import { logGuestGeneration } from "@/lib/guestLogging";
-import { checkRateLimit, clientIp, rateLimitExceeded, RATE_LIMITS } from "@/lib/rateLimit";
+import { checkRateLimit, clientIp, ipLimitKey, isRateLimited, rateLimitExceeded, recordRateLimit, RATE_LIMITS } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+// Fluid compute is ON (confirmed 2026-11-10): 300 s default AND maximum on
+// Hobby (800 s on Pro). The 170 s AI retry budget (AI_RETRY_TOTAL_TIMEOUT_MS)
+// leaves 130 s for the pre-check, the DB transaction, and the response,
+// inside the 300 s ceiling. Must be a literal.
+export const maxDuration = 300;
 
 // M0.2 health guardrail parity: the chart route already appends this
 // server-side when missing; the tarot route now does the same, so the
@@ -153,7 +155,7 @@ Write the personalized reading now.`;
 
 export async function POST(req: NextRequest) {
   // Phase 6: shared limiter (was a per-route map: 20/hr/IP).
-  if (!checkRateLimit(`generate:${clientIp(req)}`, RATE_LIMITS.aiGenerateIp).allowed) {
+  if (!(await checkRateLimit(ipLimitKey("generate", clientIp(req)), RATE_LIMITS.aiGenerateIp)).allowed) {
     return rateLimitExceeded();
   }
 
@@ -161,11 +163,10 @@ export async function POST(req: NextRequest) {
     cards?: ApiCard[];
     intake?: Intake;
     spreadSlug?: string;
-    /** Guest device claim: the device-local free flag says this is the
-        first Quick Insight. Only honoured for guests (no session) and
-        only for quick-insight; signed-in users are checked against
-        the server record instead. */
-    claimFree?: boolean;
+    /** Question as first written, kept on the saved reading. */
+    originalQuestion?: string;
+    /** Client-minted attempt id; a retry with the same id replays, never re-spends. */
+    readingId?: string;
   };
   try {
     body = await req.json();
@@ -174,6 +175,9 @@ export async function POST(req: NextRequest) {
   }
 
   const { cards, intake } = body;
+  if (body.readingId !== undefined && !isUuid(body.readingId)) {
+    return NextResponse.json({ error: "readingId must be a UUID." }, { status: 400 });
+  }
   if (!cards?.length || !intake?.story || !intake?.question) {
     return NextResponse.json(
       { error: "Missing cards, story, or question." },
@@ -223,20 +227,62 @@ export async function POST(req: NextRequest) {
   // boundary is sign-in, because guests have no server account to charge.
   const session = await getSession();
 
-  // Phase 2, 2.1: the first Quick Insight is free (FAQ rule, per
-  // device). For signed-in users the server record is authoritative
-  // and the free use is marked only after a real generation (below),
-  // so a failed generation never consumes it. For guests the device
-  // flag is the record: the client sends claimFree, the server spends
-  // nothing for guests either way, and the client marks its flag only
-  // after a successful generation. Other spreads are never free.
+  // Phase 2, 2.1: the first Quick Insight is free. Signed-in users: the
+  // server record is authoritative and is marked only after a real
+  // generation. Guests: a signed HttpOnly cookie (set after a real
+  // generation) records the used free reading; nothing from the body is
+  // trusted. Every other guest request has no server account to charge,
+  // so it is refused before any model call.
   const isQuickInsight = body.spreadSlug === "quick-insight";
   const serverFree =
     session && isQuickInsight
       ? !(await hasUsedFreeReading(session.userId))
       : false;
-  const guestFree =
-    !session && isQuickInsight && body.claimFree === true;
+  const guestFree = !session && isQuickInsight;
+  if (guestFree && (await guestFreeUsed())) {
+    return NextResponse.json(
+      { error: "Your free Quick Insight is used. Sign in to continue." },
+      { status: 401 }
+    );
+  }
+  // Batch D (A1) / Point 4: the cookie above is client-held, so a caller that
+  // never sends it looks like a first-time guest every time. Cap guest free
+  // readings per IP per day. CHECK here, RECORD only after a successful
+  // generation (below), so failed generations never use up a slot. The
+  // small race (a few extra requests slip past the cap) is accepted.
+  const guestIpKey = ipLimitKey("guest-free", clientIp(req));
+  if (guestFree && (await isRateLimited(guestIpKey, RATE_LIMITS.guestFreeIp))) {
+    return NextResponse.json(
+      { error: "Your free Quick Insight is used. Sign in to continue." },
+      { status: 401 }
+    );
+  }
+  if (!session && !isQuickInsight) {
+    return NextResponse.json(
+      { error: "Sign in to get this reading." },
+      { status: 401 }
+    );
+  }
+
+  // Point 1: replay. If this attempt id was already saved for this user
+  // (the first response was lost), return it with no model call and no spend.
+  if (session && body.readingId) {
+    const prior = (await getReadingForUser(session.userId, body.readingId)) as
+      | { interpretation: string; model?: string; free?: boolean }
+      | null;
+    if (prior) {
+      const user = await getUserById(session.userId);
+      return NextResponse.json({
+        interpretation: prior.interpretation,
+        model: prior.model,
+        fallback: false,
+        free: !!prior.free,
+        credits: user?.credits ?? 0,
+        reading: prior,
+        replayed: true,
+      });
+    }
+  }
 
   // No key configured: fail honestly instead of serving static text as
   // a reading. No credit is spent on this path.
@@ -326,50 +372,79 @@ export async function POST(req: NextRequest) {
       : generated.text;
 
   // Spend only after a real generation, so a failed generation can never
-  // cost a credit and no refund path is needed. The spend is atomic
-  // (credits >= 1 checked in the update); if it fails, the text is
-  // withheld rather than delivered unpaid. A first free Quick Insight
-  // marks the server record instead of spending.
-  //
-  // Phase B (R7): the free claim is atomic. markFreeReadingUsed
-  // returns false when a concurrent request claimed the free use
-  // first; that request spends one Oracle instead of serving a
-  // second free reading, and the response reports free: false
-  // because the reading was paid for.
-  let freeGranted = serverFree;
+  // cost a credit. Item 3: the spend (or the atomic first-free claim) and
+  // the reading row are ONE transaction (saveReadingWithSpend), so closing
+  // the tab can never lose a paid reading. If the free claim loses a race
+  // the same transaction spends one Oracle instead (free: false); if the
+  // balance cannot cover it nothing is written and the text is withheld.
   if (session) {
-    if (serverFree) {
-      const claimed = await markFreeReadingUsed(session.userId);
-      if (!claimed) {
-        freeGranted = false;
-        const ok = await spendUserCredits(session.userId, 1);
-        if (!ok) {
-          return NextResponse.json(
-            { error: "You need 1 Oracle for this reading. No Oracle was spent." },
-            { status: 402 }
-          );
-        }
+    const spreadName = (() => {
+      try {
+        return getSpread(body.spreadSlug ?? "").name;
+      } catch {
+        return body.spreadSlug ?? "Reading";
       }
-    } else {
-      const ok = await spendUserCredits(session.userId, 1);
-      if (!ok) {
-        return NextResponse.json(
-          { error: "You need 1 Oracle for this reading. No Oracle was spent." },
-          { status: 402 }
-        );
-      }
+    })();
+    const question = intake.question.trim();
+    const original = typeof body.originalQuestion === "string" ? body.originalQuestion.trim().slice(0, 300) : "";
+    const firstWord = (intake.firstImpression ?? "").trim().split(/\s+/)[0] ?? "";
+    const reading = {
+      id: body.readingId ?? randomUUID(),
+      createdAt: new Date().toISOString(),
+      spreadSlug: body.spreadSlug ?? "custom",
+      spreadName: `${spreadName} · ${intake.categoryName}`,
+      cards: cards.map((c) => ({
+        cardId: c.cardId,
+        reversed: c.reversed,
+        position: c.position,
+        positionKey: (c as { positionKey?: string }).positionKey ?? "",
+      })),
+      interpretation: finalText,
+      aiGenerated: true,
+      model: generated.model,
+      category: intake.categoryName,
+      question,
+      originalQuestion: original && original !== question ? original : undefined,
+      firstImpression: firstWord || undefined,
+      firstName: intake.firstName,
+      free: serverFree,
+    };
+    const saved = await saveReadingWithSpend(session.userId, reading, serverFree);
+    if (saved.conflict) {
+      return NextResponse.json(
+        { error: "That reading id is already in use. No Oracle was spent." },
+        { status: 409 }
+      );
     }
-    // Phase 6B: re-fetch AFTER the spend. The pre-check user was read
-    // before generation and the 1-Oracle spend, so reusing it would
-    // report a balance 1 higher than the real post-spend balance.
-    // (The other three AI routes already re-fetch; this one did not.)
+    if (!saved.ok) {
+      return NextResponse.json(
+        { error: "You need 1 Oracle for this reading. No Oracle was spent." },
+        { status: 402 }
+      );
+    }
+    if (saved.existing) {
+      // Lost a race with a parallel attempt of the same id: serve the saved row.
+      const prior = (await getReadingForUser(session.userId, reading.id)) as typeof reading | null;
+      const user = await getUserById(session.userId);
+      return NextResponse.json({
+        interpretation: prior?.interpretation ?? finalText,
+        model: prior?.model ?? generated.model,
+        fallback: false,
+        free: saved.free,
+        credits: user?.credits ?? 0,
+        reading: prior ?? { ...reading, free: saved.free },
+        replayed: true,
+      });
+    }
+    // Phase 6B: re-fetch AFTER the spend (the pre-check balance is stale).
     const user = await getUserById(session.userId);
     return NextResponse.json({
       interpretation: finalText,
       model: generated.model,
       fallback: false,
-      free: freeGranted,
+      free: saved.free,
       credits: user?.credits ?? 0,
+      reading: { ...reading, free: saved.free },
     });
   }
 
@@ -377,10 +452,13 @@ export async function POST(req: NextRequest) {
   // funnel); the successful generation is logged so abuse is
   // visible per route in the log drain.
   logGuestGeneration("reading/generate");
-  return NextResponse.json({
+  if (guestFree) await recordRateLimit(guestIpKey, RATE_LIMITS.guestFreeIp);
+  const res = NextResponse.json({
     interpretation: finalText,
     model: generated.model,
     fallback: false,
-    free: guestFree,
+    free: true,
   });
+  await setGuestFreeUsed(res);
+  return res;
 }

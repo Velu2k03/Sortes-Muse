@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { checkRateLimit, clientIp, rateLimitExceeded, RATE_LIMITS } from "@/lib/rateLimit";
+import { checkRateLimit, clientIp, ipLimitKey, rateLimitExceeded, RATE_LIMITS } from "@/lib/rateLimit";
 
 // Free, no-key geocoding via OpenStreetMap Nominatim. The place string is
 // used only to look up coordinates in this request: it is never stored,
@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   // Phase 6: shared limiter (was a per-route map: 20/hr/IP).
-  if (!checkRateLimit(`geocode:${clientIp(req)}`, RATE_LIMITS.chartGeocodeIp).allowed) {
+  if (!(await checkRateLimit(ipLimitKey("geocode", clientIp(req)), RATE_LIMITS.chartGeocodeIp)).allowed) {
     return rateLimitExceeded();
   }
   const q = req.nextUrl.searchParams.get("q")?.trim() ?? "";

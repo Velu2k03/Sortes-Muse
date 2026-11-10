@@ -11,6 +11,20 @@ import { localizeStar, zodiacEn } from "@/lib/ziwei-i18n";
 export type ChartResult = ZiweiResult | WesternResult | VedicResult;
 export type ChartSystem = "ziwei" | "western" | "vedic";
 
+/** Attempt-id input for a chart interpretation. Only stable inputs: the
+ * birth-form fingerprint the chart was calculated from, plus system,
+ * category and question. NOT the computed chart or chartSummary, which
+ * hold date-derived content (Vedic dasha as of today's UTC date), so a
+ * retry after UTC midnight would otherwise mint a second id and charge twice. */
+export function chartAttemptKey(
+  system: ChartSystem,
+  birthFingerprint: string,
+  category: string,
+  question: string
+): string {
+  return JSON.stringify({ system, birthFingerprint, category, question });
+}
+
 export const FOCUS_AREAS = ["general", "love", "career", "finances", "academics", "health"] as const;
 
 export const PRESETS: { label: string; latitude: number; longitude: number }[] = [

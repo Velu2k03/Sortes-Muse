@@ -1,5 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
 import postgres from "postgres";
+import { pgTestUrl } from "./pg-test-url";
+import { tu } from "./test-uuid";
 
 /**
  * Phase 6 (P1c, gate G2): the money paths EXECUTED against a real
@@ -20,7 +22,7 @@ import postgres from "postgres";
  * (Local-only staging password: keep the real value out of the repo;
  * set it in your shell when running the suite.)
  */
-const TEST_URL = process.env.SORTES_TEST_DATABASE_URL ?? "";
+const TEST_URL = pgTestUrl("SORTES_TEST_DATABASE_URL");
 const SKIP = !TEST_URL;
 
 type Db = typeof import("@/lib/db");
@@ -170,6 +172,43 @@ describe.skipIf(SKIP)("money paths on real Postgres (staging only)", () => {
     expect((await db.getUserById(user.id))?.credits).toBe(0);
     // Refund of an order that was never fulfilled revokes nothing.
     expect(await db.revokeOrder("order-never-existed")).toEqual({ revoked: false, readings: 0 });
+  });
+
+  it("audit item 10: partial refund revokes only the prorated Oracles, cumulatively and idempotently", async () => {
+    const user = await db.createUser("refund-prorate@example.com");
+    await db.fulfillOrder({
+      userId: user.id,
+      email: user.email,
+      packType: "pack12 (lemonsqueezy:order-1010)",
+      amount: 7.99,
+      readings: 12,
+      orderId: "order-1010",
+    });
+    // $4.00 of $7.99 refunded: floor(12 * 400 / 799) = 6 Oracles.
+    const part = await db.revokeOrder("order-1010", "", 400);
+    expect(part).toEqual({ revoked: true, readings: 6 });
+    expect((await db.getUserById(user.id))?.credits).toBe(6);
+    // Redelivery of the same refund revokes nothing more.
+    expect((await db.revokeOrder("order-1010", "", 400)).revoked).toBe(false);
+    expect((await db.getUserById(user.id))?.credits).toBe(6);
+    // Cumulative refund now the full $7.99: only the remaining 6 go.
+    expect(await db.revokeOrder("order-1010", "", 799)).toEqual({ revoked: true, readings: 6 });
+    expect((await db.getUserById(user.id))?.credits).toBe(0);
+    expect((await db.revokeOrder("order-1010", "", 799)).revoked).toBe(false);
+  });
+
+  it("audit item 10: full or oversized refund revokes the whole pack once", async () => {
+    const user = await db.createUser("refund-full@example.com");
+    await db.fulfillOrder({
+      userId: user.id,
+      email: user.email,
+      packType: "pack5 (lemonsqueezy:order-1011)",
+      amount: 3.99,
+      readings: 5,
+      orderId: "order-1011",
+    });
+    expect(await db.revokeOrder("order-1011", "", 99999)).toEqual({ revoked: true, readings: 5 });
+    expect((await db.getUserById(user.id))?.credits).toBe(0);
   });
 
   it("Phase G follow-up: refund before fulfilment records a marker; a later fulfilment grants nothing", async () => {
@@ -495,5 +534,267 @@ describe.skipIf(SKIP)("money paths on real Postgres (staging only)", () => {
     const revokePrefix = await db.revokeOrder("order-12");
     expect(revokePrefix).toEqual({ revoked: false, readings: 0 });
     expect((await db.getUserById(user.id))?.credits).toBe(5);
+  });
+  // Item 3: spend/free-claim and the reading row commit together.
+  it("saveReadingWithSpend: one transaction for spend + row; free claim; no credit writes nothing", async () => {
+    const user = await db.createUser("save-spend@example.com");
+    await db.addUserCredits(user.id, 1);
+    const r = (id: string) => ({ id, free: false, interpretation: "text", aiGenerated: true });
+    // First free: claims free_readings, spends nothing, row has free:true.
+    expect(await db.saveReadingWithSpend(user.id, r(tu("sws-1")), true)).toEqual({ ok: true, free: true });
+    expect((await db.getUserById(user.id))?.credits).toBe(1);
+    // Free already used: falls back to a 1-Oracle spend, row free:false.
+    expect(await db.saveReadingWithSpend(user.id, r(tu("sws-2")), true)).toEqual({ ok: true, free: false });
+    expect((await db.getUserById(user.id))?.credits).toBe(0);
+    // No credit: nothing written (no row, no spend).
+    expect(await db.saveReadingWithSpend(user.id, r(tu("sws-3")), false)).toEqual({ ok: false, free: false });
+    const rows = (await raw`SELECT id, data->>'free' AS free FROM readings WHERE user_id = ${user.id} ORDER BY id`) as Array<{ id: string; free: string }>;
+    expect(rows.sort((a, b) => a.free.localeCompare(b.free)).reverse()).toEqual([{ id: tu("sws-1"), free: "true" }, { id: tu("sws-2"), free: "false" }]);
+  });
+  // Batch D (B1): regression guard. The first-ever reading being a Celtic
+  // Cross (tryFree=false) spends 1 and leaves the free grant intact.
+  it("B1: first Celtic Cross spends 1 and does not consume the free grant", async () => {
+    const user = await db.createUser("bd-b1@example.com");
+    await db.addUserCredits(user.id, 3);
+    const r = (id: string) => ({ id, free: false, interpretation: "text", aiGenerated: true });
+    expect(await db.hasUsedFreeReading(user.id)).toBe(false);
+    expect(await db.saveReadingWithSpend(user.id, r(tu("bd-cc")), false)).toEqual({ ok: true, free: false });
+    expect((await db.getUserById(user.id))?.credits).toBe(2);
+    expect(await db.hasUsedFreeReading(user.id)).toBe(false);
+    expect(await db.saveReadingWithSpend(user.id, r(tu("bd-qi")), true)).toEqual({ ok: true, free: true });
+    expect((await db.getUserById(user.id))?.credits).toBe(2);
+  });
+
+  // Batch D (B2): the client's /api/history save with the server's id is a no-op.
+  it("B2: client re-save of a server-saved reading id leaves exactly one row", async () => {
+    const user = await db.createUser("bd-b2@example.com");
+    await db.addUserCredits(user.id, 1);
+    const r = { id: tu("bd-srv"), free: false, interpretation: "text", aiGenerated: true };
+    expect((await db.saveReadingWithSpend(user.id, r, false)).ok).toBe(true);
+    await db.saveReadingForUser(user.id, { ...r, interpretation: "client copy" });
+    const rows = (await raw`SELECT data->>'interpretation' AS t FROM readings WHERE id = ${tu("bd-srv")}`) as Array<{ t: string }>;
+    expect(rows).toEqual([{ t: "text" }]);
+  });
+
+  // Batch D (B4): report spend + row are one transaction.
+  it("B4: saveReportWithSpend spends 1 with the row; no credit writes nothing; re-save is a no-op", async () => {
+    const user = await db.createUser("bd-b4r@example.com");
+    expect(await db.saveReportWithSpend(user.id, { id: tu("bd-rep-0"), interpretation: "x" })).toEqual({ ok: false });
+    expect((await raw`SELECT id FROM reports WHERE user_id = ${user.id}`).length).toBe(0);
+    await db.addUserCredits(user.id, 1);
+    expect(await db.saveReportWithSpend(user.id, { id: tu("bd-rep-1"), interpretation: "x" })).toEqual({ ok: true });
+    expect((await db.getUserById(user.id))?.credits).toBe(0);
+    await db.saveReportForUser(user.id, { id: tu("bd-rep-1"), interpretation: "client copy" });
+    expect((await raw`SELECT id FROM reports WHERE user_id = ${user.id}`).length).toBe(1);
+    expect(await db.saveReportWithSpend(user.id, { id: tu("bd-rep-2"), interpretation: "y" })).toEqual({ ok: false });
+    expect((await raw`SELECT id FROM reports WHERE user_id = ${user.id}`).length).toBe(1);
+  });
+
+  // Point 1: a retry with the same id after a committed save spends nothing more.
+  it("Point 1: replaying the same reading id returns the saved row and spends 0 more", async () => {
+    const user = await db.createUser("p1-read@example.com");
+    await db.addUserCredits(user.id, 2);
+    const r = { id: tu("p1-r1"), free: false, interpretation: "text", aiGenerated: true };
+    expect(await db.saveReadingWithSpend(user.id, r, false)).toEqual({ ok: true, free: false });
+    expect((await db.getUserById(user.id))?.credits).toBe(1);
+    expect(await db.saveReadingWithSpend(user.id, r, false)).toEqual({ ok: true, free: false, existing: true });
+    expect((await db.getUserById(user.id))?.credits).toBe(1);
+    expect((await raw`SELECT id FROM readings WHERE id = ${tu("p1-r1")}`).length).toBe(1);
+    // A replayed free reading does not claim the free grant a second time.
+    const fu = await db.createUser("p1-free@example.com");
+    const f = { id: tu("p1-f1"), free: true, interpretation: "text", aiGenerated: true };
+    expect(await db.saveReadingWithSpend(fu.id, f, true)).toEqual({ ok: true, free: true });
+    expect(await db.saveReadingWithSpend(fu.id, f, true)).toEqual({ ok: true, free: true, existing: true });
+  });
+
+  it("Point 1: replaying the same report id returns existing and spends 0 more", async () => {
+    const user = await db.createUser("p1-rep@example.com");
+    await db.addUserCredits(user.id, 2);
+    const rep = { id: tu("p1-rep1"), interpretation: "x" };
+    expect(await db.saveReportWithSpend(user.id, rep)).toEqual({ ok: true });
+    expect(await db.saveReportWithSpend(user.id, rep)).toEqual({ ok: true, existing: true });
+    expect((await db.getUserById(user.id))?.credits).toBe(1);
+    expect((await raw`SELECT id FROM reports WHERE id = ${tu("p1-rep1")}`).length).toBe(1);
+  });
+
+  // Point 2: an insert that writes 0 rows (id owned by another user) must roll
+  // the spend / free claim back, not commit a spend with no row.
+  it("Point 2: a 0-row reading insert rolls back the spend and the free claim", async () => {
+    const owner = await db.createUser("p2-owner@example.com");
+    await db.addUserCredits(owner.id, 1);
+    await db.saveReadingWithSpend(owner.id, { id: tu("p2-taken"), free: false, interpretation: "mine", aiGenerated: true }, false);
+    const other = await db.createUser("p2-other@example.com");
+    await db.addUserCredits(other.id, 1);
+    expect(
+      await db.saveReadingWithSpend(other.id, { id: tu("p2-taken"), free: false, interpretation: "theirs", aiGenerated: true }, true)
+    ).toEqual({ ok: false, free: false, conflict: true });
+    expect((await db.getUserById(other.id))?.credits).toBe(1);
+    expect(await db.hasUsedFreeReading(other.id)).toBe(false);
+    expect((await raw`SELECT user_id FROM readings WHERE id = ${tu("p2-taken")}`).map((x) => x.user_id)).toEqual([owner.id]);
+  });
+
+  it("Point 2: a 0-row report insert rolls back the spend", async () => {
+    const owner = await db.createUser("p2-rowner@example.com");
+    await db.addUserCredits(owner.id, 1);
+    await db.saveReportWithSpend(owner.id, { id: tu("p2-rtaken"), interpretation: "mine" });
+    const other = await db.createUser("p2-rother@example.com");
+    await db.addUserCredits(other.id, 1);
+    expect(await db.saveReportWithSpend(other.id, { id: tu("p2-rtaken"), interpretation: "theirs" })).toEqual({ ok: false, conflict: true });
+    expect((await db.getUserById(other.id))?.credits).toBe(1);
+  });
+
+  // Round 3 item 3: a UUID is required, and two parallel saves of the same
+  // id by the same user leave one row, one spend, and no error.
+  it("Item 3: non-UUID ids are rejected before the database", async () => {
+    const user = await db.createUser("i3-uuid@example.com");
+    await db.addUserCredits(user.id, 1);
+    await expect(db.saveReadingWithSpend(user.id, { id: "not-a-uuid", free: false }, false)).rejects.toThrow(/UUID/);
+    await expect(db.saveReportWithSpend(user.id, { id: "x'; DROP TABLE reports;--" })).rejects.toThrow(/UUID/);
+    expect((await db.getUserById(user.id))?.credits).toBe(1);
+  });
+
+  it("Item 3: two concurrent saves of one reading id by one user: one spend, both ok, no error", async () => {
+    const user = await db.createUser("i3-race@example.com");
+    await db.addUserCredits(user.id, 2);
+    const r = { id: tu("i3-race-r"), free: false, interpretation: "text", aiGenerated: true };
+    const out = await Promise.all([db.saveReadingWithSpend(user.id, r, false), db.saveReadingWithSpend(user.id, r, false)]);
+    expect(out.every((x) => x.ok)).toBe(true);
+    expect(out.filter((x) => x.existing)).toHaveLength(1);
+    expect((await db.getUserById(user.id))?.credits).toBe(1);
+    expect((await raw`SELECT id FROM readings WHERE id = ${r.id}`).length).toBe(1);
+  });
+
+  it("Item 3: two concurrent saves of one report id by one user: one spend, both ok, no error", async () => {
+    const user = await db.createUser("i3-race-rep@example.com");
+    await db.addUserCredits(user.id, 2);
+    const rep = { id: tu("i3-race-rep"), interpretation: "x" };
+    const out = await Promise.all([db.saveReportWithSpend(user.id, rep), db.saveReportWithSpend(user.id, rep)]);
+    expect(out.every((x) => x.ok)).toBe(true);
+    expect(out.filter((x) => x.existing)).toHaveLength(1);
+    expect((await db.getUserById(user.id))?.credits).toBe(1);
+    expect((await raw`SELECT id FROM reports WHERE id = ${rep.id}`).length).toBe(1);
+  });
+
+  // Item 3, the real lost-race path: another transaction of the SAME user holds
+  // the id uncommitted, so the replay SELECT misses it and the insert waits on
+  // the unique key; when it commits the insert writes 0 rows. The loser must
+  // roll its spend back and return the winner's row (existing), not throw.
+  it("Item 3: a lost insert race returns the winner's row, spends nothing, throws nothing", async () => {
+    const user = await db.createUser("i3-lost@example.com");
+    await db.addUserCredits(user.id, 2);
+    const id = tu("i3-lost-r");
+    let release!: () => void;
+    const held = new Promise<void>((r) => (release = r));
+    const winner = raw.begin(async (tx) => {
+      await tx`INSERT INTO readings (id, user_id, data, created_at)
+        VALUES (${id}, ${user.id}, ${tx.json({ id, free: false, interpretation: "winner" })}, NOW())`;
+      await held;
+    });
+    await new Promise((r) => setTimeout(r, 300));
+    const loser = db.saveReadingWithSpend(user.id, { id, free: false, interpretation: "loser" }, false);
+    await new Promise((r) => setTimeout(r, 300));
+    release();
+    await winner;
+    expect(await loser).toEqual({ ok: true, free: false, existing: true });
+    expect((await db.getUserById(user.id))?.credits).toBe(2);
+    expect((await raw`SELECT data->>'interpretation' AS t FROM readings WHERE id = ${id}`)).toEqual([{ t: "winner" }]);
+  });
+
+  it("Item 3: a lost report insert race returns existing and spends nothing", async () => {
+    const user = await db.createUser("i3-lost-rep@example.com");
+    await db.addUserCredits(user.id, 2);
+    const id = tu("i3-lost-rep");
+    let release!: () => void;
+    const held = new Promise<void>((r) => (release = r));
+    const winner = raw.begin(async (tx) => {
+      await tx`INSERT INTO reports (id, user_id, data, created_at)
+        VALUES (${id}, ${user.id}, ${tx.json({ id, interpretation: "winner" })}, NOW())`;
+      await held;
+    });
+    await new Promise((r) => setTimeout(r, 300));
+    const loser = db.saveReportWithSpend(user.id, { id, interpretation: "loser" });
+    await new Promise((r) => setTimeout(r, 300));
+    release();
+    await winner;
+    expect(await loser).toEqual({ ok: true, existing: true });
+    expect((await db.getUserById(user.id))?.credits).toBe(2);
+  });
+
+  // Batch D (B4): chart interpretation = reading row + per-system free claim in one transaction.
+  it("B4: chart interpretation claims the per-system free use, then spends; no credit writes nothing", async () => {
+    const user = await db.createUser("bd-b4c@example.com");
+    const r = (id: string) => ({ id, free: false, interpretation: "text", aiGenerated: true });
+    expect(await db.saveReadingWithSpend(user.id, r(tu("bd-ch-1")), true, "western")).toEqual({ ok: true, free: true });
+    expect(await db.hasUsedFreeInterpretation(user.id, "western")).toBe(true);
+    expect(await db.hasUsedFreeInterpretation(user.id, "vedic")).toBe(false);
+    expect(await db.hasUsedFreeReading(user.id)).toBe(false);
+    expect(await db.saveReadingWithSpend(user.id, r(tu("bd-ch-2")), true, "western")).toEqual({ ok: false, free: false });
+    await db.addUserCredits(user.id, 1);
+    expect(await db.saveReadingWithSpend(user.id, r(tu("bd-ch-3")), true, "western")).toEqual({ ok: true, free: false });
+    expect((await db.getUserById(user.id))?.credits).toBe(0);
+    const rows = (await raw`SELECT id FROM readings WHERE user_id = ${user.id} ORDER BY id`) as Array<{ id: string }>;
+    expect(rows.map((x) => x.id)).toEqual([tu("bd-ch-1"), tu("bd-ch-3")].sort());
+  });
+
+  // F2: the proration base is the stored order total (tax included), not the pack list price.
+  it("F2: partial refund prorates against the stored total, not the list price", async () => {
+    const user = await db.createUser("f2-total@example.com");
+    // pack5 list price is $3.99; the customer paid $4.50 with tax on top.
+    await db.fulfillOrder({
+      userId: user.id,
+      email: user.email,
+      packType: "pack5 (lemonsqueezy:order-f2)",
+      amount: 4.5,
+      readings: 5,
+      orderId: "order-f2",
+    });
+    // 400 cents refunded. Stored total 450: floor(5 * 400 / 450) = 4.
+    // Against the list price (399) 400 would count as a full refund: 5.
+    expect(await db.revokeOrder("order-f2", "", 400)).toEqual({ revoked: true, readings: 4 });
+    expect((await db.getUserById(user.id))?.credits).toBe(1);
+  });
+
+  // F3: the dedupe sums the INTENDED revoke recorded on refund rows, not the clamped balance change.
+  it("F3: balance clamps to 0 but the refund row records the intended revoke; redelivery revokes nothing more", async () => {
+    const user = await db.createUser("f3-clamp@example.com");
+    await db.fulfillOrder({
+      userId: user.id,
+      email: user.email,
+      packType: "pack12 (lemonsqueezy:order-f3)",
+      amount: 7.99,
+      readings: 12,
+      orderId: "order-f3",
+    });
+    // The customer spends 10 of the 12 before the refund: balance 2.
+    expect(await db.spendUserCredits(user.id, 10)).toBe(true);
+    expect((await db.getUserById(user.id))?.credits).toBe(2);
+    expect(await db.revokeOrder("order-f3", "", 799)).toEqual({ revoked: true, readings: 12 });
+    expect((await db.getUserById(user.id))?.credits).toBe(0); // clamped, not -10
+    const rows = (await raw`SELECT readings FROM transactions WHERE user_id = ${user.id} AND pack_type LIKE 'refund (%'`) as Array<{ readings: number }>;
+    expect(rows.map((r) => r.readings)).toEqual([-12]); // intended, not the clamped -2
+    // Redelivery of the same refund: delta 0, no new row, balance unchanged.
+    await db.addUserCredits(user.id, 3);
+    expect((await db.revokeOrder("order-f3", "", 799)).revoked).toBe(false);
+    expect((await db.getUserById(user.id))?.credits).toBe(3);
+    expect((await raw`SELECT id FROM transactions WHERE user_id = ${user.id} AND pack_type LIKE 'refund (%'`).length).toBe(1);
+  });
+
+  // Item 2: a guest reading synced on sign-in (POST /api/history -> saveReadingForUser,
+  // keeping its local id) is the row the follow-up route finds by that same id.
+  it("item 2: a reading synced under its local id accepts a follow-up for that id", async () => {
+    const user = await db.createUser("item2-sync@example.com");
+    const other = await db.createUser("item2-other@example.com");
+    await db.addUserCredits(user.id, 1);
+    const local = { id: "guest-local-id-X", question: "q?", interpretation: "text", aiGenerated: true, free: true };
+    await db.saveReadingForUser(user.id, local); // what migrateGuestData -> /api/history does
+    await db.saveReadingForUser(user.id, local); // re-sync is a no-op (ON CONFLICT DO NOTHING)
+    expect((await raw`SELECT id FROM readings WHERE id = ${local.id}`).length).toBe(1);
+    const res = await db.appendFollowUpWithSpend(user.id, local.id, { question: "more?", answer: "a", free: true }, 0, 3, true);
+    expect(res.ok).toBe(true);
+    expect(res.followUps).toHaveLength(1);
+    const stored = (await db.getReadingForUser(user.id, local.id)) as { followUps?: unknown[] };
+    expect(stored.followUps).toHaveLength(1);
+    // Another account cannot follow up on it (the route's "not found").
+    expect((await db.appendFollowUpWithSpend(other.id, local.id, { question: "x", answer: "y", free: true }, 0, 3, true)).ok).toBe(false);
   });
 });

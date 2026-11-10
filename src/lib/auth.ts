@@ -8,21 +8,10 @@ const COOKIE_NAME = "sortes_session";
 const SESSION_DAYS = 30;
 
 function secret(): Uint8Array {
-  // Server-only fallback, in order: a dedicated auth secret, then the
-  // Supabase JWT secret already present on the server. The Supabase
-  // value is never sent to the browser and never logged; it is only
-  // used here to sign Sortes' own session cookie, so password sign-in
-  // and the Supabase bridge work in production without a new secret.
-  // AF-005 (2026-11-08): NEXTAUTH_SECRET was removed from this chain
-  // — a legacy alias nothing is supposed to set, it must not be able
-  // to sign sessions. The SUPABASE_JWT_SECRET fallback stays ONLY
-  // because production still relies on it (PRODUCTION-CHANGE-PLAN.md
-  // §7: production has no AUTH_SECRET yet); once Velu sets
-  // AUTH_SECRET in production, delete the second line here and in
-  // authConfigured() below.
-  const s =
-    process.env.AUTH_SECRET ||
-    process.env.SUPABASE_JWT_SECRET;
+  // AUTH_SECRET is required. The old SUPABASE_JWT_SECRET fallback was
+  // deleted (item 9): sessions must not be signed with the shared
+  // Supabase secret. In production a missing secret fails loudly.
+  const s = process.env.AUTH_SECRET;
   if (!s) {
     if (process.env.NODE_ENV === "production") {
       throw new Error("AUTH_SECRET is required in production.");
@@ -105,12 +94,43 @@ export async function getSession(): Promise<{ userId: string; email: string } | 
 export function authConfigured(): boolean {
   return Boolean(
     process.env.AUTH_SECRET ||
-      process.env.SUPABASE_JWT_SECRET ||
       process.env.NODE_ENV !== "production"
   );
 }
 
 export const SESSION_COOKIE = COOKIE_NAME;
+
+// Guest first-free Quick Insight: a server-signed, HttpOnly cookie records
+// that the free use was consumed. Nothing the client sends is trusted.
+// shortcut: clearing cookies resets it, so a guest can repeat the free
+// Quick Insight; upgrade to a DB-backed device/IP record if that is abused.
+export const GUEST_FREE_COOKIE = "sortes_guest_free";
+
+export async function guestFreeUsed(): Promise<boolean> {
+  const token = (await cookies()).get(GUEST_FREE_COOKIE)?.value;
+  if (!token) return false;
+  try {
+    const { payload } = await jwtVerify(token, secret());
+    return payload.purpose === "guest-free";
+  } catch {
+    return false;
+  }
+}
+
+export async function setGuestFreeUsed(res: { cookies: { set: (name: string, value: string, opts: object) => unknown } }) {
+  const token = await new SignJWT({ purpose: "guest-free" })
+    .setProtectedHeader({ alg: "HS256" })
+    .setIssuedAt()
+    .setExpirationTime("365d")
+    .sign(secret());
+  res.cookies.set(GUEST_FREE_COOKIE, token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 365 * 24 * 60 * 60,
+  });
+}
 export const SESSION_MAX_AGE = SESSION_DAYS * 24 * 60 * 60;
 
 const scryptAsync = promisify(scrypt);

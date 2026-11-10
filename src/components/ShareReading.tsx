@@ -6,6 +6,7 @@ import { toPng } from "html-to-image";
 import { getCard } from "@/lib/cards";
 import { computeSpreadFacts } from "@/lib/spread-facts";
 import { firstSentence } from "@/lib/story-card";
+import { readingToPlainText } from "@/lib/readingMarkdown";
 import type { DrawnCard } from "@/lib/types";
 import { APP_SHORT, TAGLINE } from "@/lib/site";
 
@@ -84,7 +85,9 @@ export default function ShareReading({
       };
     })
   );
-  const takeaway = firstSentence(interpretation);
+  const takeaway = firstSentence(
+    interpretation ? readingToPlainText(interpretation) : interpretation
+  );
 
   return (
     <>

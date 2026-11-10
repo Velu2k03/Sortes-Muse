@@ -109,8 +109,9 @@ import {
 } from "../db";
 import { runMigrations } from "../migrations";
 import { withTimeout } from "../fetch-timeout";
+import { pgTestUrl } from "./pg-test-url";
 
-const MONEY_URL = process.env.SORTES_TEST_DATABASE_URL ?? "";
+const MONEY_URL = pgTestUrl("SORTES_TEST_DATABASE_URL");
 // Local PgBouncer 1.22 transaction-mode rig (see header). The app
 // factory's statement_timeout startup parameter is discarded by
 // it, so only the client-side cancellation can stop a stuck query.
@@ -461,13 +462,26 @@ const POOLER_PLAIN_URL =
   process.env.SORTES_TEST_POOLER_PLAIN_URL ??
   "postgres://sortes_test:sortes_test_local@127.0.0.1:6434/sortes_pgtest_money";
 
+// E2: credentials and the direct target port come from MONEY_URL (the same
+// URL the rest of the suite uses). They used to be hardcoded to
+// sortes_test / sortes_test_local / 5432, which cannot authenticate against
+// any database whose role password differs (the CI service uses
+// ci_only_throwaway; a local role may use another).
+const MONEY = MONEY_URL ? new URL(MONEY_URL) : null;
+const MONEY_PORT = MONEY?.port ? Number(MONEY.port) : 5432;
+
+// Distinguishes this file's plainClient backends in pg_stat_activity from the
+// other parallel test files that share sortes_pgtest_money.
+const CANCEL_TEST_APP_NAME = "sortes-cancel-timeout-test";
+
 function plainClient(port: number): postgres.Sql {
   return postgres({
     host: "127.0.0.1",
     port,
+    connection: { application_name: CANCEL_TEST_APP_NAME },
     database: "sortes_pgtest_money",
-    username: "sortes_test",
-    password: "sortes_test_local",
+    username: MONEY ? decodeURIComponent(MONEY.username) : "sortes_test",
+    password: MONEY ? decodeURIComponent(MONEY.password) : "sortes_test_local",
     ssl: false,
     max: 1,
     prepare: false, // extended protocol, like the app factory
@@ -541,6 +555,17 @@ describeIfPg("cancel_timeout closes the connection on an unanswered cancel (post
     }
   }, 30_000);
 
+  // E2 root-cause finding (static analysis; could not be reproduced on the
+  // authoring machine, whose shared Postgres rejected the test role):
+  // the failure was test-environment, not a product bug. The case built its
+  // client with hardcoded sortes_test/sortes_test_local credentials and a
+  // hardcoded 5432 proxy target, so on any database whose role password
+  // differs (CI: ci_only_throwaway) it dies at login before cancel_timeout is
+  // exercised. Both now come from MONEY_URL. The postgres.js 4.1.0 cancel
+  // path itself (connection.js quiet/expect/unanswered) is covered by the
+  // passing plain-query tests above. Round 5: the CI skipIf was removed after
+  // CI went green on 2260ba4; the case now runs in CI and the skip-count
+  // guard in lint-gate.yml expects 0.
   it("a backend stuck mid-message inside a transaction is freed by cancel_timeout (direct)", async () => {
     // Direct connection for the pg_stat_activity snapshot. The
     // stuck session is identified by pid: snapshot the matching
@@ -551,13 +576,16 @@ describeIfPg("cancel_timeout closes the connection on an unanswered cancel (post
       WHERE datname = 'sortes_pgtest_money'
         AND wait_event = 'ClientRead'
         AND state = 'idle in transaction'
-        AND xact_start IS NOT NULL`)) as Array<{ pid: number }>;
+        AND xact_start IS NOT NULL
+        AND application_name = ${CANCEL_TEST_APP_NAME}`)) as Array<{
+      pid: number;
+    }>;
     const beforePids = new Set(before.map((r) => r.pid));
     // Direct target (no pooler): the truncated Parse reaches a real
     // backend, which waits in ClientRead. Through PgBouncer the
     // partial message is buffered by the pooler instead, so the
     // backend-level state is only observable here.
-    const proxy = await startTruncatingProxy(5432, 0);
+    const proxy = await startTruncatingProxy(MONEY_PORT, 0);
     const sql = plainClient(proxy.port);
     try {
       const controller = new AbortController();
@@ -584,21 +612,33 @@ describeIfPg("cancel_timeout closes the connection on an unanswered cancel (post
       // its transaction. (Production showed state 'active' for the
       // same wait; here the backend reports 'idle in transaction'
       // because no statement is executing — the wait is identical.)
-      await new Promise((r) => setTimeout(r, 2_000));
-      const during = (await withDbTimeout(direct`
-        SELECT pid, state, wait_event, xact_start IS NOT NULL AS in_xact
-        FROM pg_stat_activity
-        WHERE datname = 'sortes_pgtest_money'
-          AND wait_event = 'ClientRead'
-          AND state = 'idle in transaction'
-          AND xact_start IS NOT NULL`)) as Array<{
+      // Poll (not one fixed snapshot): under full-suite load the backend can
+      // take longer than 2 s to reach the state. Stop at 4 s, well before the
+      // backend is freed (~5.5 s: abort at 500 ms + cancel_timeout 5 s).
+      type Row = {
         pid: number;
         state: string;
         wait_event: string;
         in_xact: boolean;
-      }>;
-      const stuck = during.filter((r) => !beforePids.has(r.pid));
-      expect(stuck).toHaveLength(1);
+      };
+      let stuck: Row[] = [];
+      while (true) {
+        await new Promise((r) => setTimeout(r, 250));
+        const during = (await withDbTimeout(direct`
+          SELECT pid, state, wait_event, xact_start IS NOT NULL AS in_xact
+          FROM pg_stat_activity
+          WHERE datname = 'sortes_pgtest_money'
+            AND wait_event = 'ClientRead'
+            AND state = 'idle in transaction'
+            AND xact_start IS NOT NULL
+            AND application_name = ${CANCEL_TEST_APP_NAME}`)) as Row[];
+        stuck = during.filter((r) => !beforePids.has(r.pid));
+        if (stuck.length >= 1 || Date.now() - t0 >= 4_000) break;
+      }
+      expect(
+        stuck,
+        `expected exactly 1 stuck backend named ${CANCEL_TEST_APP_NAME}, saw ${stuck.length}`
+      ).toHaveLength(1);
       expect(stuck[0].in_xact).toBe(true);
       const res = await attempt;
       expect(proxy.truncated()).toBe(true);
