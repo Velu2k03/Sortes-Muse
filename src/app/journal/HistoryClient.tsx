@@ -17,6 +17,7 @@ import {
   PATTERN_MIRROR_MIN_READINGS,
   patternMirror,
 } from "@/lib/journal";
+import { readingToPlainText } from "@/lib/readingMarkdown";
 import PageHeader from "@/components/PageHeader";
 
 /**
@@ -573,7 +574,7 @@ export default function HistoryPage() {
                           .map((d) => `${getCard(d.cardId).name}${d.reversed ? " (reversed)" : ""}`)
                           .join(", ")}`
                       : ""}
-                    {r.interpretation ? `\n${r.interpretation}` : ""}
+                    {r.interpretation ? `\n${readingToPlainText(r.interpretation)}` : ""}
                   </p>
                 ))}
               </section>

@@ -20,6 +20,8 @@ const ZiweiStacks = dynamic(() => import("@/components/ZiweiStacks"));
 const VedicChart = dynamic(() => import("@/components/VedicChart"));
 import Icon from "@/components/Icon";
 import GlideSelect from "@/components/GlideSelect";
+import { readingToPlainText } from "@/lib/readingMarkdown";
+import ReadingText from "@/components/ReadingText";
 import SplitText from "@/components/SplitText";
 import AnimatedContent from "@/components/AnimatedContent";
 import SwipeToast from "@/components/SwipeToast";
@@ -809,7 +811,7 @@ export function InterpretationPanel({ prefs, s, result }: { prefs: ChartPrefs; s
             ? "Standard interpretation · prepared from your chart positions, not AI-generated"
             : `${interpFree ? "Free interpretation" : "1 Oracle interpretation"} · Personalized · AI-generated${interpModel ? ` · Written with ${interpModel}` : ""}`}
         </p>
-        <p className="mt-3 whitespace-pre-wrap leading-relaxed text-cream/90">{interpretation}</p>
+        <ReadingText text={interpretation} className="mt-3 leading-relaxed text-cream/90" />
         <div className="mt-5 flex flex-wrap gap-3">
           <button type="button" onClick={onSaveChart} disabled={saved} className="rounded-full border border-gold/40 px-5 py-3 text-sm font-bold text-goldbright disabled:opacity-100 disabled:saturate-50">
             {saved ? "Saved to journal" : "Save to journal"}
@@ -829,7 +831,7 @@ export function InterpretationPanel({ prefs, s, result }: { prefs: ChartPrefs; s
             date={new Date().toISOString()}
             sections={[
               { heading: "Your chart in one line", body: chartSummaryText(result, ziweiLang) },
-              { heading: "Interpretation", body: interpretation },
+              { heading: "Interpretation", body: readingToPlainText(interpretation) },
             ]}
           />
         </div>

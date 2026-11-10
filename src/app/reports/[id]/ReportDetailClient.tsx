@@ -8,6 +8,8 @@ import { getReport, deleteReport } from "@/lib/storage";
 import { buildReportMarkdown } from "@/lib/report-markdown";
 import type { SavedReport } from "@/lib/reports";
 import SplitText from "@/components/SplitText";
+import { readingToPlainText } from "@/lib/readingMarkdown";
+import ReadingText from "@/components/ReadingText";
 import HeirloomPrint from "@/components/HeirloomPrint";
 import AnimatedContent from "@/components/AnimatedContent";
 import ScrollableRegion from "@/components/ScrollableRegion";
@@ -106,7 +108,7 @@ export default function ReportDetailClient() {
         Saved {new Date(report.createdAt).toLocaleDateString()} · This report never expires.
       </p>
 
-      <p className="mt-6 whitespace-pre-wrap leading-relaxed text-cream/90">{report.interpretation}</p>
+      <ReadingText text={report.interpretation} className="mt-6 leading-relaxed text-cream/90" />
       <p className="mt-3 text-xs text-mist">
         AI-generated
         {report.model ? ` · Written with ${report.model}` : ""}
@@ -118,7 +120,7 @@ export default function ReportDetailClient() {
         <HeirloomPrint
           title={report.title}
           date={report.createdAt}
-          sections={[{ heading: "Interpretation", body: report.interpretation }]}
+          sections={[{ heading: "Interpretation", body: readingToPlainText(report.interpretation) }]}
         />
         <button
           type="button"

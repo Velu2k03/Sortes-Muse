@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import ReadingText from "@/components/ReadingText";
 import { useAuth } from "@/components/AuthProvider";
 import RubberSegment from "@/components/RubberSegment";
 import SpecularButton from "@/components/SpecularButton";
@@ -648,7 +649,7 @@ export default function ReportsClient() {
             </Link>
             .
           </p>
-          <p className="mt-4 whitespace-pre-wrap leading-relaxed text-cream/90">{result.interpretation}</p>
+          <ReadingText text={result.interpretation} className="mt-4 leading-relaxed text-cream/90" />
           <p className="mt-3 text-xs text-mist">
             AI-generated
             {result.model ? ` · Written with ${result.model}` : ""}
