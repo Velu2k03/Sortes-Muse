@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import type { ZiweiLanguage } from "@/lib/ziwei-i18n";
 import type { ZiweiView } from "@/components/ZiweiChartBoard";
 import { useAuth } from "@/components/AuthProvider";
-import { chartFreeUsed, makeReading, type ChartFreeSystem } from "@/lib/storage";
+import { chartFreeUsed, makeReading, newId, type ChartFreeSystem } from "@/lib/storage";
+import { unconfirmedMessage } from "@/lib/generate-failure";
 import { chartInterpretationCost } from "@/lib/chart-pricing";
 import { buildStaticChartInterpretation } from "@/lib/chart-fallback";
 import {
@@ -24,6 +25,9 @@ import {
  */
 
 /** Display preferences: reduced motion, site theme, Ziwei view/language/glosses. */
+/** An error whose message came from the server's own response body. */
+class ServerError extends Error {}
+
 export function useChartPrefs() {
   const [reducedMotion, setReducedMotion] = useState(false);
   useEffect(() => {
@@ -383,6 +387,10 @@ export function useChartSession(form: ChartForm, prefs: ChartPrefs) {
 
   // Failure path of onInterpret: pick the right message. Nothing is spent
   // client-side (the route spends only after a real generation).
+  // Point 1: one interpretation id per attempt; a retry of the same chart and
+  // question reuses it, so a row the server already saved is replayed.
+  const interpAttempt = useRef<{ key: string; id: string } | null>(null);
+
   function handleInterpretFailure(err: unknown, result: ChartResult) {
     // Phase D: balance stops keep their own message (they already
     // say the balance was not changed). A genuine call failure gets
@@ -392,7 +400,13 @@ export function useChartSession(form: ChartForm, prefs: ChartPrefs) {
     if (isBalance) {
       setInterpError(message);
     } else {
-      setInterpError(message.includes("spent") ? message : `${message} No Oracle was spent.`);
+      // Only the server may say "not spent" (its error body, shown verbatim).
+      // A dropped connection or bad JSON can happen after the server committed.
+      setInterpError(
+        err instanceof ServerError
+          ? message
+          : unconfirmedMessage("interpretation", "your journal")
+      );
       setInterpFailed(true);
       setInterpToastOpen(true);
       // Phase 2, 2.3: the AI failed, so show the deterministic
@@ -419,16 +433,19 @@ export function useChartSession(form: ChartForm, prefs: ChartPrefs) {
     // generates text, and stores the interpretation in the same transaction.
     setInterpSignInNeeded(false);
     try {
+      const payload = {
+        system: result.system,
+        chart: result,
+        category: focus,
+        question: question.trim(),
+        chartSummary: chartSummaryText(result, ziweiLang),
+      };
+      const key = JSON.stringify(payload);
+      if (interpAttempt.current?.key !== key) interpAttempt.current = { key, id: newId() };
       const res = await fetch("/api/chart/interpret", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          system: result.system,
-          chart: result,
-          category: focus,
-          question: question.trim(),
-          chartSummary: chartSummaryText(result, ziweiLang),
-        }),
+        body: JSON.stringify({ ...payload, readingId: interpAttempt.current.id }),
       });
       const data = await res.json();
       if (res.status === 401) {
@@ -436,7 +453,8 @@ export function useChartSession(form: ChartForm, prefs: ChartPrefs) {
         setInterpError("Sign in to get a chart interpretation.");
         return;
       }
-      if (!res.ok) throw new Error(data.error || "Could not interpret this chart.");
+      if (!res.ok) throw new ServerError(data.error || "Could not interpret this chart.");
+      interpAttempt.current = null;
       setInterpretation(data.interpretation as string);
       setInterpFallback(Boolean(data.fallback));
       // Phase E (item 2): keep the serving model; the fallback has none.

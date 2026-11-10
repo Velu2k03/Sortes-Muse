@@ -589,6 +589,59 @@ describe.skipIf(SKIP)("money paths on real Postgres (staging only)", () => {
     expect((await raw`SELECT id FROM reports WHERE user_id = ${user.id}`).length).toBe(1);
   });
 
+  // Point 1: a retry with the same id after a committed save spends nothing more.
+  it("Point 1: replaying the same reading id returns the saved row and spends 0 more", async () => {
+    const user = await db.createUser("p1-read@example.com");
+    await db.addUserCredits(user.id, 2);
+    const r = { id: "p1-r1", free: false, interpretation: "text", aiGenerated: true };
+    expect(await db.saveReadingWithSpend(user.id, r, false)).toEqual({ ok: true, free: false });
+    expect((await db.getUserById(user.id))?.credits).toBe(1);
+    expect(await db.saveReadingWithSpend(user.id, r, false)).toEqual({ ok: true, free: false, existing: true });
+    expect((await db.getUserById(user.id))?.credits).toBe(1);
+    expect((await raw`SELECT id FROM readings WHERE id = 'p1-r1'`).length).toBe(1);
+    // A replayed free reading does not claim the free grant a second time.
+    const fu = await db.createUser("p1-free@example.com");
+    const f = { id: "p1-f1", free: true, interpretation: "text", aiGenerated: true };
+    expect(await db.saveReadingWithSpend(fu.id, f, true)).toEqual({ ok: true, free: true });
+    expect(await db.saveReadingWithSpend(fu.id, f, true)).toEqual({ ok: true, free: true, existing: true });
+  });
+
+  it("Point 1: replaying the same report id returns existing and spends 0 more", async () => {
+    const user = await db.createUser("p1-rep@example.com");
+    await db.addUserCredits(user.id, 2);
+    const rep = { id: "p1-rep1", interpretation: "x" };
+    expect(await db.saveReportWithSpend(user.id, rep)).toEqual({ ok: true });
+    expect(await db.saveReportWithSpend(user.id, rep)).toEqual({ ok: true, existing: true });
+    expect((await db.getUserById(user.id))?.credits).toBe(1);
+    expect((await raw`SELECT id FROM reports WHERE id = 'p1-rep1'`).length).toBe(1);
+  });
+
+  // Point 2: an insert that writes 0 rows (id owned by another user) must roll
+  // the spend / free claim back, not commit a spend with no row.
+  it("Point 2: a 0-row reading insert rolls back the spend and the free claim", async () => {
+    const owner = await db.createUser("p2-owner@example.com");
+    await db.addUserCredits(owner.id, 1);
+    await db.saveReadingWithSpend(owner.id, { id: "p2-taken", free: false, interpretation: "mine", aiGenerated: true }, false);
+    const other = await db.createUser("p2-other@example.com");
+    await db.addUserCredits(other.id, 1);
+    await expect(
+      db.saveReadingWithSpend(other.id, { id: "p2-taken", free: false, interpretation: "theirs", aiGenerated: true }, true)
+    ).rejects.toThrow(/0 rows/);
+    expect((await db.getUserById(other.id))?.credits).toBe(1);
+    expect(await db.hasUsedFreeReading(other.id)).toBe(false);
+    expect((await raw`SELECT user_id FROM readings WHERE id = 'p2-taken'`).map((x) => x.user_id)).toEqual([owner.id]);
+  });
+
+  it("Point 2: a 0-row report insert rolls back the spend", async () => {
+    const owner = await db.createUser("p2-rowner@example.com");
+    await db.addUserCredits(owner.id, 1);
+    await db.saveReportWithSpend(owner.id, { id: "p2-rtaken", interpretation: "mine" });
+    const other = await db.createUser("p2-rother@example.com");
+    await db.addUserCredits(other.id, 1);
+    await expect(db.saveReportWithSpend(other.id, { id: "p2-rtaken", interpretation: "theirs" })).rejects.toThrow(/0 rows/);
+    expect((await db.getUserById(other.id))?.credits).toBe(1);
+  });
+
   // Batch D (B4): chart interpretation = reading row + per-system free claim in one transaction.
   it("B4: chart interpretation claims the per-system free use, then spends; no credit writes nothing", async () => {
     const user = await db.createUser("bd-b4c@example.com");

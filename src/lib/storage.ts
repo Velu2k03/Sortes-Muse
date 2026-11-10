@@ -203,13 +203,18 @@ export function deleteReading(id: string): boolean {
   return true;
 }
 
+// The one id minter (readings, reports, chart interpretations). Browsers
+// that expose crypto.randomUUID get a UUID, which the generate routes require.
+export function newId(): string {
+  return typeof crypto !== "undefined" && "randomUUID" in crypto
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
 export function makeReading(partial: Omit<Reading, "id" | "createdAt">): Reading {
   return {
     ...partial,
-    id:
-      typeof crypto !== "undefined" && "randomUUID" in crypto
-        ? crypto.randomUUID()
-        : `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    id: newId(),
     createdAt: new Date().toISOString(),
   };
 }

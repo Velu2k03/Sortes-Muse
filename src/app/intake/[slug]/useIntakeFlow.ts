@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PROCESSING_LINES } from "@/components/ReadingWait";
 import { getSpread, drawCards } from "@/lib/tarot";
@@ -10,6 +10,7 @@ import type { DrawnCard, Reading } from "@/lib/types";
 import { getCategory, SENSITIVE_KEYS, type IntakePayload } from "@/lib/intake";
 import {
   makeReading,
+  newId,
   setCachedInterpretation,
   freeReadingUsed,
   markFreeReadingUsed,
@@ -17,6 +18,7 @@ import {
   saveIntakeDraft,
   clearIntakeDraft,
 } from "@/lib/storage";
+import { unconfirmedMessage, requireSavedReading } from "@/lib/generate-failure";
 import { intakeGate } from "@/lib/intake-gate";
 import { useAuth } from "@/components/AuthProvider";
 import { trackReadingStarted, trackReadingCompleted } from "@/components/Analytics";
@@ -131,8 +133,13 @@ export function useIntakeFlow(slug: string) {
   // step draws the cards and shows them for a first impression; nothing
   // is spent until the seeker taps "Reveal my reading". Going back and
   // continuing again simply draws fresh cards.
+  // Point 1: one id per generation attempt, reused by retries so a reading the
+  // server already saved is replayed, never re-spent. New cards = new attempt.
+  const attemptId = useRef<string | null>(null);
+
   const beginDraw = () => {
     if (!category) return;
+    attemptId.current = null;
     if (!isFreeAvailable && (credits ?? 0) < 1) {
       setError("You are out of Oracles. Please top up to continue.");
       return;
@@ -172,8 +179,11 @@ export function useIntakeFlow(slug: string) {
       2600
     );
 
-    let failMessage =
-      "The reading could not be generated just now. Your Oracle was not spent. Please try again in a moment.";
+    // "Not spent" is only ever said by the server (its error body). A dropped
+    // connection or client-side failure can happen after the server committed.
+    let failMessage = signedIn
+      ? unconfirmedMessage("reading", "your journal")
+      : "The reading could not be generated just now. Please try again in a moment.";
     let was402 = false;
     try {
       const cards = drawnCards;
@@ -196,10 +206,12 @@ export function useIntakeFlow(slug: string) {
         firstImpression: firstWord || undefined,
       };
 
+      attemptId.current ??= newId();
       const res = await fetch("/api/reading/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          readingId: signedIn ? attemptId.current : undefined,
           spreadSlug: spread.slug,
           originalQuestion: originalQuestion || undefined,
           cards: cards.map((c) => ({
@@ -219,9 +231,10 @@ export function useIntakeFlow(slug: string) {
         if (res.status === 402 || res.status === 401) {
           was402 = true;
           if (res.status === 401) setServerSignInNeeded(true);
-          const d = await res.json().catch(() => null);
-          if (d?.error) failMessage = d.error;
         }
+        // Use the server's own message verbatim (503/402 bodies say "No Oracle was spent").
+        const d = await res.json().catch(() => null);
+        if (d?.error) failMessage = d.error;
         throw new Error(`Generation failed (${res.status})`);
       }
       const data = await res.json();
@@ -234,8 +247,10 @@ export function useIntakeFlow(slug: string) {
         setUsedFree(true);
       }
 
-      // Signed-in: the server already saved this row with the spend.
-      const reading: Reading = data.reading ?? makeReading({
+      // Signed-in: the server already saved this row with the spend, so its
+      // row is required; a local copy under a new id would be a duplicate the
+      // server cannot find. Guests get no server row and build one here.
+      const reading: Reading = requireSavedReading(signedIn, data.reading as Reading | undefined) ?? makeReading({
         spreadSlug: spread.slug,
         spreadName: `${spread.name} · ${category.name}`,
         cards,
@@ -259,6 +274,7 @@ export function useIntakeFlow(slug: string) {
       await persistReading(reading);
       setCachedInterpretation(reading.id, interpretation);
       clearIntakeDraft();
+      attemptId.current = null;
       // Signed-in balance now comes from the server (the route spent
       // after generation); sync it so the header shows the new balance.
       if (signedIn) await refresh();

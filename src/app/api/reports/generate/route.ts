@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { getUserById, saveReportWithSpend } from "@/lib/db";
+import { getReportForUser, getUserById, saveReportWithSpend } from "@/lib/db";
+import { isUuid } from "@/lib/ids";
 import {
   validateBirthInput,
   buildTransitData,
@@ -86,6 +87,18 @@ export async function POST(req: NextRequest) {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
+  }
+  if (body.reportId !== undefined && !isUuid(body.reportId)) {
+    return NextResponse.json({ error: "reportId must be a UUID." }, { status: 400 });
+  }
+  const attemptId = typeof body.reportId === "string" ? body.reportId : undefined;
+  // Point 1: replay. This attempt id was already saved: return it, no model call, no spend.
+  if (attemptId) {
+    const prior = (await getReportForUser(session.userId, attemptId)) as SavedReport | null;
+    if (prior) {
+      const user = await getUserById(session.userId);
+      return NextResponse.json({ report: prior, fallback: false, credits: user?.credits ?? 0, replayed: true });
+    }
   }
   const type = body.type;
   if (typeof type !== "string" || !(TYPES as string[]).includes(type)) {
@@ -201,9 +214,10 @@ export async function POST(req: NextRequest) {
 
   const report: SavedReport = {
     id:
-      typeof crypto !== "undefined" && "randomUUID" in crypto
+      attemptId ??
+      (typeof crypto !== "undefined" && "randomUUID" in crypto
         ? crypto.randomUUID()
-        : `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        : `${Date.now()}-${Math.random().toString(36).slice(2)}`),
     type: reportType,
     title: reportTitle(reportType, targetLabel),
     targetLabel,
@@ -227,6 +241,10 @@ export async function POST(req: NextRequest) {
     );
   }
   const user = await getUserById(session.userId);
+  if (saved.existing) {
+    const prior = (await getReportForUser(session.userId, report.id)) as SavedReport | null;
+    return NextResponse.json({ report: prior ?? report, fallback: false, credits: user?.credits ?? 0, replayed: true });
+  }
   return NextResponse.json({
     report,
     model: generated.model,

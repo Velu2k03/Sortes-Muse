@@ -41,27 +41,33 @@ export async function saveReportForUser(userId: string, report: { id: string; [k
 export async function saveReportWithSpend(
   userId: string,
   report: { id: string; [k: string]: unknown }
-): Promise<{ ok: boolean }> {
+): Promise<{ ok: boolean; existing?: boolean }> {
   await ensureSchema();
   if (usePostgres) {
     if (!pg) throw new Error("Database not configured");
     const controller = new AbortController();
     const begin = pg.begin(async (rawTx) => {
       const tx = txWithSignal(rawTx, controller.signal);
+      // Point 1: idempotent replay (same client id = already saved + spent).
+      const prior = await tx`SELECT id FROM reports WHERE id = ${report.id} AND user_id = ${userId}`;
+      if (prior.length > 0) return { ok: true, existing: true };
       const spent = await tx`UPDATE users SET credits = credits - 1 WHERE id = ${userId} AND credits >= 1 RETURNING credits`;
       if (spent.length === 0) return { ok: false };
-      await tx`INSERT INTO reports (id, user_id, data, created_at)
+      const inserted = await tx`INSERT INTO reports (id, user_id, data, created_at)
         VALUES (${report.id}, ${userId}, ${jsonbParam(report)}, NOW())
-        ON CONFLICT (id) DO NOTHING`;
+        ON CONFLICT (id) DO NOTHING RETURNING id`;
+      // Point 2: 0 rows -> throw so the spend rolls back with it.
+      if (inserted.length === 0) throw new Error("report insert wrote 0 rows; rolled back");
       return { ok: true };
     });
     return await withDbTimeout(begin, controller);
   }
   const db = await readLocal();
+  const list = db.reports ?? (db.reports = []);
+  if (list.some((r) => r.id === report.id && r.user_id === userId)) return { ok: true, existing: true };
   const u = db.users.find((x) => x.id === userId);
   if (!u || u.credits < 1) return { ok: false };
   u.credits -= 1;
-  const list = db.reports ?? (db.reports = []);
   list.unshift({ id: report.id, user_id: userId, data: report, created_at: new Date().toISOString() });
   await writeLocal(db);
   return { ok: true };

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { getSession, guestFreeUsed, setGuestFreeUsed } from "@/lib/auth";
-import { getUserById, hasUsedFreeReading, saveReadingWithSpend } from "@/lib/db";
+import { getReadingForUser, getUserById, hasUsedFreeReading, saveReadingWithSpend } from "@/lib/db";
+import { isUuid } from "@/lib/ids";
 import cardsData from "@/data/cards.json";
 import { SENSITIVE_KEYS } from "@/lib/intake";
 import { getSpread } from "@/lib/tarot";
@@ -164,6 +165,8 @@ export async function POST(req: NextRequest) {
     spreadSlug?: string;
     /** Question as first written, kept on the saved reading. */
     originalQuestion?: string;
+    /** Client-minted attempt id; a retry with the same id replays, never re-spends. */
+    readingId?: string;
   };
   try {
     body = await req.json();
@@ -172,6 +175,9 @@ export async function POST(req: NextRequest) {
   }
 
   const { cards, intake } = body;
+  if (body.readingId !== undefined && !isUuid(body.readingId)) {
+    return NextResponse.json({ error: "readingId must be a UUID." }, { status: 400 });
+  }
   if (!cards?.length || !intake?.story || !intake?.question) {
     return NextResponse.json(
       { error: "Missing cards, story, or question." },
@@ -256,6 +262,26 @@ export async function POST(req: NextRequest) {
       { error: "Sign in to get this reading." },
       { status: 401 }
     );
+  }
+
+  // Point 1: replay. If this attempt id was already saved for this user
+  // (the first response was lost), return it with no model call and no spend.
+  if (session && body.readingId) {
+    const prior = (await getReadingForUser(session.userId, body.readingId)) as
+      | { interpretation: string; model?: string; free?: boolean }
+      | null;
+    if (prior) {
+      const user = await getUserById(session.userId);
+      return NextResponse.json({
+        interpretation: prior.interpretation,
+        model: prior.model,
+        fallback: false,
+        free: !!prior.free,
+        credits: user?.credits ?? 0,
+        reading: prior,
+        replayed: true,
+      });
+    }
   }
 
   // No key configured: fail honestly instead of serving static text as
@@ -363,7 +389,7 @@ export async function POST(req: NextRequest) {
     const original = typeof body.originalQuestion === "string" ? body.originalQuestion.trim().slice(0, 300) : "";
     const firstWord = (intake.firstImpression ?? "").trim().split(/\s+/)[0] ?? "";
     const reading = {
-      id: randomUUID(),
+      id: body.readingId ?? randomUUID(),
       createdAt: new Date().toISOString(),
       spreadSlug: body.spreadSlug ?? "custom",
       spreadName: `${spreadName} · ${intake.categoryName}`,
@@ -389,6 +415,20 @@ export async function POST(req: NextRequest) {
         { error: "You need 1 Oracle for this reading. No Oracle was spent." },
         { status: 402 }
       );
+    }
+    if (saved.existing) {
+      // Lost a race with a parallel attempt of the same id: serve the saved row.
+      const prior = (await getReadingForUser(session.userId, reading.id)) as typeof reading | null;
+      const user = await getUserById(session.userId);
+      return NextResponse.json({
+        interpretation: prior?.interpretation ?? finalText,
+        model: prior?.model ?? generated.model,
+        fallback: false,
+        free: saved.free,
+        credits: user?.credits ?? 0,
+        reading: prior ?? { ...reading, free: saved.free },
+        replayed: true,
+      });
     }
     // Phase 6B: re-fetch AFTER the spend (the pre-check balance is stale).
     const user = await getUserById(session.userId);

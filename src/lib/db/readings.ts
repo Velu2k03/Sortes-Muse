@@ -41,13 +41,19 @@ export async function saveReadingWithSpend(
   reading: { id: string; free: boolean; [k: string]: unknown },
   tryFree: boolean,
   freeSystem?: string
-): Promise<{ ok: boolean; free: boolean }> {
+): Promise<{ ok: boolean; free: boolean; existing?: boolean }> {
   await ensureSchema();
   if (usePostgres) {
     if (!pg) throw new Error("Database not configured");
     const controller = new AbortController();
     const begin = pg.begin(async (rawTx) => {
       const tx = txWithSignal(rawTx, controller.signal);
+      // Point 1: idempotent replay. A retry with the same client id finds
+      // the committed row and spends nothing more.
+      const prior = await tx`SELECT data FROM readings WHERE id = ${reading.id} AND user_id = ${userId}`;
+      if (prior.length > 0) {
+        return { ok: true, free: !!(prior[0] as { data: { free?: boolean } }).data.free, existing: true };
+      }
       let free = false;
       if (tryFree) {
         const c = freeSystem
@@ -60,14 +66,19 @@ export async function saveReadingWithSpend(
         if (spent.length === 0) return { ok: false, free: false };
       }
       const data = { ...reading, free };
-      await tx`INSERT INTO readings (id, user_id, data, created_at)
+      const inserted = await tx`INSERT INTO readings (id, user_id, data, created_at)
         VALUES (${reading.id}, ${userId}, ${jsonbParam(data)}, NOW())
-        ON CONFLICT (id) DO NOTHING`;
+        ON CONFLICT (id) DO NOTHING RETURNING id`;
+      // Point 2: 0 rows means the id was taken (lost a race, or another
+      // user's id). Throw so the spend / free claim rolls back with it.
+      if (inserted.length === 0) throw new Error("reading insert wrote 0 rows; rolled back");
       return { ok: true, free };
     });
     return await withDbTimeout(begin, controller);
   }
   const db = await readLocal();
+  const prior = db.readings.find((r) => r.id === reading.id && r.user_id === userId);
+  if (prior) return { ok: true, free: !!(prior.data as { free?: boolean }).free, existing: true };
   let free = false;
   if (tryFree && freeSystem) {
     const list = db.freeInterpretations ?? (db.freeInterpretations = []);

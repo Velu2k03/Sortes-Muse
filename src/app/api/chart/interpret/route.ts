@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { localizeStar } from "@/lib/ziwei-i18n";
 import { getSession } from "@/lib/auth";
 import { randomUUID } from "crypto";
-import { getUserById, hasUsedFreeInterpretation, saveReadingWithSpend } from "@/lib/db";
+import { getReadingForUser, getUserById, hasUsedFreeInterpretation, saveReadingWithSpend } from "@/lib/db";
+import { isUuid } from "@/lib/ids";
 import { generateChat } from "@/lib/ai";
 import { preCheckOracleBalance } from "@/lib/credit-precheck";
 import { validateChartText, anchorTerms } from "@/lib/output-validation";
@@ -216,6 +217,10 @@ export async function POST(req: NextRequest) {
   if (system !== "ziwei" && system !== "western" && system !== "vedic") {
     return NextResponse.json({ error: "system must be ziwei, western, or vedic." }, { status: 400 });
   }
+  if (body.readingId !== undefined && !isUuid(body.readingId)) {
+    return NextResponse.json({ error: "readingId must be a UUID." }, { status: 400 });
+  }
+  const attemptId = typeof body.readingId === "string" ? body.readingId : undefined;
   const chart = body.chart;
   if (!chart || typeof chart !== "object" || Array.isArray(chart)) {
     return NextResponse.json({ error: "chart positions are required." }, { status: 400 });
@@ -258,6 +263,25 @@ Chart positions (positions and signs only, no birth data):
 ${lines}
 
 Write the personalized chart reflection now.`;
+
+  // Point 1: replay. This attempt id was already saved: no model call, no spend.
+  if (attemptId) {
+    const prior = (await getReadingForUser(session.userId, attemptId)) as
+      | { interpretation: string; model?: string; free?: boolean }
+      | null;
+    if (prior) {
+      const user = await getUserById(session.userId);
+      return NextResponse.json({
+        interpretation: prior.interpretation,
+        model: prior.model,
+        fallback: false,
+        free: !!prior.free,
+        credits: user?.credits ?? 0,
+        reading: prior,
+        replayed: true,
+      });
+    }
+  }
 
   // M0.1: spend or mark free only after a real model succeeds (see below).
   const serverFree = !(await hasUsedFreeInterpretation(session.userId, system));
@@ -333,7 +357,7 @@ Write the personalized chart reflection now.`;
   const chartSummary =
     typeof body.chartSummary === "string" ? body.chartSummary.trim().slice(0, 500) : "";
   const reading = {
-    id: randomUUID(),
+    id: attemptId ?? randomUUID(),
     createdAt: new Date().toISOString(),
     spreadSlug: `chart-${system}`,
     spreadName: `${systemName} chart`,
@@ -354,6 +378,18 @@ Write the personalized chart reflection now.`;
     );
   }
   const user = await getUserById(session.userId);
+  if (saved.existing) {
+    const prior = (await getReadingForUser(session.userId, reading.id)) as typeof reading | null;
+    return NextResponse.json({
+      interpretation: prior?.interpretation ?? finalText,
+      model: prior?.model ?? generated.model,
+      fallback: false,
+      free: saved.free,
+      credits: user?.credits ?? 0,
+      reading: prior ?? { ...reading, free: saved.free },
+      replayed: true,
+    });
+  }
   return NextResponse.json({
     interpretation: finalText,
     model: generated.model,

@@ -97,4 +97,16 @@ describe.skipIf(hasPostgres)("Batch D money paths (local JSON branch)", () => {
     const ids = ((await listReadingsForUser(user.id)) as Array<{ id: string }>).map((r) => r.id).sort();
     expect(ids).toEqual(["ch-1", "ch-3"]);
   });
+  // Point 1 (local branch): replaying an id never spends or duplicates.
+  it("Point 1: replaying a reading or report id spends 0 more and keeps one row", async () => {
+    const user = await createUser("p1-local@example.com");
+    await addUserCredits(user.id, 2);
+    expect(await saveReadingWithSpend(user.id, reading("p1-a"), false)).toEqual({ ok: true, free: false });
+    expect(await saveReadingWithSpend(user.id, reading("p1-a"), false)).toEqual({ ok: true, free: false, existing: true });
+    expect(await saveReportWithSpend(user.id, { id: "p1-rep", interpretation: "x" })).toEqual({ ok: true });
+    expect(await saveReportWithSpend(user.id, { id: "p1-rep", interpretation: "x" })).toEqual({ ok: true, existing: true });
+    expect((await getUserById(user.id))?.credits).toBe(0);
+    expect((await listReadingsForUser(user.id)).length).toBe(1);
+    expect((await listReportsForUser(user.id)).length).toBe(1);
+  });
 });

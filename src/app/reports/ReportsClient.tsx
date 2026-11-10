@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import ReadingText from "@/components/ReadingText";
 import { useAuth } from "@/components/AuthProvider";
@@ -11,7 +11,8 @@ import SwipeToast from "@/components/SwipeToast";
 import CallChip from "@/components/CallChip";
 import AnimatedContent from "@/components/AnimatedContent";
 import Counter from "@/components/Counter";
-import { getReports } from "@/lib/storage";
+import { unconfirmedMessage } from "@/lib/generate-failure";
+import { getReports, newId } from "@/lib/storage";
 import { SAMPLE_TRANSIT_REPORT } from "@/lib/sample-report";
 import BirthProfilePicker from "@/components/BirthProfilePicker";
 import { profileToReportFields } from "@/lib/birth-profiles";
@@ -324,6 +325,7 @@ export default function ReportsClient() {
   const [targetDate, setTargetDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [year, setYear] = useState(String(new Date().getFullYear() + 1));
   const [generating, setGenerating] = useState(false);
+  const attempt = useRef<{ key: string; id: string } | null>(null);
   const [error, setError] = useState("");
   // Phase D: failedCall marks a genuine call failure (not validation
   // or a balance stop) and drives the persistent retry UI; toastOpen
@@ -401,16 +403,18 @@ export default function ReportsClient() {
           : type === "year-ahead"
             ? { type, birth: birthPayload(birth), year: Number(year) }
             : { type, birthA: birthPayload(birth), birthB: birthPayload(birthB) };
+      // Point 1: one report id per attempt; a retry of the same request reuses
+      // it, so a report the server already saved is replayed, never re-spent.
+      const key = JSON.stringify(body);
+      if (attempt.current?.key !== key) attempt.current = { key, id: newId() };
       const res = await fetch("/api/reports/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+        body: JSON.stringify({ ...body, reportId: attempt.current.id }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        // Phase D: every failure message states that no Oracle was
-        // spent (the route spends only after success), but only a
-        // genuine call failure gets the toast and retry UI. A 402 is
+        // Phase D: only a genuine call failure gets the toast and retry UI. A 402 is
         // a balance stop: the paragraph plus the Top up link guide it.
         if (res.status === 401) {
           setSignInNeeded(true);
@@ -418,7 +422,8 @@ export default function ReportsClient() {
           return;
         }
         const msg = typeof data.error === "string" ? data.error : "The report could not be generated.";
-        setError(msg.includes("spent") ? msg : `${msg} No Oracle was spent.`);
+        // Server text verbatim: only the server may say "No Oracle was spent".
+        setError(msg);
         if (res.status !== 402) {
           setFailedCall(true);
           setToastOpen(true);
@@ -431,11 +436,14 @@ export default function ReportsClient() {
       if (typeof data.model === "string" && data.model) report.model = data.model;
       // The server saved the report with the spend (same id); just show it
       // and refresh the list and balance.
+      attempt.current = null;
       setResult(report);
       await loadSaved();
       await refresh();
     } catch {
-      setError("The report could not be generated just now. No Oracle was spent. Please try again in a moment.");
+      // Client-side failure (dropped connection, bad JSON): the server may have
+      // committed already, so never claim "not spent". A retry replays the report.
+      setError(unconfirmedMessage("report", "your saved reports"));
       setFailedCall(true);
       setToastOpen(true);
     } finally {
