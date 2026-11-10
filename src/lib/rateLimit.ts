@@ -1,6 +1,8 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
+import { createHash } from "node:crypto";
 import { Redis } from "@upstash/redis";
+import { Ratelimit, type Duration } from "@upstash/ratelimit";
 
 /**
  * One shared in-memory rate limiter for every route that needs one.
@@ -14,7 +16,7 @@ import { Redis } from "@upstash/redis";
  * needs its own bucket again, the reason must be written here, not
  * silently re-added as a local map.
  *
- * Item 4: counts live in Upstash Redis when its env vars are set, so the
+ * Item 4/C4: counts live in Upstash Redis (via @upstash/ratelimit) when its env vars are set, so the
  * budget holds across Vercel instances; otherwise (local dev, tests) an
  * explicit in-memory store is used. If Upstash errors, the limiter fails
  * open to the in-memory store (see withFallback).
@@ -128,62 +130,82 @@ export function createMemoryStore(): LimiterStore & { clear(): void } {
   };
 }
 
-/** The slice of the Upstash client the limiter uses (sorted-set window). */
-export interface RedisPipeline {
-  zremrangebyscore(key: string, min: number, max: number): RedisPipeline;
-  zadd(key: string, entry: { score: number; member: string }): RedisPipeline;
-  zcard(key: string): RedisPipeline;
-  pexpire(key: string, ms: number): RedisPipeline;
-  exec(): Promise<unknown[]>;
-}
-export interface RedisLike {
-  pipeline(): RedisPipeline;
-  zrem(key: string, member: string): Promise<unknown>;
+/** The slice of an @upstash/ratelimit instance the store uses. */
+export interface LimiterLike {
+  limit(identifier: string): Promise<{ success: boolean; remaining: number; reason?: string }>;
+  getRemaining(identifier: string): Promise<{ remaining: number }>;
 }
 
-const PREFIX = "rl:";
+/**
+ * Windows in the largest exact unit @upstash/ratelimit accepts:
+ * 60_000 -> "1 m", 15 min -> "15 m", 60 min -> "60 m", 24 h -> "1 d".
+ */
+export function durationString(windowMs: number): string {
+  const DAY = 86_400_000;
+  if (windowMs % DAY === 0) return `${windowMs / DAY} d`;
+  if (windowMs % 60_000 === 0) return `${windowMs / 60_000} m`;
+  if (windowMs % 1000 === 0) return `${windowMs / 1000} s`;
+  return `${windowMs} ms`;
+}
 
-export function createRedisStore(redis: RedisLike): LimiterStore {
-  const member = (now: number) => `${now}:${Math.random().toString(36).slice(2, 10)}`;
+/**
+ * C1: every key is prefixed per deployment environment, so Preview and
+ * Production never share buckets on the one Upstash database. Keys are
+ * `rl:<env>:<key>` (was `rl:<key>`); old keys expire via their TTL.
+ */
+export function rateLimitPrefix(): string {
+  return "rl:" + (process.env.VERCEL_ENV ?? "development");
+}
+
+/** Raised when the library reports its own 500 ms timeout (it fails open). */
+export class RateLimitTimeoutError extends Error {
+  constructor() {
+    super("upstash call timed out");
+  }
+}
+
+/**
+ * Store backed by @upstash/ratelimit (atomic Lua sliding window). The
+ * limiter factory is injectable so the wrapper can be tested without Redis.
+ */
+export function createUpstashStore(makeLimiter: (rule: RateLimitRule) => LimiterLike): LimiterStore {
+  const cache = new Map<string, LimiterLike>();
+  const limiterFor = (rule: RateLimitRule) => {
+    const id = `${rule.windowMs}:${rule.max}`;
+    let l = cache.get(id);
+    if (!l) cache.set(id, (l = makeLimiter(rule)));
+    return l;
+  };
+  const hit = async (key: string, rule: RateLimitRule) => {
+    const r = await limiterFor(rule).limit(key);
+    // Timeout resolves success:true with remaining:0: not a real decision.
+    if (r.reason === "timeout") throw new RateLimitTimeoutError();
+    return r;
+  };
   return {
     async count(key, rule) {
-      const now = Date.now();
-      const out = await redis
-        .pipeline()
-        .zremrangebyscore(PREFIX + key, 0, now - rule.windowMs)
-        .zcard(PREFIX + key)
-        .exec();
-      return Number(out[1]);
+      const { remaining } = await limiterFor(rule).getRemaining(key);
+      return Math.max(0, rule.max - remaining);
     },
     async record(key, rule) {
-      const now = Date.now();
-      await redis
-        .pipeline()
-        .zadd(PREFIX + key, { score: now, member: member(now) })
-        .pexpire(PREFIX + key, rule.windowMs)
-        .exec();
+      await hit(key, rule);
     },
     async tryRecord(key, rule) {
-      // Add first, then count, so two instances racing at the boundary
-      // cannot both slip under the budget; a denied hit is rolled back
-      // so rejected requests do not extend the window.
-      const now = Date.now();
-      const m = member(now);
-      const out = await redis
-        .pipeline()
-        .zremrangebyscore(PREFIX + key, 0, now - rule.windowMs)
-        .zadd(PREFIX + key, { score: now, member: m })
-        .zcard(PREFIX + key)
-        .pexpire(PREFIX + key, rule.windowMs)
-        .exec();
-      const used = Number(out[2]);
-      if (used > rule.max) {
-        await redis.zrem(PREFIX + key, m);
-        return { allowed: false, used: used - 1 };
-      }
-      return { allowed: true, used };
+      const r = await hit(key, rule);
+      return { allowed: r.success, used: Math.max(0, rule.max - r.remaining) };
     },
   };
+}
+
+function realLimiter(redis: Redis, rule: RateLimitRule): LimiterLike {
+  return new Ratelimit({
+    redis,
+    limiter: Ratelimit.slidingWindow(rule.max, durationString(rule.windowMs) as Duration),
+    prefix: rateLimitPrefix(),
+    timeout: 500,
+    enableTelemetry: false,
+    ephemeralCache: false,
+  });
 }
 
 const memory = createMemoryStore();
@@ -200,7 +222,8 @@ function getStore(): LimiterStore {
     const url = process.env.UPSTASH_REDIS_REST_KV_REST_API_URL;
     const token = process.env.UPSTASH_REDIS_REST_KV_REST_API_TOKEN;
     if (url && token) {
-      redisStore = createRedisStore(new Redis({ url, token }) as unknown as RedisLike);
+      const redis = new Redis({ url, token });
+      redisStore = createUpstashStore((rule) => realLimiter(redis, rule));
     } else {
       redisStore = null;
       if (process.env.NODE_ENV === "production") {
@@ -209,6 +232,43 @@ function getStore(): LimiterStore {
     }
   }
   return redisStore ?? memory;
+}
+
+let lastFallbackLog = 0;
+let suppressed = 0;
+
+/**
+ * C3: loud, throttled log for every fallback (first immediately, then at
+ * most once a minute with a count). Covers timeouts, outages and the
+ * Upstash command cap, where every call errors and we degrade silently.
+ */
+function logFallback(reason: unknown): void {
+  const now = Date.now();
+  if (lastFallbackLog && now - lastFallbackLog < 60_000) {
+    suppressed++;
+    return;
+  }
+  const extra = suppressed ? ` (${suppressed} fallbacks since last log)` : "";
+  suppressed = 0;
+  lastFallbackLog = now;
+  console.error(`[rateLimit] FALLBACK ACTIVE — ${reason === "timeout" ? "timeout" : String(reason)}${extra}`);
+}
+
+/** Test-only: reset the fallback log throttle. */
+export function resetFallbackLog(): void {
+  lastFallbackLog = 0;
+  suppressed = 0;
+}
+
+/**
+ * C2: email-keyed limits are hashed so no address sits in the third-party
+ * store. Salted with AUTH_SECRET (read directly: importing auth.ts would
+ * be circular). Hashed keys start new buckets; old plaintext ones expire.
+ */
+export function emailLimitKey(prefix: string, email: string): string {
+  const salt = process.env.AUTH_SECRET ?? "dev-only-salt";
+  const hash = createHash("sha256").update(`${salt}:${email.trim().toLowerCase()}`).digest("hex");
+  return `${prefix}:${hash}`;
 }
 
 /**
@@ -226,7 +286,7 @@ async function withFallback<T>(
   try {
     return await op(store);
   } catch (err) {
-    console.error("[rateLimit] shared store failed, failing open to in-memory:", err);
+    logFallback(err instanceof RateLimitTimeoutError ? "timeout" : err);
     return fallback(memory);
   }
 }

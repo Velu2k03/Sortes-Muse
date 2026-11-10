@@ -6,9 +6,13 @@ import {
   recordRateLimit,
   resetRateLimits,
   createMemoryStore,
-  createRedisStore,
+  createUpstashStore,
+  durationString,
+  emailLimitKey,
+  rateLimitPrefix,
+  resetFallbackLog,
   RATE_LIMITS,
-  type RedisLike,
+  type LimiterLike,
   clientIp,
 } from "@/lib/rateLimit";
 
@@ -133,70 +137,44 @@ describe("clientIp", () => {
 });
 
 /**
- * Item 4: a fake Redis that holds sorted sets in ONE shared object, the
- * way Upstash is one shared server. Each "instance" below is a separate
- * store wrapper (as each Vercel instance has its own process memory),
- * but both point at the same fake server.
+ * Wrapper tests (C4): a shared in-memory mock stands in for the library,
+ * the way Upstash is one shared server. Atomicity is the library's own
+ * upstream-tested Lua job and is deliberately NOT emulated here.
  */
-function fakeRedis(failing = { on: false }): RedisLike {
-  const z = new Map<string, { score: number; member: string }[]>();
-  const guard = () => {
-    if (failing.on) throw new Error("upstash unreachable");
-  };
-  const pipeline = () => {
-    const ops: (() => unknown)[] = [];
-    const chain = {
-      zremrangebyscore(k: string, min: number, max: number) {
-        ops.push(() => {
-          z.set(k, (z.get(k) ?? []).filter((e) => e.score < min || e.score > max));
-          return 0;
-        });
-        return chain;
-      },
-      zadd(k: string, e: { score: number; member: string }) {
-        ops.push(() => (z.set(k, [...(z.get(k) ?? []), e]), 1));
-        return chain;
-      },
-      zcard(k: string) {
-        ops.push(() => (z.get(k) ?? []).length);
-        return chain;
-      },
-      pexpire() {
-        ops.push(() => 1);
-        return chain;
-      },
-      async exec() {
-        guard();
-        return ops.map((f) => f());
-      },
-    };
-    return chain;
-  };
-  return {
-    pipeline,
-    async zrem(k: string, m: string) {
-      guard();
-      z.set(k, (z.get(k) ?? []).filter((e) => e.member !== m));
+function mockServer(mode: { fail?: boolean; timeout?: boolean } = {}) {
+  const used = new Map<string, number>();
+  const makeLimiter = (rule: { max: number }): LimiterLike => ({
+    async limit(id) {
+      if (mode.fail) throw new Error("upstash unreachable");
+      if (mode.timeout) return { success: true, remaining: 0, reason: "timeout" };
+      const n = used.get(id) ?? 0;
+      if (n >= rule.max) return { success: false, remaining: 0 };
+      used.set(id, n + 1);
+      return { success: true, remaining: rule.max - n - 1 };
     },
-  };
+    async getRemaining(id) {
+      if (mode.fail) throw new Error("upstash unreachable");
+      return { remaining: rule.max - (used.get(id) ?? 0) };
+    },
+  });
+  return { makeLimiter, used };
 }
 
-describe("shared store (item 4)", () => {
+describe("shared store (C4 wrapper)", () => {
   const rule = { windowMs: 60_000, max: 3 };
 
-  it("two separate limiter instances share one budget", async () => {
-    const server = fakeRedis();
-    const instanceA = createRedisStore(server);
-    const instanceB = createRedisStore(server);
-    expect((await instanceA.tryRecord("ip", rule)).allowed).toBe(true);
-    expect((await instanceB.tryRecord("ip", rule)).allowed).toBe(true);
-    expect((await instanceA.tryRecord("ip", rule)).allowed).toBe(true);
-    // Fourth hit lands on the other instance and is still denied.
-    expect((await instanceB.tryRecord("ip", rule)).allowed).toBe(false);
-    expect(await instanceA.count("ip", rule)).toBe(3);
+  it("two separate store instances share one budget", async () => {
+    const server = mockServer();
+    const a = createUpstashStore(server.makeLimiter);
+    const b = createUpstashStore(server.makeLimiter);
+    expect((await a.tryRecord("ip", rule)).allowed).toBe(true);
+    expect((await b.tryRecord("ip", rule)).allowed).toBe(true);
+    expect((await a.tryRecord("ip", rule)).allowed).toBe(true);
+    expect((await b.tryRecord("ip", rule)).allowed).toBe(false);
+    expect(await a.count("ip", rule)).toBe(3);
   });
 
-  it("per-instance memory stores do NOT share (why the in-memory limiter was not global)", async () => {
+  it("per-instance memory stores do NOT share", async () => {
     const a = createMemoryStore();
     const b = createMemoryStore();
     for (let i = 0; i < 3; i++) await a.tryRecord("ip", rule);
@@ -204,29 +182,83 @@ describe("shared store (item 4)", () => {
     expect((await b.tryRecord("ip", rule)).allowed).toBe(true);
   });
 
-  it("denied hits are rolled back and do not extend the lockout", async () => {
-    const store = createRedisStore(fakeRedis());
+  it("denied hits do not consume budget", async () => {
+    const store = createUpstashStore(mockServer().makeLimiter);
     for (let i = 0; i < 5; i++) await store.tryRecord("k", rule);
     expect(await store.count("k", rule)).toBe(3);
   });
 
   it("peek/record on the shared store (login semantics)", async () => {
-    const store = createRedisStore(fakeRedis());
+    const store = createUpstashStore(mockServer().makeLimiter);
     expect(await store.count("f", rule)).toBe(0);
     await store.record("f", rule);
     await store.record("f", rule);
     expect(await store.count("f", rule)).toBe(2);
   });
+
+  it("builds one limiter per distinct rule", async () => {
+    const make = vi.fn(mockServer().makeLimiter);
+    const store = createUpstashStore(make);
+    await store.tryRecord("a", rule);
+    await store.tryRecord("b", rule);
+    await store.tryRecord("c", { windowMs: 1000, max: 1 });
+    expect(make).toHaveBeenCalledTimes(2);
+  });
+
+  it("a library timeout is surfaced as an error, not a fake allow", async () => {
+    const store = createUpstashStore(mockServer({ timeout: true }).makeLimiter);
+    await expect(store.tryRecord("t", rule)).rejects.toThrow(/timed out/);
+  });
 });
 
-describe("store selection and fail-open (item 4)", () => {
+describe("durationString / prefix / emailLimitKey", () => {
+  it("maps every shipped window to an exact library duration", () => {
+    expect(durationString(60_000)).toBe("1 m");
+    expect(durationString(15 * 60_000)).toBe("15 m");
+    expect(durationString(60 * 60_000)).toBe("60 m");
+    expect(durationString(24 * 60 * 60_000)).toBe("1 d");
+    expect(durationString(1500)).toBe("1500 ms");
+    for (const r of Object.values(RATE_LIMITS)) {
+      expect(durationString(r.windowMs)).toMatch(/^\d+ [dms]$/);
+    }
+  });
+
+  it("C1: prefix is scoped by VERCEL_ENV", () => {
+    const saved = process.env.VERCEL_ENV;
+    process.env.VERCEL_ENV = "production";
+    expect(rateLimitPrefix()).toBe("rl:production");
+    process.env.VERCEL_ENV = "preview";
+    expect(rateLimitPrefix()).toBe("rl:preview");
+    delete process.env.VERCEL_ENV;
+    expect(rateLimitPrefix()).toBe("rl:development");
+    if (saved !== undefined) process.env.VERCEL_ENV = saved;
+  });
+
+  it("C2: email keys are hashed, normalised, salted and never contain the address", () => {
+    const k = emailLimitKey("login", "  Alice@Example.com ");
+    expect(k).toBe(emailLimitKey("login", "alice@example.com"));
+    expect(k).toMatch(/^login:[0-9a-f]{64}$/);
+    expect(k).not.toContain("alice");
+    expect(emailLimitKey("code", "alice@example.com")).toMatch(/^code:/);
+    expect(emailLimitKey("login", "bob@example.com")).not.toBe(k);
+    const saved = process.env.AUTH_SECRET;
+    process.env.AUTH_SECRET = "other-secret";
+    expect(emailLimitKey("login", "alice@example.com")).not.toBe(k);
+    if (saved === undefined) delete process.env.AUTH_SECRET;
+    else process.env.AUTH_SECRET = saved;
+  });
+});
+
+describe("store selection and fail-open (C3/C4)", () => {
   const URL_KEY = "UPSTASH_REDIS_REST_KV_REST_API_URL";
   const TOKEN_KEY = "UPSTASH_REDIS_REST_KV_REST_API_TOKEN";
   const saved = { u: process.env[URL_KEY], t: process.env[TOKEN_KEY] };
 
   afterEach(() => {
     vi.doUnmock("@upstash/redis");
+    vi.doUnmock("@upstash/ratelimit");
     vi.resetModules();
+    vi.useRealTimers();
     if (saved.u === undefined) delete process.env[URL_KEY];
     else process.env[URL_KEY] = saved.u;
     if (saved.t === undefined) delete process.env[TOKEN_KEY];
@@ -246,31 +278,84 @@ describe("store selection and fail-open (item 4)", () => {
     expect(ctor).not.toHaveBeenCalled();
   });
 
-  it("with the env vars it builds the client from the exact KV-named vars, and fails OPEN when Upstash errors", async () => {
+  async function withMockedLibrary(mode: { fail?: boolean; timeout?: boolean }) {
     process.env[URL_KEY] = "https://example.invalid";
     process.env[TOKEN_KEY] = "tok";
-    const seen: unknown[] = [];
-    const failing = { on: true };
-    const server = fakeRedis(failing);
+    const seenRedis: unknown[] = [];
+    const seenConfig: Record<string, unknown>[] = [];
+    const server = mockServer(mode);
     vi.resetModules();
     vi.doMock("@upstash/redis", () => ({
       Redis: function (cfg: unknown) {
-        seen.push(cfg);
-        return server;
+        seenRedis.push(cfg);
       },
     }));
-    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.doMock("@upstash/ratelimit", () => ({
+      Ratelimit: Object.assign(
+        function (cfg: Record<string, unknown>) {
+          seenConfig.push(cfg);
+          return server.makeLimiter(rule(cfg));
+        },
+        { slidingWindow: (max: number, w: string) => ({ max, w }) }
+      ),
+    }));
+    function rule(cfg: Record<string, unknown>) {
+      return { max: (cfg.limiter as { max: number }).max };
+    }
     const mod = await import("@/lib/rateLimit");
+    return { mod, seenRedis, seenConfig };
+  }
+
+  it("builds the client from the exact KV vars with prefix/timeout config, and fails OPEN loudly when Upstash errors", async () => {
+    resetFallbackLog();
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const failing = await withMockedLibrary({ fail: true });
     const r = { windowMs: 60_000, max: 1 };
-    // Outage: request is allowed (not a hard deny) and the error is logged.
-    expect((await mod.checkRateLimit("o", r)).allowed).toBe(true);
-    expect(errSpy).toHaveBeenCalled();
-    expect(await mod.isRateLimited("fresh", r)).toBe(false);
-    // Recovery: the shared store is used again.
-    failing.on = false;
+    expect((await failing.mod.checkRateLimit("o", r)).allowed).toBe(true);
+    expect(errSpy.mock.calls[0][0]).toContain("[rateLimit] FALLBACK ACTIVE");
+    expect(await failing.mod.isRateLimited("fresh", r)).toBe(false);
+    expect(failing.seenRedis).toEqual([{ url: "https://example.invalid", token: "tok" }]);
+    expect(failing.seenConfig[0]).toMatchObject({ prefix: "rl:" + (process.env.VERCEL_ENV ?? "development"), timeout: 500, enableTelemetry: false, ephemeralCache: false });
+    errSpy.mockRestore();
+  });
+
+  it("uses the shared store when healthy (second hit denied)", async () => {
+    const { mod } = await withMockedLibrary({});
+    const r = { windowMs: 60_000, max: 1 };
     expect((await mod.checkRateLimit("s", r)).allowed).toBe(true);
     expect((await mod.checkRateLimit("s", r)).allowed).toBe(false);
-    expect(seen).toEqual([{ url: "https://example.invalid", token: "tok" }]);
+  });
+
+  it("C3: a timeout falls back to memory with a loud marker, throttled to once per minute with a count", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-01-01T00:00:00Z"));
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const { mod } = await withMockedLibrary({ timeout: true });
+    mod.resetFallbackLog();
+    const r = { windowMs: 60_000, max: 5 };
+    for (let i = 0; i < 4; i++) expect((await mod.checkRateLimit("t" + i, r)).allowed).toBe(true);
+    expect(errSpy).toHaveBeenCalledTimes(1);
+    expect(errSpy.mock.calls[0][0]).toBe("[rateLimit] FALLBACK ACTIVE — timeout");
+    vi.setSystemTime(new Date("2026-01-01T00:01:01Z"));
+    await mod.checkRateLimit("later", r);
+    expect(errSpy).toHaveBeenCalledTimes(2);
+    expect(errSpy.mock.calls[1][0]).toContain("3 fallbacks since last log");
     errSpy.mockRestore();
+  });
+
+  it("constructs a real Ratelimit with the explicit Redis client (no network call)", async () => {
+    const { Redis } = await import("@upstash/redis");
+    const { Ratelimit } = await import("@upstash/ratelimit");
+    const redis = new Redis({ url: "https://example.invalid", token: "tok" });
+    const rl = new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(5, "15 m"),
+      prefix: rateLimitPrefix(),
+      timeout: 500,
+      enableTelemetry: false,
+      ephemeralCache: false,
+    });
+    expect(typeof rl.limit).toBe("function");
+    expect(typeof rl.getRemaining).toBe("function");
   });
 });

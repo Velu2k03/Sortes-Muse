@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { storeAuthCode, getAuthCode } from "@/lib/db";
 import { newCode, hashCode, isValidEmail, authConfigured } from "@/lib/auth";
 import { sendSignInCode } from "@/lib/email";
-import { checkRateLimit, rateLimitExceeded, RATE_LIMITS } from "@/lib/rateLimit";
+import { checkRateLimit, emailLimitKey, rateLimitExceeded, RATE_LIMITS } from "@/lib/rateLimit";
 
 export const dynamic = "force-dynamic";
 
@@ -48,7 +48,7 @@ async function handleRequest(req: NextRequest) {
   const now = Date.now();
   // 5 code requests per email per hour (shared limiter; same budget
   // as the old per-route map it replaces).
-  if (!(await checkRateLimit(`code:${email}`, RATE_LIMITS.codeEmail)).allowed) {
+  if (!(await checkRateLimit(emailLimitKey("code", email), RATE_LIMITS.codeEmail)).allowed) {
     return rateLimitExceeded();
   }
 

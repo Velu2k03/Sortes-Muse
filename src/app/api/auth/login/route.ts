@@ -6,7 +6,7 @@ import {
   SESSION_COOKIE,
   SESSION_MAX_AGE,
   authConfigured,} from "@/lib/auth";
-import { isRateLimited, recordRateLimit, clientIp, RATE_LIMITS } from "@/lib/rateLimit";
+import { isRateLimited, recordRateLimit, clientIp, emailLimitKey, RATE_LIMITS } from "@/lib/rateLimit";
 
 export const dynamic = "force-dynamic";
 
@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
     // 10 failed logins per email per 15 minutes (best effort, shared
     // limiter). Only failures count, as before; a success does not
     // consume the budget.
-    const limitKey = `login:${email}`;
+    const limitKey = emailLimitKey("login", email);
     if (await isRateLimited(limitKey, RATE_LIMITS.loginEmail)) {
       return NextResponse.json(
         { error: "Too many attempts. Please try again in a few minutes." },
