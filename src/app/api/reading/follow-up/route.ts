@@ -18,7 +18,8 @@ import { checkRateLimit, clientIp, rateLimitExceeded, RATE_LIMITS } from "@/lib/
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 // Covers the 170 s AI retry budget plus the DB write (Vercel Fluid: 300 s max on every plan).
-export const maxDuration = 200;
+// 300 s Fluid ceiling on Hobby; 170 s AI budget leaves 130 s margin (see reading/generate).
+export const maxDuration = 300;
 
 const MAX_FOLLOWUPS = 3;
 

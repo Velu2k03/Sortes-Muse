@@ -165,7 +165,7 @@ function GateScreen({
         <ul className="mt-2 list-disc space-y-1 pl-5">
           <li>300-600 words, shown on screen</li>
           <li>AI-written from your cards, question, and story</li>
-          <li>Ready in up to about 2 minutes</li>
+          <li>Ready in up to about 3 minutes</li>
           <li>First follow-up free, then 1 Oracle each, up to 3</li>
         </ul>
       </div>

@@ -14,10 +14,11 @@ import { checkRateLimit, clientIp, rateLimitExceeded, RATE_LIMITS } from "@/lib/
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-// Covers the 170 s AI retry budget (AI_RETRY_TOTAL_TIMEOUT_MS) plus the
-// DB write. Vercel docs (functions/limitations, Fluid compute): 300 s
-// default AND maximum on Hobby, 800 s max on Pro. Must be a literal.
-export const maxDuration = 200;
+// Fluid compute is ON (confirmed 2026-11-10): 300 s default AND maximum on
+// Hobby (800 s on Pro). The 170 s AI retry budget (AI_RETRY_TOTAL_TIMEOUT_MS)
+// leaves 130 s for the pre-check, the DB transaction, and the response,
+// inside the 300 s ceiling. Must be a literal.
+export const maxDuration = 300;
 
 // M0.2 health guardrail parity: the chart route already appends this
 // server-side when missing; the tarot route now does the same, so the
