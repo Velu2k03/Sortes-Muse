@@ -35,7 +35,7 @@ export default function IntakeFlow({ slug }: { slug: string }) {
       />
       {f.gate === "signin" && <SignInGate f={f} />}
       {f.gate === "loading" && (
-        <p role="status" className="mt-16 text-center text-cream/75">Checking your account…</p>
+        <output className="mt-16 block text-center text-cream/75">Checking your account…</output>
       )}
       {/* The impression step is part of the reading phase in the dots. */}
       {!f.gate && <StepDots step={step === "impression" ? "processing" : step} />}

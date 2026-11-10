@@ -20,7 +20,7 @@ export function SignInGate({ f }: { f: IntakeState }) {
   const { spread, credits } = f;
   const hasDeviceOracles = (credits ?? 0) > 0;
   return (
-    <div role="region" aria-label="Sign in required" className="mt-8 rounded-3xl border border-gold/25 bg-panel/70 p-6 text-center">
+    <section aria-label="Sign in required" className="mt-8 rounded-3xl border border-gold/25 bg-panel/70 p-6 text-center">
       <p className="text-xs uppercase tracking-[0.35em] text-gold">Sign in to continue</p>
       <h1 className="mt-3 font-display text-3xl text-goldbright sm:text-4xl">
         {spread.name} needs an account
@@ -43,7 +43,7 @@ export function SignInGate({ f }: { f: IntakeState }) {
       <p className="mt-3 text-xs text-mist">
         Anything you already typed here is kept on this device and waiting when you come back.
       </p>
-    </div>
+    </section>
   );
 }
 
