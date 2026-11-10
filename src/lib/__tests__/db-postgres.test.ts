@@ -605,6 +605,49 @@ describe.skipIf(SKIP)("money paths on real Postgres (staging only)", () => {
     expect(rows.map((x) => x.id)).toEqual(["bd-ch-1", "bd-ch-3"]);
   });
 
+  // F2: the proration base is the stored order total (tax included), not the pack list price.
+  it("F2: partial refund prorates against the stored total, not the list price", async () => {
+    const user = await db.createUser("f2-total@example.com");
+    // pack5 list price is $3.99; the customer paid $4.50 with tax on top.
+    await db.fulfillOrder({
+      userId: user.id,
+      email: user.email,
+      packType: "pack5 (lemonsqueezy:order-f2)",
+      amount: 4.5,
+      readings: 5,
+      orderId: "order-f2",
+    });
+    // 400 cents refunded. Stored total 450: floor(5 * 400 / 450) = 4.
+    // Against the list price (399) 400 would count as a full refund: 5.
+    expect(await db.revokeOrder("order-f2", "", 400)).toEqual({ revoked: true, readings: 4 });
+    expect((await db.getUserById(user.id))?.credits).toBe(1);
+  });
+
+  // F3: the dedupe sums the INTENDED revoke recorded on refund rows, not the clamped balance change.
+  it("F3: balance clamps to 0 but the refund row records the intended revoke; redelivery revokes nothing more", async () => {
+    const user = await db.createUser("f3-clamp@example.com");
+    await db.fulfillOrder({
+      userId: user.id,
+      email: user.email,
+      packType: "pack12 (lemonsqueezy:order-f3)",
+      amount: 7.99,
+      readings: 12,
+      orderId: "order-f3",
+    });
+    // The customer spends 10 of the 12 before the refund: balance 2.
+    expect(await db.spendUserCredits(user.id, 10)).toBe(true);
+    expect((await db.getUserById(user.id))?.credits).toBe(2);
+    expect(await db.revokeOrder("order-f3", "", 799)).toEqual({ revoked: true, readings: 12 });
+    expect((await db.getUserById(user.id))?.credits).toBe(0); // clamped, not -10
+    const rows = (await raw`SELECT readings FROM transactions WHERE user_id = ${user.id} AND pack_type LIKE 'refund (%'`) as Array<{ readings: number }>;
+    expect(rows.map((r) => r.readings)).toEqual([-12]); // intended, not the clamped -2
+    // Redelivery of the same refund: delta 0, no new row, balance unchanged.
+    await db.addUserCredits(user.id, 3);
+    expect((await db.revokeOrder("order-f3", "", 799)).revoked).toBe(false);
+    expect((await db.getUserById(user.id))?.credits).toBe(3);
+    expect((await raw`SELECT id FROM transactions WHERE user_id = ${user.id} AND pack_type LIKE 'refund (%'`).length).toBe(1);
+  });
+
   // Item 2: a guest reading synced on sign-in (POST /api/history -> saveReadingForUser,
   // keeping its local id) is the row the follow-up route finds by that same id.
   it("item 2: a reading synced under its local id accepts a follow-up for that id", async () => {
