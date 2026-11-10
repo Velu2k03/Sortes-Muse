@@ -14,14 +14,15 @@ describe("sslFromConnectionString", () => {
     ["?sslmode=verify-full", "verify-full"],
     ["?connect_timeout=5&sslmode=require", "require"],
     ["?sslmode=REQUIRE", "require"],
-    ["", "prefer"],
-    ["?sslmode=bogus", "prefer"],
+    ["", "require"],
+    ["?connect_timeout=5", "require"],
+    ["?sslmode=bogus", "require"],
   ])("%s", (qs, expected) => {
     expect(sslFromConnectionString(base + qs)).toBe(expected);
   });
 
   it("does not throw on an unparseable string", () => {
-    expect(sslFromConnectionString("not a url")).toBe("prefer");
+    expect(sslFromConnectionString("not a url")).toBe("require");
   });
 });
 

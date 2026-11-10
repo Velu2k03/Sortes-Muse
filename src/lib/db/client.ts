@@ -146,8 +146,11 @@ type PgSsl = false | "require" | "prefer" | "allow" | "verify-full";
 
 /** Map the connection string's `sslmode` to postgres.js's `ssl` option.
  * An explicit ssl option would override the URL, so the URL is parsed
- * here instead. Absent or unrecognised -> "prefer": try TLS, fall back
- * to plain (production Supabase upgrades to TLS; plain CI/local works). */
+ * here instead. Absent or unrecognised -> "require" (fail closed, as the
+ * client always was on main). "prefer" is NOT safe as a default: in
+ * postgres.js 4.1.0 it connects unencrypted when the server's SSL reply
+ * is anything but "S", which a network-path attacker can forge. Plain
+ * connections need an explicit ?sslmode=disable or ?sslmode=prefer. */
 export function sslFromConnectionString(connectionString: string): PgSsl {
   const m = /[?&]sslmode=([^&#]*)/i.exec(connectionString);
   const mode = m?.[1].toLowerCase();
@@ -162,8 +165,10 @@ export function sslFromConnectionString(connectionString: string): PgSsl {
       // postgres.js has no verify-ca; verify-full is the stricter,
       // fail-closed equivalent.
       return "verify-full";
-    default:
+    case "prefer":
       return "prefer";
+    default:
+      return "require";
   }
 }
 

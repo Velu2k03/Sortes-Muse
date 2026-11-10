@@ -12,6 +12,7 @@ import {
   FOCUS_AREAS,
   PRESETS,
   birthFormError,
+  chartAttemptKey,
   chartSummaryText,
   parseBirthTime,
   type ChartResult,
@@ -440,7 +441,11 @@ export function useChartSession(form: ChartForm, prefs: ChartPrefs) {
         chartSummary: chartSummaryText(result, ziweiLang),
       };
       // Item 4: the id outlives a reload (see pendingAttemptId).
-      const attemptId = pendingAttemptId("chart-interpret", JSON.stringify(payload));
+      // Hash stable inputs only; the chart result has a today-dated dasha.
+      const attemptId = pendingAttemptId(
+        "chart-interpret",
+        chartAttemptKey(result.system, calcFingerprintRef.current, payload.category, payload.question)
+      );
       const res = await fetch("/api/chart/interpret", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

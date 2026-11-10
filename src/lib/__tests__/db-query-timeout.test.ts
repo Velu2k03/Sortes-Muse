@@ -558,11 +558,10 @@ describeIfPg("cancel_timeout closes the connection on an unanswered cancel (post
   // differs (CI: ci_only_throwaway) it dies at login before cancel_timeout is
   // exercised. Both now come from MONEY_URL. The postgres.js 4.1.0 cancel
   // path itself (connection.js quiet/expect/unanswered) is covered by the
-  // passing plain-query tests above. Still skipped under CI until a run with
-  // Postgres confirms the fix; the CI guard asserts that exactly this one
-  // case is skipped. Remove the skipIf (and set the expected skips to 0 in
-  // lint-gate.yml) once it passes there.
-  it.skipIf(!!process.env.CI)("a backend stuck mid-message inside a transaction is freed by cancel_timeout (direct)", async () => {
+  // passing plain-query tests above. Round 5: the CI skipIf was removed after
+  // CI went green on 2260ba4; the case now runs in CI and the skip-count
+  // guard in lint-gate.yml expects 0.
+  it("a backend stuck mid-message inside a transaction is freed by cancel_timeout (direct)", async () => {
     // Direct connection for the pg_stat_activity snapshot. The
     // stuck session is identified by pid: snapshot the matching
     // pids first, so leftovers from earlier runs cannot false-pass.

@@ -86,9 +86,9 @@ jobs:
       # Point 7: the guard above only proves the URLs are set. This step also
       # asserts the exact skip count from vitest's JSON report, so an RLS or
       # money suite that skips for any other reason (login failure, setup
-      # drift) fails the job. Expected: 1 = the quarantined cancel_timeout
-      # (direct) case. Change the number only with a reviewed reason.
+      # drift) fails the job. Expected: 0 (the cancel_timeout (direct)
+      # case was un-quarantined in round 5). Change the number only with a reviewed reason.
       - name: Run tests
         run: |
           npx vitest run --reporter=default --reporter=json --outputFile=vitest-report.json
-          node scripts/assert-skip-count.mjs vitest-report.json 1
+          node scripts/assert-skip-count.mjs vitest-report.json 0
