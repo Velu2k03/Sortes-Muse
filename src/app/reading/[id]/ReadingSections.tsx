@@ -188,69 +188,101 @@ export function CardRow({
   );
 }
 
-/** Per-card meanings and the personalized interpretation. */
-export function CardMeanings({ reading }: { reading: Reading }) {
+/**
+ * Batch 6c: the personalized interpretation is what was paid for,
+ * so it renders first, right after the card row. Before, it sat
+ * after every per-card meaning block (ten for a Celtic Cross),
+ * which buried it ~9,000px down the page on a phone.
+ */
+export function Interpretation({ reading }: { reading: Reading }) {
+  if (!reading.aiGenerated || !reading.interpretation) return null;
   return (
-    <div className="mx-auto mt-10 max-w-3xl space-y-5">
-      {reading.cards.map((d, i) => {
-        const card = getCard(d.cardId);
-        return (
-          <section
-            key={d.positionKey}
-            className="rounded-3xl border border-gold/20 bg-panel/60 p-6 sm:p-8"
-          >
-            <p className="text-xs uppercase tracking-[0.25em] text-gold">
-              {i + 1} · {d.position}
-            </p>
-            <h2 className="mt-1 font-display text-2xl text-cream">
-              {card.name}{" "}
-              <span className="text-sm font-body font-normal text-mist">
-                {d.reversed ? "reversed" : "upright"}
-              </span>
-            </h2>
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              {orientationKeywords(card, d.reversed).map((k) => (
-                <span
-                  key={k}
-                  className="rounded-full border border-gold/40 bg-gold/10 px-3 py-1 text-xs text-goldbright"
-                >
-                  {k}
-                </span>
-              ))}
-            </div>
-            {reading.aiGenerated && reading.interpretation ? (
-              <details className="mt-3 rounded-xl border border-gold/20 bg-panel/40 px-4 py-3">
-                <summary className="cursor-pointer text-sm font-semibold text-goldbright">
-                  Traditional meaning, if you want it
-                </summary>
-                <p className="mt-2 leading-relaxed text-cream/90">
-                  {orientationMeaning(card, d.reversed)}
-                </p>
-              </details>
-            ) : (
-              <p className="mt-3 leading-relaxed text-cream/90">
-                {orientationMeaning(card, d.reversed)}
-              </p>
-            )}
-          </section>
-        );
-      })}
+    <section className="mx-auto mt-10 max-w-3xl rounded-3xl border border-gold/30 bg-navydeep/70 p-6 sm:p-8">
+      <p className="text-xs uppercase tracking-[0.25em] text-gold">
+        Personalized interpretation
+      </p>
+      <p className="mt-1 text-xs text-mist">
+        AI-generated
+      </p>
+      <ReadingText
+        text={reading.interpretation}
+        className="mt-3 whitespace-pre-line leading-relaxed text-cream/90"
+      />
+    </section>
+  );
+}
 
-      {reading.aiGenerated && reading.interpretation && (
-        <section className="rounded-3xl border border-gold/30 bg-navydeep/70 p-6 sm:p-8">
-          <p className="text-xs uppercase tracking-[0.25em] text-gold">
-            Personalized interpretation
+/**
+ * Per-card meanings. Batch 6c: when the reading has an
+ * interpretation, the card blocks live in one collapsed section
+ * below it, so the interpretation is what you meet first. When
+ * there is no interpretation (a static or legacy reading), the
+ * card blocks ARE the content, so they render expanded as before.
+ */
+export function CardMeanings({ reading }: { reading: Reading }) {
+  // Review B1: a saved AI chart reading has cards [] and a
+  // non-empty interpretation, so hasInterpretation is true. Without
+  // this guard it renders a collapsed "The cards and their
+  // meanings (0)" box with zero cards in it. Before 6c that path
+  // rendered an empty div, so this is a new visible regression.
+  // Returning null covers it and the non-AI chart case (which also
+  // rendered an empty div). The chart interpretation itself is
+  // rendered by the Interpretation component, above this one.
+  if (reading.cards.length === 0) return null;
+  const hasInterpretation = Boolean(reading.aiGenerated && reading.interpretation);
+  const blocks = reading.cards.map((d, i) => {
+    const card = getCard(d.cardId);
+    return (
+      <section
+        key={d.positionKey}
+        className="rounded-3xl border border-gold/20 bg-panel/60 p-6 sm:p-8"
+      >
+        <p className="text-xs uppercase tracking-[0.25em] text-gold">
+          {i + 1} · {d.position}
+        </p>
+        <h2 className="mt-1 font-display text-2xl text-cream">
+          {card.name}{" "}
+          <span className="text-sm font-body font-normal text-mist">
+            {d.reversed ? "reversed" : "upright"}
+          </span>
+        </h2>
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {orientationKeywords(card, d.reversed).map((k) => (
+            <span
+              key={k}
+              className="rounded-full border border-gold/40 bg-gold/10 px-3 py-1 text-xs text-goldbright"
+            >
+              {k}
+            </span>
+          ))}
+        </div>
+        {reading.aiGenerated && reading.interpretation ? (
+          <details className="mt-3 rounded-xl border border-gold/20 bg-panel/40 px-4 py-3">
+            <summary className="cursor-pointer text-sm font-semibold text-goldbright">
+              Traditional meaning, if you want it
+            </summary>
+            <p className="mt-2 leading-relaxed text-cream/90">
+              {orientationMeaning(card, d.reversed)}
+            </p>
+          </details>
+        ) : (
+          <p className="mt-3 leading-relaxed text-cream/90">
+            {orientationMeaning(card, d.reversed)}
           </p>
-          <p className="mt-1 text-xs text-mist">
-            AI-generated
-          </p>
-          <ReadingText
-            text={reading.interpretation}
-            className="mt-3 whitespace-pre-line leading-relaxed text-cream/90"
-          />
-        </section>
-      )}
-    </div>
+        )}
+      </section>
+    );
+  });
+  if (!hasInterpretation) {
+    return <div className="mx-auto mt-10 max-w-3xl space-y-5">{blocks}</div>;
+  }
+  return (
+    <details className="mx-auto mt-10 max-w-3xl rounded-3xl border border-gold/25 bg-panel/60 p-6 sm:p-8">
+      <summary className="cursor-pointer font-display text-2xl text-goldbright">
+        The cards and their meanings ({reading.cards.length})
+      </summary>
+      <div className="mt-5 space-y-5">{blocks}</div>
+    </details>
   );
 }
 

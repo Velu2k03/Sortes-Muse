@@ -2,7 +2,22 @@
 
 import { useEffect, useRef } from "react";
 
-export type FaqItem = { q: string; a: string; bullets?: string[] };
+export type FaqItem = { q: string; a: string; bullets?: string[]; group: string };
+
+/**
+ * Batch 6c: the 16 questions are grouped under four section
+ * headings, in this order. The order is fixed here (not the
+ * array order), so a question's group is decided by its `group`
+ * field in src/app/faq/page.tsx and the sections always render
+ * in the same order. Any group not listed here (none today)
+ * renders after these, in array order.
+ */
+const GROUP_ORDER = [
+  "Pricing and Oracles",
+  "Readings and Charts",
+  "Privacy and Data",
+  "Account",
+];
 
 function slug(q: string): string {
   return q
@@ -44,6 +59,20 @@ export default function FaqList({ faqs }: { faqs: FaqItem[] }) {
       });
   };
 
+  // Batch 6c: group the questions under their section headings.
+  // The details ids (slug of the question) do not change, so
+  // existing anchors (e.g. /faq#what-are-the-five-oracle-rules
+  // from /spreads) still work.
+  const grouped = [
+    ...GROUP_ORDER.map((name) => ({
+      name,
+      items: faqs.filter((f) => f.group === name),
+    })),
+    ...[...new Set(faqs.map((f) => f.group))]
+      .filter((name) => !GROUP_ORDER.includes(name))
+      .map((name) => ({ name, items: faqs.filter((f) => f.group === name) })),
+  ].filter((g) => g.items.length > 0);
+
   return (
     <div>
       <div className="mt-8 flex flex-wrap gap-3">
@@ -66,38 +95,52 @@ export default function FaqList({ faqs }: { faqs: FaqItem[] }) {
         <p className="text-xs uppercase tracking-[0.25em] text-gold">
           Jump to a question
         </p>
-        <ul className="mt-3 space-y-1.5">
-          {faqs.map((f) => (
-            <li key={f.q}>
-              <a
-                href={`#${slug(f.q)}`}
-                className="text-sm font-semibold text-goldbright underline underline-offset-4"
-              >
-                {f.q}
-              </a>
-            </li>
-          ))}
-        </ul>
+        {grouped.map((g) => (
+          <div key={g.name} className="mt-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-mist">
+              {g.name}
+            </p>
+            <ul className="mt-2 space-y-1.5">
+              {g.items.map((f) => (
+                <li key={f.q}>
+                  <a
+                    href={`#${slug(f.q)}`}
+                    className="text-sm font-semibold text-goldbright underline underline-offset-4"
+                  >
+                    {f.q}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
       </nav>
-      <div ref={listRef} className="mt-10 space-y-4">
-        {faqs.map((f) => (
-          <details
-            key={f.q}
-            id={slug(f.q)}
-            className="scroll-mt-24 rounded-3xl border border-gold/25 bg-panel/70 p-6"
-          >
-            <summary className="cursor-pointer font-display text-2xl text-goldbright">
-              {f.q}
-            </summary>
-            {f.bullets ? (
-              <ul className="mt-3 list-disc space-y-1.5 pl-5 leading-relaxed text-cream/85">
-                {f.bullets.map((b) => (
-                  <li key={b}>{b}</li>
-                ))}
-              </ul>
-            ) : null}
-            <p className="mt-3 whitespace-pre-line leading-relaxed text-cream/85">{f.a}</p>
-          </details>
+      <div ref={listRef} className="mt-10 space-y-10">
+        {grouped.map((g) => (
+          <section key={g.name} aria-label={g.name}>
+            <h2 className="font-display text-3xl text-goldbright">{g.name}</h2>
+            <div className="mt-4 space-y-4">
+              {g.items.map((f) => (
+                <details
+                  key={f.q}
+                  id={slug(f.q)}
+                  className="scroll-mt-24 rounded-3xl border border-gold/25 bg-panel/70 p-6"
+                >
+                  <summary className="cursor-pointer font-display text-2xl text-goldbright">
+                    {f.q}
+                  </summary>
+                  {f.bullets ? (
+                    <ul className="mt-3 list-disc space-y-1.5 pl-5 leading-relaxed text-cream/85">
+                      {f.bullets.map((b) => (
+                        <li key={b}>{b}</li>
+                      ))}
+                    </ul>
+                  ) : null}
+                  <p className="mt-3 whitespace-pre-line leading-relaxed text-cream/85">{f.a}</p>
+                </details>
+              ))}
+            </div>
+          </section>
         ))}
       </div>
     </div>
