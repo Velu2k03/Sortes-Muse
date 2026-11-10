@@ -174,7 +174,9 @@ export function getHistory(): Reading[] {
 }
 
 export function saveReading(r: Reading): void {
-  const h = getHistory();
+  // Re-saving an id (e.g. a replayed response) moves it to the front
+  // instead of listing it twice.
+  const h = getHistory().filter((x) => x.id !== r.id);
   h.unshift(r);
   write(K.history, h.slice(0, MAX_HISTORY));
 }

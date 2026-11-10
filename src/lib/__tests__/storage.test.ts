@@ -102,6 +102,23 @@ describe("getDailyPracticeDays", () => {
   });
 });
 
+describe("saveReading dedup", () => {
+  beforeEach(() => installLocalStorageStub());
+  afterEach(() => {
+    delete (globalThis as unknown as Record<string, unknown>).localStorage;
+    delete (globalThis as unknown as Record<string, unknown>).window;
+  });
+
+  it("saving the same id twice keeps one entry, the latest copy, at the front", () => {
+    saveReading({ id: "a", spreadName: "old" } as unknown as Reading);
+    saveReading({ id: "b", spreadName: "other" } as unknown as Reading);
+    saveReading({ id: "a", spreadName: "new" } as unknown as Reading);
+    const h = getHistory();
+    expect(h.map((r) => r.id)).toEqual(["a", "b"]);
+    expect(h[0].spreadName).toBe("new");
+  });
+});
+
 describe("clearLocalAccountData", () => {
   beforeEach(() => installLocalStorageStub());
   afterEach(() => {
