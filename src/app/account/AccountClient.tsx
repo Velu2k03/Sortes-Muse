@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
 import { getSupabaseBrowser } from "@/lib/supabase-browser";
 import { fetchWithTimeout, withTimeout } from "@/lib/fetch-timeout";
 import { authErrorMessage, reasonFromSupabaseError } from "@/lib/auth-callback";
+import { safeReturnTo, stashReturnTo, takeReturnTo } from "@/lib/storage";
 import { parseJson, useAccountSettings } from "./useAccountSettings";
 import {
-  AccountDeleted,
   AccountLoading,
   AccountSummary,
   DataPanel,
@@ -61,14 +62,11 @@ export default function AccountPage() {
   }, [user, setTransactions, setStep, setEmail]);
 
   useAuthErrorFromUrl(s.setAuthTab, s.setError);
+  useReturnTo(!!user);
 
   if (loading) {
     // AF-012: a skeleton, not a bare "Loading…" line.
     return <AccountLoading />;
-  }
-
-  if (settings.deleted) {
-    return <AccountDeleted />;
   }
 
   // AF-012: the H1 + intro live in page.tsx as server HTML, so this
@@ -232,6 +230,22 @@ function useSignIn(afterSignIn: () => Promise<void>) {
     googleBusy, error, setError, devCode, authTab, setAuthTab, mode, setMode,
     password, setPassword, submitPassword, signInWithGoogle, requestCode, verifyCode,
   };
+}
+
+/**
+ * Point 6: the intake gate links here with ?returnTo=/intake/<slug>. Remember
+ * it (Google and the email link come back through /auth/callback, which drops
+ * the query), and once signed in, go back to that spread so the draft restores.
+ */
+function useReturnTo(signedIn: boolean) {
+  const router = useRouter();
+  useEffect(() => {
+    const p = safeReturnTo(new URLSearchParams(window.location.search).get("returnTo"));
+    if (p) stashReturnTo(p);
+    if (!signedIn) return;
+    const dest = takeReturnTo();
+    if (dest) router.replace(dest);
+  }, [signedIn, router]);
 }
 
 /**

@@ -36,7 +36,7 @@ interface AuthContextValue {
   /** Effective credit balance. null while loading. */
   credits: number | null;
   refresh: () => Promise<void>;
-  signOut: () => Promise<void>;
+  signOut: (to?: string) => Promise<void>;
   /** Spend credits; returns true on success. Guest-local only:
       signed-in users never spend client-side (Phase B, R15: the AI
       routes spend server-side after a real generation, and POST
@@ -212,7 +212,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await refresh();
   }, [refresh]);
 
-  const signOut = useCallback(async () => {
+  const signOut = useCallback(async (to: string = "/") => {
     await fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
     // Best effort: clear the Supabase session too, so it does not
     // silently re-establish a Sortes session on the next visit.
@@ -223,8 +223,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setCredits(getCredits());
     // clearLocalAccountData empties localStorage, not React state already
     // in memory (a reading on screen). A full navigation drops both (item 5).
-    // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- full reload on purpose: router.push would keep in-memory state
-    window.location.assign("/");
+    window.location.assign(to);
   }, []);
 
   const spend = useCallback(

@@ -13,6 +13,7 @@ const K = {
   reports: "sortes-reports",
   birthProfiles: "sortes-birth-profiles",
   intakeDraft: "sortes-intake-draft",
+  returnTo: "sortes-return-to",
 } as const;
 
 function read<T>(key: string, fallback: T): T {
@@ -261,7 +262,7 @@ export function clearLocalAccountData(): void {
   try {
     for (const key of [
       K.history, K.reports, K.credits, K.purchases, K.dailyCard, K.dailyStreak,
-      K.aiCache, K.birthProfiles, K.intakeDraft, "sortes-birth-details",
+      K.aiCache, K.birthProfiles, K.intakeDraft, K.returnTo, "sortes-birth-details",
     ]) localStorage.removeItem(key);
     // Checkout email prefill (per-tab, but still the previous user's).
     window.sessionStorage?.removeItem("sortes-purchase-email");
@@ -283,9 +284,21 @@ export interface IntakeDraft {
   question: string;
 }
 
+// Point 6: the draft holds a whole story (health included) in localStorage, so
+// on a shared device it must not outlive the sitting. 6 hours covers leaving to
+// sign in (even waiting on an email link) and coming back the same day, and is
+// short enough that the next person on the device does not get it pre-filled.
+export const INTAKE_DRAFT_TTL_MS = 6 * 60 * 60 * 1000;
+
 export function getIntakeDraft(slug: string): IntakeDraft | null {
-  const d = read<Partial<IntakeDraft> | null>(K.intakeDraft, null);
-  if (!d || d.slug !== slug) return null;
+  const d = read<(Partial<IntakeDraft> & { savedAt?: number }) | null>(K.intakeDraft, null);
+  if (!d) return null;
+  // No timestamp (older build) counts as expired. An expired draft is cleared.
+  if (typeof d.savedAt !== "number" || Date.now() - d.savedAt > INTAKE_DRAFT_TTL_MS) {
+    clearIntakeDraft();
+    return null;
+  }
+  if (d.slug !== slug) return null;
   return {
     slug,
     categoryKey: typeof d.categoryKey === "string" ? d.categoryKey : null,
@@ -296,7 +309,7 @@ export function getIntakeDraft(slug: string): IntakeDraft | null {
 }
 
 export function saveIntakeDraft(d: IntakeDraft): void {
-  write(K.intakeDraft, d);
+  write(K.intakeDraft, { ...d, savedAt: Date.now() });
 }
 
 export function clearIntakeDraft(): void {
@@ -306,6 +319,28 @@ export function clearIntakeDraft(): void {
   } catch {
     // Storage unavailable; there is nothing to clear.
   }
+}
+
+// Point 6: where to land after signing in. The gate sends the seeker to
+// /account?returnTo=/intake/<slug>. Password and code sign-in finish on that
+// page, but Google and the email link come back through /auth/callback (which
+// drops the query), so the path is also stashed here for an hour and consumed
+// once the session exists. Same-site paths only: never an external URL.
+export function safeReturnTo(raw: string | null | undefined): string | null {
+  if (!raw || !raw.startsWith("/") || raw.startsWith("//") || raw.includes("\\")) return null;
+  return raw;
+}
+
+export function stashReturnTo(path: string): void {
+  write(K.returnTo, { path, at: Date.now() });
+}
+
+export function takeReturnTo(): string | null {
+  const v = read<{ path?: string; at?: number } | null>(K.returnTo, null);
+  if (typeof window === "undefined") return null;
+  try { localStorage.removeItem(K.returnTo); } catch { /* nothing to clear */ }
+  if (!v || typeof v.at !== "number" || Date.now() - v.at > 60 * 60 * 1000) return null;
+  return safeReturnTo(v.path);
 }
 
 // AI cache: re-opening history never triggers a second API call

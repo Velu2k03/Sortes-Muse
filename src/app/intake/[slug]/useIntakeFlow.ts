@@ -105,6 +105,16 @@ export function useIntakeFlow(slug: string) {
     saveIntakeDraft({ slug, categoryKey, answers: safe, story, question });
   }, [draftReady, slug, categoryKey, answers, story, question]);
 
+  // Point 6: "Start over" wipes the draft and the form, back to step 1.
+  const startOver = () => {
+    clearIntakeDraft();
+    setCategoryKey(null);
+    setAnswers({});
+    setStory("");
+    setQuestion("");
+    setStep("category");
+  };
+
   // M1.1: rule-based rewrite suggestion for the confirm step. Editing
   // the question re-arms the suggestion; using it clears it (the
   // suggestion for an already-open question is null).
@@ -316,7 +326,7 @@ export function useIntakeFlow(slug: string) {
     setSuggestionDismissed, drawnCards, impression, setImpression, error,
     processingLine, processingComplete, busy, generationFailed, toastOpen,
     setToastOpen, isFreeAvailable, gate, credits, category, questionSuggestion, set, formValid,
-    beginDraw, beginGeneration, retryGeneration,
+    beginDraw, beginGeneration, retryGeneration, startOver,
   };
 }
 

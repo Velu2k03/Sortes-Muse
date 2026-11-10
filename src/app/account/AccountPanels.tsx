@@ -14,27 +14,6 @@ export function AccountLoading() {
   );
 }
 
-export function AccountDeleted() {
-  return (
-    <div className="mx-auto max-w-2xl px-4 py-24 text-center sm:px-6">
-      <p className="font-display text-4xl text-goldbright">
-        Your account is deleted
-      </p>
-      <p className="mx-auto mt-3 max-w-md leading-relaxed text-cream/75">
-        Your account, Oracles, journal, reports, and purchase history
-        are gone, including the copies on this device. Thank you for
-        casting the lots with us.
-      </p>
-      <Link
-        href="/"
-        className="btn-gold mt-6 inline-block rounded-xl px-6 py-3 font-bold"
-      >
-        Return home
-      </Link>
-    </div>
-  );
-}
-
 /**
  * P0-1: the auth load timed out or failed, so this page is
  * showing the sign-in form as a fallback instead of spinning

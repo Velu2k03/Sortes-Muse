@@ -8,6 +8,7 @@ import { MAJORS, cardSlug, getCard } from "@/lib/cards";
 import StatsStrip from "@/components/StatsStrip";
 import SampleReading from "@/components/SampleReading";
 import ReturnLoop from "@/components/ReturnLoop";
+import AccountDeletedNotice from "@/components/AccountDeletedNotice";
 import { Orb } from "@/components/ReactBitsNew";
 
 // AF-042: the audit's "12 simultaneous animations" is stale — Phase
@@ -53,6 +54,7 @@ export default function Home() {
   const middle = (fanCards.length - 1) / 2;
   return (
     <div>
+      <AccountDeletedNotice />
       {/* HERO */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0" aria-hidden="true">

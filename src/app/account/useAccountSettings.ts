@@ -37,7 +37,7 @@ export function useAccountSettings({
   setError,
 }: {
   userEmail: string | undefined;
-  signOut: () => Promise<void>;
+  signOut: (to?: string) => Promise<void>;
   setError: (e: string | null) => void;
 }) {
   const [savePwBusy, setSavePwBusy] = useState(false);
@@ -51,7 +51,6 @@ export function useAccountSettings({
   const [deleteArmed, setDeleteArmed] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
-  const [deleted, setDeleted] = useState(false);
   // Phase 6 (N4): deletion needs re-authentication — the account
   // password, or a fresh 6-digit email code (Resend path, same as
   // sign-in). A session cookie alone is no longer enough.
@@ -157,8 +156,9 @@ export function useAccountSettings({
       }
       clearLocalAccountData();
       await getSupabaseBrowser()?.auth.signOut().catch(() => {});
-      await signOut();
-      setDeleted(true);
+      // Point 9: signOut navigates away, so the confirmation lives on the
+      // destination (AccountDeletedNotice on the home page), not here.
+      await signOut("/?account=deleted");
     } catch (err) {
       setDeleteError(err instanceof Error ? err.message : "Could not delete your account.");
       setDeleteArmed(false);
@@ -196,7 +196,6 @@ export function useAccountSettings({
       requestDeleteCode,
       deleteAccount,
     },
-    deleted,
   };
 }
 

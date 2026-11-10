@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { getReading, saveReading, updateReading as updateLocalReading } from "@/lib/storage";
 import type { Reading } from "@/lib/types";
+import { postFollowUp } from "@/lib/follow-up-client";
 import { useAuth } from "@/components/AuthProvider";
 
 type SetReading = (r: Reading | null) => void;
@@ -134,14 +135,7 @@ export function useFollowUp(reading: Reading | null | undefined, setReading: Set
     }
 
     try {
-      const payload: Record<string, unknown> = { question: q, readingId: reading.id };
-
-      const res = await fetch("/api/reading/follow-up", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const data = await res.json();
+      const { res, data } = await postFollowUp(reading, q);
 
       if (!res.ok) {
         // Phase D: every failure message states that no Oracle was

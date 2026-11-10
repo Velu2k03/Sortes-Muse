@@ -37,7 +37,7 @@ export function SignInGate({ f }: { f: IntakeState }) {
           sign in, they move to your account.
         </p>
       )}
-      <Link href="/account" className="btn-gold mt-6 inline-block rounded-xl px-8 py-3.5 font-bold">
+      <Link href={`/account?returnTo=${encodeURIComponent(`/intake/${spread.slug}`)}`} className="btn-gold mt-6 inline-block rounded-xl px-8 py-3.5 font-bold">
         Sign in
       </Link>
       <p className="mt-3 text-xs text-mist">
@@ -110,6 +110,13 @@ export function FormStep({ f, category }: { f: IntakeState; category: IntakeCate
           replace a licensed professional.
         </div>
       )}
+
+      <div className="mt-4 text-center">
+        <button type="button" onClick={f.startOver} className="text-sm text-mist underline underline-offset-4 hover:text-cream">
+          Start over
+        </button>
+        <p className="mt-1 text-xs text-mist">Clears what you typed from this device.</p>
+      </div>
 
       <div className="mt-8 space-y-5">
         {category.fields.map((f) => (
