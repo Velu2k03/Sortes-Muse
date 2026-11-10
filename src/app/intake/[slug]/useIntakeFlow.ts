@@ -21,7 +21,8 @@ import {
 } from "@/lib/storage";
 import { unconfirmedMessage, requireSavedReading } from "@/lib/generate-failure";
 import { intakeGate } from "@/lib/intake-gate";
-import { useAuth } from "@/components/AuthProvider";
+import { useAuth, deviceHeldSession } from "@/components/AuthProvider";
+import { isFreeAvailableFor } from "@/lib/free-reading";
 import { trackReadingStarted, trackReadingCompleted } from "@/components/Analytics";
 
 export type Step = "category" | "form" | "confirm" | "impression" | "processing";
@@ -33,7 +34,7 @@ export type Step = "category" | "form" | "confirm" | "impression" | "processing"
 export function useIntakeFlow(slug: string) {
   const router = useRouter();
   const spread = useMemo(() => getSpread(slug), [slug]);
-  const { credits, persistReading, user, loading: authLoading, refresh } = useAuth();
+  const { credits, persistReading, user, loading: authLoading, refresh, freeReadingAvailable, refreshFreeStatus } = useAuth();
   const [step, setStep] = useState<Step>("category");
   const [categoryKey, setCategoryKey] = useState<string | null>(null);
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -56,15 +57,41 @@ export function useIntakeFlow(slug: string) {
   // toastOpen drives the transient toast on top of it.
   const [generationFailed, setGenerationFailed] = useState(false);
   const [toastOpen, setToastOpen] = useState(false);
-  // Phase 2, 2.1: the first Quick Insight is free per device (FAQ
-  // rule). Read the device flag on mount; it gates the credit checks
-  // below and is marked only after a successful generation, never
-  // before, so a failed attempt never burns the free reading.
+  // Phase 2, 2.1: the first Quick Insight is free (FAQ rule). Read the
+  // device flag on mount; it gates the credit checks below and is marked
+  // only after a successful generation, never before, so a failed
+  // attempt never burns the free reading.
+  // Batch 1 (C1): the device flag is the GUEST record only. For a
+  // signed-in user the server record (from /api/auth/me) decides, so a
+  // user who already used their account free reading is never shown
+  // "Cost: Free" and then charged 1 Oracle.
   const [usedFree, setUsedFree] = useState(false);
   useEffect(() => {
     queueMicrotask(() => setUsedFree(freeReadingUsed()));
   }, []);
-  const isFreeAvailable = spread.slug === "quick-insight" && !usedFree;
+  const isFreeAvailable = isFreeAvailableFor({
+    slug: spread.slug,
+    signedIn: !!user,
+    serverFree: freeReadingAvailable,
+    deviceFree: !usedFree,
+    hadSession: deviceHeldSession(),
+  });
+  // Opus review (non-blocking 3): the free status is known when
+  // signed in and the server value arrived, or always for guests
+  // (the device flag is their record). When it is unknown, the credit
+  // gates below do not block: the server may grant the free reading,
+  // and answers 402 with a clear message if not.
+  const freeStatusKnown = user ? freeReadingAvailable !== null : true;
+  // Batch 1 (C1, review finding 6): re-read the flag when the cost is
+  // about to be shown or acted on, so a free reading used in another
+  // tab or device does not leave this tab promising "Free" while the
+  // server charges. refreshFreeStatus only updates the flag; a failure
+  // keeps the last known value instead of signing the user out.
+  useEffect(() => {
+    if (step === "confirm" || step === "impression") {
+      void refreshFreeStatus();
+    }
+  }, [step, refreshFreeStatus]);
   // Batch D (A3): generation needs sign-in unless this is a guest's free
   // Quick Insight. The gate shows BEFORE the category and story steps, so a
   // guest never writes a story they cannot submit. While the session is
@@ -152,7 +179,10 @@ export function useIntakeFlow(slug: string) {
   // must not mint a second id for a reading that may already be paid for.
   const beginDraw = () => {
     if (!category) return;
-    if (!isFreeAvailable && (credits ?? 0) < 1) {
+    // Review pushback: while the balance is unknown (credits null) do
+    // not block with "out of Oracles". The server enforces the spend
+    // and answers 402 with a clear message.
+    if (!isFreeAvailable && freeStatusKnown && credits !== null && credits < 1) {
       setError("You are out of Oracles. Please top up to continue.");
       return;
     }
@@ -165,7 +195,10 @@ export function useIntakeFlow(slug: string) {
     if (!category || !drawnCards) return;
     // Guard against double-clicks: one tap, one credit.
     if (busy) return;
-    if (!isFreeAvailable && (credits ?? 0) < 1) {
+    // Review pushback: while the balance is unknown (credits null) do
+    // not block with "out of Oracles". The server enforces the spend
+    // and answers 402 with a clear message.
+    if (!isFreeAvailable && freeStatusKnown && credits !== null && credits < 1) {
       setError("You are out of Oracles. Please top up to continue.");
       return;
     }

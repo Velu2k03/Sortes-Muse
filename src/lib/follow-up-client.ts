@@ -6,13 +6,23 @@ import type { Reading } from "@/lib/types";
 export async function postFollowUp(
   reading: Reading,
   question: string,
-  fetchFn: typeof fetch = fetch
-): Promise<{ res: Response; data: { error?: string; followUps?: Reading["followUps"]; credits?: number } }> {
+  opts: {
+    /** Batch 1 (C2): client-minted attempt id; a retry with the same id
+        replays the saved answer, never generates or spends twice. */
+    followUpId?: string;
+    fetchFn?: typeof fetch;
+  } = {}
+): Promise<{ res: Response; data: { error?: string; followUps?: Reading["followUps"]; credits?: number; replayed?: boolean } }> {
+  const fetchFn = opts.fetchFn ?? fetch;
   const ask = async () => {
     const res = await fetchFn("/api/reading/follow-up", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ question, readingId: reading.id }),
+      body: JSON.stringify({
+        question,
+        readingId: reading.id,
+        ...(opts.followUpId ? { followUpId: opts.followUpId } : {}),
+      }),
     });
     return { res, data: await res.json() };
   };

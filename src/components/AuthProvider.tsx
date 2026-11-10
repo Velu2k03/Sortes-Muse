@@ -35,7 +35,17 @@ interface AuthContextValue {
   loadError: boolean;
   /** Effective credit balance. null while loading. */
   credits: number | null;
+  /** Whether the account still has its free Quick Insight (from
+      /api/auth/me). null while signed out or unknown; guests use the
+      device flag instead. Batch 1 (C1): the free label follows the
+      server record, not the device flag. */
+  freeReadingAvailable: boolean | null;
   refresh: () => Promise<void>;
+  /** Re-read only the free-reading flag from /api/auth/me. A failure
+      leaves the last known value in place instead of signing the user
+      out, so it is safe to call right before the cost is shown.
+      Batch 1 (C1, review finding 6: a stale true from another tab). */
+  refreshFreeStatus: () => Promise<void>;
   signOut: (to?: string) => Promise<void>;
   /** Spend credits; returns true on success. Guest-local only:
       signed-in users never spend client-side (Phase B, R15: the AI
@@ -66,6 +76,19 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 const MIGRATED_KEY = "sortes-migrated-v1";
 
+/** Batch 1 (C1, review finding 5): true when this device held a
+    signed-in session before. The key is set on a successful sign-in
+    migration and removed on sign-out and on an expired session, so a
+    device that never signed in reads false and the device free flag
+    stays its only record. */
+export function deviceHeldSession(): boolean {
+  try {
+    return typeof window !== "undefined" && localStorage.getItem(MIGRATED_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
 /** Fetch with a 10 s timeout (UX P0-1): a hung /api/auth/me must not
     spin the header and the account page forever. The abort surfaces
     as an AbortError to the caller. */
@@ -85,7 +108,7 @@ async function fetchWithTimeout(
 
 /** Parse a JSON response without throwing on empty / non-JSON bodies. */
 interface SafeJsonBody {
-  user?: { id: string; email: string; credits?: number } | null;
+  user?: { id: string; email: string; credits?: number; freeReadingAvailable?: boolean } | null;
   credits?: number;
 }
 async function safeJson(res: Response): Promise<SafeJsonBody> {
@@ -145,6 +168,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [credits, setCredits] = useState<number | null>(null);
+  const [freeReadingAvailable, setFreeReadingAvailable] = useState<boolean | null>(null);
   const [loadError, setLoadError] = useState(false);
 
   const refresh = useCallback(async () => {
@@ -158,12 +182,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const data = await safeJson(res);
       if (data.user) {
         setUser({ id: data.user.id, email: data.user.email });
+        setFreeReadingAvailable(
+          typeof data.user.freeReadingAvailable === "boolean" ? data.user.freeReadingAvailable : null
+        );
         if (!localStorage.getItem(MIGRATED_KEY)) {
           const merged = await migrateGuestData(deadline);
           setCredits(merged);
         } else {
           setCredits(data.user.credits ?? null);
         }
+        // Opus review (non-blocking 2): a confirmed session means this
+        // device held one, even when the guest-history migration above
+        // failed. Without this, hadSession reads false for a signed-in
+        // device and a later failed /me falls back to the device flag.
+        localStorage.setItem(MIGRATED_KEY, "1");
       } else {
         // MIGRATED_KEY marks a device that held a signed-in session, so
         // an explicit {user:null} 200 is an expired session: drop the
@@ -178,6 +210,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           window.location.assign("/");
         }
         setUser(null);
+        setFreeReadingAvailable(null);
         setCredits(getCredits());
       }
       setLoadError(false);
@@ -186,6 +219,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // (guest credits) with loadError set, and always clear loading
       // so the header and account page never spin forever (P0-1).
       setUser(null);
+      setFreeReadingAvailable(null);
       setCredits(getCredits());
       setLoadError(true);
     } finally {
@@ -212,6 +246,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await refresh();
   }, [refresh]);
 
+  const refreshFreeStatus = useCallback(async () => {
+    try {
+      const res = await fetchWithTimeout("/api/auth/me", undefined, 10000);
+      const data = await safeJson(res);
+      if (data.user && typeof data.user.freeReadingAvailable === "boolean") {
+        setFreeReadingAvailable(data.user.freeReadingAvailable);
+      }
+    } catch {
+      // Keep the last known value. The label fails closed when the
+      // value is unknown, and the server is the spend authority.
+    }
+  }, []);
+
   const signOut = useCallback(async (to: string = "/") => {
     await fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
     // Best effort: clear the Supabase session too, so it does not
@@ -220,6 +267,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem(MIGRATED_KEY);
     clearLocalAccountData();
     setUser(null);
+    setFreeReadingAvailable(null);
     setCredits(getCredits());
     // clearLocalAccountData empties localStorage, not React state already
     // in memory (a reading on screen). A full navigation drops both (item 5).
@@ -330,7 +378,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, loading, loadError, credits, refresh, signOut, spend, add, persistReading, updateReading, deleteReading, afterSignIn }}
+      value={{ user, loading, loadError, credits, freeReadingAvailable, refresh, refreshFreeStatus, signOut, spend, add, persistReading, updateReading, deleteReading, afterSignIn }}
     >
       {children}
     </AuthContext.Provider>

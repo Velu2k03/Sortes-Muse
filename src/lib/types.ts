@@ -83,6 +83,11 @@ export interface FollowUp {
   answer: string;
   createdAt: string;
   free: boolean;
+  // Batch 1 (C2): client-minted attempt id, so a retry after a lost
+  // response replays the saved answer instead of generating (and
+  // spending) a duplicate. Stored on the follow-up by
+  // appendFollowUpWithSpend.
+  id?: string;
   // Phase 5 (5.3): the clarifier card drawn server-side for this
   // follow-up, from the cards not already in the reading's spread.
   clarifierCardId?: string;

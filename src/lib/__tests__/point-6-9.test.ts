@@ -142,7 +142,7 @@ describe("Point 9: follow-up re-sync and single retry", () => {
       .mockResolvedValueOnce(json(404, { error: "Reading not found." }))
       .mockResolvedValueOnce(json(200, { ok: true }))
       .mockResolvedValueOnce(json(200, { followUps: [{ q: "a" }] }));
-    const { res, data } = await postFollowUp(reading, "why?", f as unknown as typeof fetch);
+    const { res, data } = await postFollowUp(reading, "why?", { fetchFn: f as unknown as typeof fetch });
     expect(res.ok).toBe(true);
     expect(data.followUps).toBeTruthy();
     expect(f.mock.calls.map((c) => c[0])).toEqual(["/api/reading/follow-up", "/api/history", "/api/reading/follow-up"]);
@@ -153,7 +153,7 @@ describe("Point 9: follow-up re-sync and single retry", () => {
       .mockResolvedValueOnce(json(404, { error: "Reading not found." }))
       .mockResolvedValueOnce(json(200, { ok: true }))
       .mockResolvedValueOnce(json(404, { error: "Reading not found." }));
-    const { res, data } = await postFollowUp(reading, "why?", f as unknown as typeof fetch);
+    const { res, data } = await postFollowUp(reading, "why?", { fetchFn: f as unknown as typeof fetch });
     expect(res.status).toBe(404);
     expect(data.error).toBe("Reading not found.");
     expect(f).toHaveBeenCalledTimes(3);
@@ -162,17 +162,17 @@ describe("Point 9: follow-up re-sync and single retry", () => {
     const f = vi.fn()
       .mockResolvedValueOnce(json(404, { error: "Reading not found." }))
       .mockResolvedValueOnce(json(500, {}));
-    const { res } = await postFollowUp(reading, "why?", f as unknown as typeof fetch);
+    const { res } = await postFollowUp(reading, "why?", { fetchFn: f as unknown as typeof fetch });
     expect(res.status).toBe(404);
     expect(f).toHaveBeenCalledTimes(2);
   });
   it("non-404 errors (402) are not re-synced", async () => {
     const f = vi.fn().mockResolvedValueOnce(json(402, { error: "Not enough Oracles." }));
-    const { res } = await postFollowUp(reading, "why?", f as unknown as typeof fetch);
+    const { res } = await postFollowUp(reading, "why?", { fetchFn: f as unknown as typeof fetch });
     expect(res.status).toBe(402);
     expect(f).toHaveBeenCalledTimes(1);
   });
   it("useFollowUp uses postFollowUp", () => {
-    expect(src("src/app/reading/[id]/useReadingDetail.ts")).toContain("await postFollowUp(reading, q)");
+    expect(src("src/app/reading/[id]/useReadingDetail.ts")).toContain("await postFollowUp(reading, q, { followUpId: attemptId })");
   });
 });

@@ -178,9 +178,12 @@ export async function deleteReadingForUser(userId: string, id: string): Promise<
 // fails the spend, and never loses a credit.
 export interface FollowUpAppendResult {
   ok: boolean;
-  reason?: "not-found" | "limit" | "insufficient";
+  reason?: "not-found" | "limit" | "insufficient" | "mismatch";
   followUps?: unknown[];
   free?: boolean;
+  /** Batch 1 (C2): true when a follow-up with this attempt id was
+      already stored, so the caller replays it instead of appending. */
+  replayed?: boolean;
 }
 
 export async function appendFollowUpWithSpend(
@@ -189,7 +192,10 @@ export async function appendFollowUpWithSpend(
   followUp: Record<string, unknown>,
   cost: number,
   maxFollowUps = 3,
-  claimedFree = false
+  claimedFree = false,
+  /** Batch 1 (C2): client-minted attempt id; a retry with the same id
+      replays the saved follow-up, never appends or spends twice. */
+  followUpId?: string
 ): Promise<FollowUpAppendResult> {
   await ensureSchema();
   if (usePostgres) {
@@ -201,12 +207,29 @@ export async function appendFollowUpWithSpend(
       if (rows.length === 0) return { ok: false, reason: "not-found" as const };
       const data = (rows[0] as { data: { followUps?: unknown[] } }).data;
       const existing = Array.isArray(data.followUps) ? data.followUps : [];
+      // Batch 1 (C2): replay. The row is locked, so a concurrent
+      // duplicate attempt waits here and then finds the saved row.
+      // The id is bound to the question: the same id with a different
+      // question is a client error, not a replay.
+      if (followUpId) {
+        const saved = existing.find(
+          (f) => (f as { id?: unknown }).id === followUpId
+        ) as { free?: boolean; question?: string } | undefined;
+        if (saved) {
+          if (saved.question !== (followUp as { question?: string }).question) {
+            return { ok: false, reason: "mismatch" as const };
+          }
+          return { ok: true, replayed: true, followUps: existing, free: saved.free ?? false };
+        }
+      }
       if (existing.length >= maxFollowUps) return { ok: false, reason: "limit" as const };
       let effectiveCost = cost;
-      let followUpToStore = followUp;
+      let followUpToStore: Record<string, unknown> = followUpId
+        ? { ...followUp, id: followUpId }
+        : followUp;
       if (claimedFree && existing.length > 0) {
         effectiveCost = 1;
-        followUpToStore = { ...followUp, free: false };
+        followUpToStore = { ...followUpToStore, free: false };
       }
       if (effectiveCost > 0) {
         const spent = await tx`UPDATE users SET credits = credits - ${effectiveCost} WHERE id = ${userId} AND credits >= ${effectiveCost} RETURNING credits`;
@@ -232,12 +255,26 @@ export async function appendFollowUpWithSpend(
   if (!row) return { ok: false, reason: "not-found" };
   const data = row.data as { followUps?: unknown[] };
   const existing = Array.isArray(data.followUps) ? data.followUps : [];
+  // Batch 1 (C2): replay, same as the Postgres branch.
+  if (followUpId) {
+    const saved = existing.find(
+      (f) => (f as { id?: unknown }).id === followUpId
+    ) as { free?: boolean; question?: string } | undefined;
+    if (saved) {
+      if (saved.question !== (followUp as { question?: string }).question) {
+        return { ok: false, reason: "mismatch" };
+      }
+      return { ok: true, replayed: true, followUps: existing, free: saved.free ?? false };
+    }
+  }
   if (existing.length >= maxFollowUps) return { ok: false, reason: "limit" };
   let effectiveCost = cost;
-  let followUpToStore = followUp;
+  let followUpToStore: Record<string, unknown> = followUpId
+    ? { ...followUp, id: followUpId }
+    : followUp;
   if (claimedFree && existing.length > 0) {
     effectiveCost = 1;
-    followUpToStore = { ...followUp, free: false };
+    followUpToStore = { ...followUpToStore, free: false };
   }
   const user = db.users.find((x) => x.id === userId);
   if (effectiveCost > 0) {

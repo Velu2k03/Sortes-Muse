@@ -9,8 +9,9 @@ import { SPREAD_SAMPLES } from "@/lib/spread-samples";
 import SpreadDiagram from "@/components/SpreadDiagram";
 import CheckoutModal from "@/components/CheckoutModal";
 import { GlareHover } from "@/components/ReactBitsNew";
-import { useAuth } from "@/components/AuthProvider";
+import { useAuth, deviceHeldSession } from "@/components/AuthProvider";
 import { freeReadingUsed } from "@/lib/storage";
+import { isFreeAvailableFor } from "@/lib/free-reading";
 import PageHeader from "@/components/PageHeader";
 import FieldGroup from "@/components/FieldGroup";
 
@@ -34,23 +35,32 @@ export default function SpreadsPage() {
     setPickedSlug(slug);
     document.getElementById(`spread-${slug}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
   };
-  const { credits } = useAuth();
+  const { credits, user, freeReadingAvailable } = useAuth();
   const usedFree = typeof window !== "undefined" && freeReadingUsed();
   const balance = credits ?? 0;
+  // Batch 1 (C1): signed-in users are decided by the server record,
+  // guests by the device flag. See src/lib/free-reading.ts.
+  const freeAvailable = isFreeAvailableFor({
+    slug: "quick-insight",
+    signedIn: !!user,
+    serverFree: freeReadingAvailable,
+    deviceFree: !usedFree,
+    hadSession: deviceHeldSession(),
+  });
 
   const canBegin = (slug: string) =>
-    slug === "quick-insight" ? !usedFree || balance >= 1 : balance >= 1;
+    slug === "quick-insight" ? freeAvailable || balance >= 1 : balance >= 1;
   // AF-013: while the balance is unknown, a balance-gated card is
   // "pending", not locked. It shows a skeleton, never Locked.
   const isPending = (slug: string) =>
-    credits === null && !(slug === "quick-insight" && !usedFree);
+    credits === null && !(slug === "quick-insight" && freeAvailable);
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
       <div className="text-center">
         <PageHeader eyebrow="Readings" title="Choose your spread" titleClassName="sm:text-6xl" />
         <p className="mx-auto mt-4 max-w-xl text-cream/75">
-          {usedFree
+          {!freeAvailable
             ? "Each reading uses 1 Oracle, any spread. Oracles never expire."
             : "First Quick Insight free. After that, 1 Oracle per reading, any spread."}
         </p>

@@ -156,7 +156,8 @@ describe("POST /api/reading/follow-up", () => {
       expect.objectContaining({ question: "And now?" }),
       1,
       3,
-      false
+      false,
+      undefined
     );
   });
 
@@ -187,7 +188,8 @@ describe("POST /api/reading/follow-up", () => {
       expect.objectContaining({ question: "Concurrent?" }),
       0,
       3,
-      true
+      true,
+      undefined
     );
   });
 
@@ -221,5 +223,124 @@ describe("POST /api/reading/follow-up", () => {
       req({ question: "And now?", readingId: "r-1" }, "10.0.4.3")
     );
     expect(res.status).toBe(409);
+  });
+
+  // Batch 1 (C2): a retry with the same attempt id replays the saved
+  // answer with no model call and no spend. Fails on pre-fix main
+  // (the route had no followUpId at all, so the retry generated and
+  // spent a duplicate).
+  it("replays a saved follow-up for the same followUpId, with no model call", async () => {
+    const attemptId = "11111111-2222-3333-4444-555555555555";
+    mockedGetSession.mockResolvedValue({ userId: "u-1", email: "a@example.com" });
+    mockedGetReading.mockResolvedValue({
+      ...GUEST_READING,
+      followUps: [
+        {
+          id: attemptId,
+          question: "What does The Fool mean here?",
+          answer: ANSWER,
+          createdAt: "2026-11-05T00:00:00.000Z",
+          free: true,
+        },
+      ],
+    });
+    mockedGetUserById.mockResolvedValue({ id: "u-1", email: "a@example.com", credits: 5, created_at: "" });
+    const res = await POST(
+      req({ question: "What does The Fool mean here?", readingId: "r-1", followUpId: attemptId }, "10.0.5.1")
+    );
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.replayed).toBe(true);
+    expect(data.answer).toBe(ANSWER);
+    expect(data.free).toBe(true);
+    expect(data.followUps).toHaveLength(1);
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+    expect(mockedAppend).not.toHaveBeenCalled();
+  });
+
+  it("rejects a non-UUID followUpId with 400", async () => {
+    const res = await POST(
+      req({ question: "What does The Fool mean here?", readingId: "r-1", followUpId: "not-a-uuid" }, "10.0.5.2")
+    );
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toContain("followUpId");
+  });
+
+  it("passes the followUpId through to the atomic append", async () => {
+    const attemptId = "11111111-2222-3333-4444-555555555555";
+    mockedGetSession.mockResolvedValue({ userId: "u-1", email: "a@example.com" });
+    mockedGetReading.mockResolvedValue({ ...GUEST_READING, followUps: [] });
+    mockedGetUserById.mockResolvedValue({ id: "u-1", email: "a@example.com", credits: 5, created_at: "" });
+    mockedAppend.mockResolvedValue({
+      ok: true,
+      followUps: [{ question: "What does The Fool mean here?", answer: ANSWER, free: true, id: attemptId }],
+      free: true,
+    });
+    const res = await POST(
+      req({ question: "What does The Fool mean here?", readingId: "r-1", followUpId: attemptId }, "10.0.5.3")
+    );
+    expect(res.status).toBe(200);
+    expect(mockedAppend).toHaveBeenCalledWith(
+      "u-1",
+      "r-1",
+      expect.objectContaining({ question: "What does The Fool mean here?" }),
+      0,
+      3,
+      true,
+      attemptId
+    );
+  });
+
+  // Batch 1 (C2, review fix): the "lost the race inside the
+  // transaction" branch serves the saved answer, it does not append.
+  it("serves the saved answer when the append reports replayed", async () => {
+    const attemptId = "11111111-2222-3333-4444-555555555555";
+    mockedGetSession.mockResolvedValue({ userId: "u-1", email: "a@example.com" });
+    mockedGetReading.mockResolvedValue({ ...GUEST_READING, followUps: [] });
+    mockedGetUserById.mockResolvedValue({ id: "u-1", email: "a@example.com", credits: 5, created_at: "" });
+    mockedAppend.mockResolvedValue({
+      ok: true,
+      replayed: true,
+      free: true,
+      followUps: [
+        { id: attemptId, question: "What does The Fool mean here?", answer: ANSWER, free: true },
+      ],
+    });
+    const res = await POST(
+      req({ question: "What does The Fool mean here?", readingId: "r-1", followUpId: attemptId }, "10.0.5.4")
+    );
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.replayed).toBe(true);
+    expect(data.answer).toBe(ANSWER);
+    expect(data.followUps).toHaveLength(1);
+  });
+
+  // Batch 1 (C2, review finding 8): the attempt id is bound to the
+  // question. The same id with a different question is a 409, not a
+  // replay of the old answer.
+  it("returns 409 when the same followUpId carries a different question", async () => {
+    const attemptId = "11111111-2222-3333-4444-555555555555";
+    mockedGetSession.mockResolvedValue({ userId: "u-1", email: "a@example.com" });
+    mockedGetReading.mockResolvedValue({
+      ...GUEST_READING,
+      followUps: [
+        {
+          id: attemptId,
+          question: "What does The Fool mean here?",
+          answer: ANSWER,
+          createdAt: "2026-11-05T00:00:00.000Z",
+          free: true,
+        },
+      ],
+    });
+    mockedGetUserById.mockResolvedValue({ id: "u-1", email: "a@example.com", credits: 5, created_at: "" });
+    const res = await POST(
+      req({ question: "A different question?", readingId: "r-1", followUpId: attemptId }, "10.0.5.5")
+    );
+    expect(res.status).toBe(409);
+    expect((await res.json()).error).toContain("different question");
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+    expect(mockedAppend).not.toHaveBeenCalled();
   });
 });
