@@ -12,6 +12,7 @@ const K = {
   dailyStreak: "sortes-daily-streak",
   reports: "sortes-reports",
   birthProfiles: "sortes-birth-profiles",
+  intakeDraft: "sortes-intake-draft",
 } as const;
 
 function read<T>(key: string, fallback: T): T {
@@ -255,10 +256,48 @@ export function clearLocalAccountData(): void {
   try {
     for (const key of [
       K.history, K.reports, K.credits, K.purchases, K.dailyCard, K.dailyStreak,
-      K.aiCache, K.birthProfiles, "sortes-birth-details",
+      K.aiCache, K.birthProfiles, K.intakeDraft, "sortes-birth-details",
     ]) localStorage.removeItem(key);
     // Checkout email prefill (per-tab, but still the previous user's).
     window.sessionStorage?.removeItem("sortes-purchase-email");
+  } catch {
+    // Storage unavailable; there is nothing to clear.
+  }
+}
+
+// Batch D (A3): the intake draft. Sign-in happens on /account (a full
+// navigation away from the intake page), so what the seeker typed is kept on
+// the device and restored on return. One draft at a time; it is cleared after
+// a successful generation and on sign-out. Birth-sensitive answers are
+// stripped by the caller before saving.
+export interface IntakeDraft {
+  slug: string;
+  categoryKey: string | null;
+  answers: Record<string, string>;
+  story: string;
+  question: string;
+}
+
+export function getIntakeDraft(slug: string): IntakeDraft | null {
+  const d = read<Partial<IntakeDraft> | null>(K.intakeDraft, null);
+  if (!d || d.slug !== slug) return null;
+  return {
+    slug,
+    categoryKey: typeof d.categoryKey === "string" ? d.categoryKey : null,
+    answers: d.answers && typeof d.answers === "object" ? d.answers : {},
+    story: typeof d.story === "string" ? d.story : "",
+    question: typeof d.question === "string" ? d.question : "",
+  };
+}
+
+export function saveIntakeDraft(d: IntakeDraft): void {
+  write(K.intakeDraft, d);
+}
+
+export function clearIntakeDraft(): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.removeItem(K.intakeDraft);
   } catch {
     // Storage unavailable; there is nothing to clear.
   }

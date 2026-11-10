@@ -69,6 +69,7 @@ export {
 } from "./db/readings";
 export {
   saveReportForUser,
+  saveReportWithSpend,
   getReportForUser,
   listReportsForUser,
   deleteReportForUser,

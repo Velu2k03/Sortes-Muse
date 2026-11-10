@@ -3,27 +3,20 @@ import { NextRequest } from "next/server";
 
 vi.mock("@/lib/db", () => ({
   getUserById: vi.fn(),
-  spendUserCredits: vi.fn(),
   hasUsedFreeInterpretation: vi.fn(),
-  markFreeInterpretationUsed: vi.fn(),
+  saveReadingWithSpend: vi.fn(),
 }));
 vi.mock("@/lib/auth", () => ({
   getSession: vi.fn(),
 }));
 
 import { POST } from "@/app/api/chart/interpret/route";
-import {
-  getUserById,
-  spendUserCredits,
-  hasUsedFreeInterpretation,
-  markFreeInterpretationUsed,
-} from "@/lib/db";
+import { getUserById, hasUsedFreeInterpretation, saveReadingWithSpend } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 
 const mockedGetUserById = vi.mocked(getUserById);
-const mockedSpend = vi.mocked(spendUserCredits);
+const mockedSave = vi.mocked(saveReadingWithSpend);
 const mockedHasUsedFree = vi.mocked(hasUsedFreeInterpretation);
-const mockedMarkFree = vi.mocked(markFreeInterpretationUsed);
 const mockedGetSession = vi.mocked(getSession);
 
 const CHART = {
@@ -72,9 +65,8 @@ describe("POST /api/chart/interpret", () => {
       credits: 5,
       created_at: "2026-11-05T00:00:00Z",
     });
-    mockedSpend.mockResolvedValue(true);
     mockedHasUsedFree.mockResolvedValue(false);
-    mockedMarkFree.mockResolvedValue(true);
+    mockedSave.mockImplementation(async (_u, _r, tryFree) => ({ ok: true, free: tryFree }));
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue({
@@ -92,8 +84,20 @@ describe("POST /api/chart/interpret", () => {
     delete process.env.OPENROUTER_API_KEY;
   });
 
-  it("rejects a question over 300 characters with 400 instead of truncating it", async () => {
+  // Batch D (B4, OWASP A01): guests must sign in. 401 comes before any
+  // validation or model call, and nothing is saved or spent.
+  it("refuses a guest with 401 before any model call, save, or spend", async () => {
     mockedGetSession.mockResolvedValue(null);
+    const res = await POST(req({ system: "western", chart: CHART, category: "general" }, "10.0.2.9"));
+    expect(res.status).toBe(401);
+    expect((await res.json()).error).toContain("Sign in");
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+    expect(mockedSave).not.toHaveBeenCalled();
+    expect(mockedHasUsedFree).not.toHaveBeenCalled();
+  });
+
+  it("rejects a question over 300 characters with 400 instead of truncating it", async () => {
+    mockedGetSession.mockResolvedValue({ userId: "u1", email: "a@b.co" });
     const res = await POST(
       req({ system: "western", chart: CHART, question: "x".repeat(301) }, "10.0.2.1")
     );
@@ -102,7 +106,7 @@ describe("POST /api/chart/interpret", () => {
   });
 
   it("accepts a question at exactly 300 characters", async () => {
-    mockedGetSession.mockResolvedValue(null);
+    mockedGetSession.mockResolvedValue({ userId: "u1", email: "a@b.co" });
     const res = await POST(
       req({ system: "western", chart: CHART, question: "x".repeat(300) }, "10.0.2.2")
     );
@@ -118,8 +122,37 @@ describe("POST /api/chart/interpret", () => {
     const data = await res.json();
     expect(data.free).toBe(true);
     expect(data.interpretation).toContain("chart reflection");
-    expect(mockedSpend).not.toHaveBeenCalled();
-    expect(mockedMarkFree).toHaveBeenCalledWith("u1", "western");
+    // Free claim and the reading row are one call (one transaction).
+    expect(mockedSave).toHaveBeenCalledTimes(1);
+    expect(mockedSave).toHaveBeenCalledWith("u1", expect.objectContaining({ free: true }), true, "western");
+  });
+
+  // Batch D (B4): the server stores the interpretation and returns it with
+  // its id, so the client save (same id) is a no-op and a closed tab loses nothing.
+  it("returns the server-saved reading (same id, chart summary present)", async () => {
+    mockedGetSession.mockResolvedValue({ userId: "u1", email: "a@b.co" });
+    mockedHasUsedFree.mockResolvedValue(true);
+    const res = await POST(
+      req({ system: "western", chart: CHART, category: "general", chartSummary: "Western chart. Sun: Aries." }, "10.0.2.6")
+    );
+    const data = await res.json();
+    expect(mockedSave).toHaveBeenCalledWith("u1", expect.objectContaining({ free: false }), false, "western");
+    const saved = mockedSave.mock.calls[0][1] as unknown as { id: string; interpretation: string; chartSummary: string; spreadSlug: string };
+    expect(data.reading.id).toBe(saved.id);
+    expect(saved.interpretation).toBe(data.interpretation);
+    expect(saved.spreadSlug).toBe("chart-western");
+    expect(saved.chartSummary).toBe("Western chart. Sun: Aries.");
+  });
+
+  it("returns 402 with no reading when the transaction finds no credit", async () => {
+    mockedGetSession.mockResolvedValue({ userId: "u1", email: "a@b.co" });
+    mockedHasUsedFree.mockResolvedValue(true);
+    mockedSave.mockResolvedValue({ ok: false, free: false });
+    const res = await POST(req({ system: "western", chart: CHART, category: "general" }, "10.0.2.7"));
+    expect(res.status).toBe(402);
+    const data = await res.json();
+    expect(data.reading).toBeUndefined();
+    expect(data.interpretation).toBeUndefined();
   });
 
   // Chart-interpret fix (2026-11-07): the chart prompt is ~836 words
@@ -130,7 +163,7 @@ describe("POST /api/chart/interpret", () => {
   // and every free model fails validation. The route now requests
   // 2000 tokens and caps the reflection at four themed sections.
   it("requests 2000 max_tokens and caps the reflection at four themed sections", async () => {
-    mockedGetSession.mockResolvedValue(null);
+    mockedGetSession.mockResolvedValue({ userId: "u1", email: "a@b.co" });
     const fetchMock = vi.mocked(fetch);
     const res = await POST(
       req({ system: "western", chart: CHART, category: "general" }, "10.0.2.5")
@@ -153,16 +186,15 @@ describe("POST /api/chart/interpret", () => {
   // Phase B (R7): when the atomic free claim loses the race, the
   // request spends one Oracle instead of serving a second free
   // interpretation, and reports free: false.
-  it("spends when the free claim loses the race (mark returns false)", async () => {
+  it("reports free:false when the free claim loses the race (transaction spent instead)", async () => {
     mockedGetSession.mockResolvedValue({ userId: "u1", email: "a@b.co" });
-    mockedMarkFree.mockResolvedValue(false);
+    mockedSave.mockResolvedValue({ ok: true, free: false });
     const res = await POST(
       req({ system: "western", chart: CHART, category: "general" }, "10.0.2.4")
     );
     expect(res.status).toBe(200);
     const data = await res.json();
     expect(data.free).toBe(false);
-    expect(mockedMarkFree).toHaveBeenCalledWith("u1", "western");
-    expect(mockedSpend).toHaveBeenCalledWith("u1", 1);
+    expect(mockedSave).toHaveBeenCalledWith("u1", expect.anything(), true, "western");
   });
 });

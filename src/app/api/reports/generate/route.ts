@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { getUserById, spendUserCredits } from "@/lib/db";
+import { getUserById, saveReportWithSpend } from "@/lib/db";
 import {
   validateBirthInput,
   buildTransitData,
@@ -15,25 +15,22 @@ import type { ReportType, SavedReport } from "@/lib/reports";
 import { generateChat } from "@/lib/ai";
 import { preCheckOracleBalance } from "@/lib/credit-precheck";
 import { validateReportText, anchorTerms } from "@/lib/output-validation";
-import { logGuestGeneration } from "@/lib/guestLogging";
 import { checkRateLimit, clientIp, rateLimitExceeded, RATE_LIMITS } from "@/lib/rateLimit";
 
-// M4.1: premium keep-forever reports. This route computes and
-// interprets only; it does NOT save. The client saves the returned
-// report with POST /api/reports (signed-in) or to device-local
-// storage (guest), reusing the server-generated id, so a failed save
-// can be retried without another charge. That separation is what
-// keeps the money states clean: spend happens once, after a real
-// generation, and saving never costs a credit.
+// M4.1: premium keep-forever reports. Batch D (B4): sign-in is required
+// (guests get 401 before any model call) and the report row is inserted
+// in the SAME transaction as the 1-Oracle spend (saveReportWithSpend), so
+// closing the tab after a paid generation can never lose the report. The
+// response returns the saved report with its server id; the client's later
+// POST /api/reports with that id is a no-op (ON CONFLICT DO NOTHING).
 //
 // Credit rule: 1 credit per report, no free first use. Reports are
-// the premium paid moment, sold per report and never rented. Guests
-// keep the device-local wallet: the server spends nothing for them,
-// and the client deducts locally only after a successful generation.
-// Privacy is enforced by construction: the builders receive birth
-// inputs server-side, but the prompt lines and the saved report
-// contain positions and signs only. Birth dates, times, coordinates,
-// and place names are never stored and never sent to AI.
+// the premium paid moment, sold per report and never rented. Spend
+// happens once, after a real generation. Privacy is enforced by
+// construction: the builders receive birth inputs server-side, but the
+// prompt lines and the saved report contain positions and signs only.
+// Birth dates, times, coordinates, and place names are never stored and
+// never sent to AI.
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 // Covers the 170 s AI retry budget plus the DB write (Vercel Fluid: 300 s max on every plan).
@@ -76,6 +73,12 @@ export async function POST(req: NextRequest) {
   // Phase 6: shared limiter (was a per-route map: 20/hr/IP).
   if (!(await checkRateLimit(`reports-generate:${clientIp(req)}`, RATE_LIMITS.reportsGenerateIp)).allowed) {
     return rateLimitExceeded();
+  }
+  // Batch D (B4, OWASP A01): reports are a paid product with no guest
+  // wallet on the server, so a guest is refused before any model call.
+  const session = await getSession();
+  if (!session) {
+    return NextResponse.json({ error: "Sign in to generate a report." }, { status: 401 });
   }
   let body: Record<string, unknown>;
   try {
@@ -130,7 +133,6 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const session = await getSession();
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
     return NextResponse.json(
@@ -151,7 +153,7 @@ export async function POST(req: NextRequest) {
   // credits got a full model call and only then a 402. The spend
   // after generation stays as the atomic enforcement.
   // F11: shared helper (src/lib/credit-precheck.ts). No free use here.
-  const preCheck = await preCheckOracleBalance(session?.userId, !!session, "report");
+  const preCheck = await preCheckOracleBalance(session.userId, true, "report");
   if (preCheck.denied) return preCheck.denied;
 
   // One shared client (src/lib/ai.ts): the :free chain, per-model
@@ -213,32 +215,21 @@ export async function POST(req: NextRequest) {
     interpretation: finalText,
   };
 
-  // Spend only after a real generation. If the spend fails, the text
-  // is withheld rather than delivered unpaid.
-  if (session) {
-    const ok = await spendUserCredits(session.userId, 1);
-    if (!ok) {
-      return NextResponse.json(
-        { error: "You need 1 Oracle for this report. No Oracle was spent." },
-        { status: 402 }
-      );
-    }
-    const user = await getUserById(session.userId);
-    return NextResponse.json({
-      report,
-      model: generated.model,
-      fallback: false,
-      credits: user?.credits ?? 0,
-    });
+  // Spend only after a real generation, in the same transaction as the
+  // report row. If the balance cannot cover it, nothing is written and the
+  // text is withheld rather than delivered unpaid.
+  const saved = await saveReportWithSpend(session.userId, { ...report });
+  if (!saved.ok) {
+    return NextResponse.json(
+      { error: "You need 1 Oracle for this report. No Oracle was spent." },
+      { status: 402 }
+    );
   }
-
-  // Phase B (R6): the successful guest generation is logged so
-  // abuse is visible per route in the log drain.
-  logGuestGeneration("reports/generate");
+  const user = await getUserById(session.userId);
   return NextResponse.json({
     report,
     model: generated.model,
     fallback: false,
-    guest: true,
+    credits: user?.credits ?? 0,
   });
 }

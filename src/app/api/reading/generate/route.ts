@@ -238,6 +238,18 @@ export async function POST(req: NextRequest) {
       { status: 401 }
     );
   }
+  // Batch D (A1): the cookie above is client-held, so a caller that never
+  // sends it looks like a first-time guest every time. Cap guest free
+  // readings per IP per day on the shared limiter store as well.
+  if (
+    guestFree &&
+    !(await checkRateLimit(`guest-free:${clientIp(req)}`, RATE_LIMITS.guestFreeIp)).allowed
+  ) {
+    return NextResponse.json(
+      { error: "Your free Quick Insight is used. Sign in to continue." },
+      { status: 401 }
+    );
+  }
   if (!session && !isQuickInsight) {
     return NextResponse.json(
       { error: "Sign in to get this reading." },

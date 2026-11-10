@@ -33,10 +33,14 @@ export async function saveReadingForUser(userId: string, reading: { id: string; 
 // be lost when the tab closes before the client save. Mirrors the old
 // route logic: tryFree claims the free use atomically; losing the race
 // falls back to a 1-Oracle spend; insufficient credits writes nothing.
+// Batch D (B4): chart interpretations are saved as journal readings through
+// the same transaction; `freeSystem` makes the free claim target the
+// per-system free_interpretations record instead of free_readings.
 export async function saveReadingWithSpend(
   userId: string,
   reading: { id: string; free: boolean; [k: string]: unknown },
-  tryFree: boolean
+  tryFree: boolean,
+  freeSystem?: string
 ): Promise<{ ok: boolean; free: boolean }> {
   await ensureSchema();
   if (usePostgres) {
@@ -46,7 +50,9 @@ export async function saveReadingWithSpend(
       const tx = txWithSignal(rawTx, controller.signal);
       let free = false;
       if (tryFree) {
-        const c = await tx`INSERT INTO free_readings (user_id) VALUES (${userId}) ON CONFLICT DO NOTHING RETURNING user_id`;
+        const c = freeSystem
+          ? await tx`INSERT INTO free_interpretations (user_id, system) VALUES (${userId}, ${freeSystem}) ON CONFLICT DO NOTHING RETURNING user_id`
+          : await tx`INSERT INTO free_readings (user_id) VALUES (${userId}) ON CONFLICT DO NOTHING RETURNING user_id`;
         free = c.length > 0;
       }
       if (!free) {
@@ -62,11 +68,19 @@ export async function saveReadingWithSpend(
     return await withDbTimeout(begin, controller);
   }
   const db = await readLocal();
-  const list = db.freeReadings ?? (db.freeReadings = []);
   let free = false;
-  if (tryFree && !list.some((x) => x.user_id === userId)) {
-    list.push({ user_id: userId, used_at: new Date().toISOString() });
-    free = true;
+  if (tryFree && freeSystem) {
+    const list = db.freeInterpretations ?? (db.freeInterpretations = []);
+    if (!list.some((x) => x.user_id === userId && x.system === freeSystem)) {
+      list.push({ user_id: userId, system: freeSystem, used_at: new Date().toISOString() });
+      free = true;
+    }
+  } else if (tryFree) {
+    const list = db.freeReadings ?? (db.freeReadings = []);
+    if (!list.some((x) => x.user_id === userId)) {
+      list.push({ user_id: userId, used_at: new Date().toISOString() });
+      free = true;
+    }
   }
   if (!free) {
     const u = db.users.find((x) => x.id === userId);

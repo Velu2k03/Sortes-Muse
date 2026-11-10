@@ -1,5 +1,6 @@
-import { usePostgres, sql, jsonbParam, ensureSchema } from "./client";
+import { usePostgres, pg, sql, jsonbParam, ensureSchema, txWithSignal } from "./client";
 import { readLocal, writeLocal } from "./json-store";
+import { withDbTimeout } from "../db-timeout";
 
 /*
  * F9 (2026-11-09): keep-forever reports.
@@ -30,6 +31,40 @@ export async function saveReportForUser(userId: string, report: { id: string; [k
     db.reports = list;
     await writeLocal(db);
   }
+}
+
+// Batch D (B4): spend the report's 1 Oracle AND insert the report row in ONE
+// transaction (same shape as saveReadingWithSpend, no free claim: reports
+// are always 1 Oracle). Closing the tab can no longer lose a paid report;
+// insufficient credits writes nothing. The later client save posts the same
+// id and is a no-op (ON CONFLICT DO NOTHING).
+export async function saveReportWithSpend(
+  userId: string,
+  report: { id: string; [k: string]: unknown }
+): Promise<{ ok: boolean }> {
+  await ensureSchema();
+  if (usePostgres) {
+    if (!pg) throw new Error("Database not configured");
+    const controller = new AbortController();
+    const begin = pg.begin(async (rawTx) => {
+      const tx = txWithSignal(rawTx, controller.signal);
+      const spent = await tx`UPDATE users SET credits = credits - 1 WHERE id = ${userId} AND credits >= 1 RETURNING credits`;
+      if (spent.length === 0) return { ok: false };
+      await tx`INSERT INTO reports (id, user_id, data, created_at)
+        VALUES (${report.id}, ${userId}, ${jsonbParam(report)}, NOW())
+        ON CONFLICT (id) DO NOTHING`;
+      return { ok: true };
+    });
+    return await withDbTimeout(begin, controller);
+  }
+  const db = await readLocal();
+  const u = db.users.find((x) => x.id === userId);
+  if (!u || u.credits < 1) return { ok: false };
+  u.credits -= 1;
+  const list = db.reports ?? (db.reports = []);
+  list.unshift({ id: report.id, user_id: userId, data: report, created_at: new Date().toISOString() });
+  await writeLocal(db);
+  return { ok: true };
 }
 
 export async function getReportForUser(userId: string, id: string): Promise<unknown | null> {

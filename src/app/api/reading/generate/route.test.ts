@@ -15,6 +15,7 @@ vi.mock("@/lib/auth", () => ({
 import { POST, validateReading } from "@/app/api/reading/generate/route";
 import { getUserById, hasUsedFreeReading, saveReadingWithSpend } from "@/lib/db";
 import { getSession, guestFreeUsed, setGuestFreeUsed } from "@/lib/auth";
+import { RATE_LIMITS, resetRateLimits } from "@/lib/rateLimit";
 
 const mockedGetUserById = vi.mocked(getUserById);
 const mockedSave = vi.mocked(saveReadingWithSpend);
@@ -110,6 +111,7 @@ describe("POST /api/reading/generate — no provider key (Phase 6 AI fallback)",
 describe("POST /api/reading/generate — first free Quick Insight", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    resetRateLimits();
     process.env.OPENROUTER_API_KEY = "test-key";
     mockedGetUserById.mockResolvedValue({
       id: "u1",
@@ -270,6 +272,44 @@ describe("POST /api/reading/generate — first free Quick Insight", () => {
     const res = await POST(req(body("quick-insight"), "10.0.0.9"));
     expect(res.status).toBe(401);
     expect(globalThis.fetch).not.toHaveBeenCalled();
+  });
+
+  // Batch D (A1): the cookie is client-held, so a caller that never sends
+  // it is a "first" guest every time. A per-IP daily cap on the shared
+  // limiter store brings that to RATE_LIMITS.guestFreeIp.max. Fails on
+  // pre-fix code: all 7 requests return 200.
+  it("caps cookie-less guest Quick Insights per IP: request after the cap is 401 with no model call", async () => {
+    mockedGetSession.mockResolvedValue(null);
+    const ip = "10.7.7.7";
+    for (let i = 0; i < RATE_LIMITS.guestFreeIp.max; i++) {
+      const ok = await POST(req(body("quick-insight"), ip));
+      expect(ok.status).toBe(200);
+    }
+    const fetchCalls = vi.mocked(globalThis.fetch).mock.calls.length;
+    const denied = await POST(req(body("quick-insight"), ip));
+    expect(denied.status).toBe(401);
+    expect((await denied.json()).error).toContain("Sign in to continue");
+    expect(vi.mocked(globalThis.fetch).mock.calls.length).toBe(fetchCalls);
+    // A different IP is unaffected, and a signed-in user from the capped IP is not capped.
+    expect((await POST(req(body("quick-insight"), "10.7.7.8"))).status).toBe(200);
+    mockedGetSession.mockResolvedValue({ userId: "u1", email: "a@b.co" });
+    mockedHasUsedFree.mockResolvedValue(true);
+    expect((await POST(req(body("quick-insight"), ip))).status).toBe(200);
+  });
+
+  // Batch D (B1), regression guard (the code was already right): a
+  // signed-in user's first-ever Celtic Cross is NOT free. serverFree
+  // requires isQuickInsight, so the route asks for a spend (tryFree=false)
+  // and never touches the free grant.
+  it("signed-in first-ever Celtic Cross spends 1: route calls save with tryFree=false", async () => {
+    mockedGetSession.mockResolvedValue({ userId: "u1", email: "a@b.co" });
+    mockedHasUsedFree.mockResolvedValue(false);
+    const res = await POST(req(body("celtic-cross"), "10.0.0.13"));
+    expect(res.status).toBe(200);
+    expect((await res.json()).free).toBe(false);
+    expect(mockedSave).toHaveBeenCalledTimes(1);
+    expect(mockedSave.mock.calls[0][2]).toBe(false);
+    expect(mockedSave.mock.calls[0][1]).toEqual(expect.objectContaining({ free: false }));
   });
 
   // Item 1: claimFree in the body is no longer read at all.

@@ -45,6 +45,13 @@ export const RATE_LIMITS = {
   moneyIp: { windowMs: 60_000, max: 60 },
   /** AI tarot generation per IP (was the generate route's own map). */
   aiGenerateIp: { windowMs: 60 * 60_000, max: 20 },
+  /** Batch D (A1): guest free Quick Insights per IP per day. The product
+      rule is 1 free reading per device (signed cookie), but a client that
+      never sends the cookie looks like a first-time guest every request.
+      5/day/IP bounds a script to 5 free readings a day (the hourly
+      aiGenerateIp budget alone allowed about 480) while still letting a
+      household or NAT sharing one IP take a few. */
+  guestFreeIp: { windowMs: 24 * 60 * 60_000, max: 5 },
   /** AI follow-ups per IP (was the follow-up route's own map). */
   aiFollowUpIp: { windowMs: 60 * 60_000, max: 10 },
   /** Chart calculation per IP — SHARED bucket: calculate, transits,

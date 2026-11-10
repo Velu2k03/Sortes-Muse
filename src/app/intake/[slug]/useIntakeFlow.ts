@@ -13,7 +13,11 @@ import {
   setCachedInterpretation,
   freeReadingUsed,
   markFreeReadingUsed,
+  getIntakeDraft,
+  saveIntakeDraft,
+  clearIntakeDraft,
 } from "@/lib/storage";
+import { intakeGate } from "@/lib/intake-gate";
 import { useAuth } from "@/components/AuthProvider";
 import { trackReadingStarted, trackReadingCompleted } from "@/components/Analytics";
 
@@ -26,7 +30,7 @@ export type Step = "category" | "form" | "confirm" | "impression" | "processing"
 export function useIntakeFlow(slug: string) {
   const router = useRouter();
   const spread = useMemo(() => getSpread(slug), [slug]);
-  const { credits, spend, add, persistReading, user, refresh } = useAuth();
+  const { credits, persistReading, user, loading: authLoading, refresh } = useAuth();
   const [step, setStep] = useState<Step>("category");
   const [categoryKey, setCategoryKey] = useState<string | null>(null);
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -58,8 +62,46 @@ export function useIntakeFlow(slug: string) {
     queueMicrotask(() => setUsedFree(freeReadingUsed()));
   }, []);
   const isFreeAvailable = spread.slug === "quick-insight" && !usedFree;
+  // Batch D (A3): generation needs sign-in unless this is a guest's free
+  // Quick Insight. The gate shows BEFORE the category and story steps, so a
+  // guest never writes a story they cannot submit. While the session is
+  // still loading we wait (a signed-in seeker must not see the gate flash).
+  // `signInNeeded` also turns on after a server 401 (a free use the server
+  // already counted, or an expired session).
+  const [serverSignInNeeded, setServerSignInNeeded] = useState(false);
+  const gate = intakeGate({
+    signedIn: !!user,
+    isFreeAvailable,
+    authLoading,
+    serverSignInNeeded,
+  });
 
   const category = categoryKey ? getCategory(categoryKey) : null;
+
+  // Batch D (A3): keep the typed draft on this device so a seeker who leaves
+  // to sign in (/account is a full navigation) comes back to it. Restored
+  // once on mount, saved as they type, cleared after a successful generation.
+  // Birth-sensitive answers are never stored.
+  const [draftReady, setDraftReady] = useState(false);
+  useEffect(() => {
+    queueMicrotask(() => {
+      const d = getIntakeDraft(slug);
+      if (d && d.categoryKey && getCategory(d.categoryKey)) {
+        setCategoryKey(d.categoryKey);
+        setAnswers(d.answers);
+        setStory(d.story);
+        setQuestion(d.question);
+        setStep("form");
+      }
+      setDraftReady(true);
+    });
+  }, [slug]);
+  useEffect(() => {
+    if (!draftReady || !categoryKey) return;
+    const safe: Record<string, string> = {};
+    for (const [k, v] of Object.entries(answers)) if (!SENSITIVE_KEYS.includes(k)) safe[k] = v;
+    saveIntakeDraft({ slug, categoryKey, answers: safe, story, question });
+  }, [draftReady, slug, categoryKey, answers, story, question]);
 
   // M1.1: rule-based rewrite suggestion for the confirm step. Editing
   // the question re-arms the suggestion; using it clears it (the
@@ -115,22 +157,12 @@ export function useIntakeFlow(slug: string) {
     // path this attempt ends on.
     setGenerationFailed(false);
     setToastOpen(false);
-    // M0.1 credit authority: signed-in users no longer spend client-side.
-    // The route spends server-side only after a real model generates
-    // text, so a failed generation can never cost a credit. Guests keep
-    // the device-local wallet and its pre-spend plus catch refund.
-    // A first free Quick Insight skips the pre-spend entirely: the
-    // route checks the server record for signed-in users and the
-    // device flag (claimFree) for guests.
+    // M0.1 credit authority: the client never spends. The route spends
+    // server-side only after a real model generates text, so a failed
+    // generation can never cost a credit and no refund is needed. A guest
+    // can only reach this point for a free Quick Insight (the gate above
+    // blocks every other guest path), which spends nothing.
     const signedIn = !!user;
-    if (!signedIn && !isFreeAvailable) {
-      const ok = await spend(1);
-      if (!ok) {
-        setError("You are out of Oracles. Please top up to continue.");
-        setBusy(false);
-        return;
-      }
-    }
     trackReadingStarted(`${spread.slug}-personalized`);
     setStep("processing");
     setError(null);
@@ -186,6 +218,7 @@ export function useIntakeFlow(slug: string) {
         // server message so the user is told to top up, not to retry.
         if (res.status === 402 || res.status === 401) {
           was402 = true;
+          if (res.status === 401) setServerSignInNeeded(true);
           const d = await res.json().catch(() => null);
           if (d?.error) failMessage = d.error;
         }
@@ -225,6 +258,7 @@ export function useIntakeFlow(slug: string) {
       });
       await persistReading(reading);
       setCachedInterpretation(reading.id, interpretation);
+      clearIntakeDraft();
       // Signed-in balance now comes from the server (the route spent
       // after generation); sync it so the header shows the new balance.
       if (signedIn) await refresh();
@@ -246,13 +280,6 @@ export function useIntakeFlow(slug: string) {
         setGenerationFailed(true);
         setToastOpen(true);
       }
-      // Guest refund only: guests pre-spent from the device wallet, so
-      // a failed generation returns it. Signed-in users spent nothing
-      // client-side (the route spends only after success), so no
-      // refund call here, and the balance endpoint no longer accepts
-      // positive client grants at all. A free reading pre-spent
-      // nothing, so there is nothing to return.
-      if (!signedIn && !isFreeAvailable) await add(1);
       setBusy(false);
       // SlideCommit needs the rejection to show its error state; the
       // error message above is already set, so this only signals it.
@@ -272,7 +299,7 @@ export function useIntakeFlow(slug: string) {
     question, setQuestion, setOriginalQuestion, suggestionDismissed,
     setSuggestionDismissed, drawnCards, impression, setImpression, error,
     processingLine, processingComplete, busy, generationFailed, toastOpen,
-    setToastOpen, isFreeAvailable, category, questionSuggestion, set, formValid,
+    setToastOpen, isFreeAvailable, gate, credits, category, questionSuggestion, set, formValid,
     beginDraw, beginGeneration, retryGeneration,
   };
 }

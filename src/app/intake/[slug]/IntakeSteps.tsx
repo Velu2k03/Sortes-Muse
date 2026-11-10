@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { motion } from "motion/react";
 import TarotCard from "@/components/TarotCard";
 import SlideCommit from "@/components/SlideCommit";
@@ -9,6 +10,42 @@ import type { DrawnCard } from "@/lib/types";
 import type { IntakeState, Step } from "./useIntakeFlow";
 
 type IntakeCategory = NonNullable<ReturnType<typeof getCategory>>;
+
+/**
+ * Batch D (A3): shown instead of every step when a guest cannot generate
+ * this reading (every spread except a free Quick Insight). It appears
+ * before the story form, so nobody writes a story they cannot submit.
+ */
+export function SignInGate({ f }: { f: IntakeState }) {
+  const { spread, credits } = f;
+  const hasDeviceOracles = (credits ?? 0) > 0;
+  return (
+    <div role="region" aria-label="Sign in required" className="mt-8 rounded-3xl border border-gold/25 bg-panel/70 p-6 text-center">
+      <p className="text-xs uppercase tracking-[0.35em] text-gold">Sign in to continue</p>
+      <h1 className="mt-3 font-display text-3xl text-goldbright sm:text-4xl">
+        {spread.name} needs an account
+      </h1>
+      <p className="mx-auto mt-3 max-w-md text-cream/80">
+        Readings are saved to your account when they are written, so sign in
+        first. Your first Quick Insight is the one reading you can take
+        without signing in.
+      </p>
+      {hasDeviceOracles && (
+        <p className="mx-auto mt-3 max-w-md text-sm text-cream/80">
+          You have {credits} {credits === 1 ? "Oracle" : "Oracles"} on this device. Device
+          Oracles can no longer be used for paid readings while signed out. When you
+          sign in, they move to your account.
+        </p>
+      )}
+      <Link href="/account" className="btn-gold mt-6 inline-block rounded-xl px-8 py-3.5 font-bold">
+        Sign in
+      </Link>
+      <p className="mt-3 text-xs text-mist">
+        Anything you already typed here is kept on this device and waiting when you come back.
+      </p>
+    </div>
+  );
+}
 
 /** Step 1: choose the area of life. */
 export function CategoryStep({ f }: { f: IntakeState }) {

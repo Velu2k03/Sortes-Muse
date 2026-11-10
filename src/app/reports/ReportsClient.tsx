@@ -10,7 +10,7 @@ import SwipeToast from "@/components/SwipeToast";
 import CallChip from "@/components/CallChip";
 import AnimatedContent from "@/components/AnimatedContent";
 import Counter from "@/components/Counter";
-import { getReports, saveReport, spendCredit } from "@/lib/storage";
+import { getReports } from "@/lib/storage";
 import { SAMPLE_TRANSIT_REPORT } from "@/lib/sample-report";
 import BirthProfilePicker from "@/components/BirthProfilePicker";
 import { profileToReportFields } from "@/lib/birth-profiles";
@@ -330,7 +330,9 @@ export default function ReportsClient() {
   const [failedCall, setFailedCall] = useState(false);
   const [toastOpen, setToastOpen] = useState(false);
   const [result, setResult] = useState<SavedReport | null>(null);
-  const [saveError, setSaveError] = useState(false);
+  // Batch D (B4): reports need sign-in; set when the server answers 401
+  // (for example an expired session) so the sign-in prompt replaces the form action.
+  const [signInNeeded, setSignInNeeded] = useState(false);
   const [saved, setSaved] = useState<SavedReport[]>([]);
 
   const loadSaved = async () => {
@@ -354,30 +356,11 @@ export default function ReportsClient() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, user]);
 
-  const outOfOracles = !loading && credits !== null && credits < 1;
-
-  async function saveGenerated(report: SavedReport) {
-    if (user) {
-      const res = await fetch("/api/reports", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ report }),
-      }).catch(() => null);
-      if (!res || !res.ok) {
-        setSaveError(true);
-        return;
-      }
-      setSaveError(false);
-      await loadSaved();
-    } else {
-      saveReport(report);
-      setSaved(getReports());
-    }
-  }
+  const outOfOracles = !loading && !!user && credits !== null && credits < 1;
+  const signedOut = signInNeeded || (!loading && !user);
 
   async function generate() {
     setError("");
-    setSaveError(false);
     setResult(null);
     // Phase D: a new attempt clears the previous failure UI.
     setFailedCall(false);
@@ -428,6 +411,11 @@ export default function ReportsClient() {
         // spent (the route spends only after success), but only a
         // genuine call failure gets the toast and retry UI. A 402 is
         // a balance stop: the paragraph plus the Top up link guide it.
+        if (res.status === 401) {
+          setSignInNeeded(true);
+          setError("Sign in to generate a report.");
+          return;
+        }
         const msg = typeof data.error === "string" ? data.error : "The report could not be generated.";
         setError(msg.includes("spent") ? msg : `${msg} No Oracle was spent.`);
         if (res.status !== 402) {
@@ -440,16 +428,11 @@ export default function ReportsClient() {
       // Phase E (item 2): keep the serving model the API returned, so
       // the report view can label it instead of discarding it.
       if (typeof data.model === "string" && data.model) report.model = data.model;
-      if (!user) {
-        if (!spendCredit(1)) {
-          setError("Your device wallet could not cover this report. Please top up and try again. No Oracle was spent.");
-          return;
-        }
-        window.dispatchEvent(new Event("sortes:credits-changed"));
-      }
+      // The server saved the report with the spend (same id); just show it
+      // and refresh the list and balance.
       setResult(report);
-      await saveGenerated(report);
-      if (user) await refresh();
+      await loadSaved();
+      await refresh();
     } catch {
       setError("The report could not be generated just now. No Oracle was spent. Please try again in a moment.");
       setFailedCall(true);
@@ -476,10 +459,9 @@ export default function ReportsClient() {
         Birth details are used only for this report, never stored, never sent to AI.
       </p>
 
-      {!loading && credits !== null && (
+      {!loading && user && credits !== null && (
         <p className="mt-4 text-center text-sm text-cream">
           Your balance: <strong className="text-goldbright"><Counter value={credits} fontSize={14} /> {credits === 1 ? "Oracle" : "Oracles"}</strong>
-          {user ? null : " (device wallet; sign in to keep reports on your account)"}
         </p>
       )}
 
@@ -613,6 +595,14 @@ export default function ReportsClient() {
         </div>
       )}
 
+      {signedOut ? (
+        <div className="mt-6 rounded-2xl border border-gold/25 bg-panel/70 p-4 text-center text-sm text-cream">
+          Reports need an account so they are saved to it. Sign in to generate one.{" "}
+          <Link href="/account" className="font-semibold text-goldbright underline">
+            Sign in
+          </Link>
+        </div>
+      ) : (
       <SpecularButton
         type="button"
         onClick={generate}
@@ -625,6 +615,7 @@ export default function ReportsClient() {
       >
         {generating ? "Generating…" : "Generate report · 1 Oracle"}
       </SpecularButton>
+      )}
       {generating && (
         <p className="mt-3 flex items-center justify-center gap-2 text-sm text-cream/75">
           <StatusMark status="running" size={20} color="#d4af37" />
@@ -650,23 +641,13 @@ export default function ReportsClient() {
         <div className="mt-8 rounded-3xl border border-gold/25 bg-panel/70 p-6">
           <p className="text-xs uppercase tracking-[0.35em] text-gold">Your report</p>
           <h2 className="mt-1 font-display text-3xl text-goldbright">{result.title}</h2>
-          {saveError ? (
-            <div className="mt-3 rounded-xl border border-danger/40 p-3 text-sm text-danger">
-              The report was generated, but saving it failed. Your Oracle was spent only once; retry the
-              save without another charge.{" "}
-              <button type="button" onClick={() => saveGenerated(result)} className="font-semibold underline">
-                Retry save
-              </button>
-            </div>
-          ) : (
-            <p className="mt-2 text-sm text-mist">
-              Saved. Open it any time from your reports below, or{" "}
-              <Link href={`/reports/${result.id}`} className="font-semibold text-goldbright underline">
-                view the full report
-              </Link>
-              .
-            </p>
-          )}
+          <p className="mt-2 text-sm text-mist">
+            Saved. Open it any time from your reports below, or{" "}
+            <Link href={`/reports/${result.id}`} className="font-semibold text-goldbright underline">
+              view the full report
+            </Link>
+            .
+          </p>
           <p className="mt-4 whitespace-pre-wrap leading-relaxed text-cream/90">{result.interpretation}</p>
           <p className="mt-3 text-xs text-mist">
             AI-generated

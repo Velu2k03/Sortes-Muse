@@ -1,16 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { localizeStar } from "@/lib/ziwei-i18n";
 import { getSession } from "@/lib/auth";
-import {
-  getUserById,
-  spendUserCredits,
-  hasUsedFreeInterpretation,
-  markFreeInterpretationUsed,
-} from "@/lib/db";
+import { randomUUID } from "crypto";
+import { getUserById, hasUsedFreeInterpretation, saveReadingWithSpend } from "@/lib/db";
 import { generateChat } from "@/lib/ai";
 import { preCheckOracleBalance } from "@/lib/credit-precheck";
 import { validateChartText, anchorTerms } from "@/lib/output-validation";
-import { logGuestGeneration } from "@/lib/guestLogging";
 import { checkRateLimit, clientIp, rateLimitExceeded, RATE_LIMITS } from "@/lib/rateLimit";
 
 // Chart interpretation, Phase 2. Reuses the tarot OpenRouter pattern
@@ -24,13 +19,14 @@ import { checkRateLimit, clientIp, rateLimitExceeded, RATE_LIMITS } from "@/lib/
 // deliberately NOT copied into the prompt). Any extra keys in the
 // request are ignored.
 //
-// M0.1 credit authority: for signed-in users this route is the
-// enforcement point. First interpretation per system is free, recorded
-// server-side (free_interpretations table); later ones spend 1 credit
-// server-side AFTER a real model generates text, so a failed generation
-// can never cost a credit and no refund path is needed. Guests keep the
-// existing device-local free flags and wallet, because guests have no
-// server account to charge.
+// M0.1 credit authority: this route is the enforcement point. First
+// interpretation per system is free, recorded server-side
+// (free_interpretations table); later ones spend 1 credit server-side
+// AFTER a real model generates text, so a failed generation can never
+// cost a credit and no refund path is needed. Batch D (B4): sign-in is
+// required (guests get 401 before any model call), and the interpretation
+// is stored as a journal reading in the SAME transaction as the spend or
+// free claim, so closing the tab can never lose a paid interpretation.
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 // Covers the 170 s AI retry budget plus the DB write (Vercel Fluid: 300 s max on every plan).
@@ -204,6 +200,11 @@ export async function POST(req: NextRequest) {
   if (!(await checkRateLimit(`interpret:${clientIp(req)}`, RATE_LIMITS.chartInterpretIp)).allowed) {
     return rateLimitExceeded();
   }
+  // Batch D (B4, OWASP A01): refuse guests before any work or model call.
+  const session = await getSession();
+  if (!session) {
+    return NextResponse.json({ error: "Sign in to get a chart interpretation." }, { status: 401 });
+  }
   let body: Record<string, unknown>;
   try {
     body = await req.json();
@@ -257,11 +258,8 @@ ${lines}
 
 Write the personalized chart reflection now.`;
 
-  // M0.1: read the session before generation, but spend or mark free
-  // only after a real model succeeds (see below). Guests skip this
-  // block entirely and keep their device-local wallet.
-  const session = await getSession();
-  const serverFree = session ? !(await hasUsedFreeInterpretation(session.userId, system)) : false;
+  // M0.1: spend or mark free only after a real model succeeds (see below).
+  const serverFree = !(await hasUsedFreeInterpretation(session.userId, system));
 
   const apiKey = process.env.OPENROUTER_API_KEY;
   // No key configured: fail honestly instead of serving static text.
@@ -282,7 +280,7 @@ Write the personalized chart reflection now.`;
   // spend after generation stays as the atomic enforcement; this is
   // the early, quota-saving check.
   // F11: shared helper (src/lib/credit-precheck.ts).
-  const preCheck = await preCheckOracleBalance(session?.userId, !!session && !serverFree, "interpretation");
+  const preCheck = await preCheckOracleBalance(session.userId, !serverFree, "interpretation");
   if (preCheck.denied) return preCheck.denied;
   // One shared client (src/lib/ai.ts): the :free chain, per-model
   // timeout, retry across models, structured failure logging.
@@ -325,54 +323,42 @@ Write the personalized chart reflection now.`;
     : generated.text;
 
   // Spend or mark free only after a real generation, so a failed
-  // generation can never cost a credit or consume the free use. If
-  // the spend fails, the text is withheld rather than delivered unpaid.
-  //
-  // Phase B (R7): the free claim is atomic. markFreeInterpretationUsed
-  // returns false when a concurrent request claimed the free use
-  // first; that request spends one Oracle instead of serving a
-  // second free interpretation, and the response reports free: false
-  // because the interpretation was paid for.
-  let freeGranted = serverFree;
-  if (session) {
-    if (serverFree) {
-      const claimed = await markFreeInterpretationUsed(session.userId, system);
-      if (!claimed) {
-        freeGranted = false;
-        const ok = await spendUserCredits(session.userId, 1);
-        if (!ok) {
-          return NextResponse.json(
-            { error: "You need 1 Oracle for this interpretation. No Oracle was spent." },
-            { status: 402 }
-          );
-        }
-      }
-    } else {
-      const ok = await spendUserCredits(session.userId, 1);
-      if (!ok) {
-        return NextResponse.json(
-          { error: "You need 1 Oracle for this interpretation. No Oracle was spent." },
-          { status: 402 }
-        );
-      }
-    }
-    const user = await getUserById(session.userId);
-    return NextResponse.json({
-      interpretation: finalText,
-      model: generated.model,
-      fallback: false,
-      free: freeGranted,
-      credits: user?.credits ?? 0,
-    });
+  // generation can never cost a credit or consume the free use. Item 3 /
+  // Batch D (B4): the free claim (or the spend) and the reading row are ONE
+  // transaction. Phase B (R7): the free claim is atomic; a request that
+  // loses the race spends one Oracle instead (free: false). If the balance
+  // cannot cover it nothing is written and the text is withheld.
+  const systemName = system === "ziwei" ? "Ziwei" : system === "vedic" ? "Vedic" : "Western";
+  const chartSummary =
+    typeof body.chartSummary === "string" ? body.chartSummary.trim().slice(0, 500) : "";
+  const reading = {
+    id: randomUUID(),
+    createdAt: new Date().toISOString(),
+    spreadSlug: `chart-${system}`,
+    spreadName: `${systemName} chart`,
+    cards: [],
+    interpretation: finalText,
+    aiGenerated: true,
+    model: generated.model,
+    category,
+    question: question || undefined,
+    free: serverFree,
+    chartSummary: chartSummary || `${systemName} chart.`,
+  };
+  const saved = await saveReadingWithSpend(session.userId, reading, serverFree, system);
+  if (!saved.ok) {
+    return NextResponse.json(
+      { error: "You need 1 Oracle for this interpretation. No Oracle was spent." },
+      { status: 402 }
+    );
   }
-
-  // Phase B (R6): guest generation is free by design (top of
-  // funnel); the successful generation is logged so abuse is
-  // visible per route in the log drain.
-  logGuestGeneration("chart/interpret");
+  const user = await getUserById(session.userId);
   return NextResponse.json({
     interpretation: finalText,
     model: generated.model,
     fallback: false,
+    free: saved.free,
+    credits: user?.credits ?? 0,
+    reading: { ...reading, free: saved.free },
   });
 }

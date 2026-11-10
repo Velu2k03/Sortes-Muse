@@ -549,4 +549,58 @@ describe.skipIf(SKIP)("money paths on real Postgres (staging only)", () => {
     const rows = (await raw`SELECT id, data->>'free' AS free FROM readings WHERE user_id = ${user.id} ORDER BY id`) as Array<{ id: string; free: string }>;
     expect(rows).toEqual([{ id: "sws-1", free: "true" }, { id: "sws-2", free: "false" }]);
   });
+  // Batch D (B1): regression guard. The first-ever reading being a Celtic
+  // Cross (tryFree=false) spends 1 and leaves the free grant intact.
+  it("B1: first Celtic Cross spends 1 and does not consume the free grant", async () => {
+    const user = await db.createUser("bd-b1@example.com");
+    await db.addUserCredits(user.id, 3);
+    const r = (id: string) => ({ id, free: false, interpretation: "text", aiGenerated: true });
+    expect(await db.hasUsedFreeReading(user.id)).toBe(false);
+    expect(await db.saveReadingWithSpend(user.id, r("bd-cc"), false)).toEqual({ ok: true, free: false });
+    expect((await db.getUserById(user.id))?.credits).toBe(2);
+    expect(await db.hasUsedFreeReading(user.id)).toBe(false);
+    expect(await db.saveReadingWithSpend(user.id, r("bd-qi"), true)).toEqual({ ok: true, free: true });
+    expect((await db.getUserById(user.id))?.credits).toBe(2);
+  });
+
+  // Batch D (B2): the client's /api/history save with the server's id is a no-op.
+  it("B2: client re-save of a server-saved reading id leaves exactly one row", async () => {
+    const user = await db.createUser("bd-b2@example.com");
+    await db.addUserCredits(user.id, 1);
+    const r = { id: "bd-srv", free: false, interpretation: "text", aiGenerated: true };
+    expect((await db.saveReadingWithSpend(user.id, r, false)).ok).toBe(true);
+    await db.saveReadingForUser(user.id, { ...r, interpretation: "client copy" });
+    const rows = (await raw`SELECT data->>'interpretation' AS t FROM readings WHERE id = 'bd-srv'`) as Array<{ t: string }>;
+    expect(rows).toEqual([{ t: "text" }]);
+  });
+
+  // Batch D (B4): report spend + row are one transaction.
+  it("B4: saveReportWithSpend spends 1 with the row; no credit writes nothing; re-save is a no-op", async () => {
+    const user = await db.createUser("bd-b4r@example.com");
+    expect(await db.saveReportWithSpend(user.id, { id: "bd-rep-0", interpretation: "x" })).toEqual({ ok: false });
+    expect((await raw`SELECT id FROM reports WHERE user_id = ${user.id}`).length).toBe(0);
+    await db.addUserCredits(user.id, 1);
+    expect(await db.saveReportWithSpend(user.id, { id: "bd-rep-1", interpretation: "x" })).toEqual({ ok: true });
+    expect((await db.getUserById(user.id))?.credits).toBe(0);
+    await db.saveReportForUser(user.id, { id: "bd-rep-1", interpretation: "client copy" });
+    expect((await raw`SELECT id FROM reports WHERE user_id = ${user.id}`).length).toBe(1);
+    expect(await db.saveReportWithSpend(user.id, { id: "bd-rep-2", interpretation: "y" })).toEqual({ ok: false });
+    expect((await raw`SELECT id FROM reports WHERE user_id = ${user.id}`).length).toBe(1);
+  });
+
+  // Batch D (B4): chart interpretation = reading row + per-system free claim in one transaction.
+  it("B4: chart interpretation claims the per-system free use, then spends; no credit writes nothing", async () => {
+    const user = await db.createUser("bd-b4c@example.com");
+    const r = (id: string) => ({ id, free: false, interpretation: "text", aiGenerated: true });
+    expect(await db.saveReadingWithSpend(user.id, r("bd-ch-1"), true, "western")).toEqual({ ok: true, free: true });
+    expect(await db.hasUsedFreeInterpretation(user.id, "western")).toBe(true);
+    expect(await db.hasUsedFreeInterpretation(user.id, "vedic")).toBe(false);
+    expect(await db.hasUsedFreeReading(user.id)).toBe(false);
+    expect(await db.saveReadingWithSpend(user.id, r("bd-ch-2"), true, "western")).toEqual({ ok: false, free: false });
+    await db.addUserCredits(user.id, 1);
+    expect(await db.saveReadingWithSpend(user.id, r("bd-ch-3"), true, "western")).toEqual({ ok: true, free: false });
+    expect((await db.getUserById(user.id))?.credits).toBe(0);
+    const rows = (await raw`SELECT id FROM readings WHERE user_id = ${user.id} ORDER BY id`) as Array<{ id: string }>;
+    expect(rows.map((x) => x.id)).toEqual(["bd-ch-1", "bd-ch-3"]);
+  });
 });

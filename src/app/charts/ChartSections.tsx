@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import { ZIWEI_LEGEND_ZH } from "@/lib/ziwei-i18n";
 import ThemedDatePicker from "@/components/ThemedDatePicker";
 import { formatUtcOffset } from "@/lib/format-offset";
@@ -718,7 +719,7 @@ export function ChartLegend({ prefs, result }: { prefs: ChartPrefs; result: Char
 /** Focus, question, interpret, save, share, heirloom export. */
 export function InterpretationPanel({ prefs, s, result }: { prefs: ChartPrefs; s: ChartSession; result: ChartResultT }) {
   const { ziweiLang } = prefs;
-  const { focus, setFocus, question, setQuestion, interpretation, interpFallback, interpModel, interpLoading, interpError, interpFailed, interpToastOpen, setInterpToastOpen, interpFree, saved, shareBusy, displayFree, onInterpret, onSaveChart, onShareChart } = s;
+  const { focus, setFocus, question, setQuestion, interpretation, interpFallback, interpModel, interpLoading, interpError, interpFailed, interpToastOpen, setInterpToastOpen, interpFree, interpSignInNeeded, user, saved, shareBusy, displayFree, onInterpret, onSaveChart, onShareChart } = s;
   return (
   <section id="chart-interpretation" className="mt-10 scroll-mt-24 rounded-3xl border border-gold/25 bg-panel/70 p-6" aria-label="Chart interpretation">
     <h3 className="font-display text-2xl text-goldbright">{result.system === "ziwei" && ziweiLang === "zh" ? "解读" : "Interpretation"}</h3>
@@ -789,9 +790,18 @@ export function InterpretationPanel({ prefs, s, result }: { prefs: ChartPrefs; s
         </button>
       </div>
     )}
-    <button type="button" onClick={onInterpret} disabled={interpLoading} className="btn-gold mt-5 rounded-full px-6 py-3 text-sm font-bold disabled:opacity-100 disabled:saturate-50">
-      {interpLoading ? "Interpreting…" : displayFree ? "Get interpretation (free)" : "Get interpretation (1 Oracle)"}
-    </button>
+    {!user || interpSignInNeeded ? (
+      <p className="mt-5 text-sm text-cream">
+        Interpretations need an account so they are saved to it.{" "}
+        <Link href="/account" className="font-semibold text-goldbright underline">
+          Sign in to get your interpretation
+        </Link>
+      </p>
+    ) : (
+      <button type="button" onClick={onInterpret} disabled={interpLoading} className="btn-gold mt-5 rounded-full px-6 py-3 text-sm font-bold disabled:opacity-100 disabled:saturate-50">
+        {interpLoading ? "Interpreting…" : displayFree ? "Get interpretation (free)" : "Get interpretation (1 Oracle)"}
+      </button>
+    )}
     {interpretation && (
       <div className="mt-6">
         <p className="text-xs uppercase tracking-widest text-gold">
