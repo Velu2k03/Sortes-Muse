@@ -81,8 +81,8 @@ function sslEnv(dbUrl) {
   return { ...process.env, ...(mode ? { PGSSLMODE: mode } : {}) };
 }
 
-function run(cmd, args, dbUrl) {
-  const res = spawnSync(cmd, args, { stdio: "inherit", env: sslEnv(dbUrl) });
+function run(cmd, args, env) {
+  const res = spawnSync(cmd, args, { stdio: "inherit", env });
   if (res.status !== 0) {
     console.error(`restore: ${cmd} failed (status ${res.status})`);
     process.exit(1);
@@ -101,7 +101,7 @@ if (create) {
     process.exit(1);
   }
   if (res.stdout.trim() !== "1") {
-    run("psql", [maintUrl, "-c", `CREATE DATABASE "${dbName.replace(/"/g, '""')}"`], maintUrl);
+    run("psql", [maintUrl, "-c", `CREATE DATABASE "${dbName.replace(/"/g, '""')}"`], sslEnv(maintUrl));
   } else {
     console.log("restore: target database already exists");
   }
@@ -165,5 +165,5 @@ SELECT 'free_interpretations', count(*) FROM free_interpretations UNION ALL
 SELECT 'schema_migrations', count(*) FROM schema_migrations
 ORDER BY 1;`;
 console.log("restore: row counts in the restored database:");
-run("psql", [target, "-c", verifySql.trim()], target);
+run("psql", [target, "-c", verifySql.trim()], sslEnv(target));
 console.log("restore: OK - verify the counts above against the source before using this database.");
