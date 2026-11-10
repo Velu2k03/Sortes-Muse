@@ -269,14 +269,14 @@ above). **Risk if left undone at launch: HIGH** for `users` and
 
 ## 7. AUTH_SECRET — production environment variable
 
+**Status: DONE (set in Vercel Production and redeployed 2026-11-10;
+the fallback was deleted in item 9).**
+
 **What it is:** the dedicated secret that signs Sortes' own session
-cookies. The fallback chain in `src/lib/auth.ts` is
-`AUTH_SECRET → SUPABASE_JWT_SECRET` (AF-005, 2026-11-08: the
-`NEXTAUTH_SECRET` alias was removed from the chain). Production
-currently has only `SUPABASE_JWT_SECRET` set, so sessions work
-today — but that secret also signs Supabase tokens, so sharing it
-means a Supabase secret rotation invalidates every Sortes session
-and a leak compromises both systems.
+cookies. `secret()` in `src/lib/auth.ts` reads `AUTH_SECRET` only.
+There is no fallback: `SUPABASE_JWT_SECRET` and `NEXTAUTH_SECRET` are
+not read. In production a missing `AUTH_SECRET` throws
+`AUTH_SECRET is required in production.`
 
 **How to generate it (owner or dashboard task, never in chat):**
 
@@ -291,24 +291,16 @@ Development (Preview has its own staging value already generated in
 `hidden_files/staging-preview-env.md`). Do NOT set `DATABASE_URL`
 or `NEXTAUTH_SECRET` (aliases; see `docs/ENVIRONMENT.md`).
 
-**What breaks without it:** nothing today — the fallback chain
-covers it. Adding it changes one user-visible thing: `secret()` in
-`src/lib/auth.ts` picks the FIRST secret present in the chain, and
-verification uses that single secret — so sessions signed with
-`SUPABASE_JWT_SECRET` stop verifying once `AUTH_SECRET` is set, and
-those users are signed out and sign in again. That is the only
-effect, and it is acceptable: sessions are 30-day cookies and
-re-sign-in is the normal path. Confirm this behaviour in the preview
-deployment (sign in before setting the staging `AUTH_SECRET`, then
-set it and confirm the old session is rejected) before applying to
-production.
+**What breaks without it:** every sign-in and session check fails
+loudly in production (no silent fallback). Setting it the first time
+signed out every user whose cookie used the old secret; they signed in
+again.
 
 **Rotation notes:** rotating `AUTH_SECRET` invalidates sessions
 signed with the old value; users simply sign in again. Rotate by
 generating a new value and replacing it in Vercel Production, then
 redeploying (a redeploy is required for the new value to take
-effect). Never rotate `SUPABASE_JWT_SECRET` and `AUTH_SECRET` at
-the same time.
+effect). Rotation does not touch `SUPABASE_JWT_SECRET`.
 
 **Risk of adding it: LOW.** Risk of never adding it: **MEDIUM**
 (key reuse across two systems; a Supabase rotation silently logs
