@@ -572,7 +572,7 @@ describe.skipIf(SKIP)("money paths on real Postgres (staging only)", () => {
     const r = { id: tu("bd-srv"), free: false, interpretation: "text", aiGenerated: true };
     expect((await db.saveReadingWithSpend(user.id, r, false)).ok).toBe(true);
     await db.saveReadingForUser(user.id, { ...r, interpretation: "client copy" });
-    const rows = (await raw`SELECT data->>'interpretation' AS t FROM readings WHERE id = ${tu(tu("bd-srv"))}`) as Array<{ t: string }>;
+    const rows = (await raw`SELECT data->>'interpretation' AS t FROM readings WHERE id = ${tu("bd-srv")}`) as Array<{ t: string }>;
     expect(rows).toEqual([{ t: "text" }]);
   });
 
@@ -599,7 +599,7 @@ describe.skipIf(SKIP)("money paths on real Postgres (staging only)", () => {
     expect((await db.getUserById(user.id))?.credits).toBe(1);
     expect(await db.saveReadingWithSpend(user.id, r, false)).toEqual({ ok: true, free: false, existing: true });
     expect((await db.getUserById(user.id))?.credits).toBe(1);
-    expect((await raw`SELECT id FROM readings WHERE id = ${tu(tu("p1-r1"))}`).length).toBe(1);
+    expect((await raw`SELECT id FROM readings WHERE id = ${tu("p1-r1")}`).length).toBe(1);
     // A replayed free reading does not claim the free grant a second time.
     const fu = await db.createUser("p1-free@example.com");
     const f = { id: tu("p1-f1"), free: true, interpretation: "text", aiGenerated: true };
@@ -614,7 +614,7 @@ describe.skipIf(SKIP)("money paths on real Postgres (staging only)", () => {
     expect(await db.saveReportWithSpend(user.id, rep)).toEqual({ ok: true });
     expect(await db.saveReportWithSpend(user.id, rep)).toEqual({ ok: true, existing: true });
     expect((await db.getUserById(user.id))?.credits).toBe(1);
-    expect((await raw`SELECT id FROM reports WHERE id = ${tu(tu("p1-rep1"))}`).length).toBe(1);
+    expect((await raw`SELECT id FROM reports WHERE id = ${tu("p1-rep1")}`).length).toBe(1);
   });
 
   // Point 2: an insert that writes 0 rows (id owned by another user) must roll
@@ -630,7 +630,7 @@ describe.skipIf(SKIP)("money paths on real Postgres (staging only)", () => {
     ).toEqual({ ok: false, free: false, conflict: true });
     expect((await db.getUserById(other.id))?.credits).toBe(1);
     expect(await db.hasUsedFreeReading(other.id)).toBe(false);
-    expect((await raw`SELECT user_id FROM readings WHERE id = ${tu(tu("p2-taken"))}`).map((x) => x.user_id)).toEqual([owner.id]);
+    expect((await raw`SELECT user_id FROM readings WHERE id = ${tu("p2-taken")}`).map((x) => x.user_id)).toEqual([owner.id]);
   });
 
   it("Point 2: a 0-row report insert rolls back the spend", async () => {
@@ -687,7 +687,7 @@ describe.skipIf(SKIP)("money paths on real Postgres (staging only)", () => {
     const held = new Promise<void>((r) => (release = r));
     const winner = raw.begin(async (tx) => {
       await tx`INSERT INTO readings (id, user_id, data, created_at)
-        VALUES (${id}, ${user.id}, ${JSON.stringify({ id, free: false, interpretation: "winner" })}::jsonb, NOW())`;
+        VALUES (${id}, ${user.id}, ${tx.json({ id, free: false, interpretation: "winner" })}, NOW())`;
       await held;
     });
     await new Promise((r) => setTimeout(r, 300));
@@ -708,7 +708,7 @@ describe.skipIf(SKIP)("money paths on real Postgres (staging only)", () => {
     const held = new Promise<void>((r) => (release = r));
     const winner = raw.begin(async (tx) => {
       await tx`INSERT INTO reports (id, user_id, data, created_at)
-        VALUES (${id}, ${user.id}, ${JSON.stringify({ id, interpretation: "winner" })}::jsonb, NOW())`;
+        VALUES (${id}, ${user.id}, ${tx.json({ id, interpretation: "winner" })}, NOW())`;
       await held;
     });
     await new Promise((r) => setTimeout(r, 300));
