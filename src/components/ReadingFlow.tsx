@@ -30,21 +30,36 @@ export default function ReadingFlow({ slug }: { slug: string }) {
   const spread: Spread = useMemo(() => getSpread(slug), [slug]);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [usedFree, setUsedFree] = useState(false);
-  const { credits, user, freeReadingAvailable } = useAuth();
+  const { credits, user, freeReadingAvailable, authFailed, loading: authLoading } = useAuth();
 
   useEffect(() => {
     queueMicrotask(() => setUsedFree(freeReadingUsed()));
   }, []);
+  // Re-check fix: the session flag is read in a mount effect, not
+  // during render. The server renders without it, so reading it during
+  // render would hydrate mismatched ("Free" on the server, "1 Oracle"
+  // on the client).
+  const [hadSession, setHadSession] = useState(false);
+  useEffect(() => {
+    queueMicrotask(() => setHadSession(deviceHeldSession()));
+  }, []);
 
   // Batch 1 (C1): signed-in users are decided by the server record,
-  // guests by the device flag. See src/lib/free-reading.ts.
-  const isFreeAvailable = isFreeAvailableFor({
-    slug: spread.slug,
-    signedIn: !!user,
-    serverFree: freeReadingAvailable,
-    deviceFree: !usedFree,
-    hadSession: deviceHeldSession(),
-  });
+  // guests by the device flag. See src/lib/free-reading.ts. While auth
+  // is still loading the state is unknown, so the label fails closed
+  // instead of showing "Free" from the device flag for up to one /me
+  // round trip. The intake gate waits on authLoading, so nothing
+  // spends in that window either way.
+  const isFreeAvailable =
+    !authLoading &&
+    isFreeAvailableFor({
+      slug: spread.slug,
+      signedIn: !!user,
+      serverFree: freeReadingAvailable,
+      deviceFree: !usedFree,
+      hadSession,
+      authFailed,
+    });
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">

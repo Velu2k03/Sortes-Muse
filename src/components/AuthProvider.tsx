@@ -40,6 +40,11 @@ interface AuthContextValue {
       device flag instead. Batch 1 (C1): the free label follows the
       server record, not the device flag. */
   freeReadingAvailable: boolean | null;
+  /** True when the last /api/auth/me call failed (non-OK response or
+      network error). Distinct from loadError: a 429/5xx leaves
+      loadError false, but the auth state is still unknown, so the
+      free label must not fall back to the device flag. Batch 1 (C1). */
+  authFailed: boolean;
   refresh: () => Promise<void>;
   /** Re-read only the free-reading flag from /api/auth/me. A failure
       leaves the last known value in place instead of signing the user
@@ -76,14 +81,22 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 const MIGRATED_KEY = "sortes-migrated-v1";
 
+/** Batch 1 (C1, review fix): "migration done" (MIGRATED_KEY) and "this
+    device held a session" are two different facts and must stay two
+    keys. MIGRATED_KEY is set only when the guest-history migration
+    succeeds, so a failed sync retries on the next refresh. This key
+    is set on any confirmed session, so the free label can tell
+    "signed out" from "auth state unknown". */
+const HAD_SESSION_KEY = "sortes-had-session";
+
 /** Batch 1 (C1, review finding 5): true when this device held a
-    signed-in session before. The key is set on a successful sign-in
-    migration and removed on sign-out and on an expired session, so a
-    device that never signed in reads false and the device free flag
-    stays its only record. */
+    signed-in session before. The key is set on a confirmed session
+    and removed on sign-out and on an expired session, so a device
+    that never signed in reads false and the device free flag stays
+    its only record. */
 export function deviceHeldSession(): boolean {
   try {
-    return typeof window !== "undefined" && localStorage.getItem(MIGRATED_KEY) === "1";
+    return typeof window !== "undefined" && localStorage.getItem(HAD_SESSION_KEY) === "1";
   } catch {
     return false;
   }
@@ -169,6 +182,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [credits, setCredits] = useState<number | null>(null);
   const [freeReadingAvailable, setFreeReadingAvailable] = useState<boolean | null>(null);
+  const [authFailed, setAuthFailed] = useState(false);
   const [loadError, setLoadError] = useState(false);
 
   const refresh = useCallback(async () => {
@@ -185,30 +199,63 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setFreeReadingAvailable(
           typeof data.user.freeReadingAvailable === "boolean" ? data.user.freeReadingAvailable : null
         );
+        setAuthFailed(false);
         if (!localStorage.getItem(MIGRATED_KEY)) {
           const merged = await migrateGuestData(deadline);
           setCredits(merged);
         } else {
           setCredits(data.user.credits ?? null);
         }
-        // Opus review (non-blocking 2): a confirmed session means this
-        // device held one, even when the guest-history migration above
-        // failed. Without this, hadSession reads false for a signed-in
-        // device and a later failed /me falls back to the device flag.
-        localStorage.setItem(MIGRATED_KEY, "1");
+        // A confirmed session means this device held one, even when
+        // the guest-history migration above failed. The key is what
+        // the free label uses to tell "signed out" from "auth state
+        // unknown". It is deliberately NOT MIGRATED_KEY: setting that
+        // key here would skip the migration retry on the next refresh
+        // and the guest journal would never sync.
+        try {
+          localStorage.setItem(HAD_SESSION_KEY, "1");
+        } catch {
+          // Full quota or private mode: the key is a display hint
+          // only, and the server still decides the free label, so a
+          // failed write must not sign the user out via the catch below.
+        }
       } else {
-        // MIGRATED_KEY marks a device that held a signed-in session, so
+        // Either key marks a device that held a signed-in session, so
         // an explicit {user:null} 200 is an expired session: drop the
-        // previous user's local data. A network failure (catch below),
-        // a 429/5xx, or an unparseable body keeps it.
-        if (res.ok && data.user === null && localStorage.getItem(MIGRATED_KEY)) {
-          clearLocalAccountData();
+        // previous user's session state. A network failure (catch
+        // below), a 429/5xx, or an unparseable body keeps it. Gating
+        // on MIGRATED_KEY alone would strand HAD_SESSION_KEY when the
+        // migration had failed, and the device would read as "unknown"
+        // forever, hiding "Free" from a genuine guest.
+        if (
+          res.ok &&
+          data.user === null &&
+          (localStorage.getItem(MIGRATED_KEY) || localStorage.getItem(HAD_SESSION_KEY))
+        ) {
+          // Only wipe local data when the journal already synced to
+          // the server (MIGRATED_KEY set). When only HAD_SESSION_KEY
+          // is set the history sync failed, so the local journal is
+          // the only copy and wiping it would destroy readings that
+          // never uploaded. Both keys are removed either way, so the
+          // stranded-key problem is still fixed and the next refresh
+          // retries the migration.
+          if (localStorage.getItem(MIGRATED_KEY)) {
+            clearLocalAccountData();
+          }
           localStorage.removeItem(MIGRATED_KEY);
+          localStorage.removeItem(HAD_SESSION_KEY);
           // Full navigation drops in-memory state too (item 5). No loop:
-          // MIGRATED_KEY is gone, so this branch cannot fire again.
+          // both keys are gone, so this branch cannot fire again.
           // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- full reload on purpose: router.push would keep in-memory state
           window.location.assign("/");
         }
+        // A non-OK /me (429, 5xx) or a body with no user key at all is
+        // not a confirmed sign-out: the session cookie may still be
+        // valid, so the auth state is unknown and the free label must
+        // not fall back to the device flag. loadError stays false here
+        // (it is only for network errors and timeouts), so authFailed
+        // carries it instead. A confirmed {user:null} 200 clears it.
+        setAuthFailed(!res.ok || data.user === undefined);
         setUser(null);
         setFreeReadingAvailable(null);
         setCredits(getCredits());
@@ -220,6 +267,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // so the header and account page never spin forever (P0-1).
       setUser(null);
       setFreeReadingAvailable(null);
+      setAuthFailed(true);
       setCredits(getCredits());
       setLoadError(true);
     } finally {
@@ -265,9 +313,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // silently re-establish a Sortes session on the next visit.
     await getSupabaseBrowser()?.auth.signOut().catch(() => {});
     localStorage.removeItem(MIGRATED_KEY);
+    localStorage.removeItem(HAD_SESSION_KEY);
     clearLocalAccountData();
     setUser(null);
     setFreeReadingAvailable(null);
+    setAuthFailed(false);
     setCredits(getCredits());
     // clearLocalAccountData empties localStorage, not React state already
     // in memory (a reading on screen). A full navigation drops both (item 5).
@@ -378,7 +428,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, loading, loadError, credits, freeReadingAvailable, refresh, refreshFreeStatus, signOut, spend, add, persistReading, updateReading, deleteReading, afterSignIn }}
+      value={{ user, loading, loadError, credits, freeReadingAvailable, authFailed, refresh, refreshFreeStatus, signOut, spend, add, persistReading, updateReading, deleteReading, afterSignIn }}
     >
       {children}
     </AuthContext.Provider>

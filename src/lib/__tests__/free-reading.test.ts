@@ -53,6 +53,19 @@ describe("isFreeAvailableFor", () => {
     ).toBe(false);
   });
 
+  it("a failed /me on a fresh device fails closed even with no session key", () => {
+    expect(
+      isFreeAvailableFor({
+        slug: "quick-insight",
+        signedIn: false,
+        serverFree: null,
+        deviceFree: true,
+        hadSession: false,
+        authFailed: true,
+      })
+    ).toBe(false);
+  });
+
   it("no prior session is a genuine guest: the device flag decides", () => {
     expect(
       isFreeAvailableFor({

@@ -34,7 +34,7 @@ export type Step = "category" | "form" | "confirm" | "impression" | "processing"
 export function useIntakeFlow(slug: string) {
   const router = useRouter();
   const spread = useMemo(() => getSpread(slug), [slug]);
-  const { credits, persistReading, user, loading: authLoading, refresh, freeReadingAvailable, refreshFreeStatus } = useAuth();
+  const { credits, persistReading, user, loading: authLoading, refresh, freeReadingAvailable, authFailed, refreshFreeStatus } = useAuth();
   const [step, setStep] = useState<Step>("category");
   const [categoryKey, setCategoryKey] = useState<string | null>(null);
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -69,19 +69,39 @@ export function useIntakeFlow(slug: string) {
   useEffect(() => {
     queueMicrotask(() => setUsedFree(freeReadingUsed()));
   }, []);
-  const isFreeAvailable = isFreeAvailableFor({
-    slug: spread.slug,
-    signedIn: !!user,
-    serverFree: freeReadingAvailable,
-    deviceFree: !usedFree,
-    hadSession: deviceHeldSession(),
-  });
-  // Opus review (non-blocking 3): the free status is known when
-  // signed in and the server value arrived, or always for guests
-  // (the device flag is their record). When it is unknown, the credit
-  // gates below do not block: the server may grant the free reading,
-  // and answers 402 with a clear message if not.
-  const freeStatusKnown = user ? freeReadingAvailable !== null : true;
+  // Re-check fix: the session flag is read in a mount effect, not
+  // during render. The server renders without it, so reading it during
+  // render would hydrate mismatched ("Free" on the server, "1 Oracle"
+  // on the client).
+  const [hadSession, setHadSession] = useState(false);
+  useEffect(() => {
+    queueMicrotask(() => setHadSession(deviceHeldSession()));
+  }, []);
+  // Re-check 3 (N2): while auth is still loading the state is
+  // unknown, so the label fails closed. Without this, a signed-in
+  // user with a valid cookie but no session key yet (every existing
+  // user on first load after deploy) sees "Free" from the device
+  // flag, and the intake gate lets them through without waiting.
+  const isFreeAvailable =
+    !authLoading &&
+    isFreeAvailableFor({
+      slug: spread.slug,
+      signedIn: !!user,
+      serverFree: freeReadingAvailable,
+      deviceFree: !usedFree,
+      hadSession,
+      authFailed,
+    });
+  // Opus review (non-blocking 3) and re-check: the free status is
+  // known when signed in and the server value arrived, or always for
+  // guests (the device flag is their record). When it is unknown --
+  // signed in with no server value, or not signed in with a prior
+  // session or a failed /me -- the credit gates below do not block:
+  // the server may grant the free reading, and answers 402 with a
+  // clear message if not.
+  const freeStatusKnown = user
+    ? freeReadingAvailable !== null
+    : !(hadSession || authFailed);
   // Batch 1 (C1, review finding 6): re-read the flag when the cost is
   // about to be shown or acted on, so a free reading used in another
   // tab or device does not leave this tab promising "Free" while the

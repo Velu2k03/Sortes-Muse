@@ -4,8 +4,9 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { useAuth } from "@/components/AuthProvider";
+import { useAuth, deviceHeldSession } from "@/components/AuthProvider";
 import { freeReadingUsed } from "@/lib/storage";
+import { isFreeAvailableFor } from "@/lib/free-reading";
 import CountUp from "@/components/CountUp";
 import Icon from "@/components/Icon";
 import BranchedMenu, { type BranchedMenuItem } from "@/components/BranchedMenu";
@@ -75,7 +76,7 @@ function syncThemeColor(theme: "dark" | "light"): void {
 }
 
 export default function Header() {
-  const { credits, user, loadError, refresh } = useAuth();
+  const { credits, user, loadError, refresh, freeReadingAvailable, authFailed } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
   // Deep pages highlight their parent section: a reading detail
@@ -93,16 +94,23 @@ export default function Header() {
   const [openGroup, setOpenGroup] = useState<number | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   // AF-014: a guest with 0 Oracles and an unused free reading sees
-  // "1 free reading" in the pill instead of "0 Oracles". Read on
-  // mount and whenever the tab regains focus or the wallet changes,
-  // so using the free reading elsewhere updates the pill.
-  const [freeAvailable, setFreeAvailable] = useState(false);
+  // "1 free reading" in the pill instead of "0 Oracles". The device
+  // flags are read on mount and whenever the tab regains focus or the
+  // wallet changes, so using the free reading elsewhere updates the
+  // pill. Batch 1 (C1): the pill goes through isFreeAvailableFor,
+  // never the raw device flag, so a signed-in user whose /me failed
+  // (user null, credits 0 after migration) does not see "Free" from
+  // a device flag that was never used on this device.
+  const [deviceFree, setDeviceFree] = useState(false);
+  const [hadSession, setHadSession] = useState(false);
   useEffect(() => {
     const syncFree = () => {
       try {
-        setFreeAvailable(!freeReadingUsed());
+        setDeviceFree(!freeReadingUsed());
+        setHadSession(deviceHeldSession());
       } catch {
-        setFreeAvailable(false);
+        setDeviceFree(false);
+        setHadSession(false);
       }
     };
     syncFree();
@@ -113,6 +121,14 @@ export default function Header() {
       window.removeEventListener("sortes:credits-changed", syncFree);
     };
   }, []);
+  const freeAvailable = isFreeAvailableFor({
+    slug: "quick-insight",
+    signedIn: !!user,
+    serverFree: freeReadingAvailable,
+    deviceFree,
+    hadSession,
+    authFailed,
+  });
   // AF-038: an open desktop dropdown closes on scroll, so it never
   // covers the page while the visitor reads on.
   useEffect(() => {

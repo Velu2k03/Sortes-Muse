@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { useCanHide } from "@/lib/use-mounted";
 import { SPREADS } from "@/lib/tarot";
@@ -35,18 +35,36 @@ export default function SpreadsPage() {
     setPickedSlug(slug);
     document.getElementById(`spread-${slug}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
   };
-  const { credits, user, freeReadingAvailable } = useAuth();
-  const usedFree = typeof window !== "undefined" && freeReadingUsed();
+  const { credits, user, freeReadingAvailable, authFailed, loading: authLoading } = useAuth();
+  // Re-check fix: the session flag and the device free flag are read
+  // in a mount effect, not during render. The server renders without
+  // them, so reading them during render would hydrate mismatched
+  // ("Free" on the server, "1 Oracle" on the client).
+  const [usedFree, setUsedFree] = useState(false);
+  const [hadSession, setHadSession] = useState(false);
+  useEffect(() => {
+    queueMicrotask(() => {
+      setUsedFree(freeReadingUsed());
+      setHadSession(deviceHeldSession());
+    });
+  }, []);
   const balance = credits ?? 0;
   // Batch 1 (C1): signed-in users are decided by the server record,
   // guests by the device flag. See src/lib/free-reading.ts.
-  const freeAvailable = isFreeAvailableFor({
-    slug: "quick-insight",
-    signedIn: !!user,
-    serverFree: freeReadingAvailable,
-    deviceFree: !usedFree,
-    hadSession: deviceHeldSession(),
-  });
+  // While auth is still loading the state is unknown, so the label
+  // fails closed instead of showing "Free" from the device flag for
+  // up to one /me round trip. Every "Free" label below reads this
+  // value, never the raw device flag.
+  const freeAvailable =
+    !authLoading &&
+    isFreeAvailableFor({
+      slug: "quick-insight",
+      signedIn: !!user,
+      serverFree: freeReadingAvailable,
+      deviceFree: !usedFree,
+      hadSession,
+      authFailed,
+    });
 
   const canBegin = (slug: string) =>
     slug === "quick-insight" ? freeAvailable || balance >= 1 : balance >= 1;
@@ -74,7 +92,7 @@ export default function SpreadsPage() {
       {/* Personal Phase 3: first-time guidance. The grid alone gives
           six equal choices; a new user needs one obvious start. This
           banner is a link only, it changes no gate, cost, or spread. */}
-      {!usedFree && (
+      {freeAvailable && (
         <div className="mx-auto mt-8 max-w-2xl rounded-3xl border border-gold/25 bg-panel/60 p-6 text-center">
           <p className="font-display text-2xl text-goldbright">
             Start here, it is free
@@ -103,7 +121,7 @@ export default function SpreadsPage() {
           // Codex re-review, correct: once the free reading is
           // used, Quick Insight costs 1 Oracle, so the picker
           // must stop advertising it as free.
-          { label: usedFree ? "Quick Insight" : "Free first reading", slug: "quick-insight" },
+          { label: freeAvailable ? "Free first reading" : "Quick Insight", slug: "quick-insight" },
         ].map((o) => (
           <button
             key={o.slug}
@@ -150,7 +168,7 @@ export default function SpreadsPage() {
               <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
                 <h2 className="min-w-0 flex-1 break-words font-display text-3xl text-cream">{s.name}</h2>
                 <p className="shrink-0 whitespace-nowrap font-display text-xl text-goldbright">
-                  {s.slug === "quick-insight" && !usedFree ? "Free" : (<><span className="font-body">1</span> Oracle</>)}
+                  {s.slug === "quick-insight" && freeAvailable ? "Free" : (<><span className="font-body">1</span> Oracle</>)}
                 </p>
               </div>
               <p className="mt-1 text-xs uppercase tracking-[0.2em] text-mist">
@@ -189,7 +207,7 @@ export default function SpreadsPage() {
                   href={`/spreads/${s.slug}`}
                   className="btn-ghost mt-4 block rounded-xl border border-gold/30 px-4 py-3 text-center font-semibold"
                 >
-                  {s.slug === "quick-insight" && !usedFree ? "Start my free reading" : "Begin reading"}
+                  {s.slug === "quick-insight" && freeAvailable ? "Start my free reading" : "Begin reading"}
                   <span className="sr-only">: {s.name}</span>
                 </Link>
               )}
