@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getReading, saveReading, updateReading as updateLocalReading } from "@/lib/storage";
+import { getReading, saveReading, updateReading as updateLocalReading, pendingAttemptId, clearPendingAttemptId } from "@/lib/storage";
 import type { Reading } from "@/lib/types";
 import { postFollowUp } from "@/lib/follow-up-client";
 import { useAuth } from "@/components/AuthProvider";
@@ -114,6 +114,33 @@ export function useFollowUp(reading: Reading | null | undefined, setReading: Set
   const [followUpFailed, setFollowUpFailed] = useState(false);
   const [followUpToastOpen, setFollowUpToastOpen] = useState(false);
 
+  // Batch 1 (C2): after a failure, re-read the server copy before the
+  // button re-enables. A dropped connection can hide a follow-up the
+  // server already saved; the refresh surfaces it, so the button label
+  // (free vs 1 Oracle) and the thread state come from the server, not
+  // the stale local copy. Tri-state on purpose: "saved" and "not-saved"
+  // are proven, "unknown" means the check itself failed, and the UI
+  // must not claim "No Oracle was spent" on unknown. The match is on
+  // the attempt id ONLY: matching on question text would mistake an
+  // older answer to the same question for this attempt.
+  type ServerRefresh = "saved" | "not-saved" | "unknown";
+  const refreshFromServer = async (attemptId: string): Promise<ServerRefresh> => {
+    if (!reading) return "unknown";
+    try {
+      const res = await fetch("/api/history");
+      if (!res.ok) return "unknown";
+      const d = await res.json();
+      const found = (d.readings ?? []).find((r: { id: string }) => r.id === reading.id) as Reading | undefined;
+      if (!found) return "unknown";
+      const saved = updateLocalReading(reading.id, { followUps: found.followUps ?? [] });
+      setReading(saved ?? found);
+      const list = (found.followUps ?? []) as Array<{ id?: string }>;
+      return list.some((f) => f.id === attemptId) ? "saved" : "not-saved";
+    } catch {
+      return "unknown";
+    }
+  };
+
   // Phase D: extracted from the Ask button so the plain retry
   // button and the toast action can run the same call.
   const askFollowUp = async () => {
@@ -134,20 +161,68 @@ export function useFollowUp(reading: Reading | null | undefined, setReading: Set
       return;
     }
 
+    // Batch 1 (C2): one attempt id per question, reused by retries and
+    // across a reload (6h TTL), so a retry after a lost response replays
+    // the saved answer instead of generating and spending a duplicate.
+    // Cleared on success; kept on failure.
+    const attemptScope = `follow-up:${reading.id}`;
+    const attemptId = pendingAttemptId(attemptScope, q);
+
     try {
-      const { res, data } = await postFollowUp(reading, q);
+      const { res, data } = await postFollowUp(reading, q, { followUpId: attemptId });
 
       if (!res.ok) {
-        // Phase D: every failure message states that no Oracle was
-        // spent (the route spends only after success; guests are
-        // refunded above), but only a genuine call failure gets the
-        // toast and retry UI. A 402 is a balance stop.
-        const msg = data.error || "Something went wrong. Please try again.";
-        setFollowUpError(msg.includes("spent") ? msg : `${msg} No Oracle was spent.`);
-        if (res.status !== 402 && res.status !== 401) {
+        // Phase D: a 402 is a balance stop, told to top up, not to
+        // retry. A 401 is an expired session. Both are definitive.
+        if (res.status === 402 || res.status === 401) {
+          const msg = data.error || "Something went wrong. Please try again.";
+          setFollowUpError(msg.includes("spent") ? msg : `${msg} No Oracle was spent.`);
+          setFollowUpLoading(false);
+          return;
+        }
+        // Ambiguous failures only: a 5xx with no server error body
+        // may hide a follow-up the server saved before the response
+        // was lost, so check before re-enabling the button. A 5xx
+        // that carries a server error body ("No Oracle was spent"),
+        // a 409 limit, and a 400 are definitive: no extra history
+        // call, just the server message.
+        if (res.status >= 500 && !data.error) {
+          const state = await refreshFromServer(attemptId);
+          if (state === "saved") {
+            clearPendingAttemptId(attemptScope);
+            setFollowUpError(null);
+            setFollowUpFailed(false);
+            setFollowUpToastOpen(false);
+            setFollowUpQ("");
+            await refresh();
+            setFollowUpLoading(false);
+            return;
+          }
+          if (state === "unknown") {
+            setFollowUpError(
+              "We could not confirm whether your follow-up was saved. Retrying is safe: the same request will not charge twice."
+            );
+            setFollowUpFailed(true);
+            setFollowUpToastOpen(true);
+            setFollowUpLoading(false);
+            return;
+          }
+          // "not-saved": the follow-up was not saved YET at check
+          // time. The server may still be generating, so do not claim
+          // no spend; the retry is safe either way, because the
+          // attempt id replays a later save instead of charging twice.
+          setFollowUpError(
+            "Your follow-up was not saved yet. Please try again. Retrying is safe: the same request will not charge twice."
+          );
           setFollowUpFailed(true);
           setFollowUpToastOpen(true);
+          setFollowUpLoading(false);
+          return;
         }
+        const msg = data.error || "Something went wrong. Please try again.";
+        setFollowUpError(msg.includes("spent") ? msg : `${msg} No Oracle was spent.`);
+        setFollowUpFailed(true);
+        setFollowUpToastOpen(true);
         setFollowUpLoading(false);
         return;
       }
@@ -170,13 +245,35 @@ export function useFollowUp(reading: Reading | null | undefined, setReading: Set
         await refresh();
       }
 
+      clearPendingAttemptId(attemptScope);
       setFollowUpQ("");
     } catch {
-      setFollowUpError(
-        "Could not reach the server. Please try again. No Oracle was spent."
-      );
-      setFollowUpFailed(true);
-      setFollowUpToastOpen(true);
+      // A network drop or an unparseable body (a gateway 502/504
+      // returns HTML, so res.json() throws in postFollowUp): genuinely
+      // ambiguous, so check the server before offering the retry.
+      const state = await refreshFromServer(attemptId);
+      if (state === "saved") {
+        clearPendingAttemptId(attemptScope);
+        setFollowUpError(null);
+        setFollowUpFailed(false);
+        setFollowUpToastOpen(false);
+        setFollowUpQ("");
+        await refresh();
+      } else if (state === "unknown") {
+        setFollowUpError(
+          "We could not confirm whether your follow-up was saved. Retrying is safe: the same request will not charge twice."
+        );
+        setFollowUpFailed(true);
+        setFollowUpToastOpen(true);
+      } else {
+        // "not-saved": the follow-up was not saved YET at check time;
+        // the server may still be generating, so do not claim no spend.
+        setFollowUpError(
+          "Could not reach the server. Your follow-up was not saved yet. Please try again. Retrying is safe: the same request will not charge twice."
+        );
+        setFollowUpFailed(true);
+        setFollowUpToastOpen(true);
+      }
     } finally {
       setFollowUpLoading(false);
     }

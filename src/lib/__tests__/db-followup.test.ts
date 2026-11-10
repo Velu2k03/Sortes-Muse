@@ -132,4 +132,82 @@ describe.skipIf(hasPostgres)("appendFollowUpWithSpend (local JSON branch)", () =
     expect(stored.followUps?.[0].free).toBe(true);
     expect(stored.followUps?.[1].free).toBe(false);
   });
+
+  // Batch 1 (C2): a retry with the same attempt id replays the saved
+  // follow-up: one row, one spend, replayed: true.
+  it("replays an append with the same followUpId without appending or spending twice", async () => {
+    const user = await createUser("followup-replay@example.com");
+    await addUserCredits(user.id, 2);
+    await saveReadingForUser(user.id, { id: "r-replay", question: "q?" });
+    const attemptId = "11111111-2222-3333-4444-555555555555";
+
+    const first = await appendFollowUpWithSpend(
+      user.id,
+      "r-replay",
+      { question: "q1", answer: "a1", free: false },
+      1,
+      3,
+      false,
+      attemptId
+    );
+    expect(first.ok).toBe(true);
+    expect((await getUserById(user.id))?.credits).toBe(1);
+
+    const retry = await appendFollowUpWithSpend(
+      user.id,
+      "r-replay",
+      { question: "q1", answer: "a1-regenerated", free: false },
+      1,
+      3,
+      false,
+      attemptId
+    );
+    expect(retry.ok).toBe(true);
+    expect(retry.replayed).toBe(true);
+    expect(retry.followUps).toHaveLength(1);
+    expect((await getUserById(user.id))?.credits).toBe(1);
+
+    const stored = (await getReadingForUser(user.id, "r-replay")) as {
+      followUps?: Array<{ question: string; answer: string; id?: string }>;
+    };
+    expect(stored.followUps).toHaveLength(1);
+    expect(stored.followUps?.[0].answer).toBe("a1");
+    expect(stored.followUps?.[0].id).toBe(attemptId);
+  });
+
+  // Batch 1 (C2, review finding 8): the attempt id is bound to the
+  // question. The same id with a different question is a mismatch,
+  // not a replay, and spends nothing.
+  it("a retry with the same followUpId but a different question is a mismatch", async () => {
+    const user = await createUser("followup-mismatch@example.com");
+    await addUserCredits(user.id, 2);
+    await saveReadingForUser(user.id, { id: "r-mismatch", question: "q?" });
+    const attemptId = "11111111-2222-3333-4444-555555555555";
+    const first = await appendFollowUpWithSpend(
+      user.id,
+      "r-mismatch",
+      { question: "q1", answer: "a1", free: false },
+      1,
+      3,
+      false,
+      attemptId
+    );
+    expect(first.ok).toBe(true);
+    const retry = await appendFollowUpWithSpend(
+      user.id,
+      "r-mismatch",
+      { question: "q2", answer: "a2", free: false },
+      1,
+      3,
+      false,
+      attemptId
+    );
+    expect(retry.ok).toBe(false);
+    expect(retry.reason).toBe("mismatch");
+    expect((await getUserById(user.id))?.credits).toBe(1);
+    const stored = (await getReadingForUser(user.id, "r-mismatch")) as {
+      followUps?: Array<{ question: string }>;
+    };
+    expect(stored.followUps).toHaveLength(1);
+  });
 });

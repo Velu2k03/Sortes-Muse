@@ -8,7 +8,8 @@ import { getSpread, SPREADS } from "@/lib/tarot";
 import { spreadSample } from "@/lib/spread-samples";
 import type { Spread } from "@/lib/types";
 import { freeReadingUsed } from "@/lib/storage";
-import { useAuth } from "@/components/AuthProvider";
+import { useAuth, deviceHeldSession } from "@/components/AuthProvider";
+import { isFreeAvailableFor } from "@/lib/free-reading";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import CheckoutModal from "@/components/CheckoutModal";
 import SpreadDiagram from "@/components/SpreadDiagram";
@@ -29,13 +30,36 @@ export default function ReadingFlow({ slug }: { slug: string }) {
   const spread: Spread = useMemo(() => getSpread(slug), [slug]);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [usedFree, setUsedFree] = useState(false);
-  const { credits } = useAuth();
+  const { credits, user, freeReadingAvailable, authFailed, loading: authLoading } = useAuth();
 
   useEffect(() => {
     queueMicrotask(() => setUsedFree(freeReadingUsed()));
   }, []);
+  // Re-check fix: the session flag is read in a mount effect, not
+  // during render. The server renders without it, so reading it during
+  // render would hydrate mismatched ("Free" on the server, "1 Oracle"
+  // on the client).
+  const [hadSession, setHadSession] = useState(false);
+  useEffect(() => {
+    queueMicrotask(() => setHadSession(deviceHeldSession()));
+  }, []);
 
-  const isFreeAvailable = spread.slug === "quick-insight" && !usedFree;
+  // Batch 1 (C1): signed-in users are decided by the server record,
+  // guests by the device flag. See src/lib/free-reading.ts. While auth
+  // is still loading the state is unknown, so the label fails closed
+  // instead of showing "Free" from the device flag for up to one /me
+  // round trip. The intake gate waits on authLoading, so nothing
+  // spends in that window either way.
+  const isFreeAvailable =
+    !authLoading &&
+    isFreeAvailableFor({
+      slug: spread.slug,
+      signedIn: !!user,
+      serverFree: freeReadingAvailable,
+      deviceFree: !usedFree,
+      hadSession,
+      authFailed,
+    });
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
@@ -50,6 +74,7 @@ export default function ReadingFlow({ slug }: { slug: string }) {
       <GateScreen
         spread={spread}
         isFreeAvailable={isFreeAvailable}
+        signedIn={!!user}
         credits={credits ?? 0}
         onTopUp={() => setCheckoutOpen(true)}
       />
@@ -68,11 +93,13 @@ export default function ReadingFlow({ slug }: { slug: string }) {
 function GateScreen({
   spread,
   isFreeAvailable,
+  signedIn,
   credits,
   onTopUp,
 }: {
   spread: Spread;
   isFreeAvailable: boolean;
+  signedIn: boolean;
   credits: number;
   onTopUp: () => void;
 }) {
@@ -183,7 +210,8 @@ function GateScreen({
               </button>
             </ClickSpark>
             <p className="mt-3 text-sm text-mist">
-              Free, no payment card required. One free Quick Insight per device.
+              Free, no payment card required. One free Quick Insight per{" "}
+              {signedIn ? "account" : "device"}.
             </p>
           </>
         ) : credits >= 1 ? (

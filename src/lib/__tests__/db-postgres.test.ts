@@ -385,6 +385,29 @@ describe.skipIf(SKIP)("money paths on real Postgres (staging only)", () => {
     expect((await db.getUserById(user.id))?.credits).toBe(0);
   });
 
+  // Batch 1 (C2, review test gap): the Postgres replay branch. Two
+  // concurrent appends with the same attempt id must store one
+  // follow-up, spend once, and report one replayed: true.
+  it("concurrent follow-up appends with the same followUpId: one stores, one replays, one spend", async () => {
+    const user = await db.createUser("race-replay@example.com");
+    await db.addUserCredits(user.id, 2);
+    await db.saveReadingForUser(user.id, { id: "r-race-replay", question: "q?" });
+    const attemptId = tu("race-replay-followup");
+    const results = await Promise.all([
+      db.appendFollowUpWithSpend(user.id, "r-race-replay", { question: "q1", answer: "a1" }, 1, 3, false, attemptId),
+      db.appendFollowUpWithSpend(user.id, "r-race-replay", { question: "q1", answer: "a1-again" }, 1, 3, false, attemptId),
+    ]);
+    expect(results.filter((r) => r.ok && !r.replayed)).toHaveLength(1);
+    expect(results.filter((r) => r.ok && r.replayed)).toHaveLength(1);
+    expect((await db.getUserById(user.id))?.credits).toBe(1);
+    const stored = (await db.getReadingForUser(user.id, "r-race-replay")) as {
+      followUps?: Array<{ question: string; answer: string; id?: string }>;
+    };
+    expect(stored.followUps).toHaveLength(1);
+    expect(stored.followUps?.[0].answer).toBe("a1");
+    expect(stored.followUps?.[0].id).toBe(attemptId);
+  });
+
   it("Phase B (R10): spendUserCredits rejects zero and negative amounts on Postgres", async () => {
     const user = await db.createUser("spend-guard-a@example.com");
     await db.addUserCredits(user.id, 3);

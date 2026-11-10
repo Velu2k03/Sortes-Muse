@@ -6,6 +6,7 @@ import {
   appendFollowUpWithSpend,
 } from "@/lib/db";
 import type { FollowUp } from "@/lib/types";
+import { isUuid } from "@/lib/ids";
 import cardsData from "@/data/cards.json";
 import { generateChat } from "@/lib/ai";
 import { preCheckOracleBalance } from "@/lib/credit-precheck";
@@ -121,6 +122,9 @@ export async function POST(req: NextRequest) {
   let body: {
     readingId?: string;
     question?: string;
+    /** Client-minted attempt id; a retry with the same id replays the
+        saved answer, never generates or spends twice. Batch 1 (C2). */
+    followUpId?: string;
   };
   try {
     body = await req.json();
@@ -136,6 +140,9 @@ export async function POST(req: NextRequest) {
       { error: "Question is required and must be 1 to 300 characters." },
       { status: 400 }
     );
+  }
+  if (body.followUpId !== undefined && !isUuid(body.followUpId)) {
+    return NextResponse.json({ error: "followUpId must be a UUID." }, { status: 400 });
   }
 
   const session = await getSession();
@@ -171,6 +178,32 @@ export async function POST(req: NextRequest) {
       { error: "Sign in to ask a follow-up." },
       { status: 401 }
     );
+  }
+
+  // Batch 1 (C2): replay. If this attempt id already has a saved
+  // follow-up (the first response was lost after the server saved it),
+  // return the saved answer with no model call and no spend. This check
+  // runs before the cap, because the saved follow-up is what filled
+  // the slot it now replays. The id is bound to the question: the same
+  // id with a different question is a client error, not a replay.
+  if (body.followUpId) {
+    const saved = existingFollowUps.find((f) => f.id === body.followUpId);
+    if (saved) {
+      if (saved.question !== question) {
+        return NextResponse.json(
+          { error: "This attempt id was already used for a different question." },
+          { status: 409 }
+        );
+      }
+      const dbUser = await getUserById(session.userId);
+      return NextResponse.json({
+        answer: saved.answer,
+        free: saved.free,
+        credits: dbUser?.credits ?? 0,
+        followUps: existingFollowUps,
+        replayed: true,
+      });
+    }
   }
 
   // Phase 2, 2.4: guest-sent reading fields are untrusted input.
@@ -350,12 +383,19 @@ export async function POST(req: NextRequest) {
       newFollowUp as unknown as Record<string, unknown>,
       isFree ? 0 : 1,
       MAX_FOLLOWUPS,
-      isFree
+      isFree,
+      body.followUpId
     );
     if (!appended.ok) {
       if (appended.reason === "limit") {
         return NextResponse.json(
           { error: "This reading has reached its follow-up limit (3). The thread is complete." },
+          { status: 409 }
+        );
+      }
+      if (appended.reason === "mismatch") {
+        return NextResponse.json(
+          { error: "This attempt id was already used for a different question." },
           { status: 409 }
         );
       }
@@ -366,6 +406,21 @@ export async function POST(req: NextRequest) {
         );
       }
       return NextResponse.json({ error: "Reading not found." }, { status: 404 });
+    }
+    // Batch 1 (C2): a concurrent duplicate attempt with the same id
+    // lost the race inside the transaction; serve the saved answer.
+    if (appended.replayed) {
+      const saved = (appended.followUps as FollowUp[] | undefined)?.find(
+        (f) => f.id === body.followUpId
+      );
+      const dbUser = await getUserById(session.userId);
+      return NextResponse.json({
+        answer: saved?.answer ?? finalText,
+        free: appended.free ?? isFree,
+        credits: dbUser?.credits ?? 0,
+        followUps: appended.followUps ?? updatedFollowUps,
+        replayed: true,
+      });
     }
     const dbUser = await getUserById(session.userId);
     return NextResponse.json({
