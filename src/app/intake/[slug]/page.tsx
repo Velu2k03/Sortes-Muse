@@ -8,7 +8,7 @@ export function generateStaticParams() {
 }
 
 const DESCRIPTION =
-  "Tell your story so your tarot reading can be woven around it. Only your first name is ever shared with the AI.";
+  "Tell your story so your reading can be written for your question. Your story goes to the AI for this reading only.";
 
 // Batch 4d: this page inherited the generic homepage OG block. It
 // gets its own OG/Twitter now, with the real intake URL.

@@ -227,7 +227,7 @@ function GateScreen({
             </ClickSpark>
             <p className="mt-3 text-sm text-mist">
               You have {credits} {credits === 1 ? "Oracle" : "Oracles"}. Tell
-              your story, and the reading is woven around it.
+              your story, and the reading is written for your question.
             </p>
           </>
         ) : (
@@ -248,7 +248,7 @@ function GateScreen({
 
       <p className="mx-auto mt-8 max-w-md text-xs italic leading-relaxed text-mist">
         Readings are for self-reflection and perspective, not guaranteed
-        predictions. Take what resonates, leave the rest.
+        predictions.
       </p>
 
       {/* AF-045: the gate is short, so the page ended in empty black

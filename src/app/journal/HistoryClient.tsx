@@ -5,8 +5,9 @@ import { SpotlightCard } from "@/components/ReactBitsNew";
 import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import { getHistory } from "@/lib/storage";
-import { useAuth } from "@/components/AuthProvider";
+import { getHistory, freeReadingUsed } from "@/lib/storage";
+import { useAuth, deviceHeldSession } from "@/components/AuthProvider";
+import { isFreeAvailableFor } from "@/lib/free-reading";
 import type { Reading } from "@/lib/types";
 import { getCard } from "@/lib/cards";
 import {
@@ -28,7 +29,31 @@ import PageHeader from "@/components/PageHeader";
  * detail page (M2.1), not to a new reading.
  */
 export default function HistoryPage() {
-  const { user, deleteReading } = useAuth();
+  const { user, deleteReading, freeReadingAvailable, authFailed, loading: authLoading } = useAuth();
+  // Batch 6a (Batch 1 drift): the empty-journal line used to promise
+  // "Your first Quick Insight reading is free" to everyone, but the
+  // server charges a signed-in user who already used it. Same
+  // pattern as SpreadsClient: signed-in users are decided by the
+  // server record, guests by the device flag, and the label fails
+  // closed while auth is loading.
+  const [usedFree, setUsedFree] = useState(false);
+  const [hadSession, setHadSession] = useState(false);
+  useEffect(() => {
+    queueMicrotask(() => {
+      setUsedFree(freeReadingUsed());
+      setHadSession(deviceHeldSession());
+    });
+  }, []);
+  const freeAvailable =
+    !authLoading &&
+    isFreeAvailableFor({
+      slug: "quick-insight",
+      signedIn: !!user,
+      serverFree: freeReadingAvailable,
+      deviceFree: !usedFree,
+      hadSession,
+      authFailed,
+    });
   const [history, setHistory] = useState<Reading[] | null>(null);
   // AF-089: false on the server and first client render, so the HTML
   // carries the real empty-state block. After mount, while the journal
@@ -107,7 +132,9 @@ export default function HistoryPage() {
         <div className="mx-auto mt-12 max-w-md rounded-3xl border border-gold/20 bg-panel/60 p-8 text-center">
           <p className="flex items-center justify-center gap-2 font-display text-2xl text-cream"><Icon name="iconoirBook" size={24} />No readings yet</p>
           <p className="mt-2 text-sm text-cream/75">
-            Your first Quick Insight reading is free. Cast the lots and begin.
+            {freeAvailable
+              ? "Your first Quick Insight reading is free. Cast the lots and begin."
+              : "Cast the lots and begin."}
           </p>
           {/* Phase E (item 8): one writing prompt on the empty journal,
               so the blank page asks something instead of only waiting. */}
@@ -195,9 +222,6 @@ export default function HistoryPage() {
                     )}
                   </>
                 )}
-                <p className="mt-2 text-xs text-mist">
-                  Computed from your own readings only. Never paywalled.
-                </p>
               </div>
             );
           })()}
@@ -333,9 +357,6 @@ export default function HistoryPage() {
                     )}
                   </>
                 )}
-                <p className="mt-3 text-xs text-mist">
-                  Computed from your own readings only. Never paywalled.
-                </p>
               </section>
             );
           })()}

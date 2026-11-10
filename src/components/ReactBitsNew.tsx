@@ -14,7 +14,7 @@ import { motion, useReducedMotion } from "motion/react";
  * Motion-based parts import motion/react, which is already present.
  *
  * Purposeful use only, one interaction type per area:
- * - SpotlightCard: What do you seek cards only, plus journal
+ * - SpotlightCard: What's on your mind cards only, plus journal
  *   repeated questions in Personal Phase 2.
  * - PageTransition: a short rise on navigation (never hidden), all pages.
  * - GlareHover: spreads guided start button only, pointer only.

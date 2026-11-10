@@ -128,14 +128,13 @@ export default function DailyPage() {
   return (
     <div className="mx-auto flex max-w-2xl flex-col items-center px-4 py-12 sm:px-6">
       <p className="text-xs uppercase tracking-[0.35em] text-gold">
-        A daily ritual
+        Daily card
       </p>
       <h1 className="mt-3 text-center font-display text-5xl text-goldbright sm:text-6xl">
         Your Daily Card
       </h1>
       <p className="mt-4 max-w-md text-center text-cream/75">
-        One card, free forever. A small mirror for the day
-        ahead.
+        One card, free forever, to think about today.
       </p>
       {practice.total >= 1 && (
         <motion.p

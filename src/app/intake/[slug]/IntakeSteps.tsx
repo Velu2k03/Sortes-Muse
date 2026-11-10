@@ -152,10 +152,9 @@ export function FormStep({ f, category }: { f: IntakeState; category: IntakeCate
         {category.name}
       </h1>
       <p className="mx-auto mt-3 max-w-md text-center text-sm text-cream/75">
-        Tell your story in your own words. Your story goes to the AI for
-        this reading only and is not saved. Your question, first name,
-        and category are saved in your journal: on this device as a
-        guest, in your account when signed in, until you delete them.
+        Tell us what&apos;s going on. Your story goes to the AI for
+        this reading only and is not stored. Your question, first
+        name, and category are saved to your journal.
       </p>
 
       {category.key === "health" && (
@@ -294,7 +293,7 @@ export function ConfirmStep({ f, category }: { f: IntakeState; category: IntakeC
         Step 3 of 4
       </p>
       <h1 ref={headingRef} tabIndex={-1} className="mt-3 scroll-mt-32 font-display text-4xl text-goldbright outline-none sm:text-5xl">
-        Ready to cast the lots?
+        Check and draw
       </h1>
 
       <div className="mt-8 rounded-3xl border border-gold/25 bg-panel/60 p-6 text-left sm:p-8">
@@ -331,19 +330,15 @@ export function ConfirmStep({ f, category }: { f: IntakeState; category: IntakeC
             </dd>
           </div>
         </dl>
-        <div className="rule-gold my-6" />
-        <ul className="space-y-2 text-xs leading-relaxed text-mist">
-          <li>Only your first name and story essentials are sent to the AI.</li>
-          <li>Birthdays and other sensitive details never leave your device.</li>
-          <li>Your story is not saved; your question, first name, and category are saved in your journal until you delete them.</li>
-          <li>Readings are for reflection, never guaranteed predictions.</li>
-        </ul>
         <p className="mt-4 text-sm leading-relaxed text-cream/85">
-          What happens next: cards are drawn, you give one word,
-          then the reading is written.{" "}
-          {isFreeAvailable
-            ? "This first Quick Insight is free: nothing is charged, and the free reading is used only once the reading is written. If generation fails, the free reading stays yours to try again."
-            : "Nothing has been charged yet: the Oracle is spent when you confirm generation, after your impression, not at the draw. If generation fails while this page is still open, a guest Oracle is returned; a signed-in Oracle is spent only after a reading is written."}
+          Nothing is charged until you reveal your reading. If the
+          reading fails, you aren&apos;t charged.
+        </p>
+        <p className="mt-3 text-xs text-mist">
+          How your story is handled:{" "}
+          <Link href="/privacy" className="text-goldbright underline underline-offset-4">
+            Privacy
+          </Link>
         </p>
       </div>
 
@@ -354,9 +349,6 @@ export function ConfirmStep({ f, category }: { f: IntakeState; category: IntakeC
           </p>
           <p className="mt-2 text-sm italic text-cream">
             “{questionSuggestion}”
-          </p>
-          <p className="mt-1 text-xs text-mist">
-            A fixed-rule suggestion, not from AI. Edit it freely.
           </p>
           <div className="mt-3 flex gap-2">
             <button
@@ -416,7 +408,7 @@ export function ImpressionStep({ f, drawnCards }: { f: IntakeState; drawnCards: 
         First, what do you see?
       </h1>
       <p className="mx-auto mt-3 max-w-md text-sm text-cream/75">
-        One word, if you like. It travels with the reading.
+        One word, if you like. We&apos;ll include it in your reading.
       </p>
 
       {/* Cards, not names only, approved 2026-11-04: the

@@ -453,7 +453,7 @@ export default function ReportsClient() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
       <p className="text-center text-xs uppercase tracking-[0.35em] text-gold">Reports</p>
-      <h1 className="mt-2 text-center font-display text-5xl text-goldbright">Keep-forever reports</h1>
+      <h1 className="mt-2 text-center font-display text-5xl text-goldbright">Reports</h1>
       <p className="mt-3 text-center text-cream/80">
         1 Oracle per report. Reports never expire.
       </p>

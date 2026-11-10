@@ -15,7 +15,7 @@ export const metadata = {
 export const FAQS = [
   {
     q: "What is free in Sortes?",
-    a: "The daily card is free every day, the deck browser with all 78 card meanings is free forever, chart calculation is free, and your first Quick Insight reading and your first chart interpretation per system are free. No payment is needed for the free parts, and no account is needed for the daily card, the deck browser, chart calculation, or your first Quick Insight; chart interpretations and reports need you to sign in. They stay free, and if that ever changes, this page will say so first.",
+    a: "The daily card is free every day, the deck browser with all 78 card meanings is free forever, chart calculation is free, and your first Quick Insight reading and your first chart interpretation per system are free. No payment is needed for the free parts, and no account is needed for the daily card, the deck browser, chart calculation, or your first Quick Insight; chart interpretations and reports need you to sign in.",
   },
   {
     q: "How do Oracles work?",
