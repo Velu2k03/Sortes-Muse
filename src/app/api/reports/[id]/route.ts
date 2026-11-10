@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { getReportForUser, deleteReportForUser } from "@/lib/db";
-import { checkRateLimit, clientIp, rateLimitExceeded, RATE_LIMITS } from "@/lib/rateLimit";
+import { checkRateLimit, clientIp, ipLimitKey, rateLimitExceeded, RATE_LIMITS } from "@/lib/rateLimit";
 
 // M4.1: one saved report, signed-in only, scoped to the owning user.
 // Guests load reports from device-local storage instead.
@@ -15,7 +15,7 @@ export async function GET(
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
   // Phase 6 (N3): report reads were unrated.
-  if (!(await checkRateLimit(`reports-read:${clientIp(req)}`, RATE_LIMITS.readIp)).allowed) {
+  if (!(await checkRateLimit(ipLimitKey("reports-read", clientIp(req)), RATE_LIMITS.readIp)).allowed) {
     return rateLimitExceeded();
   }
   const { id } = await params;
@@ -31,7 +31,7 @@ export async function DELETE(
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
   // Phase 6 (N3): report deletes were unrated.
-  if (!(await checkRateLimit(`reports-read:${clientIp(req)}`, RATE_LIMITS.readIp)).allowed) {
+  if (!(await checkRateLimit(ipLimitKey("reports-read", clientIp(req)), RATE_LIMITS.readIp)).allowed) {
     return rateLimitExceeded();
   }
   const { id } = await params;

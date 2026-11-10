@@ -7,7 +7,7 @@ import {
   SESSION_COOKIE,
   SESSION_MAX_AGE,
   authConfigured,} from "@/lib/auth";
-import { checkRateLimit, clientIp, rateLimitExceeded, RATE_LIMITS } from "@/lib/rateLimit";
+import { checkRateLimit, clientIp, ipLimitKey, rateLimitExceeded, RATE_LIMITS } from "@/lib/rateLimit";
 
 export const dynamic = "force-dynamic";
 
@@ -29,7 +29,7 @@ function signInResponse(user: { id: string; email: string; credits: number; pwd_
 }
 
 export async function POST(req: NextRequest) {
-  if (!(await checkRateLimit(`signup:${clientIp(req)}`, RATE_LIMITS.authIp)).allowed) {
+  if (!(await checkRateLimit(ipLimitKey("signup", clientIp(req)), RATE_LIMITS.authIp)).allowed) {
     return rateLimitExceeded();
   }
   try {

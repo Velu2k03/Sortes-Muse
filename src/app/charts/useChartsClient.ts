@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { ZiweiLanguage } from "@/lib/ziwei-i18n";
 import type { ZiweiView } from "@/components/ZiweiChartBoard";
 import { useAuth } from "@/components/AuthProvider";
-import { chartFreeUsed, makeReading, newId, type ChartFreeSystem } from "@/lib/storage";
+import { chartFreeUsed, clearPendingAttemptId, makeReading, pendingAttemptId, type ChartFreeSystem } from "@/lib/storage";
 import { unconfirmedMessage } from "@/lib/generate-failure";
 import { chartInterpretationCost } from "@/lib/chart-pricing";
 import { buildStaticChartInterpretation } from "@/lib/chart-fallback";
@@ -389,7 +389,6 @@ export function useChartSession(form: ChartForm, prefs: ChartPrefs) {
   // client-side (the route spends only after a real generation).
   // Point 1: one interpretation id per attempt; a retry of the same chart and
   // question reuses it, so a row the server already saved is replayed.
-  const interpAttempt = useRef<{ key: string; id: string } | null>(null);
 
   function handleInterpretFailure(err: unknown, result: ChartResult) {
     // Phase D: balance stops keep their own message (they already
@@ -440,12 +439,12 @@ export function useChartSession(form: ChartForm, prefs: ChartPrefs) {
         question: question.trim(),
         chartSummary: chartSummaryText(result, ziweiLang),
       };
-      const key = JSON.stringify(payload);
-      if (interpAttempt.current?.key !== key) interpAttempt.current = { key, id: newId() };
+      // Item 4: the id outlives a reload (see pendingAttemptId).
+      const attemptId = pendingAttemptId("chart-interpret", JSON.stringify(payload));
       const res = await fetch("/api/chart/interpret", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...payload, readingId: interpAttempt.current.id }),
+        body: JSON.stringify({ ...payload, readingId: attemptId }),
       });
       const data = await res.json();
       if (res.status === 401) {
@@ -454,7 +453,7 @@ export function useChartSession(form: ChartForm, prefs: ChartPrefs) {
         return;
       }
       if (!res.ok) throw new ServerError(data.error || "Could not interpret this chart.");
-      interpAttempt.current = null;
+      clearPendingAttemptId("chart-interpret");
       setInterpretation(data.interpretation as string);
       setInterpFallback(Boolean(data.fallback));
       // Phase E (item 2): keep the serving model; the fallback has none.

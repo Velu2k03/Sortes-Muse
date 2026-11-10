@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import ReadingText from "@/components/ReadingText";
 import { useAuth } from "@/components/AuthProvider";
@@ -12,7 +12,7 @@ import CallChip from "@/components/CallChip";
 import AnimatedContent from "@/components/AnimatedContent";
 import Counter from "@/components/Counter";
 import { unconfirmedMessage } from "@/lib/generate-failure";
-import { getReports, newId } from "@/lib/storage";
+import { clearPendingAttemptId, getReports, pendingAttemptId } from "@/lib/storage";
 import { SAMPLE_TRANSIT_REPORT } from "@/lib/sample-report";
 import BirthProfilePicker from "@/components/BirthProfilePicker";
 import { profileToReportFields } from "@/lib/birth-profiles";
@@ -325,7 +325,6 @@ export default function ReportsClient() {
   const [targetDate, setTargetDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [year, setYear] = useState(String(new Date().getFullYear() + 1));
   const [generating, setGenerating] = useState(false);
-  const attempt = useRef<{ key: string; id: string } | null>(null);
   const [error, setError] = useState("");
   // Phase D: failedCall marks a genuine call failure (not validation
   // or a balance stop) and drives the persistent retry UI; toastOpen
@@ -405,12 +404,12 @@ export default function ReportsClient() {
             : { type, birthA: birthPayload(birth), birthB: birthPayload(birthB) };
       // Point 1: one report id per attempt; a retry of the same request reuses
       // it, so a report the server already saved is replayed, never re-spent.
-      const key = JSON.stringify(body);
-      if (attempt.current?.key !== key) attempt.current = { key, id: newId() };
+      // Item 4: the id outlives a reload (see pendingAttemptId).
+      const attemptId = pendingAttemptId("report", JSON.stringify(body));
       const res = await fetch("/api/reports/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...body, reportId: attempt.current.id }),
+        body: JSON.stringify({ ...body, reportId: attemptId }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -436,7 +435,7 @@ export default function ReportsClient() {
       if (typeof data.model === "string" && data.model) report.model = data.model;
       // The server saved the report with the spend (same id); just show it
       // and refresh the list and balance.
-      attempt.current = null;
+      clearPendingAttemptId("report");
       setResult(report);
       await loadSaved();
       await refresh();

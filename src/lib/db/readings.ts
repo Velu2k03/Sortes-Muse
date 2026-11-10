@@ -1,6 +1,7 @@
 import { usePostgres, pg, sql, jsonbParam, ensureSchema, txWithSignal } from "./client";
 import { readLocal, writeLocal } from "./json-store";
 import { withDbTimeout } from "../db-timeout";
+import { assertUuid, IdTakenError } from "../ids";
 
 /*
  * F9 (2026-11-09): synced readings and follow-ups.
@@ -41,7 +42,8 @@ export async function saveReadingWithSpend(
   reading: { id: string; free: boolean; [k: string]: unknown },
   tryFree: boolean,
   freeSystem?: string
-): Promise<{ ok: boolean; free: boolean; existing?: boolean }> {
+): Promise<{ ok: boolean; free: boolean; existing?: boolean; conflict?: boolean }> {
+  assertUuid(reading.id);
   await ensureSchema();
   if (usePostgres) {
     if (!pg) throw new Error("Database not configured");
@@ -71,14 +73,28 @@ export async function saveReadingWithSpend(
         ON CONFLICT (id) DO NOTHING RETURNING id`;
       // Point 2: 0 rows means the id was taken (lost a race, or another
       // user's id). Throw so the spend / free claim rolls back with it.
-      if (inserted.length === 0) throw new Error("reading insert wrote 0 rows; rolled back");
+      if (inserted.length === 0) {
+        const owner = await tx`SELECT user_id FROM readings WHERE id = ${reading.id}`;
+        throw new IdTakenError((owner[0] as { user_id: string } | undefined)?.user_id === userId);
+      }
       return { ok: true, free };
     });
-    return await withDbTimeout(begin, controller);
+    try {
+      return await withDbTimeout(begin, controller);
+    } catch (err) {
+      if (!(err instanceof IdTakenError)) throw err;
+      // Another user's id: conflict, nothing spent (rolled back).
+      if (!err.sameUser) return { ok: false, free: false, conflict: true };
+      // Lost a race with our own parallel attempt: return the winner's row.
+      const { rows } = await sql`SELECT data FROM readings WHERE id = ${reading.id} AND user_id = ${userId}`;
+      if (rows.length === 0) throw err;
+      return { ok: true, free: !!(rows[0] as { data: { free?: boolean } }).data.free, existing: true };
+    }
   }
   const db = await readLocal();
   const prior = db.readings.find((r) => r.id === reading.id && r.user_id === userId);
   if (prior) return { ok: true, free: !!(prior.data as { free?: boolean }).free, existing: true };
+  if (db.readings.some((r) => r.id === reading.id)) return { ok: false, free: false, conflict: true };
   let free = false;
   if (tryFree && freeSystem) {
     const list = db.freeInterpretations ?? (db.freeInterpretations = []);

@@ -1,5 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { NextRequest } from "next/server";
+import { createHash } from "node:crypto";
+import { readdirSync, readFileSync, statSync } from "node:fs";
+import path from "node:path";
 import {
   checkRateLimit,
   isRateLimited,
@@ -142,7 +145,7 @@ describe("clientIp", () => {
  * the way Upstash is one shared server. Atomicity is the library's own
  * upstream-tested Lua job and is deliberately NOT emulated here.
  */
-function mockServer(mode: { fail?: boolean; timeout?: boolean } = {}) {
+function mockServer(mode: { fail?: boolean; timeout?: boolean; hangRemaining?: boolean } = {}) {
   const used = new Map<string, number>();
   const makeLimiter = (rule: { max: number }): LimiterLike => ({
     async limit(id) {
@@ -155,6 +158,7 @@ function mockServer(mode: { fail?: boolean; timeout?: boolean } = {}) {
     },
     async getRemaining(id) {
       if (mode.fail) throw new Error("upstash unreachable");
+      if (mode.hangRemaining) return new Promise<never>(() => {});
       return { remaining: rule.max - (used.get(id) ?? 0) };
     },
   });
@@ -209,6 +213,51 @@ describe("shared store (C4 wrapper)", () => {
   it("a library timeout is surfaced as an error, not a fake allow", async () => {
     const store = createUpstashStore(mockServer({ timeout: true }).makeLimiter);
     await expect(store.tryRecord("t", rule)).rejects.toThrow(/timed out/);
+  });
+});
+
+describe("Item 1/2: getRemaining timeout and blocked cache", () => {
+  const rule = { windowMs: 60_000, max: 2 };
+
+  it("a getRemaining that never resolves rejects with the timeout error within ~500ms", async () => {
+    const store = createUpstashStore(mockServer({ hangRemaining: true }).makeLimiter);
+    const t0 = Date.now();
+    await expect(store.count("hang", rule)).rejects.toThrow(/timed out/);
+    expect(Date.now() - t0).toBeLessThan(1000);
+  });
+
+  it("remaining 0 with a future reset is refused locally with no further Redis read, until reset", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-01-01T00:00:00Z"));
+    try {
+      const getRemaining = vi.fn(async () => ({ remaining: 0, reset: Date.now() + 10_000 }));
+      const store = createUpstashStore(() => ({ limit: vi.fn(), getRemaining }) as unknown as LimiterLike);
+      expect(await store.count("blk", rule)).toBe(2);
+      expect(await store.count("blk", rule)).toBe(2);
+      expect(await store.count("blk", rule)).toBe(2);
+      expect(getRemaining).toHaveBeenCalledTimes(1);
+      // A different key is not affected.
+      await store.count("other", rule);
+      expect(getRemaining).toHaveBeenCalledTimes(2);
+      // After the reset time the next call goes to Redis again.
+      vi.setSystemTime(new Date("2026-01-01T00:00:11Z"));
+      getRemaining.mockResolvedValueOnce({ remaining: 2, reset: Date.now() + 60_000 });
+      expect(await store.count("blk", rule)).toBe(0);
+      expect(getRemaining).toHaveBeenCalledTimes(3);
+      // And it is no longer blocked: the next call reads again.
+      await store.count("blk", rule);
+      expect(getRemaining).toHaveBeenCalledTimes(4);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("a nonzero remaining is never cached", async () => {
+    const getRemaining = vi.fn(async () => ({ remaining: 1, reset: Date.now() + 10_000 }));
+    const store = createUpstashStore(() => ({ limit: vi.fn(), getRemaining }) as unknown as LimiterLike);
+    await store.count("k", rule);
+    await store.count("k", rule);
+    expect(getRemaining).toHaveBeenCalledTimes(2);
   });
 });
 
@@ -289,7 +338,7 @@ describe("store selection and fail-open (C3/C4)", () => {
     expect(ctor).not.toHaveBeenCalled();
   });
 
-  async function withMockedLibrary(mode: { fail?: boolean; timeout?: boolean }) {
+  async function withMockedLibrary(mode: { fail?: boolean; timeout?: boolean; hangRemaining?: boolean }) {
     process.env[URL_KEY] = "https://example.invalid";
     process.env[TOKEN_KEY] = "tok";
     const seenRedis: unknown[] = [];
@@ -355,6 +404,18 @@ describe("store selection and fail-open (C3/C4)", () => {
     errSpy.mockRestore();
   });
 
+  it("Item 1: a hung getRemaining falls back to memory within ~1s and logs the fallback line", async () => {
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const { mod } = await withMockedLibrary({ hangRemaining: true });
+    mod.resetFallbackLog();
+    const r = { windowMs: 60_000, max: 2 };
+    const t0 = Date.now();
+    expect(await mod.isRateLimited("slow", r)).toBe(false);
+    expect(Date.now() - t0).toBeLessThan(1000);
+    expect(errSpy.mock.calls[0][0]).toBe("[rateLimit] FALLBACK ACTIVE — timeout");
+    errSpy.mockRestore();
+  });
+
   it("constructs a real Ratelimit with the explicit Redis client (no network call)", async () => {
     const { Redis } = await import("@upstash/redis");
     const { Ratelimit } = await import("@upstash/ratelimit");
@@ -368,5 +429,28 @@ describe("store selection and fail-open (C3/C4)", () => {
     });
     expect(typeof rl.limit).toBe("function");
     expect(typeof rl.getRemaining).toBe("function");
+  });
+});
+
+describe("Item 7: no raw IP reaches a rate-limit key", () => {
+  it("hash is an HMAC keyed by a derived key, not the plain secret salt", () => {
+    const old = createHash("sha256").update(`${process.env.AUTH_SECRET ?? "dev-only-salt"}:203.0.113.9`).digest("hex");
+    expect(ipLimitKey("p", "203.0.113.9")).not.toBe(`p:${old}`);
+  });
+
+  it("no route builds a key from clientIp() directly (every IP key goes through ipLimitKey)", () => {
+    const hits: string[] = [];
+    const walk = (dir: string) => {
+      for (const name of readdirSync(dir)) {
+        const p = path.join(dir, name);
+        if (statSync(p).isDirectory()) walk(p);
+        else if (/route\.ts$/.test(name)) {
+          const src = readFileSync(p, "utf8");
+          if (/\$\{\s*clientIp\(/.test(src)) hits.push(p);
+        }
+      }
+    };
+    walk(path.join(process.cwd(), "src", "app"));
+    expect(hits).toEqual([]);
   });
 });

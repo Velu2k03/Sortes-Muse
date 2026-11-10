@@ -63,4 +63,12 @@ describe("POST /api/reports/generate — idempotent reportId", () => {
     expect(vi.mocked(saveReportWithSpend).mock.calls[0][1].id).toBe(ID);
     expect((await res.json()).report.interpretation).toBe("winner");
   });
+
+  it("returns 409 (not 402/500) when the id belongs to another user", async () => {
+    vi.mocked(getReportForUser).mockResolvedValue(null);
+    vi.mocked(saveReportWithSpend).mockResolvedValue({ ok: false, conflict: true });
+    const res = await POST(req(ID, "10.8.0.4"));
+    expect(res.status).toBe(409);
+    expect((await res.json()).error).toContain("No Oracle was spent");
+  });
 });

@@ -7,7 +7,7 @@ import { isUuid } from "@/lib/ids";
 import { generateChat } from "@/lib/ai";
 import { preCheckOracleBalance } from "@/lib/credit-precheck";
 import { validateChartText, anchorTerms } from "@/lib/output-validation";
-import { checkRateLimit, clientIp, rateLimitExceeded, RATE_LIMITS } from "@/lib/rateLimit";
+import { checkRateLimit, clientIp, ipLimitKey, rateLimitExceeded, RATE_LIMITS } from "@/lib/rateLimit";
 
 // Chart interpretation, Phase 2. Reuses the tarot OpenRouter pattern
 // (same model fallback chain, same timeout) but is a separate route
@@ -199,7 +199,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   // Phase 6: shared limiter (was a per-route map: 20/hr/IP).
-  if (!(await checkRateLimit(`interpret:${clientIp(req)}`, RATE_LIMITS.chartInterpretIp)).allowed) {
+  if (!(await checkRateLimit(ipLimitKey("interpret", clientIp(req)), RATE_LIMITS.chartInterpretIp)).allowed) {
     return rateLimitExceeded();
   }
   // Batch D (B4, OWASP A01): refuse guests before any work or model call.
@@ -371,6 +371,12 @@ Write the personalized chart reflection now.`;
     chartSummary: chartSummary || `${systemName} chart.`,
   };
   const saved = await saveReadingWithSpend(session.userId, reading, serverFree, system);
+  if (saved.conflict) {
+    return NextResponse.json(
+      { error: "That reading id is already in use. No Oracle was spent." },
+      { status: 409 }
+    );
+  }
   if (!saved.ok) {
     return NextResponse.json(
       { error: "You need 1 Oracle for this interpretation. No Oracle was spent." },

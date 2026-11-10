@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { calculateChart, calculateZiwei } from "@/lib/charts";
 import { calculateVedic } from "@/lib/vedic";
-import { checkRateLimit, clientIp, rateLimitExceeded, RATE_LIMITS } from "@/lib/rateLimit";
+import { checkRateLimit, clientIp, ipLimitKey, rateLimitExceeded, RATE_LIMITS } from "@/lib/rateLimit";
 
 // Calculation only: no AI, no credit charge, no storage, no database.
 // Birth data in the request is used in-memory for this calculation only
@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   // Phase 6: shared limiter (was a per-route map: 20/hr/IP).
-  if (!(await checkRateLimit(`chart-calc:${clientIp(req)}`, RATE_LIMITS.chartCalcIp)).allowed) {
+  if (!(await checkRateLimit(ipLimitKey("chart-calc", clientIp(req)), RATE_LIMITS.chartCalcIp)).allowed) {
     return rateLimitExceeded();
   }
   let body: Record<string, unknown>;

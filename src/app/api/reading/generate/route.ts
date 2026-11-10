@@ -410,6 +410,12 @@ export async function POST(req: NextRequest) {
       free: serverFree,
     };
     const saved = await saveReadingWithSpend(session.userId, reading, serverFree);
+    if (saved.conflict) {
+      return NextResponse.json(
+        { error: "That reading id is already in use. No Oracle was spent." },
+        { status: 409 }
+      );
+    }
     if (!saved.ok) {
       return NextResponse.json(
         { error: "You need 1 Oracle for this reading. No Oracle was spent." },

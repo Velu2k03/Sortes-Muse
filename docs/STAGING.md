@@ -15,11 +15,12 @@ still needs Velu's explicit approval.
   - `sortes_pgtest_money` — money-path tests (fulfil/refund/spend)
   - `sortes_pgtest_migrations` — migration CLI tests
   - `sortes_pgtest_rls` — RLS 005 tests (Phase B; roles `anon` and
-    `authenticated` below, same local password, LOGIN so the test
-    can connect as them directly)
+    `authenticated` below, password `sortes_test_local` as hardcoded
+    in `rls-005.test.ts` (NOT the `sortes_test` password), LOGIN so
+    the test can connect as them directly)
   - `sortes_staging` — manual staging checks
-- Roles `anon` and `authenticated` (password `<placeholder>`,
-  local only) exist for the RLS test only; in real Supabase they are
+- Roles `anon` and `authenticated` (password `sortes_test_local`,
+  local only, fixed by `rls-005.test.ts` `roleUrl()`) exist for the RLS test only; in real Supabase they are
   NOLOGIN and PostgREST reaches them via SET ROLE.
 - **Durability warning (2026-11-06):** a VM replacement wiped the
   system-installed Postgres (cluster, role, and databases) while
@@ -38,8 +39,8 @@ sudo apt-get update -qq
 sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
   postgresql postgresql-contrib
 sudo -u postgres psql -c "CREATE ROLE sortes_test LOGIN PASSWORD '<placeholder>';"
-sudo -u postgres psql -c "CREATE ROLE anon LOGIN PASSWORD '<placeholder>';"
-sudo -u postgres psql -c "CREATE ROLE authenticated LOGIN PASSWORD '<placeholder>';"
+sudo -u postgres psql -c "CREATE ROLE anon LOGIN PASSWORD 'sortes_test_local';"
+sudo -u postgres psql -c "CREATE ROLE authenticated LOGIN PASSWORD 'sortes_test_local';"
 for db in sortes_pgtest_money sortes_pgtest_migrations sortes_pgtest_rls sortes_staging; do
   sudo -u postgres createdb -O sortes_test "$db"
 done

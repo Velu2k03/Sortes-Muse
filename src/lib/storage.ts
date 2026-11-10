@@ -14,6 +14,7 @@ const K = {
   birthProfiles: "sortes-birth-profiles",
   intakeDraft: "sortes-intake-draft",
   returnTo: "sortes-return-to",
+  pendingIds: "sortes-pending-ids",
 } as const;
 
 function read<T>(key: string, fallback: T): T {
@@ -209,7 +210,55 @@ export function deleteReading(id: string): boolean {
 export function newId(): string {
   return typeof crypto !== "undefined" && "randomUUID" in crypto
     ? crypto.randomUUID()
-    : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    : "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+        // Old browsers without randomUUID: still a valid v4-shaped UUID, since
+        // the save routes reject anything else.
+        const r = Math.floor(Math.random() * 16);
+        return (c === "x" ? r : (r & 0x3) | 0x8).toString(16);
+      });
+}
+
+// Round 3 item 4: one client id per paid attempt (reading / chart
+// interpretation / report) that SURVIVES A PAGE RELOAD. If the server saved
+// and spent but the response was lost, a reload used to mint a fresh id and
+// the next try spent again. The id is kept per scope in localStorage and is
+// dropped only when the success response arrives (clearPendingAttemptId), on
+// sign-out, or after the draft TTL. It is bound to a hash of the request
+// inputs, so changed inputs get a new id; the hash (not the inputs) is
+// stored, because chart/report inputs contain birth details.
+interface PendingAttempt { key: string; id: string; at: number }
+
+function hashInputs(s: string): string {
+  // cyrb53: small, synchronous, non-cryptographic; only distinguishes inputs.
+  let h1 = 0xdeadbeef, h2 = 0x41c6ce57;
+  for (let i = 0; i < s.length; i++) {
+    const c = s.charCodeAt(i);
+    h1 = Math.imul(h1 ^ c, 2654435761);
+    h2 = Math.imul(h2 ^ c, 1597334677);
+  }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(16);
+}
+
+export function pendingAttemptId(scope: string, inputs: string): string {
+  const key = hashInputs(inputs);
+  const all = read<Record<string, PendingAttempt>>(K.pendingIds, {});
+  const hit = all[scope];
+  if (hit && hit.key === key && typeof hit.id === "string" && Date.now() - hit.at <= INTAKE_DRAFT_TTL_MS) {
+    return hit.id;
+  }
+  const id = newId();
+  all[scope] = { key, id, at: Date.now() };
+  write(K.pendingIds, all);
+  return id;
+}
+
+export function clearPendingAttemptId(scope: string): void {
+  const all = read<Record<string, PendingAttempt>>(K.pendingIds, {});
+  if (!(scope in all)) return;
+  delete all[scope];
+  write(K.pendingIds, all);
 }
 
 export function makeReading(partial: Omit<Reading, "id" | "createdAt">): Reading {
@@ -262,7 +311,7 @@ export function clearLocalAccountData(): void {
   try {
     for (const key of [
       K.history, K.reports, K.credits, K.purchases, K.dailyCard, K.dailyStreak,
-      K.aiCache, K.birthProfiles, K.intakeDraft, K.returnTo, "sortes-birth-details",
+      K.aiCache, K.birthProfiles, K.intakeDraft, K.returnTo, K.pendingIds, "sortes-birth-details",
     ]) localStorage.removeItem(key);
     // Checkout email prefill (per-tab, but still the previous user's).
     window.sessionStorage?.removeItem("sortes-purchase-email");
@@ -327,7 +376,26 @@ export function clearIntakeDraft(): void {
 // drops the query), so the path is also stashed here for an hour and consumed
 // once the session exists. Same-site paths only: never an external URL.
 export function safeReturnTo(raw: string | null | undefined): string | null {
-  if (!raw || !raw.startsWith("/") || raw.startsWith("//") || raw.includes("\\")) return null;
+  if (!raw || !raw.startsWith("/")) return null;
+  // Check the raw value and its percent-decoded form: "/%2F%2Fevil.com" must
+  // not slip past a check that only looks at the literal characters.
+  let decoded: string;
+  try {
+    decoded = decodeURIComponent(raw);
+  } catch {
+    return null;
+  }
+  for (const v of [raw, decoded]) {
+    if (v.startsWith("//") || v.includes("\\")) return null;
+  }
+  // Finally it must parse back to our own origin as a relative path (the URL
+  // parser drops tabs/newlines, so "/\t/evil.com" becomes "//evil.com" here).
+  const base = "http://same-origin.invalid";
+  try {
+    if (new URL(raw, base).origin !== base) return null;
+  } catch {
+    return null;
+  }
   return raw;
 }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PROCESSING_LINES } from "@/components/ReadingWait";
 import { getSpread, drawCards } from "@/lib/tarot";
@@ -10,7 +10,8 @@ import type { DrawnCard, Reading } from "@/lib/types";
 import { getCategory, SENSITIVE_KEYS, type IntakePayload } from "@/lib/intake";
 import {
   makeReading,
-  newId,
+  pendingAttemptId,
+  clearPendingAttemptId,
   setCachedInterpretation,
   freeReadingUsed,
   markFreeReadingUsed,
@@ -108,6 +109,7 @@ export function useIntakeFlow(slug: string) {
   // Point 6: "Start over" wipes the draft and the form, back to step 1.
   const startOver = () => {
     clearIntakeDraft();
+    clearPendingAttemptId(`intake:${slug}`);
     setCategoryKey(null);
     setAnswers({});
     setStory("");
@@ -143,13 +145,13 @@ export function useIntakeFlow(slug: string) {
   // step draws the cards and shows them for a first impression; nothing
   // is spent until the seeker taps "Reveal my reading". Going back and
   // continuing again simply draws fresh cards.
-  // Point 1: one id per generation attempt, reused by retries so a reading the
-  // server already saved is replayed, never re-spent. New cards = new attempt.
-  const attemptId = useRef<string | null>(null);
-
+  // Point 1 / item 4: one id per generation attempt, reused by retries AND by
+  // a page reload (kept in localStorage, see pendingAttemptId) so a reading the
+  // server already saved is replayed, never re-spent. It is tied to the story,
+  // question and category, not to the drawn cards: re-drawing after a failure
+  // must not mint a second id for a reading that may already be paid for.
   const beginDraw = () => {
     if (!category) return;
-    attemptId.current = null;
     if (!isFreeAvailable && (credits ?? 0) < 1) {
       setError("You are out of Oracles. Please top up to continue.");
       return;
@@ -216,12 +218,15 @@ export function useIntakeFlow(slug: string) {
         firstImpression: firstWord || undefined,
       };
 
-      attemptId.current ??= newId();
+      const intakeScope = `intake:${slug}`;
+      const attemptId = signedIn
+        ? pendingAttemptId(intakeScope, JSON.stringify([slug, category.key, story.trim(), question.trim()]))
+        : undefined;
       const res = await fetch("/api/reading/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          readingId: signedIn ? attemptId.current : undefined,
+          readingId: attemptId,
           spreadSlug: spread.slug,
           originalQuestion: originalQuestion || undefined,
           cards: cards.map((c) => ({
@@ -284,7 +289,7 @@ export function useIntakeFlow(slug: string) {
       await persistReading(reading);
       setCachedInterpretation(reading.id, interpretation);
       clearIntakeDraft();
-      attemptId.current = null;
+      clearPendingAttemptId(intakeScope);
       // Signed-in balance now comes from the server (the route spent
       // after generation); sync it so the header shows the new balance.
       if (signedIn) await refresh();

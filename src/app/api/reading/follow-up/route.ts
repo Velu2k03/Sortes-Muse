@@ -13,7 +13,7 @@ import { validateFollowUpText } from "@/lib/output-validation";
 import { logGuestGeneration } from "@/lib/guestLogging";
 import { drawClarifierCard } from "@/lib/clarifier";
 import { CARDS } from "@/lib/cards";
-import { checkRateLimit, clientIp, rateLimitExceeded, RATE_LIMITS } from "@/lib/rateLimit";
+import { checkRateLimit, clientIp, ipLimitKey, rateLimitExceeded, RATE_LIMITS } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -114,7 +114,7 @@ Answer this follow-up now.`.trim();
 
 export async function POST(req: NextRequest) {
   // Phase 6: shared limiter (was a per-route map: 10/hr/IP).
-  if (!(await checkRateLimit(`follow-up:${clientIp(req)}`, RATE_LIMITS.aiFollowUpIp)).allowed) {
+  if (!(await checkRateLimit(ipLimitKey("follow-up", clientIp(req)), RATE_LIMITS.aiFollowUpIp)).allowed) {
     return rateLimitExceeded();
   }
 

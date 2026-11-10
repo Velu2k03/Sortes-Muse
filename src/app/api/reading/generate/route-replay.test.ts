@@ -77,4 +77,17 @@ describe("POST /api/reading/generate — idempotent readingId", () => {
     const saved = vi.mocked(saveReadingWithSpend).mock.calls[0];
     expect(saved[1].id).toBe(ID);
   });
+
+  // Round 3 item 3: an id that belongs to another user is a 409, not a 402/500.
+  it("returns 409 (not 402/500) when the id belongs to another user", async () => {
+    vi.mocked(getReadingForUser).mockResolvedValue(null);
+    vi.mocked(saveReadingWithSpend).mockResolvedValue({ ok: false, free: false, conflict: true });
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ choices: [{ message: { content: "Body." } }], model: "t/m:free" }),
+    }));
+    const res = await POST(req(ID, "10.7.0.4"));
+    expect(res.status).toBe(409);
+    expect((await res.json()).error).toContain("No Oracle was spent");
+  });
 });

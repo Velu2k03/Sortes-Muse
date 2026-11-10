@@ -76,6 +76,27 @@ describe("Point 6: return URL", () => {
       expect(safeReturnTo(bad as string | null)).toBeNull();
     }
   });
+  // Round 3 item 6: hostile values. "/%2F%2Fevil.com" starts with a single
+  // slash and has no backslash, so it passed the old literal-character check.
+  it.each([
+    "//evil.com",
+    "/\\evil.com",
+    "/%2F%2Fevil.com",
+    "/%2f%2fevil.com",
+    "/%5Cevil.com",
+    "https://sortes.resonantatlas.com.evil.com",
+    "/\t/evil.com",
+    "/\n/evil.com",
+    "/%E0%A4%A",
+    "javascript:alert(1)",
+  ])("rejects hostile returnTo %j", (bad) => {
+    expect(safeReturnTo(bad)).toBeNull();
+  });
+  it("accepts ordinary same-site paths, with query and hash", () => {
+    for (const ok of ["/", "/intake/celtic-cross", "/account?x=1", "/reading/abc#top", "/a%20b"]) {
+      expect(safeReturnTo(ok)).toBe(ok);
+    }
+  });
   it("stash survives the OAuth/email-link round trip, is consumed once, and expires after an hour", () => {
     stashReturnTo("/intake/celtic-cross");
     expect(takeReturnTo()).toBe("/intake/celtic-cross");

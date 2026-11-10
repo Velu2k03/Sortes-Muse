@@ -16,7 +16,7 @@ import type { ReportType, SavedReport } from "@/lib/reports";
 import { generateChat } from "@/lib/ai";
 import { preCheckOracleBalance } from "@/lib/credit-precheck";
 import { validateReportText, anchorTerms } from "@/lib/output-validation";
-import { checkRateLimit, clientIp, rateLimitExceeded, RATE_LIMITS } from "@/lib/rateLimit";
+import { checkRateLimit, clientIp, ipLimitKey, rateLimitExceeded, RATE_LIMITS } from "@/lib/rateLimit";
 
 // M4.1: premium keep-forever reports. Batch D (B4): sign-in is required
 // (guests get 401 before any model call) and the report row is inserted
@@ -73,7 +73,7 @@ const TYPE_PROMPTS: Record<ReportType, { maxTokens: number; system: string; stru
 
 export async function POST(req: NextRequest) {
   // Phase 6: shared limiter (was a per-route map: 20/hr/IP).
-  if (!(await checkRateLimit(`reports-generate:${clientIp(req)}`, RATE_LIMITS.reportsGenerateIp)).allowed) {
+  if (!(await checkRateLimit(ipLimitKey("reports-generate", clientIp(req)), RATE_LIMITS.reportsGenerateIp)).allowed) {
     return rateLimitExceeded();
   }
   // Batch D (B4, OWASP A01): reports are a paid product with no guest
@@ -234,6 +234,12 @@ export async function POST(req: NextRequest) {
   // report row. If the balance cannot cover it, nothing is written and the
   // text is withheld rather than delivered unpaid.
   const saved = await saveReportWithSpend(session.userId, { ...report });
+  if (saved.conflict) {
+    return NextResponse.json(
+      { error: "That report id is already in use. No Oracle was spent." },
+      { status: 409 }
+    );
+  }
   if (!saved.ok) {
     return NextResponse.json(
       { error: "You need 1 Oracle for this report. No Oracle was spent." },

@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import { createHash } from "node:crypto";
+import { createHmac } from "node:crypto";
 import { Redis } from "@upstash/redis";
 import { Ratelimit, type Duration } from "@upstash/ratelimit";
 
@@ -135,7 +135,7 @@ export function createMemoryStore(): LimiterStore & { clear(): void } {
 /** The slice of an @upstash/ratelimit instance the store uses. */
 export interface LimiterLike {
   limit(identifier: string): Promise<{ success: boolean; remaining: number; reason?: string }>;
-  getRemaining(identifier: string): Promise<{ remaining: number }>;
+  getRemaining(identifier: string): Promise<{ remaining: number; reset?: number }>;
 }
 
 /**
@@ -166,6 +166,9 @@ export class RateLimitTimeoutError extends Error {
   }
 }
 
+/** Same 500 ms the library applies to limit(); getRemaining has none of its own. */
+const GET_REMAINING_TIMEOUT_MS = 500;
+
 /**
  * Store backed by @upstash/ratelimit (atomic Lua sliding window). The
  * limiter factory is injectable so the wrapper can be tested without Redis.
@@ -184,9 +187,35 @@ export function createUpstashStore(makeLimiter: (rule: RateLimitRule) => Limiter
     if (r.reason === "timeout") throw new RateLimitTimeoutError();
     return r;
   };
+  // Keys already at their cap -> reset time (ms). Refused locally until then,
+  // so a flood past the cap costs no further Redis reads. Pruned on write.
+  const blockedUntil = new Map<string, number>();
+  const readRemaining = async (key: string, rule: RateLimitRule) => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      return await Promise.race([
+        limiterFor(rule).getRemaining(key),
+        new Promise<never>((_, reject) => {
+          timer = setTimeout(() => reject(new RateLimitTimeoutError()), GET_REMAINING_TIMEOUT_MS);
+        }),
+      ]);
+    } finally {
+      clearTimeout(timer);
+    }
+  };
   return {
     async count(key, rule) {
-      const { remaining } = await limiterFor(rule).getRemaining(key);
+      const id = `${rule.windowMs}:${rule.max}:${key}`;
+      const now = Date.now();
+      const until = blockedUntil.get(id);
+      if (until !== undefined && until > now) return rule.max;
+      const { remaining, reset } = await readRemaining(key, rule);
+      if (remaining <= 0 && typeof reset === "number" && reset > now) {
+        for (const [k, t] of blockedUntil) if (t <= now) blockedUntil.delete(k);
+        blockedUntil.set(id, reset);
+      } else {
+        blockedUntil.delete(id);
+      }
       return Math.max(0, rule.max - remaining);
     },
     async record(key, rule) {
@@ -267,13 +296,15 @@ export function resetFallbackLog(): void {
 }
 
 /**
- * C2: email-keyed limits are hashed so no address sits in the third-party
- * store. Salted with AUTH_SECRET (read directly: importing auth.ts would
- * be circular). Hashed keys start new buckets; old plaintext ones expire.
+ * C2: email- and IP-keyed limits are hashed so no address sits in the
+ * third-party store. HMAC-SHA256 keyed by "ratelimit:" + AUTH_SECRET (read
+ * directly: importing auth.ts would be circular), so the session-signing
+ * secret itself is never the key. Hashed keys start new buckets; old ones
+ * expire via TTL.
  */
 function hashedKey(prefix: string, value: string): string {
-  const salt = process.env.AUTH_SECRET ?? "dev-only-salt";
-  return `${prefix}:${createHash("sha256").update(`${salt}:${value}`).digest("hex")}`;
+  const secret = process.env.AUTH_SECRET ?? "dev-only-salt";
+  return `${prefix}:${createHmac("sha256", `ratelimit:${secret}`).update(value).digest("hex")}`;
 }
 
 export function emailLimitKey(prefix: string, email: string): string {

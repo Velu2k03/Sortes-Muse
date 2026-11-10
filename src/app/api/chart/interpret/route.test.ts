@@ -155,6 +155,17 @@ describe("POST /api/chart/interpret", () => {
     expect(data.interpretation).toBeUndefined();
   });
 
+  it("returns 409 (not 402/500) when the reading id belongs to another user", async () => {
+    mockedGetSession.mockResolvedValue({ userId: "u1", email: "a@b.co" });
+    mockedHasUsedFree.mockResolvedValue(true);
+    mockedSave.mockResolvedValue({ ok: false, free: false, conflict: true });
+    const res = await POST(req({ system: "western", chart: CHART, category: "general" }, "10.0.2.8"));
+    expect(res.status).toBe(409);
+    const data = await res.json();
+    expect(data.error).toContain("No Oracle was spent");
+    expect(data.reading).toBeUndefined();
+  });
+
   // Chart-interpret fix (2026-11-07): the chart prompt is ~836 words
   // (~1,110 tokens: 10 planets + 12 cusps + 43 aspects) but the route
   // reused the reading route's 1200-token budget, and the system

@@ -1,6 +1,7 @@
 import { usePostgres, pg, sql, jsonbParam, ensureSchema, txWithSignal } from "./client";
 import { readLocal, writeLocal } from "./json-store";
 import { withDbTimeout } from "../db-timeout";
+import { assertUuid, IdTakenError } from "../ids";
 
 /*
  * F9 (2026-11-09): keep-forever reports.
@@ -41,7 +42,8 @@ export async function saveReportForUser(userId: string, report: { id: string; [k
 export async function saveReportWithSpend(
   userId: string,
   report: { id: string; [k: string]: unknown }
-): Promise<{ ok: boolean; existing?: boolean }> {
+): Promise<{ ok: boolean; existing?: boolean; conflict?: boolean }> {
+  assertUuid(report.id);
   await ensureSchema();
   if (usePostgres) {
     if (!pg) throw new Error("Database not configured");
@@ -57,14 +59,27 @@ export async function saveReportWithSpend(
         VALUES (${report.id}, ${userId}, ${jsonbParam(report)}, NOW())
         ON CONFLICT (id) DO NOTHING RETURNING id`;
       // Point 2: 0 rows -> throw so the spend rolls back with it.
-      if (inserted.length === 0) throw new Error("report insert wrote 0 rows; rolled back");
+      if (inserted.length === 0) {
+        const owner = await tx`SELECT user_id FROM reports WHERE id = ${report.id}`;
+        throw new IdTakenError((owner[0] as { user_id: string } | undefined)?.user_id === userId);
+      }
       return { ok: true };
     });
-    return await withDbTimeout(begin, controller);
+    try {
+      return await withDbTimeout(begin, controller);
+    } catch (err) {
+      if (!(err instanceof IdTakenError)) throw err;
+      if (!err.sameUser) return { ok: false, conflict: true };
+      // Lost a race with our own parallel attempt: the winner's row is saved.
+      const { rows } = await sql`SELECT id FROM reports WHERE id = ${report.id} AND user_id = ${userId}`;
+      if (rows.length === 0) throw err;
+      return { ok: true, existing: true };
+    }
   }
   const db = await readLocal();
   const list = db.reports ?? (db.reports = []);
   if (list.some((r) => r.id === report.id && r.user_id === userId)) return { ok: true, existing: true };
+  if (list.some((r) => r.id === report.id)) return { ok: false, conflict: true };
   const u = db.users.find((x) => x.id === userId);
   if (!u || u.credits < 1) return { ok: false };
   u.credits -= 1;

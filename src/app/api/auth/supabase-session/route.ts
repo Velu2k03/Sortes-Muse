@@ -7,7 +7,7 @@ import {
   SESSION_MAX_AGE,
   authConfigured,
 } from "@/lib/auth";
-import { checkRateLimit, clientIp, rateLimitExceeded, RATE_LIMITS } from "@/lib/rateLimit";
+import { checkRateLimit, clientIp, ipLimitKey, rateLimitExceeded, RATE_LIMITS } from "@/lib/rateLimit";
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +20,7 @@ export const dynamic = "force-dynamic";
  * guest credits and journal migration run exactly as before.
  */
 export async function POST(req: NextRequest) {
-  if (!(await checkRateLimit(`supabase-session:${clientIp(req)}`, RATE_LIMITS.authIp)).allowed) {
+  if (!(await checkRateLimit(ipLimitKey("supabase-session", clientIp(req)), RATE_LIMITS.authIp)).allowed) {
     return rateLimitExceeded();
   }
   try {

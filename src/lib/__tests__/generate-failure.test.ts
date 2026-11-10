@@ -29,9 +29,9 @@ describe("Point 1: honest failure copy", () => {
   });
 
   it("clients send an attempt id and use the shared failure copy", () => {
-    expect(readFileSync(CLIENTS[0], "utf8")).toMatch(/readingId: signedIn \? attemptId\.current/);
-    expect(readFileSync(CLIENTS[1], "utf8")).toMatch(/reportId: attempt\.current\.id/);
-    expect(readFileSync(CLIENTS[2], "utf8")).toMatch(/readingId: interpAttempt\.current\.id/);
+    expect(readFileSync(CLIENTS[0], "utf8")).toMatch(/readingId: attemptId,/);
+    expect(readFileSync(CLIENTS[1], "utf8")).toMatch(/reportId: attemptId/);
+    expect(readFileSync(CLIENTS[2], "utf8")).toMatch(/readingId: attemptId/);
     for (const f of CLIENTS) expect(readFileSync(f, "utf8"), f).toContain("unconfirmedMessage(");
   });
 });
