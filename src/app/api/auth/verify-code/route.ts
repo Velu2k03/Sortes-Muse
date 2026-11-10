@@ -18,7 +18,7 @@ import { checkRateLimit, clientIp, rateLimitExceeded, RATE_LIMITS } from "@/lib/
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
-  if (!checkRateLimit(`verify:${clientIp(req)}`, RATE_LIMITS.authIp).allowed) {
+  if (!(await checkRateLimit(`verify:${clientIp(req)}`, RATE_LIMITS.authIp)).allowed) {
     return rateLimitExceeded();
   }
   try {

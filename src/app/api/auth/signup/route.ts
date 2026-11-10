@@ -29,7 +29,7 @@ function signInResponse(user: { id: string; email: string; credits: number; pwd_
 }
 
 export async function POST(req: NextRequest) {
-  if (!checkRateLimit(`signup:${clientIp(req)}`, RATE_LIMITS.authIp).allowed) {
+  if (!(await checkRateLimit(`signup:${clientIp(req)}`, RATE_LIMITS.authIp)).allowed) {
     return rateLimitExceeded();
   }
   try {

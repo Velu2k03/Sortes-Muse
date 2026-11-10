@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
     // limiter). Only failures count, as before; a success does not
     // consume the budget.
     const limitKey = `login:${email}`;
-    if (isRateLimited(limitKey, RATE_LIMITS.loginEmail)) {
+    if (await isRateLimited(limitKey, RATE_LIMITS.loginEmail)) {
       return NextResponse.json(
         { error: "Too many attempts. Please try again in a few minutes." },
         { status: 429 }
@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
     // from one IP does not bypass the limit. Checked before the
     // password verification, recorded only on failure.
     const ipKey = `login-ip:${clientIp(req)}`;
-    if (isRateLimited(ipKey, RATE_LIMITS.loginIp)) {
+    if (await isRateLimited(ipKey, RATE_LIMITS.loginIp)) {
       return NextResponse.json(
         { error: "Too many attempts. Please try again in a few minutes." },
         { status: 429 }
@@ -54,8 +54,8 @@ export async function POST(req: NextRequest) {
       user?.password_hash &&
       (await verifyPassword(password, user.password_hash));
     if (!ok) {
-      recordRateLimit(limitKey, RATE_LIMITS.loginEmail);
-      recordRateLimit(ipKey, RATE_LIMITS.loginIp);
+      await recordRateLimit(limitKey, RATE_LIMITS.loginEmail);
+      await recordRateLimit(ipKey, RATE_LIMITS.loginIp);
       return NextResponse.json(
         { error: "Email or password is not correct." },
         { status: 401 }

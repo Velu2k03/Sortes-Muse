@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
   // bounds unauthenticated polling without touching normal use; a
   // tripped limit reads as signed-out in AuthProvider until the next
   // refresh, same as any other non-200 here.
-  if (!checkRateLimit(`me:${clientIp(req)}`, RATE_LIMITS.readIp).allowed) {
+  if (!(await checkRateLimit(`me:${clientIp(req)}`, RATE_LIMITS.readIp)).allowed) {
     return rateLimitExceeded();
   }
   const session = await getSession();

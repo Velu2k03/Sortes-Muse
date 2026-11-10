@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic";
 
 /** Signed-in users can set a password (or change it with the current one). */
 export async function POST(req: NextRequest) {
-  if (!checkRateLimit(`setpw:${clientIp(req)}`, RATE_LIMITS.authIp).allowed) {
+  if (!(await checkRateLimit(`setpw:${clientIp(req)}`, RATE_LIMITS.authIp)).allowed) {
     return rateLimitExceeded();
   }
   try {

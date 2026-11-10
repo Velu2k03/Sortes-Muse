@@ -10,7 +10,7 @@ let cache: { at: number; value: number } | null = null;
 
 export async function GET(req: NextRequest) {
   // Phase 6 (N3): the public stats endpoint was unrated. 60/min/IP.
-  if (!checkRateLimit(`stats:${clientIp(req)}`, RATE_LIMITS.readIp).allowed) {
+  if (!(await checkRateLimit(`stats:${clientIp(req)}`, RATE_LIMITS.readIp)).allowed) {
     return rateLimitExceeded();
   }
   const now = Date.now();

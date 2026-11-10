@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic";
 export async function POST(req: NextRequest) {
   // Phase 6: this calculation route was unrated (N3). Same budget as
   // /api/chart/calculate: 20/hr/IP.
-  if (!checkRateLimit(`chart-calc:${clientIp(req)}`, RATE_LIMITS.chartCalcIp).allowed) {
+  if (!(await checkRateLimit(`chart-calc:${clientIp(req)}`, RATE_LIMITS.chartCalcIp)).allowed) {
     return rateLimitExceeded();
   }
   let body: { natalPlanets?: unknown; date?: unknown };

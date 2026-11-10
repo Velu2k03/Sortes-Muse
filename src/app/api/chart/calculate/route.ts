@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   // Phase 6: shared limiter (was a per-route map: 20/hr/IP).
-  if (!checkRateLimit(`chart-calc:${clientIp(req)}`, RATE_LIMITS.chartCalcIp).allowed) {
+  if (!(await checkRateLimit(`chart-calc:${clientIp(req)}`, RATE_LIMITS.chartCalcIp)).allowed) {
     return rateLimitExceeded();
   }
   let body: Record<string, unknown>;

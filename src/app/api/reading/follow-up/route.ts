@@ -113,7 +113,7 @@ Answer this follow-up now.`.trim();
 
 export async function POST(req: NextRequest) {
   // Phase 6: shared limiter (was a per-route map: 10/hr/IP).
-  if (!checkRateLimit(`follow-up:${clientIp(req)}`, RATE_LIMITS.aiFollowUpIp).allowed) {
+  if (!(await checkRateLimit(`follow-up:${clientIp(req)}`, RATE_LIMITS.aiFollowUpIp)).allowed) {
     return rateLimitExceeded();
   }
 

@@ -153,7 +153,7 @@ Write the personalized reading now.`;
 
 export async function POST(req: NextRequest) {
   // Phase 6: shared limiter (was a per-route map: 20/hr/IP).
-  if (!checkRateLimit(`generate:${clientIp(req)}`, RATE_LIMITS.aiGenerateIp).allowed) {
+  if (!(await checkRateLimit(`generate:${clientIp(req)}`, RATE_LIMITS.aiGenerateIp)).allowed) {
     return rateLimitExceeded();
   }
 

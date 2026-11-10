@@ -15,7 +15,7 @@ export async function GET(
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
   // Phase 6 (N3): report reads were unrated.
-  if (!checkRateLimit(`reports-read:${clientIp(req)}`, RATE_LIMITS.readIp).allowed) {
+  if (!(await checkRateLimit(`reports-read:${clientIp(req)}`, RATE_LIMITS.readIp)).allowed) {
     return rateLimitExceeded();
   }
   const { id } = await params;
@@ -31,7 +31,7 @@ export async function DELETE(
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
   // Phase 6 (N3): report deletes were unrated.
-  if (!checkRateLimit(`reports-read:${clientIp(req)}`, RATE_LIMITS.readIp).allowed) {
+  if (!(await checkRateLimit(`reports-read:${clientIp(req)}`, RATE_LIMITS.readIp)).allowed) {
     return rateLimitExceeded();
   }
   const { id } = await params;

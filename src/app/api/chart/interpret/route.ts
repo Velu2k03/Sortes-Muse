@@ -201,7 +201,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   // Phase 6: shared limiter (was a per-route map: 20/hr/IP).
-  if (!checkRateLimit(`interpret:${clientIp(req)}`, RATE_LIMITS.chartInterpretIp).allowed) {
+  if (!(await checkRateLimit(`interpret:${clientIp(req)}`, RATE_LIMITS.chartInterpretIp)).allowed) {
     return rateLimitExceeded();
   }
   let body: Record<string, unknown>;

@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
   // Phase 6 (N3): report reads were unrated.
-  if (!checkRateLimit(`reports-read:${clientIp(req)}`, RATE_LIMITS.readIp).allowed) {
+  if (!(await checkRateLimit(`reports-read:${clientIp(req)}`, RATE_LIMITS.readIp)).allowed) {
     return rateLimitExceeded();
   }
   const reports = await listReportsForUser(session.userId);
@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
   // Phase 6 (N3): report saves were unrated.
-  if (!checkRateLimit(`reports-save:${clientIp(req)}`, RATE_LIMITS.readIp).allowed) {
+  if (!(await checkRateLimit(`reports-save:${clientIp(req)}`, RATE_LIMITS.readIp)).allowed) {
     return rateLimitExceeded();
   }
   let body: Record<string, unknown>;

@@ -74,7 +74,7 @@ const TYPE_PROMPTS: Record<ReportType, { maxTokens: number; system: string; stru
 
 export async function POST(req: NextRequest) {
   // Phase 6: shared limiter (was a per-route map: 20/hr/IP).
-  if (!checkRateLimit(`reports-generate:${clientIp(req)}`, RATE_LIMITS.reportsGenerateIp).allowed) {
+  if (!(await checkRateLimit(`reports-generate:${clientIp(req)}`, RATE_LIMITS.reportsGenerateIp)).allowed) {
     return rateLimitExceeded();
   }
   let body: Record<string, unknown>;

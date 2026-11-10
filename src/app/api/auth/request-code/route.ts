@@ -48,7 +48,7 @@ async function handleRequest(req: NextRequest) {
   const now = Date.now();
   // 5 code requests per email per hour (shared limiter; same budget
   // as the old per-route map it replaces).
-  if (!checkRateLimit(`code:${email}`, RATE_LIMITS.codeEmail).allowed) {
+  if (!(await checkRateLimit(`code:${email}`, RATE_LIMITS.codeEmail)).allowed) {
     return rateLimitExceeded();
   }
 

@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
   if (!lemonConfigured()) {
     return NextResponse.json({ error: "Checkout not configured." }, { status: 503 });
   }
-  if (!checkRateLimit(`checkout:${clientIp(req)}`, RATE_LIMITS.checkoutIp).allowed) {
+  if (!(await checkRateLimit(`checkout:${clientIp(req)}`, RATE_LIMITS.checkoutIp)).allowed) {
     return rateLimitExceeded();
   }
   let body: { packId?: string; email?: string };

@@ -20,7 +20,7 @@ export const dynamic = "force-dynamic";
  * guest credits and journal migration run exactly as before.
  */
 export async function POST(req: NextRequest) {
-  if (!checkRateLimit(`supabase-session:${clientIp(req)}`, RATE_LIMITS.authIp).allowed) {
+  if (!(await checkRateLimit(`supabase-session:${clientIp(req)}`, RATE_LIMITS.authIp)).allowed) {
     return rateLimitExceeded();
   }
   try {

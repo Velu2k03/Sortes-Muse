@@ -6,7 +6,7 @@ import { checkRateLimit, clientIp, rateLimitExceeded, RATE_LIMITS } from "@/lib/
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
-  if (!checkRateLimit(`transactions:${clientIp(req)}`, RATE_LIMITS.moneyIp).allowed) {
+  if (!(await checkRateLimit(`transactions:${clientIp(req)}`, RATE_LIMITS.moneyIp)).allowed) {
     return rateLimitExceeded();
   }
   const session = await getSession();
