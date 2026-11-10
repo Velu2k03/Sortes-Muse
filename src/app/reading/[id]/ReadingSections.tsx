@@ -7,7 +7,6 @@ import { computeSpreadFacts } from "@/lib/spread-facts";
 import TarotCard from "@/components/TarotCard";
 import CardModal from "@/components/CardModal";
 import HeirloomPrint from "@/components/HeirloomPrint";
-import TypewriterText from "@/components/TypewriterText";
 import ReadingText from "@/components/ReadingText";
 import { readingToPlainText } from "@/lib/readingMarkdown";
 import SplitText from "@/components/SplitText";
@@ -245,12 +244,12 @@ export function CardMeanings({ reading }: { reading: Reading }) {
           <p className="mt-1 text-xs text-mist">
             AI-generated
           </p>
-          <TypewriterText
+          <ReadingText
             text={reading.interpretation}
             className="mt-3 whitespace-pre-line leading-relaxed text-cream/90"
           />
           <p className="mt-4 text-xs italic text-mist">
-            Written for you in this moment. Use Show full reading to see it all at once.
+            Written for you in this moment.
           </p>
         </section>
       )}
