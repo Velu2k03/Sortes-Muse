@@ -151,21 +151,23 @@ export default function WesternWheel({ result }: { result: WesternResult }) {
         <>
           <h3 className="mt-8 scroll-mt-24 font-display text-xl text-goldbright">Wheel overview</h3>
           <p className="mt-1 text-sm text-cream/80">Visual overview. Clustered labels are staggered on the wheel.</p>
+          {/* Batch 4b: the wheel SVG scales to its container (w-full
+              h-auto, max-w 640px), so nothing scrolls sideways. The
+              old overflow-x-auto wrappers and the "Scroll sideways
+              to see the full wheel" caption said otherwise and are
+              gone; the planet table above keeps its own sideways
+              scroll (min-w 520px) and its caption, which are real. */}
           <motion.section
             initial={reduce ? { opacity: 1 } : { opacity: 0, scale: 0.97 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: reduce ? 0 : 0.5, ease: "easeOut" }}
-            // section + aria-label = named region; tabIndex so keyboard
-            // users can scroll it (same pattern as ScrollableRegion).
-            tabIndex={0}
-            aria-label="Wheel overview, scroll sideways to see the full wheel"
-            className="mt-6 overflow-x-auto rounded-2xl border border-gold/25 bg-panel/70 p-4"
+            aria-label="Wheel overview"
+            className="mt-6 rounded-2xl border border-gold/25 bg-panel/70 p-4"
           >
-            <div className="mx-auto w-full overflow-x-auto">
+            <div className="mx-auto w-full">
               <CustomWesternWheel result={result} theme={wheelTheme} />
             </div>
           </motion.section>
-          <p className="mt-1 text-right text-xs text-mist sm:hidden">Scroll sideways to see the full wheel</p>
         </>
       ) : (
         <p className="mt-8 rounded-2xl border border-gold/25 bg-panel/70 p-4 text-sm text-cream/80">

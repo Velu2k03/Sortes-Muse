@@ -12,14 +12,14 @@ export const metadata: Metadata = {
     description:
       "Contact Sortes by email for help with Oracles, readings, or your account. We aim to reply within two business days. Include a few details so we can help.",
     url: `${SITE_URL}/contact`,
-    images: [{ url: "/og-image.jpg", width: 1200, height: 630, alt: "Sortes" }],
+    images: [{ url: "/og-image.jpg?v=2", width: 1200, height: 630, alt: "Sortes" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "Contact Sortes",
     description:
       "Contact Sortes by email for help with Oracles, readings, or your account. We aim to reply within two business days. Include a few details so we can help.",
-    images: ["/og-image.jpg"],
+    images: ["/og-image.jpg?v=2"],
   },
 };
 

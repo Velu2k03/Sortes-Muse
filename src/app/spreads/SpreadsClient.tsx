@@ -18,10 +18,10 @@ import FieldGroup from "@/components/FieldGroup";
 /**
  * Spread selection.
  * There is exactly ONE payment in the whole app: buying Oracle packs.
- * 1 Oracle = 1 full reading of any spread. Spreads show a crisp
- * SVG diagram of their card positions whether or not the seeker can
- * start a reading right now (no free reading left and 0 Oracles);
- * the moment they have an Oracle, the spread opens with
+ * 1 Oracle = 1 full reading of any spread. Spreads show numbered
+ * miniature card backs for their card positions whether or not the
+ * seeker can start a reading right now (no free reading left and 0
+ * Oracles); the moment they have an Oracle, the spread opens with
  * "Begin reading" and the gate offers the personalized intake.
  */
 export default function SpreadsPage() {
@@ -148,15 +148,14 @@ export default function SpreadsPage() {
             transition={{ delay: i * 0.05, duration: 0.4 }}
             className={`relative flex flex-col overflow-hidden rounded-3xl border bg-panel/70 ${pickedSlug === s.slug ? "border-gold shadow-[0_0_0_2px_rgba(212,175,55,0.6)]" : "border-gold/25"}`}
           >
-            {/* Phase 4A (4.5): crisp sacred-geometry diagram of the
-                spread's card positions, gold-on-dark linework. The
-                old blurred card-back preview is gone; every spread
-                shows its layout, and the gate stays on the button
-                below (AF-015: no Locked badge). */}
-            <div className={`relative flex items-center justify-center overflow-hidden bg-navydeep/60 p-4 ${s.cards === 10 ? "h-[22rem]" : "h-36"}`}>
-              <div className="h-full w-full max-w-72">
-                <SpreadDiagram spread={s} />
-              </div>
+            {/* Batch 4a: numbered miniature card backs with the
+                position numbers on them. The labels live in the
+                "Positions in this spread" legend below; the diagram
+                sizes itself from its own aspect ratio, so the old
+                fixed-height squeeze that shrank the SVG labels to
+                ~5.7px cannot come back. */}
+            <div className="relative flex items-center justify-center overflow-hidden bg-navydeep/60 p-4">
+              <SpreadDiagram spread={s} />
             </div>
 
             <div className="flex flex-1 flex-col p-6">
@@ -216,15 +215,23 @@ export default function SpreadsPage() {
               </p>
               <details className="mt-3">
                 <summary className="cursor-pointer text-xs font-semibold text-goldbright">Positions in this spread ({s.positions.length})</summary>
-                <ul className="mt-2 space-y-1">
-                  {s.positions.map((p) => (
-                    <li key={p.key} className="text-xs text-cream/80">
-                      <span className="text-goldbright">{p.label}</span>
-                      {": "}
-                      {p.hint}
+                {/* Batch 4a: numbered, so the numbers match the
+                    badges on the diagram above. The old SVG had the
+                    labels on it; the diagram now shows numbers only,
+                    so this list is the only place that ties a number
+                    to a position. */}
+                <ol className="mt-2 space-y-1">
+                  {s.positions.map((p, i) => (
+                    <li key={p.key} className="flex gap-2 text-xs text-cream/80">
+                      <span className="shrink-0 font-semibold text-goldbright">{i + 1}.</span>
+                      <span>
+                        <span className="text-goldbright">{p.label}</span>
+                        {": "}
+                        {p.hint}
+                      </span>
                     </li>
                   ))}
-                </ul>
+                </ol>
               </details>
               {/* Sample reading, Phase 3 (3.7): one distinct sample
                   per spread from src/lib/spread-samples.ts, written

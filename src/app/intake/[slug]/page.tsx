@@ -1,17 +1,34 @@
 import { notFound } from "next/navigation";
 import IntakeFlow from "./IntakeFlow";
 import { SPREADS } from "@/lib/tarot";
+import { pageSocial } from "@/lib/seo";
 
 export function generateStaticParams() {
   return SPREADS.map((s) => ({ slug: s.slug }));
 }
 
-export const metadata = {
-  title: "Personalize your reading",
-  description:
-    "Tell your story so your tarot reading can be woven around it. Only your first name is ever shared with the AI.",
-  robots: { index: false, follow: true },
-};
+const DESCRIPTION =
+  "Tell your story so your tarot reading can be woven around it. Only your first name is ever shared with the AI.";
+
+// Batch 4d: this page inherited the generic homepage OG block. It
+// gets its own OG/Twitter now, with the real intake URL.
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+  return {
+    title: "Personalize your reading",
+    description: DESCRIPTION,
+    robots: { index: false, follow: true },
+    ...pageSocial({
+      title: "Personalize your reading",
+      description: DESCRIPTION,
+      path: `/intake/${slug}`,
+    }),
+  };
+}
 
 export default async function IntakePage({
   params,
