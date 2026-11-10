@@ -1,6 +1,10 @@
 # PR lint gate: fails on any lint error, any repo-lint warning, or any
 # explicit jsx-a11y warning not listed in scripts/lint-baseline.txt.
 # Needs no secrets. See scripts/lint-gate.sh.
+# Item 8: the same job also runs vitest (incl. the Postgres money-path
+# tests) against a throwaway Postgres service. It stays ONE job named
+# "lint-gate" on purpose: that is the status check branch protection
+# already requires, so the tests become required with no settings change.
 name: 'Lint gate'
 
 on:
@@ -20,7 +24,21 @@ concurrency:
 jobs:
   lint-gate:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: sortes_test
+          POSTGRES_PASSWORD: ci_only_throwaway
+          POSTGRES_DB: sortes_pgtest_money
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U sortes_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - name: Checkout repository
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -36,3 +54,13 @@ jobs:
 
       - name: Run lint gate
         run: npm run lint:gate
+
+      # Money-path DB tests read SORTES_TEST_DATABASE_URL and skip when it
+      # is unset. db-query-timeout.test.ts is excluded: its
+      # cancel_timeout case fails on a clean main too (a postgres.js
+      # timing test, recorded in the fix-run baseline) and would make
+      # this required check permanently red. Re-include it once fixed.
+      - name: Run tests
+        env:
+          SORTES_TEST_DATABASE_URL: postgres://sortes_test:ci_only_throwaway@127.0.0.1:5432/sortes_pgtest_money
+        run: npm test -- --exclude src/lib/__tests__/db-query-timeout.test.ts
