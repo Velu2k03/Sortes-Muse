@@ -1,13 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { authConfigured } from "@/lib/auth";
+import { authConfigured, createSession } from "@/lib/auth";
 
 /**
  * AF-005: the session-signing secret chain. NEXTAUTH_SECRET was a
  * legacy alias nothing is supposed to set (docs/ENVIRONMENT.md:
  * "Not needed — do NOT add"); it must not be able to sign sessions.
- * SUPABASE_JWT_SECRET stays as the fallback for now: production
- * still relies on it (docs/PRODUCTION-CHANGE-PLAN.md §7), so
- * removing it needs Velu to set AUTH_SECRET in production first.
+ * Item 9: the SUPABASE_JWT_SECRET fallback is deleted; AUTH_SECRET is required.
  */
 describe("authConfigured() secret chain (AF-005)", () => {
   const KEYS = ["AUTH_SECRET", "NEXTAUTH_SECRET", "SUPABASE_JWT_SECRET"] as const;
@@ -41,9 +39,14 @@ describe("authConfigured() secret chain (AF-005)", () => {
     expect(authConfigured()).toBe(false);
   });
 
-  it("SUPABASE_JWT_SECRET alone still configures auth (fallback kept)", () => {
+  it("SUPABASE_JWT_SECRET alone does not configure auth (fallback deleted)", () => {
     process.env.SUPABASE_JWT_SECRET = "supabase-jwt-value";
-    expect(authConfigured()).toBe(true);
+    expect(authConfigured()).toBe(false);
+  });
+
+  it("signing a session without AUTH_SECRET throws in production, even with SUPABASE_JWT_SECRET", async () => {
+    process.env.SUPABASE_JWT_SECRET = "supabase-jwt-value";
+    await expect(createSession("u1", "a@b.co")).rejects.toThrow(/AUTH_SECRET is required/);
   });
 
   it("AUTH_SECRET alone configures auth", () => {
