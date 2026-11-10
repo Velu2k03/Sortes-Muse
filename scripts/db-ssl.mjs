@@ -51,3 +51,16 @@ export function pgSslModeForUrl(connectionString) {
   }
   return "require";
 }
+
+/**
+ * Env for a libpq tool. An operator-set PGSSLMODE (non-empty) always wins;
+ * otherwise it is derived from the URL via pgSslModeForUrl. The one place
+ * backup.mjs and restore.mjs build their spawn env. Does not mutate `env`.
+ * @param {string} connectionString
+ * @param {Record<string, string | undefined>} [env]
+ */
+export function libpqEnv(connectionString, env = process.env) {
+  if (env.PGSSLMODE) return { ...env };
+  const mode = pgSslModeForUrl(connectionString);
+  return { ...env, ...(mode ? { PGSSLMODE: mode } : {}) };
+}

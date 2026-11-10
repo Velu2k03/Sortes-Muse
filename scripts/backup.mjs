@@ -27,7 +27,7 @@ import { createHash } from "crypto";
 import { mkdirSync, readdirSync, rmSync, appendFileSync, readFileSync, existsSync } from "fs";
 import { homedir } from "os";
 import path from "path";
-import { pgSslModeForUrl } from "./db-ssl.mjs";
+import { libpqEnv } from "./db-ssl.mjs";
 
 const noEncrypt = process.argv.includes("--no-encrypt");
 const ageRecipient = process.env.SORTES_BACKUP_AGE_RECIPIENT || "";
@@ -65,8 +65,8 @@ const log = (obj) => {
 };
 
 // libpq defaults to sslmode=prefer (silent plaintext fallback); fail
-// closed for non-local hosts. A sslmode in the URL still wins.
-const pgSslMode = pgSslModeForUrl(dbUrl);
+// closed for non-local hosts. An operator PGSSLMODE, then a sslmode in
+// the URL, still win (see libpqEnv).
 const res = spawnSync(
   "pg_dump",
   [dbUrl, "--format=custom", "--no-owner", "--no-acl", "--file", file],
@@ -80,8 +80,7 @@ const res = spawnSync(
   {
     stdio: "inherit",
     env: {
-      ...process.env,
-      ...(pgSslMode ? { PGSSLMODE: pgSslMode } : {}),
+      ...libpqEnv(dbUrl),
       PGOPTIONS: [process.env.PGOPTIONS, "-c statement_timeout=0"]
         .filter(Boolean)
         .join(" "),

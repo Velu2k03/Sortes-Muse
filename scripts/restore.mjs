@@ -29,7 +29,7 @@ import { spawnSync } from "child_process";
 import { accessSync, constants, existsSync, rmSync } from "fs";
 import { homedir } from "os";
 import path from "path";
-import { pgSslModeForUrl } from "./db-ssl.mjs";
+import { libpqEnv } from "./db-ssl.mjs";
 
 function arg(name) {
   const eq = process.argv.find((a) => a.startsWith(`--${name}=`));
@@ -74,13 +74,6 @@ if (isEncrypted) {
   }
 }
 
-// Env for a libpq tool: fail closed on SSL for non-local hosts (libpq
-// defaults to sslmode=prefer). A sslmode in the URL still wins.
-function sslEnv(dbUrl) {
-  const mode = pgSslModeForUrl(dbUrl);
-  return { ...process.env, ...(mode ? { PGSSLMODE: mode } : {}) };
-}
-
 function run(cmd, args, env) {
   const res = spawnSync(cmd, args, { stdio: "inherit", env });
   if (res.status !== 0) {
@@ -95,13 +88,13 @@ if (create) {
   url.pathname = "/postgres";
   const maintUrl = url.toString();
   console.log(`restore: creating database ${dbName} (if missing)`);
-  const res = spawnSync("psql", [maintUrl, "-t", "-A", "-c", `SELECT 1 FROM pg_database WHERE datname = '${dbName.replace(/'/g, "''")}'`], { encoding: "utf8", env: sslEnv(maintUrl) });
+  const res = spawnSync("psql", [maintUrl, "-t", "-A", "-c", `SELECT 1 FROM pg_database WHERE datname = '${dbName.replace(/'/g, "''")}'`], { encoding: "utf8", env: libpqEnv(maintUrl) });
   if (res.status !== 0) {
     console.error("restore: could not check the target database");
     process.exit(1);
   }
   if (res.stdout.trim() !== "1") {
-    run("psql", [maintUrl, "-c", `CREATE DATABASE "${dbName.replace(/"/g, '""')}"`], sslEnv(maintUrl));
+    run("psql", [maintUrl, "-c", `CREATE DATABASE "${dbName.replace(/"/g, '""')}"`], libpqEnv(maintUrl));
   } else {
     console.log("restore: target database already exists");
   }
@@ -137,7 +130,7 @@ try {
   const restoreRes = spawnSync("pg_restore", ["--no-owner", "--no-acl", "--dbname", target, restoreSource], {
     stdio: "inherit",
     env: {
-      ...sslEnv(target),
+      ...libpqEnv(target),
       PGOPTIONS: [process.env.PGOPTIONS, "-c statement_timeout=0"]
         .filter(Boolean)
         .join(" "),
@@ -165,5 +158,5 @@ SELECT 'free_interpretations', count(*) FROM free_interpretations UNION ALL
 SELECT 'schema_migrations', count(*) FROM schema_migrations
 ORDER BY 1;`;
 console.log("restore: row counts in the restored database:");
-run("psql", [target, "-c", verifySql.trim()], sslEnv(target));
+run("psql", [target, "-c", verifySql.trim()], libpqEnv(target));
 console.log("restore: OK - verify the counts above against the source before using this database.");

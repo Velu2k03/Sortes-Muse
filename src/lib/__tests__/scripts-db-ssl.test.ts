@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
-import { sslForScriptUrl, pgSslModeForUrl } from "../../../scripts/db-ssl.mjs";
+import { sslForScriptUrl, pgSslModeForUrl, libpqEnv } from "../../../scripts/db-ssl.mjs";
 
 const remote = "postgres://u:p@db.example.com:5432/d";
 const local = "postgres://u:p@localhost:5432/d";
@@ -84,6 +84,32 @@ describe("pgSslModeForUrl", () => {
   });
 });
 
+describe("libpqEnv", () => {
+  it("keeps an operator PGSSLMODE over the derived require (no sslmode in URL)", () => {
+    expect(libpqEnv(remote, { PGSSLMODE: "verify-full" }).PGSSLMODE).toBe("verify-full");
+  });
+  it("keeps an operator PGSSLMODE over a URL sslmode=require", () => {
+    expect(libpqEnv(remote + "?sslmode=require", { PGSSLMODE: "verify-full" }).PGSSLMODE).toBe(
+      "verify-full",
+    );
+  });
+  it("derives require for a remote URL when PGSSLMODE is unset", () => {
+    expect(libpqEnv(remote, {}).PGSSLMODE).toBe("require");
+  });
+  it("omits PGSSLMODE for localhost when unset", () => {
+    expect("PGSSLMODE" in libpqEnv(local, {})).toBe(false);
+  });
+  it("treats an empty PGSSLMODE as unset", () => {
+    expect(libpqEnv(remote, { PGSSLMODE: "" }).PGSSLMODE).toBe("require");
+  });
+  it("does not mutate the passed env and keeps other vars", () => {
+    const env = { FOO: "1" };
+    const out = libpqEnv(remote, env);
+    expect(env).toEqual({ FOO: "1" });
+    expect(out).toEqual({ FOO: "1", PGSSLMODE: "require" });
+  });
+});
+
 /** Index just past the `)` closing the call whose `(` is at `open`; string/template aware. */
 function callEnd(src: string, open: number): number {
   let depth = 0;
@@ -115,17 +141,21 @@ function callEnd(src: string, open: number): number {
   return src.length;
 }
 
-/** Each pg_dump/pg_restore/psql spawn whose own argument list lacks sslEnv( or PGSSLMODE. */
+/**
+ * Each pg_dump/pg_restore/psql spawn (any child_process wrapper, incl. shell-string
+ * exec/execSync) whose own argument list lacks libpqEnv( / sslEnv( or PGSSLMODE.
+ */
 function libpqSpawnViolations(source: string): string[] {
   const src = source
     .replace(/\/\*[\s\S]*?\*\//g, "")
     .replace(/(^|[^:])\/\/.*$/gm, "$1");
-  const re = /\b(?:spawnSync|run)\(\s*["'`](pg_dump|pg_restore|psql)["'`]/g;
+  const re =
+    /\b(?:spawnSync|spawn|execFileSync|execFile|execSync|exec|fork|run)\(\s*["'`]\s*(pg_dump|pg_restore|psql)(?=[\s"'`])/g;
   const out: string[] = [];
   for (let m; (m = re.exec(src)); ) {
     const open = src.indexOf("(", m.index);
     const call = src.slice(open, callEnd(src, open));
-    if (!/\bsslEnv\(|\bPGSSLMODE\b/.test(call)) out.push(`${m[1]} spawn without sslEnv(/PGSSLMODE`);
+    if (!/\b(?:libpqEnv|sslEnv)\(|\bPGSSLMODE\b/.test(call)) out.push(`${m[1]} spawn without libpqEnv(/PGSSLMODE`);
   }
   return out;
 }
@@ -181,6 +211,25 @@ describe("libpqSpawnViolations", () => {
     const good = 'run("psql", [u, `SELECT (${f(")")})`], sslEnv(u));';
     expect(libpqSpawnViolations(bad)).toHaveLength(1);
     expect(libpqSpawnViolations(good)).toEqual([]);
+  });
+  it("flags a bare execFile psql and passes one with libpqEnv", () => {
+    expect(libpqSpawnViolations('execFile("psql", [url, "-c", "SELECT 1"]);')).toHaveLength(1);
+    expect(libpqSpawnViolations('execFile("psql", [url], { env: libpqEnv(url) });')).toEqual([]);
+  });
+  it("flags shell-string exec of a libpq tool unless PGSSLMODE is passed", () => {
+    expect(libpqSpawnViolations(`exec("psql -c 'SELECT 1'");`)).toHaveLength(1);
+    expect(libpqSpawnViolations(`execSync("  pg_dump mydb");`)).toHaveLength(1);
+    const ok = `exec("psql -c 'SELECT 1'", { env: { PGSSLMODE: "require" } });`;
+    expect(libpqSpawnViolations(ok)).toEqual([]);
+  });
+  it("flags bare spawn/execFileSync/fork and cp.-prefixed forms", () => {
+    expect(libpqSpawnViolations('spawn("pg_dump", [url]);')).toHaveLength(1);
+    expect(libpqSpawnViolations('execFileSync("pg_restore", [url]);')).toHaveLength(1);
+    expect(libpqSpawnViolations('child_process.spawnSync("psql", [url]);')).toHaveLength(1);
+  });
+  it("does not flag an exec of a non-libpq command or a tool-name prefix", () => {
+    expect(libpqSpawnViolations('exec("psqlfoo --x");')).toEqual([]);
+    expect(libpqSpawnViolations('exec("ls -la");')).toEqual([]);
   });
   it("does not touch non-libpq spawns", () => {
     expect(libpqSpawnViolations('spawnSync("age", ["--decrypt"], { stdio: "inherit" });')).toEqual([]);
