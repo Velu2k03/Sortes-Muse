@@ -603,4 +603,23 @@ describe.skipIf(SKIP)("money paths on real Postgres (staging only)", () => {
     const rows = (await raw`SELECT id FROM readings WHERE user_id = ${user.id} ORDER BY id`) as Array<{ id: string }>;
     expect(rows.map((x) => x.id)).toEqual(["bd-ch-1", "bd-ch-3"]);
   });
+
+  // Item 2: a guest reading synced on sign-in (POST /api/history -> saveReadingForUser,
+  // keeping its local id) is the row the follow-up route finds by that same id.
+  it("item 2: a reading synced under its local id accepts a follow-up for that id", async () => {
+    const user = await db.createUser("item2-sync@example.com");
+    const other = await db.createUser("item2-other@example.com");
+    await db.addUserCredits(user.id, 1);
+    const local = { id: "guest-local-id-X", question: "q?", interpretation: "text", aiGenerated: true, free: true };
+    await db.saveReadingForUser(user.id, local); // what migrateGuestData -> /api/history does
+    await db.saveReadingForUser(user.id, local); // re-sync is a no-op (ON CONFLICT DO NOTHING)
+    expect((await raw`SELECT id FROM readings WHERE id = ${local.id}`).length).toBe(1);
+    const res = await db.appendFollowUpWithSpend(user.id, local.id, { question: "more?", answer: "a", free: true }, 0, 3, true);
+    expect(res.ok).toBe(true);
+    expect(res.followUps).toHaveLength(1);
+    const stored = (await db.getReadingForUser(user.id, local.id)) as { followUps?: unknown[] };
+    expect(stored.followUps).toHaveLength(1);
+    // Another account cannot follow up on it (the route's "not found").
+    expect((await db.appendFollowUpWithSpend(other.id, local.id, { question: "x", answer: "y", free: true }, 0, 3, true)).ok).toBe(false);
+  });
 });

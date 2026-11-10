@@ -172,6 +172,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (res.ok && data.user === null && localStorage.getItem(MIGRATED_KEY)) {
           clearLocalAccountData();
           localStorage.removeItem(MIGRATED_KEY);
+          // Full navigation drops in-memory state too (item 5). No loop:
+          // MIGRATED_KEY is gone, so this branch cannot fire again.
+          // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- full reload on purpose: router.push would keep in-memory state
+          window.location.assign("/");
         }
         setUser(null);
         setCredits(getCredits());
@@ -217,6 +221,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     clearLocalAccountData();
     setUser(null);
     setCredits(getCredits());
+    // clearLocalAccountData empties localStorage, not React state already
+    // in memory (a reading on screen). A full navigation drops both (item 5).
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- full reload on purpose: router.push would keep in-memory state
+    window.location.assign("/");
   }, []);
 
   const spend = useCallback(
