@@ -588,7 +588,9 @@ export function FollowUpThread({
             >
               {f.followUpLoading
                 ? "Writing your follow-up…"
-                : (reading.followUps ?? []).length === 0
+                : isGuest
+                  ? "Sign in to ask a follow-up"
+                  : (reading.followUps ?? []).length === 0
                   ? "Ask a follow-up · free"
                   : "Ask a follow-up · 1 Oracle"}
             </button>
@@ -607,7 +609,6 @@ export function FollowUpThread({
               it; and a guest thread lives only on this device. */}
           <p className="text-xs text-mist">
             Your chosen next step, if you saved one above, is sent along with your follow-up question.
-            {isGuest && " As a guest, this thread lives only on this device: sign in to keep it on your account."}
           </p>
           {f.followUpFailed && (
             <div className="space-y-3">
