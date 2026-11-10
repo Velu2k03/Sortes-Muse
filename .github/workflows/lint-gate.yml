@@ -28,9 +28,9 @@ jobs:
     # Job-level so every step sees the Postgres suites' URLs. E1: the
     # suites throw (not skip) when CI is set and a URL is missing.
     env:
-      SORTES_TEST_DATABASE_URL: postgres://sortes_test:ci_only_throwaway@127.0.0.1:5432/sortes_pgtest_money
-      SORTES_TEST_DATABASE_URL_MIGRATIONS: postgres://sortes_test:ci_only_throwaway@127.0.0.1:5432/sortes_pgtest_migrations
-      SORTES_TEST_DATABASE_URL_RLS: postgres://sortes_test:ci_only_throwaway@127.0.0.1:5432/sortes_pgtest_rls
+      SORTES_TEST_DATABASE_URL: postgres://sortes_test:ci_only_throwaway@127.0.0.1:5432/sortes_pgtest_money?sslmode=disable
+      SORTES_TEST_DATABASE_URL_MIGRATIONS: postgres://sortes_test:ci_only_throwaway@127.0.0.1:5432/sortes_pgtest_migrations?sslmode=disable
+      SORTES_TEST_DATABASE_URL_RLS: postgres://sortes_test:ci_only_throwaway@127.0.0.1:5432/sortes_pgtest_rls?sslmode=disable
     services:
       postgres:
         image: postgres:16

@@ -142,12 +142,37 @@ export function txWithSignal<T extends postgres.ISql>(tx: T, signal: AbortSignal
   return wrapped;
 }
 
+type PgSsl = false | "require" | "prefer" | "allow" | "verify-full";
+
+/** Map the connection string's `sslmode` to postgres.js's `ssl` option.
+ * An explicit ssl option would override the URL, so the URL is parsed
+ * here instead. Absent or unrecognised -> "prefer": try TLS, fall back
+ * to plain (production Supabase upgrades to TLS; plain CI/local works). */
+export function sslFromConnectionString(connectionString: string): PgSsl {
+  const m = /[?&]sslmode=([^&#]*)/i.exec(connectionString);
+  const mode = m?.[1].toLowerCase();
+  switch (mode) {
+    case "disable":
+      return false;
+    case "require":
+    case "allow":
+    case "verify-full":
+      return mode;
+    case "verify-ca":
+      // postgres.js has no verify-ca; verify-full is the stricter,
+      // fail-closed equivalent.
+      return "verify-full";
+    default:
+      return "prefer";
+  }
+}
+
 /** The one place the app's Postgres client is constructed, so the
  * timeout above (and every other pool option) cannot drift between
  * the app and its tests. */
 export function createAppPostgres(connectionString: string): postgres.Sql {
   return postgres(connectionString, {
-    ssl: "require",
+    ssl: sslFromConnectionString(connectionString),
     prepare: false,
     max: 1,
     idle_timeout: 20,
