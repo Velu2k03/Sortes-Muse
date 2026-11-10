@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { APP_NAME } from "@/lib/site";
 
 // Phase 1, 2026-11-04: the not-found page used to carry the home
 // title from the layout, which was misleading, and it offered no
@@ -14,6 +15,25 @@ export const metadata: Metadata = {
   // from the layout. Verified against the build output; if the
   // canonical still renders, this is a framework merge limitation.
   alternates: { canonical: undefined },
+  // Batch 4d: its own OG/Twitter instead of the generic homepage
+  // block. No url: a 404 has no canonical URL, and the shared social
+  // helper always sets one, so this is inline, matching the canonical
+  // stance above.
+  openGraph: {
+    type: "website",
+    siteName: APP_NAME,
+    title: "Page not found",
+    description:
+      "That Sortes page does not exist. Try a daily card, a reading, the deck, a birth chart, or a guide instead.",
+    images: [{ url: "/og-image.jpg?v=2", width: 1200, height: 630, alt: "Sortes" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Page not found",
+    description:
+      "That Sortes page does not exist. Try a daily card, a reading, the deck, a birth chart, or a guide instead.",
+    images: ["/og-image.jpg?v=2"],
+  },
 };
 
 const PLACES = [

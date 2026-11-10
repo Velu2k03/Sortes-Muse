@@ -1,17 +1,18 @@
+import Image from "next/image";
 import type { Spread } from "@/lib/types";
+import { CARD_BACK } from "@/lib/tarot";
 
-// Phase 4A (4.5): crisp sacred-geometry spread diagrams in gold-on-dark
-// linework, replacing the blurred "locked" card-back preview blobs.
-// One diagram per spread shape: a single card, a three-card triad,
-// and the classic ten-card Celtic Cross (cross + staff). Every
-// position is drawn as a labelled card outline, so the layout itself
-// teaches the spread. Static SVG: no animation, nothing to blur.
-// The Celtic Cross is laid out portrait (cross, then the staff as a
-// row beneath) so labels stay readable at 390px. Present and
-// Challenge cross, so their labels sit on one line each, in the
-// parts of the pair that do not overlap.
+// Batch 4a: the old SVG wireframe scaled its 12px labels down to
+// ~5.7px (0.47x in ReadingFlow's w-40, ~0.59x in SpreadsClient's
+// h-36), so the diagram was an unreadable CAD sketch. The diagram
+// is now miniature card backs with a gold number badge per position,
+// laid out in the same geometry. Position LABELS live in the HTML
+// legend beside the diagram (the <ol> in ReadingFlow, the
+// "Positions in this spread" details in SpreadsClient), so nothing
+// in the diagram itself is text that can shrink. The container sizes
+// itself from the layout's aspect ratio, so it can never be squeezed
+// flat again: width is capped per shape, height follows.
 const GOLD = "#d4af37";
-const INK = "#ede6d6";
 
 interface PlacedCard {
   key: string;
@@ -21,24 +22,6 @@ interface PlacedCard {
   y: number;
   w: number;
   h: number;
-  // One-line "n Label" text for cards too short to stack number + label.
-  inline?: number;
-}
-
-function labelLines(label: string): string[] {
-  if (label.length <= 9) return [label];
-  const words = label.split(" ");
-  let first = "";
-  let rest = words.join(" ");
-  for (let i = 1; i < words.length; i++) {
-    const head = words.slice(0, i).join(" ");
-    const tail = words.slice(i).join(" ");
-    if (Math.abs(head.length - tail.length) < Math.abs(first.length - rest.length)) {
-      first = head;
-      rest = tail;
-    }
-  }
-  return first ? [first, rest] : [label];
 }
 
 // Layout per spread shape. The cross maps positions by meaning, not
@@ -46,32 +29,35 @@ function labelLines(label: string): string[] {
 // it, Past to the left, Future to the right, Above on top, Below
 // underneath, and Advice / External / Hopes & Fears / Outcome as
 // the staff row beneath, Advice to Outcome (bottom to top).
-function layout(spread: Spread): { viewBox: string; cards: PlacedCard[] } {
+function layout(spread: Spread): { width: number; height: number; cards: PlacedCard[] } {
   const positions = spread.positions;
   if (spread.cards === 1) {
     return {
-      viewBox: "0 0 120 190",
+      width: 120,
+      height: 190,
       cards: positions.map((p, i) => ({ key: p.key, label: p.label, index: i + 1, x: 30, y: 15, w: 60, h: 96 })),
     };
   }
   if (spread.cards === 3) {
     return {
-      viewBox: "0 0 300 190",
+      width: 300,
+      height: 190,
       cards: positions.map((p, i) => ({ key: p.key, label: p.label, index: i + 1, x: 15 + i * 105, y: 15, w: 60, h: 96 })),
     };
   }
   if (spread.cards === 10) {
     const byKey = new Map(positions.map((p, i) => [p.key, { ...p, index: i + 1 }]));
-    const at = (key: string, x: number, y: number, w: number, h: number, inline?: number): PlacedCard => {
+    const at = (key: string, x: number, y: number, w: number, h: number): PlacedCard => {
       const p = byKey.get(key) ?? positions[0];
       const index = positions.findIndex((q) => q.key === key) + 1;
-      return { key: p.key, label: p.label, index, x, y, w, h, inline };
+      return { key: p.key, label: p.label, index, x, y, w, h };
     };
     return {
-      viewBox: "0 0 340 372",
+      width: 340,
+      height: 372,
       cards: [
-        at("present", 122, 88, 96, 112, 107),
-        at("challenge", 112, 127, 116, 34, 144),
+        at("present", 122, 88, 96, 112),
+        at("challenge", 112, 127, 116, 34),
         at("past", 8, 112, 96, 64),
         at("future", 236, 112, 96, 64),
         at("above", 122, 8, 96, 64),
@@ -85,58 +71,63 @@ function layout(spread: Spread): { viewBox: string; cards: PlacedCard[] } {
   }
   // Fallback for any future spread shape: a plain row.
   return {
-    viewBox: `0 0 ${positions.length * 75 + 15} 190`,
+    width: positions.length * 75 + 15,
+    height: 190,
     cards: positions.map((p, i) => ({ key: p.key, label: p.label, index: i + 1, x: 15 + i * 75, y: 15, w: 60, h: 96 })),
   };
 }
 
+// Width cap per shape, so a single card does not grow into a tall
+// empty column: one card reads at 144px wide, a triad and the cross
+// at 288px. Height always follows the aspect ratio.
+function maxWidthFor(spread: Spread): number {
+  return spread.cards === 1 ? 144 : 288;
+}
+
 export default function SpreadDiagram({ spread }: { spread: Spread }) {
-  const { viewBox, cards } = layout(spread);
+  const { width, height, cards } = layout(spread);
   return (
-    <svg
-      viewBox={viewBox}
+    <div
       role="img"
       aria-label={`${spread.name} layout: ${spread.positions.map((p, i) => `${i + 1}. ${p.label}`).join(", ")}`}
-      className="h-full w-full"
-      preserveAspectRatio="xMidYMid meet"
+      className="relative mx-auto w-full"
+      style={{ aspectRatio: `${width} / ${height}`, maxWidth: maxWidthFor(spread) }}
     >
-      {cards.map((c) => {
-        const cx = c.x + c.w / 2;
-        const lines = labelLines(c.label);
-        // Cards too short for stacked text (the crossing
-        // Challenge bar, and the Present card's visible top) get one line.
-        const inlineY = c.inline;
-        return (
-          <g key={c.key}>
-            <rect
-              x={c.x}
-              y={c.y}
-              width={c.w}
-              height={c.h}
-              rx={6}
-              fill={c.key === "challenge" ? "#14182a" : "rgba(212,175,55,0.06)"}
-              stroke={GOLD}
-              strokeWidth={1.5}
-            />
-            {inlineY !== undefined ? (
-              <text x={cx} y={inlineY + 4} textAnchor="middle" fontSize={12} fill={INK}>
-                <tspan fontWeight={700} fill={GOLD}>{c.index}</tspan> {c.label}
-              </text>
-            ) : (
-              <>
-                <text x={cx} y={c.y + 24} textAnchor="middle" fontSize={15} fontWeight={700} fill={GOLD}>
-                  {c.index}
-                </text>
-                {lines.map((line, i) => (
-                  <text key={line} x={cx} y={c.y + 42 + i * 14} textAnchor="middle" fontSize={12} fill={INK}>
-                    {line}
-                  </text>
-                ))}
-              </>
-            )}
-          </g>
-        );
-      })}
-    </svg>
+      {cards.map((c) => (
+        <div
+          key={c.key}
+          className="absolute overflow-hidden rounded-md border border-gold/40 shadow-[0_4px_16px_rgba(0,0,0,0.5)]"
+          style={{
+            left: `${(c.x / width) * 100}%`,
+            top: `${(c.y / height) * 100}%`,
+            width: `${(c.w / width) * 100}%`,
+            height: `${(c.h / height) * 100}%`,
+          }}
+        >
+          <Image
+            src={CARD_BACK}
+            alt=""
+            fill
+            sizes="(max-width: 640px) 96px, 128px"
+            className="object-cover"
+            draggable={false}
+          />
+          {/* Short cards (the Challenge bar, 34 units tall) are
+              ~19px high at the narrowest container, so a top-left
+              badge would clip; centre the badge on those instead.
+              The badge is 16px so it stays proportionate on the
+              narrowest cards (staff row, ~42px wide at w-48). */}
+          <span
+            aria-hidden="true"
+            className={`absolute flex h-4 w-4 items-center justify-center rounded-full text-[11px] font-bold leading-none ${
+              c.h <= 40 ? "left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2" : "left-1 top-1"
+            }`}
+            style={{ backgroundColor: GOLD, color: "#14182a" }}
+          >
+            {c.index}
+          </span>
+        </div>
+      ))}
+    </div>
   );
 }

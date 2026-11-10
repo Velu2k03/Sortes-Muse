@@ -1,9 +1,19 @@
 import Link from "next/link";
+import { pageSocial } from "@/lib/seo";
+
+const DESCRIPTION =
+  "You appear to be offline. Check your connection and try again; your saved readings stay on this device until you are back.";
 
 export const metadata = {
   title: "Offline",
-  description: "You appear to be offline.",
+  description: DESCRIPTION,
   robots: { index: false, follow: true },
+  // Batch 4d: its own OG/Twitter instead of the generic homepage block.
+  ...pageSocial({
+    title: "Offline",
+    description: DESCRIPTION,
+    path: "/offline",
+  }),
 };
 
 export default function OfflinePage() {

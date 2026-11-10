@@ -17,7 +17,10 @@ export function pageSocial({
   image?: string;
 }): Pick<Metadata, "openGraph" | "twitter"> {
   const url = `${SITE_URL}${path}`;
-  const img = image ?? "/og-image.jpg";
+  // Batch 4c: ?v=2 cache-buster. The old og-image.jpg was an empty
+  // frame live for ~6 weeks; scrapers that cached it by URL would
+  // keep showing the blank frame. A new URL forces a re-scrape.
+  const img = image ?? "/og-image.jpg?v=2";
   return {
     openGraph: {
       type: "website",

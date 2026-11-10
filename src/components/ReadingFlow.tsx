@@ -129,7 +129,7 @@ function GateScreen({
           The positions
         </p>
         <div className="mt-4 flex flex-col items-center gap-6 sm:flex-row sm:items-start">
-          <div className="w-40 shrink-0 sm:w-48">
+          <div className="w-48 shrink-0 sm:w-56">
             <SpreadDiagram spread={spread} />
           </div>
           <ol className="w-full space-y-2.5">

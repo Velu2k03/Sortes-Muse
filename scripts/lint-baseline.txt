@@ -32,4 +32,3 @@ src/components/SwipeToast.tsx	jsx-a11y/no-noninteractive-tabindex	`tabIndex` sho
 src/components/TarotCard.tsx	jsx-a11y/no-static-element-interactions	Avoid non-native interactive elements. If using native HTML is not possible, add an appropriate role and support for tabbing, mouse, keyboard, and touch inputs to an interactive content element.
 src/components/ThemedDatePicker.tsx	jsx-a11y/prefer-tag-over-role	Use <dialog> instead of the "dialog" role to ensure accessibility across all devices.
 src/components/VedicDiamondChart.tsx	jsx-a11y/prefer-tag-over-role	Use <img alt=...>, or <img alt=...> instead of the "img" role to ensure accessibility across all devices.
-src/components/WesternWheel.tsx	jsx-a11y/no-noninteractive-tabindex	`tabIndex` should only be declared on interactive elements.

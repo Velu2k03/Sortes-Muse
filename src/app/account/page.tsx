@@ -1,12 +1,22 @@
 import AccountPage from "./AccountClient";
+import { pageSocial } from "@/lib/seo";
+
+const DESCRIPTION =
+  "Your Sortes account: your Oracle balance, your purchase history, and your sign-in settings, in one place.";
 
 export const metadata = {
   title: "Account",
-  description: "Your Sortes account: Oracle balance and purchase history.",
+  description: DESCRIPTION,
   // AF-072 + AF-012: a personal page. No index, and a self-canonical instead
   // of inheriting the homepage canonical from the layout.
   alternates: { canonical: "/account" },
   robots: { index: false, follow: true },
+  // Batch 4d: its own OG/Twitter instead of the generic homepage block.
+  ...pageSocial({
+    title: "Account",
+    description: DESCRIPTION,
+    path: "/account",
+  }),
 };
 
 export default function Account() {
