@@ -45,17 +45,20 @@ export function suitElement(
   return suit ? map[suit] : undefined;
 }
 
-// Phase 4A (4.4): the card grid is the default deck view; the spiral
-// gallery is opt-in. Under prefers-reduced-motion the spiral is never
-// shown, whatever was requested.
-export type DeckView = "grid" | "spiral";
-export const DEFAULT_DECK_VIEW: DeckView = "grid";
+// Phase 4A (4.4): the card grid was the default deck view; the spiral
+// gallery is opt-in. Batch 5 adds a List view (one text row per card,
+// the most keyboard- and screen-reader-friendly view) and makes it
+// the default. Under prefers-reduced-motion the spiral is never
+// shown, whatever was requested; it falls back to the default (list).
+// Grid and list are static, so an explicit choice of either is kept.
+export type DeckView = "grid" | "list" | "spiral";
+export const DEFAULT_DECK_VIEW: DeckView = "list";
 
 export function resolveDeckView(
   requested: DeckView,
   reducedMotion: boolean,
 ): DeckView {
-  return reducedMotion ? "grid" : requested;
+  return reducedMotion && requested === "spiral" ? "list" : requested;
 }
 
 export const SUITS = ["wands", "cups", "swords", "pentacles"] as const;
