@@ -9,6 +9,7 @@ import {
   AtAGlance,
   CardMeanings,
   CardRow,
+  Interpretation,
   FollowUpThread,
   GuestKeepNotice,
   NewReadingPrompt,
@@ -67,6 +68,9 @@ export default function ReadingDetail({ id }: { id: string }) {
       {!user && <GuestKeepNotice />}
       <AtAGlance reading={reading} />
       <CardRow reading={reading} zoomCard={zoomCard} setZoomCard={setZoomCard} />
+      {/* Batch 6c: the interpretation first, the card blocks in one
+          collapsed section below it. */}
+      <Interpretation reading={reading} />
       <CardMeanings reading={reading} />
 
       <p className="mx-auto mt-10 max-w-3xl text-center text-sm text-mist">

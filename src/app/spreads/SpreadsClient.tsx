@@ -135,7 +135,9 @@ export default function SpreadsPage() {
         ))}
       </FieldGroup>
 
-      <div className="mt-10 grid gap-6 md:grid-cols-3">
+      {/* Batch 6c: one compact row per spread, not a grid of tall
+          cards. The page was 5,239px on a phone. */}
+      <div className="mt-10 space-y-4">
         {SPREADS.map((s, i) => {
           const pending = isPending(s.slug);
           const locked = !pending && !canBegin(s.slug);
@@ -146,19 +148,20 @@ export default function SpreadsPage() {
             initial={hide ? { opacity: 0, y: 24 } : false}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.05, duration: 0.4 }}
-            className={`relative flex flex-col overflow-hidden rounded-3xl border bg-panel/70 ${pickedSlug === s.slug ? "border-gold shadow-[0_0_0_2px_rgba(212,175,55,0.6)]" : "border-gold/25"}`}
+            className={`relative flex gap-4 overflow-hidden rounded-3xl border bg-panel/70 p-4 sm:gap-6 sm:p-5 ${pickedSlug === s.slug ? "border-gold shadow-[0_0_0_2px_rgba(212,175,55,0.6)]" : "border-gold/25"}`}
           >
-            {/* Batch 4a: numbered miniature card backs with the
-                position numbers on them. The labels live in the
-                "Positions in this spread" legend below; the diagram
-                sizes itself from its own aspect ratio, so the old
-                fixed-height squeeze that shrank the SVG labels to
-                ~5.7px cannot come back. */}
-            <div className="relative flex items-center justify-center overflow-hidden bg-navydeep/60 p-4">
+            {/* Batch 6c: the diagram is a thumbnail now (Batch 4a's
+                numbered badges are fixed 16px, so they stay legible
+                at this size). The labels live in the "Positions in
+                this spread" legend below; the diagram sizes itself
+                from its own aspect ratio, so the old fixed-height
+                squeeze that shrank the SVG labels to ~5.7px cannot
+                come back. */}
+            <div className="w-28 shrink-0 self-start sm:w-32">
               <SpreadDiagram spread={s} />
             </div>
 
-            <div className="flex flex-1 flex-col p-6">
+            <div className="min-w-0 flex-1">
               {/* Phase 4A (4.5): the long "Past · Present · Future"
                   title used to collide with the price on one
                   no-wrap row. The row now wraps, and the title may

@@ -114,13 +114,21 @@ export default function SpreadDiagram({ spread }: { spread: Spread }) {
           />
           {/* Short cards (the Challenge bar, 34 units tall) are
               ~19px high at the narrowest container, so a top-left
-              badge would clip; centre the badge on those instead.
+              badge would clip, and a centred badge lands on top of
+              badge 1: the bar crosses the Present card, so the bar's
+              centre is the Present card's centre, and the two 16px
+              badges merge into one blob at thumbnail size (their
+              centres are only ~7px apart at 112px). The badge sits
+              at the bar's right end instead, vertically centred,
+              which is the farthest point on the bar from badge 1.
               The badge is 16px so it stays proportionate on the
-              narrowest cards (staff row, ~42px wide at w-48). */}
+              narrowest cards (staff row, ~42px wide at w-48), and
+              z-10 so it paints above any card that overlaps it
+              (the bar paints over badge 1's lower half without it). */}
           <span
             aria-hidden="true"
-            className={`absolute flex h-4 w-4 items-center justify-center rounded-full text-[11px] font-bold leading-none ${
-              c.h <= 40 ? "left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2" : "left-1 top-1"
+            className={`absolute z-10 flex h-4 w-4 items-center justify-center rounded-full text-[11px] font-bold leading-none ${
+              c.h <= 40 ? "right-1 top-1/2 -translate-y-1/2" : "left-1 top-1"
             }`}
             style={{ backgroundColor: GOLD, color: "#14182a" }}
           >

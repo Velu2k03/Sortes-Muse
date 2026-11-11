@@ -121,6 +121,60 @@ function GateScreen({
       </h1>
       <p className="mx-auto mt-4 max-w-lg text-cream/80">{spread.description}</p>
 
+      <div className="mt-8">
+        {isFreeAvailable ? (
+          <>
+            <ClickSpark className="click-spark--responsive">
+              <button
+                type="button"
+                onClick={() => router.push(`/intake/${spread.slug}`)}
+                className="btn-gold w-full rounded-2xl px-8 py-4 text-lg font-bold sm:w-auto"
+              >
+                ✦ Start my free reading
+              </button>
+            </ClickSpark>
+            <p className="mt-3 text-sm text-mist">
+              Free, no payment card required. One free Quick Insight per{" "}
+              {signedIn ? "account" : "device"}.
+            </p>
+          </>
+        ) : credits >= 1 ? (
+          <>
+            <ClickSpark className="click-spark--responsive">
+              <button
+                type="button"
+                onClick={() => router.push(`/intake/${spread.slug}`)}
+                className="btn-gold w-full rounded-2xl px-8 py-4 text-lg font-bold sm:w-auto"
+              >
+                ✦ Personalize and begin · 1 Oracle
+              </button>
+            </ClickSpark>
+            <p className="mt-3 text-sm text-mist">
+              You have {credits} {credits === 1 ? "Oracle" : "Oracles"}. Tell
+              your story, and the reading is written for your question.
+            </p>
+          </>
+        ) : (
+          <>
+            <button
+              type="button"
+              onClick={onTopUp}
+              className="btn-gold w-full rounded-2xl px-8 py-4 text-lg font-bold sm:w-auto"
+            >
+              ✦ Get Oracles · 1 Oracle per reading
+            </button>
+            <p className="mt-3 text-sm text-mist">
+              This reading uses 1 Oracle. Packs start at $3.99 for 5 Oracles.
+            </p>
+          </>
+        )}
+      </div>
+
+      <p className="mx-auto mt-8 max-w-md text-xs italic leading-relaxed text-mist">
+        Readings are for self-reflection and perspective, not guaranteed
+        predictions.
+      </p>
+
       {/* AF-045: the layout diagram sits next to the position list,
           so a 1-card spread page is not a short list over a long
           empty page, and the layout itself teaches the spread. */}
@@ -196,60 +250,6 @@ function GateScreen({
           <li>First follow-up free, then 1 Oracle each, up to 3</li>
         </ul>
       </div>
-
-      <div className="mt-8">
-        {isFreeAvailable ? (
-          <>
-            <ClickSpark className="click-spark--responsive">
-              <button
-                type="button"
-                onClick={() => router.push(`/intake/${spread.slug}`)}
-                className="btn-gold w-full rounded-2xl px-8 py-4 text-lg font-bold sm:w-auto"
-              >
-                ✦ Start my free reading
-              </button>
-            </ClickSpark>
-            <p className="mt-3 text-sm text-mist">
-              Free, no payment card required. One free Quick Insight per{" "}
-              {signedIn ? "account" : "device"}.
-            </p>
-          </>
-        ) : credits >= 1 ? (
-          <>
-            <ClickSpark className="click-spark--responsive">
-              <button
-                type="button"
-                onClick={() => router.push(`/intake/${spread.slug}`)}
-                className="btn-gold w-full rounded-2xl px-8 py-4 text-lg font-bold sm:w-auto"
-              >
-                ✦ Personalize and begin · 1 Oracle
-              </button>
-            </ClickSpark>
-            <p className="mt-3 text-sm text-mist">
-              You have {credits} {credits === 1 ? "Oracle" : "Oracles"}. Tell
-              your story, and the reading is written for your question.
-            </p>
-          </>
-        ) : (
-          <>
-            <button
-              type="button"
-              onClick={onTopUp}
-              className="btn-gold w-full rounded-2xl px-8 py-4 text-lg font-bold sm:w-auto"
-            >
-              ✦ Get Oracles · 1 Oracle per reading
-            </button>
-            <p className="mt-3 text-sm text-mist">
-              This reading uses 1 Oracle. Packs start at $3.99 for 5 Oracles.
-            </p>
-          </>
-        )}
-      </div>
-
-      <p className="mx-auto mt-8 max-w-md text-xs italic leading-relaxed text-mist">
-        Readings are for self-reflection and perspective, not guaranteed
-        predictions.
-      </p>
 
       {/* AF-045: the gate is short, so the page ended in empty black
           space. A row of the other spreads fills it with the next
