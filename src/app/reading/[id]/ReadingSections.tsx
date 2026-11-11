@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { motion, useReducedMotion } from "motion/react";
 import type { Reading, FollowUp } from "@/lib/types";
 import { getCard, orientationKeywords, orientationMeaning } from "@/lib/cards";
 import { computeSpreadFacts } from "@/lib/spread-facts";
@@ -162,19 +163,29 @@ export function CardRow({
   zoomCard: string | null;
   setZoomCard: (id: string | null) => void;
 }) {
+  // Batch 7: the cards are dealt in, one after another (a stagger),
+  // so the spread feels dealt rather than pasted. Skipped for
+  // reduced motion.
+  const reduceMotion = useReducedMotion();
   return (
     <>
       <div className="mt-8 flex flex-wrap justify-center gap-4">
-        {reading.cards.map((d) => (
-          <TarotCard
+        {reading.cards.map((d, i) => (
+          <motion.div
             key={d.positionKey}
-            cardId={d.cardId}
-            reversed={d.reversed}
-            revealed
-            size="sm"
-            label={d.position}
-            onFlip={() => setZoomCard(d.cardId)}
-          />
+            initial={reduceMotion ? false : { opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, delay: reduceMotion ? 0 : i * 0.09, ease: "easeOut" }}
+          >
+            <TarotCard
+              cardId={d.cardId}
+              reversed={d.reversed}
+              revealed
+              size="sm"
+              label={d.position}
+              onFlip={() => setZoomCard(d.cardId)}
+            />
+          </motion.div>
         ))}
       </div>
       <p className="mt-3 text-center text-xs text-mist">

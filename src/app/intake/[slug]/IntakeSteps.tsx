@@ -400,6 +400,10 @@ export function ConfirmStep({ f, category }: { f: IntakeState; category: IntakeC
 export function ImpressionStep({ f, drawnCards }: { f: IntakeState; drawnCards: DrawnCard[] }) {
   const { setStep, impression, setImpression, error, busy, generationFailed, toastOpen, setToastOpen, beginGeneration, retryGeneration } = f;
   const headingRef = useStepFocus<HTMLHeadingElement>();
+  // Batch 7: the cards are dealt in, one after another (a stagger),
+  // so the spread feels dealt rather than pasted. Skipped for
+  // reduced motion.
+  const reduceMotion = useReducedMotion() ?? false;
   return (
     <>
       <p className="text-xs uppercase tracking-[0.35em] text-gold">
@@ -420,16 +424,22 @@ export function ImpressionStep({ f, drawnCards }: { f: IntakeState; drawnCards: 
           and the position is the card label. Smaller cards
           for larger spreads so the row fits at 390px. */}
       <div className="mx-auto mt-8 flex max-w-2xl flex-wrap items-start justify-center gap-4 sm:gap-6">
-        {drawnCards.map((d) => (
-          <TarotCard
+        {drawnCards.map((d, i) => (
+          <motion.div
             key={d.positionKey}
-            cardId={d.cardId}
-            reversed={d.reversed}
-            revealed
-            disabled
-            size={drawnCards.length > 3 ? "sm" : "md"}
-            label={d.position}
-          />
+            initial={reduceMotion ? false : { opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, delay: reduceMotion ? 0 : i * 0.09, ease: "easeOut" }}
+          >
+            <TarotCard
+              cardId={d.cardId}
+              reversed={d.reversed}
+              revealed
+              disabled
+              size={drawnCards.length > 3 ? "sm" : "md"}
+              label={d.position}
+            />
+          </motion.div>
         ))}
       </div>
 
