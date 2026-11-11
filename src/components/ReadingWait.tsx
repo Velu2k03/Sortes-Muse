@@ -6,6 +6,8 @@ import LatticeLoader from "@/components/LatticeLoader";
 import ThoughtLine from "@/components/ThoughtLine";
 import StatusMark from "@/components/StatusMark";
 import FoldText from "@/components/FoldText";
+import WaitDeck from "@/components/WaitDeck";
+import type { DrawnCard } from "@/lib/types";
 
 export const PROCESSING_LINES = [
   "Casting the lots",
@@ -17,9 +19,14 @@ export const PROCESSING_LINES = [
 export default function ReadingWait({
   activeStep,
   complete,
+  drawnCards,
 }: {
   activeStep: number;
   complete: boolean;
+  /** Batch 10: the drawn cards, shown as an animated deck above the
+      status lines so the wait is visual, not blank. Optional so the
+      component still works without them. */
+  drawnCards?: DrawnCard[] | null;
 }) {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
@@ -40,6 +47,11 @@ export default function ReadingWait({
 
   return (
     <div className="reading-wait" aria-live="polite">
+      {drawnCards && drawnCards.length > 0 && (
+        <div className="mb-6">
+          <WaitDeck drawnCards={drawnCards} />
+        </div>
+      )}
       {complete && (
         <FoldText
           text="Your reading is ready"

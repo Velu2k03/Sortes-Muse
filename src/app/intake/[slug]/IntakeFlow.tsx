@@ -90,7 +90,7 @@ export default function IntakeFlow({ slug }: { slug: string }) {
         )}
 
         {step === "processing" && (
-          <ProcessingStage key="processing" activeStep={processingLine} complete={processingComplete} streamedText={streamedText} />
+          <ProcessingStage key="processing" activeStep={processingLine} complete={processingComplete} streamedText={streamedText} drawnCards={drawnCards} />
         )}
       </AnimatePresence>
       )}
