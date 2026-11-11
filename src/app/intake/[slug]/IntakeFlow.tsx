@@ -21,7 +21,7 @@ import {
  */
 export default function IntakeFlow({ slug }: { slug: string }) {
   const f = useIntakeFlow(slug);
-  const { spread, step, category, drawnCards, processingLine, processingComplete } = f;
+  const { spread, step, category, drawnCards, processingLine, processingComplete, streamedText } = f;
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6">
@@ -90,7 +90,7 @@ export default function IntakeFlow({ slug }: { slug: string }) {
         )}
 
         {step === "processing" && (
-          <ProcessingStage key="processing" activeStep={processingLine} complete={processingComplete} />
+          <ProcessingStage key="processing" activeStep={processingLine} complete={processingComplete} streamedText={streamedText} />
         )}
       </AnimatePresence>
       )}

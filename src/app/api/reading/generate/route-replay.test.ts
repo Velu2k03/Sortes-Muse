@@ -14,6 +14,7 @@ vi.mock("@/lib/output-validation", async (orig) => ({
 }));
 
 import { POST } from "@/app/api/reading/generate/route";
+import { openRouterStreamResponse, readRouteSse } from "@/lib/__tests__/sse-helpers";
 import { getReadingForUser, getUserById, hasUsedFreeReading, saveReadingWithSpend } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 
@@ -57,10 +58,10 @@ describe("POST /api/reading/generate — idempotent readingId", () => {
     vi.mocked(getReadingForUser).mockResolvedValue(prior);
     const res = await POST(req(ID, "10.7.0.2"));
     expect(res.status).toBe(200);
-    const data = await res.json();
-    expect(data.reading).toEqual(prior);
-    expect(data.interpretation).toBe("saved text");
-    expect(data.credits).toBe(3);
+    const { done: data } = await readRouteSse(res);
+    expect(data?.reading).toEqual(prior);
+    expect(data?.interpretation).toBe("saved text");
+    expect(data?.credits).toBe(3);
     expect(getReadingForUser).toHaveBeenCalledWith("u1", ID);
     expect(globalThis.fetch).not.toHaveBeenCalled();
     expect(saveReadingWithSpend).not.toHaveBeenCalled();
@@ -69,11 +70,17 @@ describe("POST /api/reading/generate — idempotent readingId", () => {
   it("uses the client id as the row id when nothing is saved yet", async () => {
     vi.mocked(getReadingForUser).mockResolvedValue(null);
     vi.mocked(saveReadingWithSpend).mockResolvedValue({ ok: false, free: false });
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ choices: [{ message: { content: "Body." } }], model: "t/m:free" }),
-    }));
-    await POST(req(ID, "10.7.0.3"));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation(async () => openRouterStreamResponse("Body.", "t/m:free"))
+    );
+    // Read the stream: the save happens inside its async start, so
+    // awaiting POST alone does not wait for it. The mocked save
+    // returns ok:false, so the stream ends with a 402 `error` event,
+    // not `done`; the test only cares that the save was called with
+    // the client id as the row id.
+    const { error } = await readRouteSse(await POST(req(ID, "10.7.0.3")));
+    expect(error?.status).toBe(402);
     const saved = vi.mocked(saveReadingWithSpend).mock.calls[0];
     expect(saved[1].id).toBe(ID);
   });
@@ -82,12 +89,15 @@ describe("POST /api/reading/generate — idempotent readingId", () => {
   it("returns 409 (not 402/500) when the id belongs to another user", async () => {
     vi.mocked(getReadingForUser).mockResolvedValue(null);
     vi.mocked(saveReadingWithSpend).mockResolvedValue({ ok: false, free: false, conflict: true });
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ choices: [{ message: { content: "Body." } }], model: "t/m:free" }),
-    }));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation(async () => openRouterStreamResponse("Body.", "t/m:free"))
+    );
     const res = await POST(req(ID, "10.7.0.4"));
-    expect(res.status).toBe(409);
-    expect((await res.json()).error).toContain("No Oracle was spent");
+    expect(res.status).toBe(200);
+    const { done, error } = await readRouteSse(res);
+    expect(done).toBeNull();
+    expect(error?.status).toBe(409);
+    expect(error?.error).toContain("No Oracle was spent");
   });
 });

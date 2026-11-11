@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { motion, useReducedMotion } from "motion/react";
 import ReadingWait from "@/components/ReadingWait";
+import ReadingText from "@/components/ReadingText";
 import TarotCard from "@/components/TarotCard";
 import SlideCommit from "@/components/SlideCommit";
 import SwipeToast from "@/components/SwipeToast";
@@ -519,12 +520,27 @@ export function ImpressionStep({ f, drawnCards }: { f: IntakeState; drawnCards: 
  * exiting, the div is not in the DOM yet, and nothing re-runs it
  * (Batch 3a review B1). The container has aria-live="polite" inside
  * ReadingWait, so focusing it reads the current line once and later
- * line updates announce themselves. */
-export function ProcessingStage({ activeStep, complete }: { activeStep: number; complete: boolean }) {
+ * line updates announce themselves.
+ * Batch 2b (SSE): once the interpretation starts streaming in,
+ * the wait screen shows it live (via the static ReadingText, the
+ * same renderer as the reading page, so there is no typewriter and
+ * no reveal on reopen). Until the first text arrives it shows the
+ * rotating status lines. Nothing here claims the reading is saved:
+ * the `done` event is the save confirmation, and only then does the
+ * flow navigate to the reading page. */
+export function ProcessingStage({ activeStep, complete, streamedText }: { activeStep: number; complete: boolean; streamedText: string }) {
   const ref = useStepFocus<HTMLDivElement>();
   return (
     <div ref={ref} tabIndex={-1} aria-label="Creating your reading" className="flex min-h-[55vh] scroll-mt-32 flex-col items-center justify-center text-center outline-none">
       <ReadingWait activeStep={activeStep} complete={complete} />
+      {streamedText.length > 0 && (
+        <div className="mt-8 w-full text-left">
+          <p className="text-xs uppercase tracking-[0.25em] text-gold">Writing your reading</p>
+          <div className="mt-3">
+            <ReadingText text={streamedText} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

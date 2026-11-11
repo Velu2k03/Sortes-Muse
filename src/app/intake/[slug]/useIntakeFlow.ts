@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PROCESSING_LINES } from "@/components/ReadingWait";
+import { readSse } from "@/lib/sse-client";
 import { getSpread, drawCards } from "@/lib/tarot";
 import { getCard } from "@/lib/cards";
 import { suggestQuestionRewrite } from "@/lib/question-rewrite";
@@ -51,6 +52,14 @@ export function useIntakeFlow(slug: string) {
   const [error, setError] = useState<string | null>(null);
   const [processingLine, setProcessingLine] = useState(0);
   const [processingComplete, setProcessingComplete] = useState(false);
+  // Batch 2b (SSE): the interpretation as it streams in, shown live
+  // on the wait screen. The ref accumulates every delta; the state
+  // updates throttled (~150 ms) so the wait screen re-renders at most
+  // ~7x/s instead of per token. Reset on every new attempt.
+  const [streamedText, setStreamedText] = useState("");
+  const [streamingModel, setStreamingModel] = useState<string | null>(null);
+  const streamRef = useRef("");
+  const lastFlushRef = useRef(0);
   const [busy, setBusy] = useState(false);
   // Phase D: generationFailed marks a genuine call failure (not a
   // balance or validation stop) and drives the persistent retry UI;
@@ -225,6 +234,11 @@ export function useIntakeFlow(slug: string) {
     setBusy(true);
     setProcessingLine(0);
     setProcessingComplete(false);
+    // Batch 2b: a new attempt starts with an empty live preview.
+    streamRef.current = "";
+    lastFlushRef.current = 0;
+    setStreamedText("");
+    setStreamingModel(null);
     // Phase D: a new attempt clears the previous failure UI, whatever
     // path this attempt ends on.
     setGenerationFailed(false);
@@ -305,20 +319,101 @@ export function useIntakeFlow(slug: string) {
         if (d?.error) failMessage = d.error;
         throw new Error(`Generation failed (${res.status})`);
       }
-      const data = await res.json();
-      const interpretation: string = data.interpretation;
+
+      // Batch 2b (SSE): the interpretation streams live. A `model`
+      // event resets the preview (a new attempt discards the previous
+      // attempt's text); `text` events grow it (throttled, so the wait
+      // screen re-renders at most ~7x/s); `done` carries the
+      // authoritative interpretation + the saved reading row; `error`
+      // carries the server's message. If the stream ends without a
+      // `done` event, the outcome is UNCONFIRMED: the server may have
+      // saved already, so never say "No Oracle was spent" here. The
+      // retry reuses the same attempt id and replays the saved reading
+      // instead of re-spending (the failMessage above already says that).
+      // One mutable object, not three `let`s: TypeScript narrows a
+      // `let` that is only assigned inside a callback to `never`
+      // (it cannot see the callback run). Property assignments on an
+      // object are not narrowed that way.
+      const stream: {
+        data: {
+          interpretation?: string;
+          model?: string;
+          free?: boolean;
+          credits?: number;
+          reading?: Reading;
+          replayed?: boolean;
+        } | null;
+        error: { error?: string; status?: number } | null;
+        sawDone: boolean;
+      } = { data: null, error: null, sawDone: false };
+      try {
+        await readSse(res, (event) => {
+          if (event.event === "model") {
+            streamRef.current = "";
+            setStreamedText("");
+            const m = (event.data as { model?: string } | null)?.model;
+            setStreamingModel(typeof m === "string" ? m : null);
+          } else if (event.event === "reset") {
+            // N1: the attempt that was streaming failed; clear its
+            // text at once instead of showing a discarded reading
+            // until the next model starts.
+            streamRef.current = "";
+            setStreamedText("");
+          } else if (event.event === "text") {
+            const delta = (event.data as { delta?: string } | null)?.delta;
+            if (typeof delta === "string" && delta.length > 0) {
+              streamRef.current += delta;
+              const now = Date.now();
+              if (now - lastFlushRef.current >= 150) {
+                lastFlushRef.current = now;
+                setStreamedText(streamRef.current);
+              }
+            }
+          } else if (event.event === "done") {
+            stream.sawDone = true;
+            stream.data = event.data as typeof stream.data;
+          } else if (event.event === "error") {
+            stream.error = event.data as { error?: string; status?: number };
+          }
+        });
+      } catch {
+        // The stream itself broke (a dropped connection). Fall through
+        // to the unconfirmed path below; the retry replays if saved.
+      }
+      // Flush any text that arrived after the last throttled update.
+      setStreamedText(streamRef.current);
+      if (stream.error) {
+        if (stream.error.status === 402 || stream.error.status === 401) {
+          was402 = true;
+          if (stream.error.status === 401) setServerSignInNeeded(true);
+        }
+        if (stream.error.error) failMessage = stream.error.error;
+        throw new Error(`Generation failed (${stream.error.status ?? "stream"})`);
+      }
+      if (!stream.sawDone || !stream.data?.interpretation) {
+        // The stream ended without a `done` event: unconfirmed. The
+        // server may have saved already; the retry (same attempt id)
+        // replays it instead of re-spending.
+        throw new Error("Generation stream ended without a result");
+      }
+      const interpretation: string = stream.data.interpretation;
       // The free reading is consumed only now, on a real generated
       // reading. The server marks its own record for signed-in users;
-      // the device flag is the guest record.
+      // the device flag is the guest record. For a guest, the server
+      // cookie is set by a separate call (Batch 2b): the streaming
+      // response cannot set it.
       if (isFreeAvailable) {
         markFreeReadingUsed();
         setUsedFree(true);
+        if (!signedIn) {
+          void fetch("/api/auth/guest-free-used", { method: "POST" }).catch(() => {});
+        }
       }
 
       // Signed-in: the server already saved this row with the spend, so its
       // row is required; a local copy under a new id would be a duplicate the
       // server cannot find. Guests get no server row and build one here.
-      const reading: Reading = requireSavedReading(signedIn, data.reading as Reading | undefined) ?? makeReading({
+      const reading: Reading = requireSavedReading(signedIn, stream.data.reading as Reading | undefined) ?? makeReading({
         spreadSlug: spread.slug,
         spreadName: `${spread.name} · ${category.name}`,
         cards,
@@ -326,7 +421,7 @@ export function useIntakeFlow(slug: string) {
         aiGenerated: true,
         // Phase E (item 2): keep the serving model the API returned,
         // so the reading page can label it instead of discarding it.
-        model: typeof data.model === "string" && data.model ? data.model : undefined,
+        model: typeof stream.data.model === "string" && stream.data.model ? stream.data.model : undefined,
         category: category.name,
         question: question.trim(),
         // M1.1: keep the first-written question when the confirm step
@@ -382,7 +477,7 @@ export function useIntakeFlow(slug: string) {
     spread, step, setStep, setCategoryKey, answers, setAnswers, story, setStory,
     question, setQuestion, setOriginalQuestion, suggestionDismissed,
     setSuggestionDismissed, drawnCards, impression, setImpression, error,
-    processingLine, processingComplete, busy, generationFailed, toastOpen,
+    processingLine, processingComplete, streamedText, streamingModel, busy, generationFailed, toastOpen,
     setToastOpen, isFreeAvailable, gate, credits, category, questionSuggestion, set, formValid,
     beginDraw, beginGeneration, retryGeneration, startOver,
   };

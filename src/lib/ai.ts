@@ -313,6 +313,30 @@ function startAttempt(
   };
 }
 
+// F23: one budget-exhaustion check for all three sites (shared by
+// generateChat and generateChatStream). Logs the chain-timeout
+// (naming the overall budget if that one ran out, otherwise the
+// per-pass budget) and returns true; the caller then does
+// `break passLoop`. The pass-retry site passes Infinity for
+// remainingPass, so it checks the overall budget only, as before.
+function budgetExhausted(
+  remainingPass: number,
+  remainingOverall: number,
+  elapsedMs: number,
+  totalTimeoutMs: number,
+  overallTimeoutMs: number
+): boolean {
+  if (remainingPass > 0 && remainingOverall > 0) return false;
+  const budget = remainingOverall <= 0 ? overallTimeoutMs : totalTimeoutMs;
+  logFailure(
+    "chain-timeout",
+    null,
+    `AI chain total timeout budget exhausted (${budget}ms)`,
+    elapsedMs
+  );
+  return true;
+}
+
 export async function generateChat(
   opts: GenerateChatOptions
 ): Promise<GeneratedChat | null> {
@@ -328,31 +352,10 @@ export async function generateChat(
   const retryDelayMs = opts.retryDelayMs ?? 250;
   const overallStart = Date.now();
 
-  // F23: one budget-exhaustion check for all three sites. Logs the
-  // chain-timeout (naming the overall budget if that one ran out,
-  // otherwise the per-pass budget) and returns true; the caller then
-  // does `break passLoop`. The pass-retry site passes Infinity for
-  // remainingPass, so it checks the overall budget only, as before.
-  const budgetExhausted = (
-    remainingPass: number,
-    remainingOverall: number,
-    elapsedMs: number
-  ): boolean => {
-    if (remainingPass > 0 && remainingOverall > 0) return false;
-    const budget = remainingOverall <= 0 ? overallTimeoutMs : totalTimeoutMs;
-    logFailure(
-      "chain-timeout",
-      null,
-      `AI chain total timeout budget exhausted (${budget}ms)`,
-      elapsedMs
-    );
-    return true;
-  };
-
   passLoop: for (let pass = 1; pass <= maxPasses; pass++) {
     if (pass > 1) {
       const elapsedOverall = Date.now() - overallStart;
-      if (budgetExhausted(Infinity, overallTimeoutMs - elapsedOverall, elapsedOverall)) {
+      if (budgetExhausted(Infinity, overallTimeoutMs - elapsedOverall, elapsedOverall, totalTimeoutMs, overallTimeoutMs)) {
         break passLoop;
       }
       console.error(
@@ -373,7 +376,7 @@ export async function generateChat(
       const remainingPass = totalTimeoutMs - elapsedPass;
       const remainingOverall = overallTimeoutMs - elapsedOverall;
 
-      if (budgetExhausted(remainingPass, remainingOverall, elapsedOverall)) {
+      if (budgetExhausted(remainingPass, remainingOverall, elapsedOverall, totalTimeoutMs, overallTimeoutMs)) {
         break passLoop;
       }
 
@@ -397,7 +400,9 @@ export async function generateChat(
         budgetExhausted(
           remainingPassAfterDelay,
           remainingOverallAfterDelay,
-          attemptStart - overallStart
+          attemptStart - overallStart,
+          totalTimeoutMs,
+          overallTimeoutMs
         )
       ) {
         break passLoop;
@@ -419,6 +424,331 @@ export async function generateChat(
         const elapsedMs = Date.now() - attemptStart;
         const detail = err instanceof OpenRouterError ? err.detail : undefined;
         logFailure("model-failed", model, err, elapsedMs, detail);
+        // Fall through to the next model in the chain.
+      } finally {
+        attempt.clear();
+      }
+    }
+  }
+
+  logFailure(
+    "all-models-failed",
+    null,
+    "every model in the chain failed",
+    Date.now() - overallStart
+  );
+  return null;
+}
+
+/* ------------------------------------------------------------------ */
+/* Batch 2b (SSE streaming): the same model chain, but the text      */
+/* arrives as it is generated instead of all at once at the end.     */
+/* The route forwards the deltas to the browser as SSE events, so    */
+/* the user sees the reading being written and the connection stays  */
+/* alive (data flows) instead of dying silently at ~30 s (Claude    */
+/* C3). The chain, timeouts, retry, and validation are identical to  */
+/* `generateChat`; only the delivery differs.                        */
+/* ------------------------------------------------------------------ */
+
+export type ChatStreamEvent =
+  | { type: "model"; model: string; attempt: number }
+  | { type: "text"; delta: string }
+  // N1: an attempt that already sent text failed (timeout, validation,
+  // stream error). The client clears its preview at once, instead of
+  // waiting for the next `model` event after the retry delay.
+  | { type: "reset" };
+
+/** One streaming OpenRouter request for one model: send, read the
+    SSE chunks, call `onDelta` per content chunk, and return the full
+    text once the stream ends (`data: [DONE]`). The complete text is
+    validated exactly as in `requestCompletion`, so a stream whose
+    text fails validation throws and the chain moves to the next model
+    (the caller then tells the client a new attempt started, and the
+    client resets its preview). */
+async function requestCompletionStream(
+  opts: GenerateChatOptions,
+  fetchFn: typeof fetch,
+  model: string,
+  signal: AbortSignal,
+  onDelta: (delta: string) => void
+): Promise<GeneratedChat> {
+  const res = await fetchFn(OPENROUTER_URL, {
+    method: "POST",
+    signal,
+    headers: {
+      Authorization: `Bearer ${opts.apiKey}`,
+      "Content-Type": "application/json",
+      "HTTP-Referer": "https://sortes.resonantatlas.com",
+      "X-Title": "Sortes by Resonant Atlas",
+    },
+    body: JSON.stringify({
+      model,
+      messages: [
+        { role: "system", content: opts.system },
+        { role: "user", content: opts.user },
+      ],
+      temperature: opts.temperature ?? 0.8,
+      max_tokens: opts.maxTokens ?? 1200,
+      reasoning: { exclude: true },
+      stream: true,
+    }),
+  });
+
+  if (!res.ok) {
+    throw new OpenRouterError(`OpenRouter ${res.status}`, await readErrorDetail(res));
+  }
+  const body = res.body;
+  if (!body) throw new Error("Empty model response");
+  const reader = body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let text = "";
+  let sawDone = false;
+  // B1: the last non-null finish_reason from the stream. A stream
+  // that ends without [DONE], or with finish_reason "length" (the
+  // model hit its token cap mid-reading) or "error", is truncated
+  // and must NOT be served as a complete reading.
+  let finishReason: string | null = null;
+  // N2: a <think> block must never flash in the live preview. The
+  // final text is stripped by stripThinking, but the deltas go out
+  // as they arrive, so filter them here. `inThink` tracks whether
+  // the current position is inside an unclosed <think> block; text
+  // inside one is dropped, text outside it is forwarded. A tag split
+  // across two chunks is the one case this misses (the final text
+  // is still stripped, so only the live preview could briefly show
+  // a fragment).
+  let inThink = false;
+  const forwardable = (delta: string): string => {
+    let out = "";
+    let rest = delta;
+    for (;;) {
+      if (inThink) {
+        const close = rest.toLowerCase().indexOf("</think>");
+        if (close === -1) return out;
+        inThink = false;
+        rest = rest.slice(close + "</think>".length);
+      } else {
+        const open = rest.toLowerCase().indexOf("<think");
+        if (open === -1) return out + rest;
+        out += rest.slice(0, open);
+        inThink = true;
+        rest = rest.slice(open);
+      }
+    }
+  };
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    let nl: number;
+    while ((nl = buffer.indexOf("\n")) !== -1) {
+      const line = buffer.slice(0, nl).replace(/\r$/, "");
+      buffer = buffer.slice(nl + 1);
+      if (!line.startsWith("data:")) continue;
+      const payload = line.slice("data:".length).trim();
+      if (payload === "[DONE]") {
+        sawDone = true;
+        break;
+      }
+      try {
+        const chunk = JSON.parse(payload);
+        // B1: OpenRouter reports a mid-stream failure as a 200
+        // stream with a chunk carrying `error` (and
+        // finish_reason "error"). Treat it as a failed attempt.
+        if (chunk?.error) {
+          const msg =
+            typeof chunk.error.message === "string"
+              ? chunk.error.message
+              : "Upstream stream error";
+          throw new Error(`OpenRouter stream error: ${msg}`);
+        }
+        const reason: string | null | undefined =
+          chunk?.choices?.[0]?.finish_reason;
+        if (typeof reason === "string" && reason.length > 0) {
+          finishReason = reason;
+        }
+        const delta: string | undefined =
+          chunk?.choices?.[0]?.delta?.content;
+        if (typeof delta === "string" && delta.length > 0) {
+          const clean = forwardable(delta);
+          if (clean.length > 0) {
+            text += clean;
+            onDelta(clean);
+          }
+        }
+      } catch (err) {
+        // A malformed chunk is skipped; the stream continues. A
+        // stream error (thrown above) is rethrown, not swallowed.
+        if (err instanceof Error && err.message.startsWith("OpenRouter stream error")) {
+          throw err;
+        }
+      }
+    }
+    if (sawDone) break;
+  }
+  buffer += decoder.decode();
+  // B1: a stream that ended without [DONE] is truncated (the
+  // connection dropped mid-reading). Never serve it as complete.
+  if (!sawDone) {
+    throw new Error("Model stream ended without [DONE]");
+  }
+  if (finishReason === "length" || finishReason === "error") {
+    throw new Error(`Model stream ended with finish_reason "${finishReason}"`);
+  }
+  const finalText = stripThinking(text);
+  if (!finalText) throw new Error("Empty model response");
+  if (opts.validate && !opts.validate(finalText)) {
+    throw new Error("Model response failed validation");
+  }
+  return { text: finalText, model };
+}
+
+/** Start one streaming model attempt racing the request against its
+    own abort timer (same pattern as `startAttempt`). */
+function startAttemptStream(
+  opts: GenerateChatOptions,
+  fetchFn: typeof fetch,
+  model: string,
+  timeoutMs: number,
+  onDelta: (delta: string) => void
+): { result: Promise<GeneratedChat>; clear: () => void } {
+  const controller = new AbortController();
+  let timer: NodeJS.Timeout | undefined;
+
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      controller.abort();
+      reject(new Error(`Model attempt timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
+  });
+
+  const executionPromise = requestCompletionStream(
+    opts,
+    fetchFn,
+    model,
+    controller.signal,
+    onDelta
+  );
+
+  // Prevent unhandled rejection if timeoutPromise settles first
+  executionPromise.catch(() => {});
+
+  return {
+    result: Promise.race([executionPromise, timeoutPromise]),
+    clear: () => clearTimeout(timer),
+  };
+}
+
+/**
+ * Stream a chat completion through the same model chain as
+ * `generateChat`. `onEvent` is called per model attempt and per text
+ * delta as they arrive. Returns the full validated text and the model
+ * that produced it, or null if every model fails. The caller (the
+ * reading route) forwards the events to the browser and, on success,
+ * spends and saves exactly as the non-streaming path does.
+ */
+export async function generateChatStream(
+  opts: GenerateChatOptions,
+  onEvent: (event: ChatStreamEvent) => void
+): Promise<GeneratedChat | null> {
+  if (!opts.apiKey) {
+    logFailure("no-api-key", null, "OPENROUTER_API_KEY is not configured");
+    return null;
+  }
+  const models = opts.models ?? getModelList();
+  const fetchFn = opts.fetchFn ?? fetch;
+  const totalTimeoutMs = opts.totalTimeoutMs ?? AI_TOTAL_TIMEOUT_MS;
+  const overallTimeoutMs = opts.overallTimeoutMs ?? AI_RETRY_TOTAL_TIMEOUT_MS;
+  const maxPasses = opts.maxPasses ?? 2;
+  const retryDelayMs = opts.retryDelayMs ?? 250;
+  const overallStart = Date.now();
+
+  passLoop: for (let pass = 1; pass <= maxPasses; pass++) {
+    if (pass > 1) {
+      const elapsedOverall = Date.now() - overallStart;
+      if (budgetExhausted(Infinity, overallTimeoutMs - elapsedOverall, elapsedOverall, totalTimeoutMs, overallTimeoutMs)) {
+        break passLoop;
+      }
+      console.error(
+        JSON.stringify({
+          source: "sortes-ai",
+          event: "chain-retry",
+          pass,
+          elapsedMs: elapsedOverall,
+        })
+      );
+    }
+
+    const passStart = Date.now();
+
+    for (let i = 0; i < models.length; i++) {
+      const elapsedPass = Date.now() - passStart;
+      const elapsedOverall = Date.now() - overallStart;
+      const remainingPass = totalTimeoutMs - elapsedPass;
+      const remainingOverall = overallTimeoutMs - elapsedOverall;
+
+      if (budgetExhausted(remainingPass, remainingOverall, elapsedOverall, totalTimeoutMs, overallTimeoutMs)) {
+        break passLoop;
+      }
+
+      const model = models[i];
+      if (i > 0 && retryDelayMs > 0) {
+        const delay = Math.min(
+          retryDelayMs * 2 ** (i - 1),
+          Math.max(0, totalTimeoutMs - (Date.now() - passStart)),
+          Math.max(0, overallTimeoutMs - (Date.now() - overallStart))
+        );
+        if (delay > 0) {
+          await sleep(delay);
+        }
+      }
+
+      const attemptStart = Date.now();
+      const remainingPassAfterDelay = totalTimeoutMs - (attemptStart - passStart);
+      const remainingOverallAfterDelay = overallTimeoutMs - (attemptStart - overallStart);
+
+      if (
+        budgetExhausted(
+          remainingPassAfterDelay,
+          remainingOverallAfterDelay,
+          attemptStart - overallStart,
+          totalTimeoutMs,
+          overallTimeoutMs
+        )
+      ) {
+        break passLoop;
+      }
+
+      const effectiveTimeoutMs = Math.min(
+        opts.timeoutMs ?? getModelTimeoutMs(model),
+        remainingPassAfterDelay,
+        remainingOverallAfterDelay
+      );
+      onEvent({ type: "model", model, attempt: i });
+      // N1: track whether this attempt already sent text, so a
+      // failure can reset the client's preview at once.
+      let sentText = false;
+      const attempt = startAttemptStream(
+        opts,
+        fetchFn,
+        model,
+        effectiveTimeoutMs,
+        (delta) => {
+          sentText = true;
+          onEvent({ type: "text", delta });
+        }
+      );
+
+      try {
+        const result = await attempt.result;
+        const elapsedMs = Date.now() - attemptStart;
+        logSuccess(model, elapsedMs, i, pass, opts.route);
+        return result;
+      } catch (err) {
+        const elapsedMs = Date.now() - attemptStart;
+        const detail = err instanceof OpenRouterError ? err.detail : undefined;
+        logFailure("model-failed", model, err, elapsedMs, detail);
+        if (sentText) onEvent({ type: "reset" });
         // Fall through to the next model in the chain.
       } finally {
         attempt.clear();

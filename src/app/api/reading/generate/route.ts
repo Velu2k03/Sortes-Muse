@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
-import { getSession, guestFreeUsed, setGuestFreeUsed } from "@/lib/auth";
+import { getSession, guestFreeUsed } from "@/lib/auth";
 import { getReadingForUser, getUserById, hasUsedFreeReading, saveReadingWithSpend } from "@/lib/db";
 import { isUuid } from "@/lib/ids";
 import cardsData from "@/data/cards.json";
 import { SENSITIVE_KEYS } from "@/lib/intake";
 import { getSpread } from "@/lib/tarot";
 import { computeSpreadFacts, type FactCard } from "@/lib/spread-facts";
-import { generateChat } from "@/lib/ai";
+import { generateChatStream } from "@/lib/ai";
+import { sseEvent, sseResponse } from "@/lib/sse-server";
 import { preCheckOracleBalance } from "@/lib/credit-precheck";
 import { validateReadingText } from "@/lib/output-validation";
 import { logGuestGeneration } from "@/lib/guestLogging";
@@ -266,20 +267,28 @@ export async function POST(req: NextRequest) {
 
   // Point 1: replay. If this attempt id was already saved for this user
   // (the first response was lost), return it with no model call and no spend.
+  // Batch 2b: the replay is an SSE stream too (one `text` event with the
+  // full saved interpretation, then `done`), so the client always reads
+  // the same shape whether the reading was just generated or replayed.
   if (session && body.readingId) {
     const prior = (await getReadingForUser(session.userId, body.readingId)) as
       | { interpretation: string; model?: string; free?: boolean }
       | null;
     if (prior) {
       const user = await getUserById(session.userId);
-      return NextResponse.json({
-        interpretation: prior.interpretation,
-        model: prior.model,
-        fallback: false,
-        free: !!prior.free,
-        credits: user?.credits ?? 0,
-        reading: prior,
-        replayed: true,
+      return sseResponse(async (send) => {
+        send(sseEvent("text", { delta: prior.interpretation }));
+        send(
+          sseEvent("done", {
+            interpretation: prior.interpretation,
+            model: prior.model,
+            fallback: false,
+            free: !!prior.free,
+            credits: user?.credits ?? 0,
+            reading: prior,
+            replayed: true,
+          })
+        );
       });
     }
   }
@@ -335,130 +344,177 @@ export async function POST(req: NextRequest) {
   const preCheck = await preCheckOracleBalance(session?.userId, !!session && !serverFree, "reading");
   if (preCheck.denied) return preCheck.denied;
 
-  // One shared client (src/lib/ai.ts): the :free chain, per-model
-  // timeout, retry across models, and structured failure logging.
-  // The grounding validator discards ungrounded text and tries the
-  // next model instead of delivering generic filler as a personal
-  // reading.
-  const generated = await generateChat({
-    apiKey: apiKey ?? "",
-    system: buildSystemPrompt(firstName, taglish, isHealth),
-    user: buildUserPrompt(cards, intake, spreadLabel, factsSummary),
-    temperature: 0.8,
-    maxTokens: 1200,
-    validate: (text) => validateReading(text, cards, intake.question),
-    route: "reading/generate",
-  });
-
-  // Every model failed (slow, rate-limited, or erroring): fail honestly.
-  // A paying user must never pay for static text, so no static fallback
-  // is served here and no credit is spent on this path.
-  if (!generated) {
-    return NextResponse.json(
+  // Batch 2b (SSE): after the pre-checks, the reading streams live.
+  // The client reads `model` and `text` events as the model generates,
+  // so the user sees the reading being written and the connection
+  // stays alive (data flows) instead of dying silently at ~30 s
+  // (Claude C3). The spend and save are unchanged: they happen only
+  // after a real generation, in the same transaction, and the `done`
+  // event carries the authoritative interpretation (not the accumulated
+  // deltas). A failure after streaming started is an `error` event,
+  // never a second HTTP response.
+  return sseResponse(async (send) => {
+    // One shared client (src/lib/ai.ts): the :free chain, per-model
+    // timeout, retry across models, and structured failure logging.
+    // The grounding validator discards ungrounded text and tries the
+    // next model instead of delivering generic filler as a personal
+    // reading. A `model` event tells the client a new attempt started,
+    // so it can reset its preview (the previous attempt's text is
+    // discarded, not shown).
+    const generated = await generateChatStream(
       {
-        error:
-          "The reading could not be generated just now. No Oracle was spent. Please try again in a moment.",
-        fallback: true,
+        apiKey: apiKey ?? "",
+        system: buildSystemPrompt(firstName, taglish, isHealth),
+        user: buildUserPrompt(cards, intake, spreadLabel, factsSummary),
+        temperature: 0.8,
+        maxTokens: 1200,
+        validate: (text) => validateReading(text, cards, intake.question),
+        route: "reading/generate",
       },
-      { status: 503 }
+      (event) => {
+        if (event.type === "model") {
+          send(sseEvent("model", { model: event.model, attempt: event.attempt }));
+        } else if (event.type === "reset") {
+          send(sseEvent("reset", {}));
+        } else {
+          send(sseEvent("text", { delta: event.delta }));
+        }
+      }
     );
-  }
 
-  // Enforce the health closing sentence server-side instead of trusting
-  // the model to include it.
-  const finalText =
-    isHealth && !generated.text.includes(HEALTH_CLOSE)
+    // Every model failed (slow, rate-limited, or erroring): fail honestly.
+    // A paying user must never pay for static text, so no static fallback
+    // is served here and no credit is spent on this path.
+    if (!generated) {
+      send(
+        sseEvent("error", {
+          error:
+            "The reading could not be generated just now. No Oracle was spent. Please try again in a moment.",
+          status: 503,
+        })
+      );
+      return;
+    }
+
+    // Enforce the health closing sentence server-side instead of trusting
+    // the model to include it. N2: when it is appended, send it as a
+    // final `text` delta too, so the live preview shows the same text
+    // the reading page will show (otherwise the disclaimer appears
+    // only after navigation).
+    const healthCloseAppended =
+      isHealth && !generated.text.includes(HEALTH_CLOSE);
+    const finalText = healthCloseAppended
       ? `${generated.text}\n\n${HEALTH_CLOSE}`
       : generated.text;
+    if (healthCloseAppended) {
+      send(sseEvent("text", { delta: `\n\n${HEALTH_CLOSE}` }));
+    }
 
-  // Spend only after a real generation, so a failed generation can never
-  // cost a credit. Item 3: the spend (or the atomic first-free claim) and
-  // the reading row are ONE transaction (saveReadingWithSpend), so closing
-  // the tab can never lose a paid reading. If the free claim loses a race
-  // the same transaction spends one Oracle instead (free: false); if the
-  // balance cannot cover it nothing is written and the text is withheld.
-  if (session) {
-    const spreadName = (() => {
-      try {
-        return getSpread(body.spreadSlug ?? "").name;
-      } catch {
-        return body.spreadSlug ?? "Reading";
+    // Spend only after a real generation, so a failed generation can never
+    // cost a credit. Item 3: the spend (or the atomic first-free claim) and
+    // the reading row are ONE transaction (saveReadingWithSpend), so closing
+    // the tab can never lose a paid reading. If the free claim loses a race
+    // the same transaction spends one Oracle instead (free: false); if the
+    // balance cannot cover it nothing is written and the text is withheld.
+    if (session) {
+      const spreadName = (() => {
+        try {
+          return getSpread(body.spreadSlug ?? "").name;
+        } catch {
+          return body.spreadSlug ?? "Reading";
+        }
+      })();
+      const question = intake.question.trim();
+      const original = typeof body.originalQuestion === "string" ? body.originalQuestion.trim().slice(0, 300) : "";
+      const firstWord = (intake.firstImpression ?? "").trim().split(/\s+/)[0] ?? "";
+      const reading = {
+        id: body.readingId ?? randomUUID(),
+        createdAt: new Date().toISOString(),
+        spreadSlug: body.spreadSlug ?? "custom",
+        spreadName: `${spreadName} · ${intake.categoryName}`,
+        cards: cards.map((c) => ({
+          cardId: c.cardId,
+          reversed: c.reversed,
+          position: c.position,
+          positionKey: (c as { positionKey?: string }).positionKey ?? "",
+        })),
+        interpretation: finalText,
+        aiGenerated: true,
+        model: generated.model,
+        category: intake.categoryName,
+        question,
+        originalQuestion: original && original !== question ? original : undefined,
+        firstImpression: firstWord || undefined,
+        firstName: intake.firstName,
+        free: serverFree,
+      };
+      const saved = await saveReadingWithSpend(session.userId, reading, serverFree);
+      if (saved.conflict) {
+        send(
+          sseEvent("error", {
+            error: "That reading id is already in use. No Oracle was spent.",
+            status: 409,
+          })
+        );
+        return;
       }
-    })();
-    const question = intake.question.trim();
-    const original = typeof body.originalQuestion === "string" ? body.originalQuestion.trim().slice(0, 300) : "";
-    const firstWord = (intake.firstImpression ?? "").trim().split(/\s+/)[0] ?? "";
-    const reading = {
-      id: body.readingId ?? randomUUID(),
-      createdAt: new Date().toISOString(),
-      spreadSlug: body.spreadSlug ?? "custom",
-      spreadName: `${spreadName} · ${intake.categoryName}`,
-      cards: cards.map((c) => ({
-        cardId: c.cardId,
-        reversed: c.reversed,
-        position: c.position,
-        positionKey: (c as { positionKey?: string }).positionKey ?? "",
-      })),
-      interpretation: finalText,
-      aiGenerated: true,
-      model: generated.model,
-      category: intake.categoryName,
-      question,
-      originalQuestion: original && original !== question ? original : undefined,
-      firstImpression: firstWord || undefined,
-      firstName: intake.firstName,
-      free: serverFree,
-    };
-    const saved = await saveReadingWithSpend(session.userId, reading, serverFree);
-    if (saved.conflict) {
-      return NextResponse.json(
-        { error: "That reading id is already in use. No Oracle was spent." },
-        { status: 409 }
-      );
-    }
-    if (!saved.ok) {
-      return NextResponse.json(
-        { error: "You need 1 Oracle for this reading. No Oracle was spent." },
-        { status: 402 }
-      );
-    }
-    if (saved.existing) {
-      // Lost a race with a parallel attempt of the same id: serve the saved row.
-      const prior = (await getReadingForUser(session.userId, reading.id)) as typeof reading | null;
+      if (!saved.ok) {
+        send(
+          sseEvent("error", {
+            error: "You need 1 Oracle for this reading. No Oracle was spent.",
+            status: 402,
+          })
+        );
+        return;
+      }
+      if (saved.existing) {
+        // Lost a race with a parallel attempt of the same id: serve the saved row.
+        const prior = (await getReadingForUser(session.userId, reading.id)) as typeof reading | null;
+        const user = await getUserById(session.userId);
+        send(
+          sseEvent("done", {
+            interpretation: prior?.interpretation ?? finalText,
+            model: prior?.model ?? generated.model,
+            fallback: false,
+            free: saved.free,
+            credits: user?.credits ?? 0,
+            reading: prior ?? { ...reading, free: saved.free },
+            replayed: true,
+          })
+        );
+        return;
+      }
+      // Phase 6B: re-fetch AFTER the spend (the pre-check balance is stale).
       const user = await getUserById(session.userId);
-      return NextResponse.json({
-        interpretation: prior?.interpretation ?? finalText,
-        model: prior?.model ?? generated.model,
-        fallback: false,
-        free: saved.free,
-        credits: user?.credits ?? 0,
-        reading: prior ?? { ...reading, free: saved.free },
-        replayed: true,
-      });
+      send(
+        sseEvent("done", {
+          interpretation: finalText,
+          model: generated.model,
+          fallback: false,
+          free: saved.free,
+          credits: user?.credits ?? 0,
+          reading: { ...reading, free: saved.free },
+        })
+      );
+      return;
     }
-    // Phase 6B: re-fetch AFTER the spend (the pre-check balance is stale).
-    const user = await getUserById(session.userId);
-    return NextResponse.json({
-      interpretation: finalText,
-      model: generated.model,
-      fallback: false,
-      free: saved.free,
-      credits: user?.credits ?? 0,
-      reading: { ...reading, free: saved.free },
-    });
-  }
 
-  // Phase B (R6): guest generation is free by design (top of
-  // funnel); the successful generation is logged so abuse is
-  // visible per route in the log drain.
-  logGuestGeneration("reading/generate");
-  if (guestFree) await recordRateLimit(guestIpKey, RATE_LIMITS.guestFreeIp);
-  const res = NextResponse.json({
-    interpretation: finalText,
-    model: generated.model,
-    fallback: false,
-    free: true,
+    // Phase B (R6): guest generation is free by design (top of
+    // funnel); the successful generation is logged so abuse is
+    // visible per route in the log drain. The guest-free cookie is
+    // NOT set here: this Response is already streaming, so its
+    // headers are sent before the generation finishes. The client
+    // calls POST /api/auth/guest-free-used after the `done` event,
+    // so the cookie is still only set after a real generation.
+    logGuestGeneration("reading/generate");
+    if (guestFree) await recordRateLimit(guestIpKey, RATE_LIMITS.guestFreeIp);
+    send(
+      sseEvent("done", {
+        interpretation: finalText,
+        model: generated.model,
+        fallback: false,
+        free: true,
+      })
+    );
   });
-  await setGuestFreeUsed(res);
-  return res;
 }
