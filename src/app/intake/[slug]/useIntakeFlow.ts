@@ -189,12 +189,13 @@ export function useIntakeFlow(slug: string) {
     answers.firstName?.trim() ||
     "friend";
 
+  // Batch 3b: the question is the ONLY required field (Velu:
+  // "cut it"). The story is optional context and the category
+  // fields are no longer rendered, so nothing else gates the
+  // "Review my reading" button.
   const formValid = () => {
     if (!category) return false;
-    for (const f of category.fields) {
-      if (f.required && !answers[f.key]?.trim()) return false;
-    }
-    return story.trim().length > 0 && question.trim().length > 0;
+    return question.trim().length > 0;
   };
 
   // M1.1: drawing is free and separate from generation. The confirm

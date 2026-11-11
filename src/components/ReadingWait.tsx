@@ -44,7 +44,7 @@ export default function ReadingWait({
         <FoldText
           text="Your reading is ready"
           trigger="mount"
-          color="#f4d03f"
+          color="var(--color-goldbright)"
           fontSize="1.75rem"
           className="mb-4"
         />
@@ -53,7 +53,7 @@ export default function ReadingWait({
         <ThoughtLine
           label={currentLine}
           working
-          color="#d4af37"
+          color="var(--color-gold)"
           showTimer={false}
         />
       )}
@@ -79,8 +79,8 @@ export default function ReadingWait({
                       : "pending"
                 }
                 size={22}
-                color="#d4af37"
-                doneColor="#d4af37"
+                color="var(--color-gold)"
+                doneColor="var(--color-gold)"
               />
             </span>
             <span>{line}</span>
@@ -93,8 +93,8 @@ export default function ReadingWait({
           label={currentLine}
           doneLabel="Done"
           status={complete ? "done" : "working"}
-          color="#d4af37"
-          doneColor="#d4af37"
+          color="var(--color-gold)"
+          doneColor="var(--color-gold)"
           showTimer={false}
           elapsed={elapsedSeconds}
           glow
