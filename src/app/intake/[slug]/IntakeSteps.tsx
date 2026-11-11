@@ -400,9 +400,11 @@ export function ConfirmStep({ f, category }: { f: IntakeState; category: IntakeC
 export function ImpressionStep({ f, drawnCards }: { f: IntakeState; drawnCards: DrawnCard[] }) {
   const { setStep, impression, setImpression, error, busy, generationFailed, toastOpen, setToastOpen, beginGeneration, retryGeneration } = f;
   const headingRef = useStepFocus<HTMLHeadingElement>();
-  // Batch 7: the cards are dealt in, one after another (a stagger),
-  // so the spread feels dealt rather than pasted. Skipped for
-  // reduced motion.
+  // Batch 8 (gist deal-in): the cards are dealt in from above with a
+  // random rotation and a scale, one after another (a 100ms stagger),
+  // so the spread feels dealt rather than pasted. The rotation is
+  // deterministic per index (-5..+5deg) so it is stable across
+  // renders. Skipped for reduced motion.
   const reduceMotion = useReducedMotion() ?? false;
   return (
     <>
@@ -427,9 +429,9 @@ export function ImpressionStep({ f, drawnCards }: { f: IntakeState; drawnCards: 
         {drawnCards.map((d, i) => (
           <motion.div
             key={d.positionKey}
-            initial={reduceMotion ? false : { opacity: 0, y: 14 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.45, delay: reduceMotion ? 0 : i * 0.09, ease: "easeOut" }}
+            initial={reduceMotion ? false : { opacity: 0, y: -48, scale: 1.12, rotate: ((i * 7) % 11) - 5 }}
+            animate={{ opacity: 1, y: 0, scale: 1, rotate: 0 }}
+            transition={{ duration: 0.5, delay: reduceMotion ? 0 : i * 0.1, ease: "easeOut" }}
           >
             <TarotCard
               cardId={d.cardId}

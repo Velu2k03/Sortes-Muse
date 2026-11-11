@@ -26,7 +26,9 @@ const SIZES = {
 /**
  * A tarot card with a smooth 3D flip, mouse-follow tilt on interactive
  * cards, a slow sheen sweeping the card back, and a golden glow that
- * blooms behind the card the moment it is revealed.
+ * blooms behind the card the moment it is revealed. Batch 8 adds a
+ * hover lift (Mystic-Draw): an interactive card scales to 1.05 on
+ * hover, skipped for reduced motion.
  */
 export default function TarotCard({
   cardId,
@@ -84,6 +86,7 @@ export default function TarotCard({
             ? { rotateX, rotateY, transformPerspective: 900 }
             : undefined
         }
+        whileHover={interactive && !reducedMotion ? { scale: 1.05 } : undefined}
         className="relative"
       >
         {/* Golden bloom that fades in behind a revealed card */}
