@@ -55,21 +55,25 @@ describe("suitElement", () => {
   });
 });
 
-// Phase 4A (4.4): the card grid is the default view; the spiral is
-// opt-in. Under prefers-reduced-motion the spiral is never shown.
+// Batch 5: the list is the default view; the grid and the spiral
+// are opt-ins. Under prefers-reduced-motion the spiral is never
+// shown; it falls back to the list. Grid and list are static, so an
+// explicit choice of either is kept even under reduced motion.
 describe("default deck view", () => {
-  it("defaults to the grid", () => {
-    expect(DEFAULT_DECK_VIEW).toBe("grid");
+  it("defaults to the list", () => {
+    expect(DEFAULT_DECK_VIEW).toBe("list");
   });
 
-  it("keeps an explicit spiral choice when motion is fine", () => {
+  it("keeps an explicit choice when motion is fine", () => {
     expect(resolveDeckView("spiral", false)).toBe("spiral");
     expect(resolveDeckView("grid", false)).toBe("grid");
+    expect(resolveDeckView("list", false)).toBe("list");
   });
 
-  it("forces the grid under reduced motion, even when spiral was asked for", () => {
-    expect(resolveDeckView("spiral", true)).toBe("grid");
+  it("falls back to the list under reduced motion, only for the spiral", () => {
+    expect(resolveDeckView("spiral", true)).toBe("list");
     expect(resolveDeckView("grid", true)).toBe("grid");
+    expect(resolveDeckView("list", true)).toBe("list");
   });
 });
 
