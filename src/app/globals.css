@@ -330,11 +330,14 @@ html[data-theme="light"] .alert-error-text {
 }
 
 /* Homepage hero scrim (AF-031): a dark gradient in dark theme. In
-   light theme a paper wash that lightens toward full paper, so the
-   dark hero image does not turn into a muddy grey band, while the
-   dark hero copy stays readable. The hero image itself is dimmed
-   in light theme (.hero-img), so the moon shows faintly over paper
-   instead of greyed-out. */
+   light theme a paper wash that lightens toward full paper. The
+   hero image itself is HIDDEN in light theme (.hero-img opacity
+   0): even dimmed to 0.3 the dark starfield photo read as a muddy
+   grey wash over cream (browser light-theme check 2026-11-11,
+   Batch 3b), with the washed-out moon behind the headline and the
+   star dots reading as dust. The light hero is clean paper plus
+   the Orb glow. The scrim is paper-coloured, so over paper it is
+   effectively invisible. */
 .hero-scrim {
   background: linear-gradient(
     to bottom,
@@ -352,7 +355,7 @@ html[data-theme="light"] .hero-scrim {
   );
 }
 html[data-theme="light"] .hero-img {
-  opacity: 0.3;
+  opacity: 0;
 }
 
 /* Batch 9: native pickers that remain (birth time) must follow the
