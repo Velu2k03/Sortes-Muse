@@ -19,9 +19,9 @@ import {
 } from "@/lib/cards";
 import type { TarotCard } from "@/lib/types";
 // Phase 4C (4.8a): the spiral gallery is code-split. It renders only
-// when the seeker opts into the spiral view (grid is the default), so
+// when the seeker opts into the spiral view (list is the default), so
 // it is a separate chunk loaded on demand instead of first-paint
-// weight on the deck grid. Plain dynamic() (SSR kept): the component
+// weight on the deck list. Plain dynamic() (SSR kept): the component
 // is rendered conditionally, so there is no SSR behaviour to lose.
 const InfiniteSpiral = dynamic(() => import("@/components/InfiniteSpiral"));
 
@@ -36,11 +36,12 @@ const FILTERS: { key: Filter; label: string }[] = [
   { key: "pentacles", label: "Pentacles" },
 ];
 
-// Phase 4A (4.4): the card grid is the default view; the spiral is an
-// opt-in "Spiral gallery". Every card is a link to its own
-// /deck/[slug] page (deep-linkable, shareable). The old ?card=
-// deep link (used by the home orbit) redirects to the card page, so
-// existing links keep working.
+// Phase 4A (4.4): the list is the default view (Batch 5: one text
+// row per card, the most keyboard- and screen-reader-friendly view);
+// the card grid and the spiral are opt-ins. Every card is a link to
+// its own /deck/[slug] page (deep-linkable, shareable). The old
+// ?card= deep link (used by the home orbit) redirects to the card
+// page, so existing links keep working.
 export default function DeckClient({
   initialFilter,
   initialQuery,
@@ -170,6 +171,18 @@ export default function DeckClient({
           <fieldset className="m-0 min-w-0 flex gap-2 border-0 p-0" aria-label="Deck view">
             <button
               type="button"
+              aria-pressed={effectiveView === "list"}
+              onClick={() => setView("list")}
+              className={`rounded-full px-4 py-3 text-sm font-semibold transition ${
+                effectiveView === "list"
+                  ? "bg-gold text-ink"
+                  : "border border-gold/30 text-cream/80 hover:border-gold/60 hover:text-goldbright"
+              }`}
+            >
+              List
+            </button>
+            <button
+              type="button"
               aria-pressed={effectiveView === "grid"}
               onClick={() => setView("grid")}
               className={`rounded-full px-4 py-3 text-sm font-semibold transition ${
@@ -196,14 +209,14 @@ export default function DeckClient({
           <p className="w-full text-center text-xs text-mist sm:w-auto" aria-live="polite">
             {cards.length} {cards.length === 1 ? "card" : "cards"}
             {filter !== "all" && filter !== "major" && ` · ${suitLabel(filter)}`}
-            {reducedMotion && " · reduced motion: grid view"}
+            {reducedMotion && " · reduced motion"}
           </p>
         </div>
       </div>
 
       {effectiveView === "spiral" ? (
         <div className="mt-6">
-          <p className="mb-3 text-center text-sm text-mist">Spiral is a visual browse. To browse cards by keyboard, switch to Card grid above.</p>
+          <p className="mb-3 text-center text-sm text-mist">Spiral is a visual browse. To browse cards by keyboard, switch to List above.</p>
           <p className="text-center text-sm text-cream/75">
             Drag to spin, tap a card to read it.
           </p>
@@ -279,6 +292,60 @@ export default function DeckClient({
             </div>
           )}
         </div>
+      ) : effectiveView === "list" ? (
+        <>
+        {/* Batch 5: the List view. One text row per card: a small
+            thumbnail, the name, the arcana or suit, and the first
+            three upright keywords. Every row is a link to the card
+            page, so it is fully keyboard- and screen-reader-
+            friendly (unlike the pointer-only spiral). Rows are at
+            least 44px tall for touch. */}
+        <ul className="mt-6 space-y-2">
+        {cards.map((c, i) => (
+          <li key={c.id}>
+          <Link
+            href={`/deck/${cardSlug(c.name)}`}
+            className="group flex min-h-[44px] items-center gap-4 rounded-xl border border-gold/20 bg-panel/50 px-3 py-2.5 transition hover:border-gold/60 hover:shadow-[0_12px_30px_rgba(212,175,55,0.15)]"
+          >
+            <span className="relative block h-16 w-10 shrink-0 overflow-hidden rounded-md">
+              <Image
+                src={c.image}
+                alt=""
+                fill
+                sizes="40px"
+                className="object-cover"
+                loading={i < 10 ? "eager" : "lazy"}
+              />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-sm font-semibold text-cream group-hover:text-goldbright">
+                {c.name}
+              </span>
+              <span className="block truncate text-xs text-mist">
+                {c.arcana === "major" ? "Major Arcana" : suitLabel(c.suit ?? "")} · {c.keywords.upright.slice(0, 3).join(", ")}
+              </span>
+            </span>
+            <span aria-hidden="true" className="shrink-0 text-lg text-gold">›</span>
+          </Link>
+          </li>
+        ))}
+      </ul>
+
+      {cards.length === 0 && (
+        <div className="mt-16 text-center">
+          <p className="text-mist">
+            No cards match {query.trim() ? `"${query.trim()}"` : "your search"}. Try another name, or reset the filters.
+          </p>
+          <button
+            type="button"
+            onClick={() => { setQuery(""); setFilter("all"); syncUrl({ filter: "all", q: "" }); }}
+            className="mt-3 rounded-full border border-gold/30 px-4 py-3 text-sm font-semibold text-goldbright hover:border-gold/60"
+          >
+            Reset filters
+          </button>
+        </div>
+      )}
+      </>
       ) : (
         <>
         <div className="mt-6 grid grid-cols-3 gap-3 sm:grid-cols-4 sm:gap-4 md:grid-cols-6">

@@ -7,13 +7,14 @@
  *
  * Free models only: the chain stays on :free models (flat 1 Oracle
  * per reading/report is a pricing rule, not a model choice).
- * Models (Phase D order): openrouter/free, nvidia/nemotron-3-ultra-550b-a55b:free, xingchen-agi/xing4.0-29b-a4b:free.
+ * Models (Batch 9 order): openrouter/free, nvidia/nemotron-3-ultra-550b-a55b:free.
+ * Xing4.0 was removed in Batch 9 (2026-11-11): OpenRouter returns 404
+ * ("no longer available on OpenRouter"), so it can never answer again.
  *
  * Reliability & retry (Phase 8A, Task A2; Phase D rework 2026-11-07):
- * - Chain order (Phase D): openrouter/free FIRST, then Nemotron Ultra,
- *   then Xing4.0. The router was the only model that ever answered in
- *   the Phase 7 E2E (3/3 on retry, 0/3 for the other two on first
- *   attempts), and independent sweeps (ayautomate, 2026-11-03) show it
+ * - Chain order (Batch 9): openrouter/free FIRST, then Nemotron Ultra.
+ *   The router was the only model that ever answered in the Phase 7
+ *   E2E, and independent sweeps (ayautomate, 2026-11-03) show it
  *   answering 3/3 on both test days. Leading with it stops every
  *   generation from first burning a 25 s Nemotron timeout.
  * - Per-model timeout (Phase D): Nemotron Ultra gets 60 s
@@ -30,18 +31,18 @@
  * - Spend safety: callers pre-check balance, call generateChat, and only spend
  *   after acceptable text is returned. Retry happens before any database write.
  *
- * Phase D budget arithmetic (worst case per pass, new order):
- * router 25 s + Nemotron 60 s + Xing4.0 ~5 s (429s are fast) = ~90 s,
- * which exceeds the 80 s per-pass budget, so the per-attempt timeout is
- * clamped to the remaining pass budget: when the router hangs its full
- * 25 s, Nemotron effectively gets ~54 s in that pass. In the typical
- * case the router fails fast (empty/429 in seconds), so Nemotron gets
- * its full 60 s. Two passes are at most 160 s plus retry delays
- * (~1 s), inside the 170 s overall cap and far inside the 300 s
- * Vercel limit. Typical success path after the reorder: router answers
- * in pass 1 (~5-15 s), or pass 1 costs ~69 s (router fast-fail +
- * Nemotron 60 s + Xing fast 429) and the router answers in pass 2
- * (~10 s), totalling ~80 s, under the ~115 s proxied-request watch item.
+ * Batch 9 budget arithmetic (worst case per pass, new order):
+ * router 25 s + Nemotron 60 s = 85 s, which exceeds the 80 s
+ * per-pass budget, so the per-attempt timeout is clamped to the
+ * remaining pass budget: when the router hangs its full 25 s,
+ * Nemotron effectively gets ~55 s in that pass. In the typical case
+ * the router fails fast (empty/429 in seconds), so Nemotron gets its
+ * full 60 s. Two passes are at most 160 s plus retry delays (~1 s),
+ * inside the 170 s overall cap and far inside the 300 s Vercel
+ * limit. Typical success path after the reorder: router answers in
+ * pass 1 (~5-15 s), or pass 1 costs ~60 s (router fast-fail +
+ * Nemotron 60 s) and the router answers in pass 2 (~10 s), totalling
+ * ~70 s, under the ~115 s proxied-request watch item.
  * Worst-case full failure is still ~161 s, past that watch item; if
  * the 120 s proxied timeout proves real, a total failure would fail at
  * the proxy rather than at our cap, which is a failure-mode question
@@ -64,11 +65,11 @@
  *   (covers WebBrain p95 40.6 s and the throughput-math worst case of
  *   ~58 s for 1200 tokens; ShelraCode 80-87 s stays out of reach inside
  *   two passes, documented in the decision log).
- * - Xing4.0: 429s are upstream provider (Phala) saturation, not account limits.
- *   Fresh evidence is mixed (ayautomate 2026-11-03: 0/3, worse than 2/3 on
- *   Oct 29; klymentiev daily test checked 2026-11-06: 3 of 7 days answered),
- *   so it stays LAST in the chain, not dropped. Re-evaluate if the Phase D
- *   E2E shows 0/X again.
+ * - Xing4.0: REMOVED in Batch 9 (2026-11-11). OpenRouter returns 404
+ *   ("no longer available on OpenRouter"), so it can never answer
+ *   again. It was last in the chain (chronic upstream 429s from Phala
+ *   saturation); the 2026-11-11 production verification saw it 404 on
+ *   every attempt, and generation failed 3 times before succeeding.
  * - openrouter/free: dynamic router pool; retrying re-draws an available free model.
  *   Moved FIRST in Phase D: it was the only model that ever answered in the
  *   Phase 7 E2E. Caveat (ayautomate 2026-11-03): the router can draw a
@@ -93,7 +94,7 @@
 
 export const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 export const OPENROUTER_DEFAULT_MODELS =
-  "openrouter/free,nvidia/nemotron-3-ultra-550b-a55b:free,xingchen-agi/xing4.0-29b-a4b:free";
+  "openrouter/free,nvidia/nemotron-3-ultra-550b-a55b:free";
 export const AI_TIMEOUT_MS = 25000;
 /** Nemotron Ultra 550B needs longer for long-form prose (see header). */
 export const AI_NEMOTRON_TIMEOUT_MS = 60000;
@@ -116,8 +117,8 @@ export function stripThinking(text: string): string {
 
 /** Comma-separated fallback chain: the free router first (it was the only
     model that ever answered in the Phase 7 E2E), Nemotron Ultra second with
-    a longer timeout, Xing4.0 last (chronic upstream 429s). Override with
-    OPENROUTER_MODEL in env. */
+    a longer timeout. Xing4.0 was removed in Batch 9 (dead, OpenRouter
+    404). Override with OPENROUTER_MODEL in env. */
 export function getModelList(): string[] {
   return (process.env.OPENROUTER_MODEL || OPENROUTER_DEFAULT_MODELS)
     .split(",")

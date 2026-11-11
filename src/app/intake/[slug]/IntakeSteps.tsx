@@ -140,9 +140,9 @@ export function CategoryStep({ f }: { f: IntakeState }) {
   );
 }
 
-/** Step 2: the category's fields, the story, and the question. */
+/** Step 2: the story (optional) and the question (the only required field). Batch 3b cut the category fields. */
 export function FormStep({ f, category }: { f: IntakeState; category: IntakeCategory }) {
-  const { setStep, answers, story, setStory, question, setQuestion, setOriginalQuestion, setSuggestionDismissed, set, formValid } = f;
+  const { setStep, story, setStory, question, setQuestion, setOriginalQuestion, setSuggestionDismissed, formValid } = f;
   const headingRef = useStepFocus<HTMLHeadingElement>();
   return (
     <>
@@ -154,8 +154,8 @@ export function FormStep({ f, category }: { f: IntakeState; category: IntakeCate
       </h1>
       <p className="mx-auto mt-3 max-w-md text-center text-sm text-cream/75">
         Tell us what&apos;s going on. Your story goes to the AI for
-        this reading only and is not stored. Your question, first
-        name, and category are saved to your journal.
+        this reading only and is not stored. Your question and
+        category are saved to your journal.
       </p>
 
       {category.key === "health" && (
@@ -174,55 +174,9 @@ export function FormStep({ f, category }: { f: IntakeState; category: IntakeCate
       </div>
 
       <div className="mt-8 space-y-5">
-        {category.fields.map((f) => (
-          <div key={f.key}>
-            <label
-              htmlFor={`intake-${f.key}`}
-              className="mb-1.5 block text-sm font-medium text-cream"
-            >
-              {f.label}
-              {f.required && <span className="text-gold"> *</span>}
-            </label>
-            {f.type === "textarea" ? (
-              <textarea
-                id={`intake-${f.key}`}
-                value={answers[f.key] ?? ""}
-                onChange={(e) => set(f.key, e.target.value)}
-                placeholder={f.placeholder}
-                rows={3}
-                className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none"
-              />
-            ) : f.type === "select" ? (
-              <select
-                id={`intake-${f.key}`}
-                value={answers[f.key] ?? ""}
-                onChange={(e) => set(f.key, e.target.value)}
-                className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream focus:border-gold/60 focus:outline-none"
-              >
-                <option value="">Choose…</option>
-                {f.options?.map((o) => (
-                  <option key={o} value={o}>
-                    {o}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <input
-                id={`intake-${f.key}`}
-                type={f.type}
-                value={answers[f.key] ?? ""}
-                onChange={(e) => set(f.key, e.target.value)}
-                placeholder={f.placeholder}
-                className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none"
-              />
-            )}
-            {f.hint && <p className="mt-1 text-xs text-mist">{f.hint}</p>}
-          </div>
-        ))}
-
         <div>
           <label htmlFor="intake-story" className="mb-1.5 block text-sm font-medium text-cream">
-            Your story / background <span className="text-gold">*</span>
+            Your story / background <span className="font-normal text-mist">(optional)</span>
           </label>
           <textarea
             id="intake-story"
