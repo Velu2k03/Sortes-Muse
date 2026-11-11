@@ -40,7 +40,10 @@ interface Intake {
   categoryName: string;
   firstName: string;
   answers: Record<string, string>;
-  story: string;
+  /** Batch 3b: the story is OPTIONAL (the question is the only
+      required field). A missing story is treated as "none provided"
+      in the prompt, never a 400. */
+  story?: string;
   question: string;
   firstImpression?: string;
 }
@@ -138,7 +141,7 @@ Their details:
 ${safeAnswers || "(none provided)"}
 
 Their story in their own words:
-${intake.story}
+${intake.story?.trim() || "(none provided)"}
 
 The exact question they want clarity on:
 ${intake.question}
@@ -179,16 +182,19 @@ export async function POST(req: NextRequest) {
   if (body.readingId !== undefined && !isUuid(body.readingId)) {
     return NextResponse.json({ error: "readingId must be a UUID." }, { status: 400 });
   }
-  if (!cards?.length || !intake?.story || !intake?.question) {
+  // Batch 3b (CodeRabbit review): the story is optional, so only
+  // cards and the question are required. A missing story used to
+  // 400 here, which broke the advertised question-only flow.
+  if (!cards?.length || !intake?.question) {
     return NextResponse.json(
-      { error: "Missing cards, story, or question." },
+      { error: "Missing cards or question." },
       { status: 400 }
     );
   }
   // Phase 2, 2.4: length caps, enforced server-side. Over-long input
   // is rejected with a clear message instead of silently truncated
   // or passed to the model unbounded.
-  if (typeof intake.story !== "string" || intake.story.length > 2000) {
+  if (intake.story !== undefined && (typeof intake.story !== "string" || intake.story.length > 2000)) {
     return NextResponse.json(
       { error: "Story must be 2000 characters or fewer." },
       { status: 400 }
@@ -306,7 +312,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const taglish = detectTaglish(`${intake.story} ${intake.question}`);
+  const taglish = detectTaglish(`${intake.story ?? ""} ${intake.question}`);
   const isHealth = intake.category === "health";
 
   // M1.1: computed spread facts ground the interpretation in the draw.

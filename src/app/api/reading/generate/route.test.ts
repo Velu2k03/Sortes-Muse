@@ -427,6 +427,23 @@ describe("POST /api/reading/generate — input validation (Phase 2, 2.4)", () =>
     expect(res.status).toBe(200);
   });
 
+  // Batch 3b (CodeRabbit review): the story is optional, so the
+  // question-only flow must not 400. An empty or missing story is
+  // accepted and treated as "none provided" in the prompt.
+  it("accepts an empty story (question-only flow)", async () => {
+    const b = body("quick-insight");
+    b.intake.story = "";
+    const res = await POST(req(b, "10.0.1.5"));
+    expect(res.status).toBe(200);
+  });
+
+  it("accepts a missing story (question-only flow)", async () => {
+    const b = body("quick-insight");
+    delete (b.intake as Record<string, unknown>).story;
+    const res = await POST(req(b, "10.0.1.6"));
+    expect(res.status).toBe(200);
+  });
+
   it("rejects more than 20 cards with 400", async () => {
     const b = body("quick-insight");
     b.cards = Array.from({ length: 21 }, (_, i) => ({
