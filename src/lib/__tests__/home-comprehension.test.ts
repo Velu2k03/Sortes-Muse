@@ -25,8 +25,11 @@ const src = readFileSync(path.resolve(process.cwd(), "src/app/page.tsx"), "utf8"
 
 describe("home page: first-visit comprehension", () => {
   it("states what Sortes does", () => {
-    // Round 3 hero trim: the H1 now states what Sortes does.
-    expect(src).toContain("Sortes: free tarot reading with AI");
+    // Batch 6b (Velu, 2026-11-11): the hero is ONE sentence only,
+    // not a tagline plus a headline. Velu picked this sentence.
+    expect(src).toContain(
+      "Ask a question and get a clear AI tarot reading that helps you think it through."
+    );
     // Batch 6a: the "mirror" line is replaced by the plain version.
     expect(src).toContain("78 cards. Tarot helps you think. It doesn&apos;t predict.");
   });

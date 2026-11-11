@@ -86,8 +86,13 @@ export default function Home() {
           {/* AF-071: the H1 is the value proposition with keywords,
               not the one-word brand. The brand still leads the title
               tag and the footer. */}
-          <h1 className="mt-6 font-display text-5xl leading-tight text-goldbright sm:text-6xl md:text-7xl">
-            Sortes: free tarot reading with AI
+          {/* Batch 6b (Velu, 2026-11-11): the hero is ONE sentence
+              only, not a tagline plus a headline. Velu picked this
+              sentence (Muse's Option 1; Argon's options were not
+              good, Argon is not used). text-balance keeps the long
+              line wrapping clean. */}
+          <h1 className="mt-6 text-balance font-display text-5xl leading-tight text-goldbright sm:text-6xl md:text-7xl">
+            Ask a question and get a clear AI tarot reading that helps you think it through.
           </h1>
           <p className="mt-6 max-w-xl text-base leading-relaxed text-cream/80">
             Draw a free daily card, explore 78 meanings.
