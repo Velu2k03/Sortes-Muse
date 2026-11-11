@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { motion, useReducedMotion } from "motion/react";
 import type { Reading, FollowUp } from "@/lib/types";
 import { getCard, orientationKeywords, orientationMeaning } from "@/lib/cards";
 import { computeSpreadFacts } from "@/lib/spread-facts";
@@ -162,19 +163,31 @@ export function CardRow({
   zoomCard: string | null;
   setZoomCard: (id: string | null) => void;
 }) {
+  // Batch 8 (gist deal-in): the cards are dealt in from above with a
+  // random rotation and a scale, one after another (a 100ms stagger),
+  // so the spread feels dealt rather than pasted. The rotation is
+  // deterministic per index (-5..+5deg) so it is stable across
+  // renders. Skipped for reduced motion.
+  const reduceMotion = useReducedMotion();
   return (
     <>
       <div className="mt-8 flex flex-wrap justify-center gap-4">
-        {reading.cards.map((d) => (
-          <TarotCard
+        {reading.cards.map((d, i) => (
+          <motion.div
             key={d.positionKey}
-            cardId={d.cardId}
-            reversed={d.reversed}
-            revealed
-            size="sm"
-            label={d.position}
-            onFlip={() => setZoomCard(d.cardId)}
-          />
+            initial={reduceMotion ? false : { opacity: 0, y: -48, scale: 1.12, rotate: ((i * 7) % 11) - 5 }}
+            animate={{ opacity: 1, y: 0, scale: 1, rotate: 0 }}
+            transition={{ duration: 0.5, delay: reduceMotion ? 0 : i * 0.1, ease: "easeOut" }}
+          >
+            <TarotCard
+              cardId={d.cardId}
+              reversed={d.reversed}
+              revealed
+              size="sm"
+              label={d.position}
+              onFlip={() => setZoomCard(d.cardId)}
+            />
+          </motion.div>
         ))}
       </div>
       <p className="mt-3 text-center text-xs text-mist">

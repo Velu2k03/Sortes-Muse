@@ -400,6 +400,12 @@ export function ConfirmStep({ f, category }: { f: IntakeState; category: IntakeC
 export function ImpressionStep({ f, drawnCards }: { f: IntakeState; drawnCards: DrawnCard[] }) {
   const { setStep, impression, setImpression, error, busy, generationFailed, toastOpen, setToastOpen, beginGeneration, retryGeneration } = f;
   const headingRef = useStepFocus<HTMLHeadingElement>();
+  // Batch 8 (gist deal-in): the cards are dealt in from above with a
+  // random rotation and a scale, one after another (a 100ms stagger),
+  // so the spread feels dealt rather than pasted. The rotation is
+  // deterministic per index (-5..+5deg) so it is stable across
+  // renders. Skipped for reduced motion.
+  const reduceMotion = useReducedMotion() ?? false;
   return (
     <>
       <p className="text-xs uppercase tracking-[0.35em] text-gold">
@@ -420,16 +426,22 @@ export function ImpressionStep({ f, drawnCards }: { f: IntakeState; drawnCards: 
           and the position is the card label. Smaller cards
           for larger spreads so the row fits at 390px. */}
       <div className="mx-auto mt-8 flex max-w-2xl flex-wrap items-start justify-center gap-4 sm:gap-6">
-        {drawnCards.map((d) => (
-          <TarotCard
+        {drawnCards.map((d, i) => (
+          <motion.div
             key={d.positionKey}
-            cardId={d.cardId}
-            reversed={d.reversed}
-            revealed
-            disabled
-            size={drawnCards.length > 3 ? "sm" : "md"}
-            label={d.position}
-          />
+            initial={reduceMotion ? false : { opacity: 0, y: -48, scale: 1.12, rotate: ((i * 7) % 11) - 5 }}
+            animate={{ opacity: 1, y: 0, scale: 1, rotate: 0 }}
+            transition={{ duration: 0.5, delay: reduceMotion ? 0 : i * 0.1, ease: "easeOut" }}
+          >
+            <TarotCard
+              cardId={d.cardId}
+              reversed={d.reversed}
+              revealed
+              disabled
+              size={drawnCards.length > 3 ? "sm" : "md"}
+              label={d.position}
+            />
+          </motion.div>
         ))}
       </div>
 

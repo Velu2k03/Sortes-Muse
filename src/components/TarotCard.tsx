@@ -15,8 +15,6 @@ interface Props {
   size?: "sm" | "md" | "lg";
   label?: string;
   disabled?: boolean;
-  /** Show the golden reveal burst (parent clears it after the animation). */
-  celebrate?: boolean;
 }
 
 const SIZES = {
@@ -28,7 +26,9 @@ const SIZES = {
 /**
  * A tarot card with a smooth 3D flip, mouse-follow tilt on interactive
  * cards, a slow sheen sweeping the card back, and a golden glow that
- * blooms behind the card the moment it is revealed.
+ * blooms behind the card the moment it is revealed. Batch 8 adds a
+ * hover lift (Mystic-Draw): an interactive card scales to 1.05 on
+ * hover, skipped for reduced motion.
  */
 export default function TarotCard({
   cardId,
@@ -38,7 +38,6 @@ export default function TarotCard({
   size = "md",
   label,
   disabled = false,
-  celebrate = false,
 }: Props) {
   const card = cardId ? getCard(cardId) : null;
   const interactive = Boolean(onFlip) && !disabled && Boolean(cardId);
@@ -48,6 +47,14 @@ export default function TarotCard({
       typeof window !== "undefined" &&
       window.matchMedia("(prefers-reduced-motion: reduce)").matches
   );
+
+  // Batch 7: the golden reveal burst fires the moment the card is
+  // revealed. The burst was built but never wired up: the old
+  // `celebrate` prop was never passed by any parent, so it never
+  // fired. Now the burst renders whenever the card is revealed
+  // (and not reduced motion). CardBurst animates once on mount
+  // (0.85s) and then sits invisible, so it fires once per reveal
+  // and does not re-fire on re-render.
 
   // Mouse-follow tilt (desktop pointers only, skipped for reduced motion).
   const tiltX = useMotionValue(0);
@@ -79,6 +86,7 @@ export default function TarotCard({
             ? { rotateX, rotateY, transformPerspective: 900 }
             : undefined
         }
+        whileHover={interactive && !reducedMotion ? { scale: 1.05 } : undefined}
         className="relative"
       >
         {/* Golden bloom that fades in behind a revealed card */}
@@ -108,7 +116,7 @@ export default function TarotCard({
           }
           className={`perspective-1000 ${SIZES[size]} relative min-h-[8rem] min-w-[5rem] cursor-pointer disabled:cursor-default`}
         >
-          {celebrate && <CardBurst />}
+          {revealed && !reducedMotion && <CardBurst />}
           {/* Validator fix: a button may only contain phrasing
               content, so the flip container and both faces are spans
               with block display, not divs. Same flip, same layout. */}
