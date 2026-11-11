@@ -36,6 +36,7 @@ import { GET as balanceGET } from "@/app/api/credits/balance/route";
 import * as balanceRoute from "@/app/api/credits/balance/route";
 import { POST as followUpPOST } from "@/app/api/reading/follow-up/route";
 import { POST as generatePOST } from "@/app/api/reading/generate/route";
+import { readRouteSse } from "@/lib/__tests__/sse-helpers";
 import { POST as interpretPOST } from "@/app/api/chart/interpret/route";
 import { POST as reportsGeneratePOST } from "@/app/api/reports/generate/route";
 import { POST as historyPOST, DELETE as historyDELETE } from "@/app/api/history/route";
@@ -232,10 +233,15 @@ describe("trust: no charge for failed results", () => {
     delete process.env.OPENROUTER_API_KEY;
   });
 
+  // Batch 2b: a failed generation is an SSE `error` event (status
+  // 503) on a 200 response, not an HTTP 503. No credit is spent.
   it("a failed tarot generation returns 503 and spends nothing", async () => {
     const res = await generatePOST(req("http://localhost/api/reading/generate", generateBody("past-present-future"), "10.1.0.5"));
-    expect(res.status).toBe(503);
-    expect((await res.json()).error).toContain("No Oracle was spent");
+    expect(res.status).toBe(200);
+    const { done, error } = await readRouteSse(res);
+    expect(done).toBeNull();
+    expect(error?.status).toBe(503);
+    expect(error?.error).toContain("No Oracle was spent");
     expect(mockedSpend).not.toHaveBeenCalled();
   }, 30_000);
 

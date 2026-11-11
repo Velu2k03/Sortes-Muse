@@ -16,6 +16,7 @@ import { POST, validateReading } from "@/app/api/reading/generate/route";
 import { getUserById, hasUsedFreeReading, saveReadingWithSpend } from "@/lib/db";
 import { getSession, guestFreeUsed, setGuestFreeUsed } from "@/lib/auth";
 import { RATE_LIMITS, resetRateLimits, ipLimitKey, isRateLimited, recordRateLimit } from "@/lib/rateLimit";
+import { openRouterStreamResponse, readRouteSse } from "@/lib/__tests__/sse-helpers";
 
 const mockedGetUserById = vi.mocked(getUserById);
 const mockedSave = vi.mocked(saveReadingWithSpend);
@@ -124,13 +125,11 @@ describe("POST /api/reading/generate — first free Quick Insight", () => {
     mockedSave.mockImplementation(async (_u, _r, tryFree) => ({ ok: true, free: tryFree }));
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => ({
-          choices: [{ message: { content: READING_TEXT } }],
-          model: "nvidia/nemotron-3-ultra-550b-a55b:free",
-        }),
-      })
+      // A fresh Response per call: a body can only be consumed once,
+      // and some tests make several successful POSTs in one run.
+      vi.fn().mockImplementation(async () =>
+        openRouterStreamResponse(READING_TEXT, "nvidia/nemotron-3-ultra-550b-a55b:free")
+      )
     );
   });
 
@@ -143,9 +142,9 @@ describe("POST /api/reading/generate — first free Quick Insight", () => {
     mockedGetSession.mockResolvedValue({ userId: "u1", email: "a@b.co" });
     const res = await POST(req(body("quick-insight"), "10.0.0.1"));
     expect(res.status).toBe(200);
-    const data = await res.json();
-    expect(data.free).toBe(true);
-    expect(data.interpretation).toContain("The Fool");
+    const { done: data } = await readRouteSse(res);
+    expect(data?.free).toBe(true);
+    expect(data?.interpretation).toContain("The Fool");
     expect(mockedSave).toHaveBeenCalledWith("u1", expect.objectContaining({ interpretation: expect.stringContaining("The Fool") }), true);
   });
 
@@ -154,7 +153,7 @@ describe("POST /api/reading/generate — first free Quick Insight", () => {
     mockedHasUsedFree.mockResolvedValue(true);
     const res = await POST(req(body("quick-insight"), "10.0.0.2"));
     expect(res.status).toBe(200);
-    expect((await res.json()).free).toBe(false);
+    expect((await readRouteSse(res)).done?.free).toBe(false);
     expect(mockedSave).toHaveBeenCalledWith("u1", expect.objectContaining({ interpretation: expect.stringContaining("The Fool") }), false);
   });
 
@@ -167,9 +166,9 @@ describe("POST /api/reading/generate — first free Quick Insight", () => {
     mockedSave.mockResolvedValue({ ok: true, free: false });
     const res = await POST(req(body("quick-insight"), "10.0.0.5"));
     expect(res.status).toBe(200);
-    const data = await res.json();
-    expect(data.free).toBe(false);
-    expect(data.interpretation).toContain("The Fool");
+    const { done: data } = await readRouteSse(res);
+    expect(data?.free).toBe(false);
+    expect(data?.interpretation).toContain("The Fool");
     expect(mockedSave).toHaveBeenCalledWith("u1", expect.objectContaining({ interpretation: expect.stringContaining("The Fool") }), true);
   });
 
@@ -177,8 +176,11 @@ describe("POST /api/reading/generate — first free Quick Insight", () => {
     mockedGetSession.mockResolvedValue({ userId: "u1", email: "a@b.co" });
     mockedSave.mockResolvedValue({ ok: false, free: false });
     const res = await POST(req(body("quick-insight"), "10.0.0.6"));
-    expect(res.status).toBe(402);
-    expect((await res.json()).interpretation).toBeUndefined();
+    expect(res.status).toBe(200);
+    const { done, error } = await readRouteSse(res);
+    expect(done).toBeNull();
+    expect(error?.status).toBe(402);
+    expect(error?.error).toContain("No Oracle was spent");
   });
 
   // Phase 6B regression: the response used to reuse the pre-check
@@ -203,7 +205,7 @@ describe("POST /api/reading/generate — first free Quick Insight", () => {
       });
     const res = await POST(req(body("quick-insight"), "10.0.0.4"));
     expect(res.status).toBe(200);
-    expect((await res.json()).credits).toBe(4);
+    expect((await readRouteSse(res)).done?.credits).toBe(4);
   });
 
   it("blocks the second Quick Insight with 402 when the balance cannot cover it", async () => {
@@ -211,10 +213,11 @@ describe("POST /api/reading/generate — first free Quick Insight", () => {
     mockedHasUsedFree.mockResolvedValue(true);
     mockedSave.mockResolvedValue({ ok: false, free: false });
     const res = await POST(req(body("quick-insight"), "10.0.0.3"));
-    expect(res.status).toBe(402);
-    const data = await res.json();
-    expect(data.interpretation).toBeUndefined();
-    expect(data.error).toContain("No Oracle was spent");
+    expect(res.status).toBe(200);
+    const { done, error } = await readRouteSse(res);
+    expect(done).toBeNull();
+    expect(error?.status).toBe(402);
+    expect(error?.error).toContain("No Oracle was spent");
   });
 
   // Phase 6 (N5): the 402 above used to come AFTER a full model call.
@@ -239,17 +242,21 @@ describe("POST /api/reading/generate — first free Quick Insight", () => {
     mockedGetSession.mockResolvedValue({ userId: "u1", email: "a@b.co" });
     const res = await POST(req(body("past-present-future"), "10.0.0.4"));
     expect(res.status).toBe(200);
-    expect((await res.json()).free).toBe(false);
+    expect((await readRouteSse(res)).done?.free).toBe(false);
     expect(mockedSave).toHaveBeenCalledWith("u1", expect.objectContaining({ interpretation: expect.stringContaining("The Fool") }), false);
   });
 
-  it("serves a guest's first Quick Insight free and sets the signed used-cookie", async () => {
+  // Batch 2b: the route streams, so it cannot set the guest-free
+  // cookie (its headers are sent before the generation finishes).
+  // The client calls POST /api/auth/guest-free-used after `done`.
+  // The route returns free:true and must NOT set the cookie itself.
+  it("serves a guest's first Quick Insight free; the cookie is set by the client confirm call, not the route", async () => {
     mockedGetSession.mockResolvedValue(null);
     const res = await POST(req(body("quick-insight"), "10.0.0.5"));
     expect(res.status).toBe(200);
-    expect((await res.json()).free).toBe(true);
+    expect((await readRouteSse(res)).done?.free).toBe(true);
     expect(mockedSave).not.toHaveBeenCalled();
-    expect(mockedSetGuestUsed).toHaveBeenCalledTimes(1);
+    expect(mockedSetGuestUsed).not.toHaveBeenCalled();
   });
 
   // Item 1 regression: before the fix a guest got a full AI generation
@@ -284,17 +291,25 @@ describe("POST /api/reading/generate — first free Quick Insight", () => {
     const key = ipLimitKey("guest-free", ip);
     for (let i = 0; i < RATE_LIMITS.guestFreeIp.max - 1; i++) await recordRateLimit(key, RATE_LIMITS.guestFreeIp);
     // 49 used: the 50th still succeeds (a cap of 5 would already refuse).
-    expect((await POST(req(body("quick-insight"), ip))).status).toBe(200);
+    // Read the stream so the rate-limit record (after generation,
+    // inside the stream) has landed before the isRateLimited checks.
+    const fiftieth = await POST(req(body("quick-insight"), ip));
+    expect(fiftieth.status).toBe(200);
+    expect((await readRouteSse(fiftieth)).done).not.toBeNull();
     const fetchCalls = vi.mocked(globalThis.fetch).mock.calls.length;
     const denied = await POST(req(body("quick-insight"), ip));
     expect(denied.status).toBe(401);
     expect((await denied.json()).error).toContain("Sign in to continue");
     expect(vi.mocked(globalThis.fetch).mock.calls.length).toBe(fetchCalls);
     // A different IP is unaffected, and a signed-in user from the capped IP is not capped.
-    expect((await POST(req(body("quick-insight"), "10.7.7.8"))).status).toBe(200);
+    const otherIp = await POST(req(body("quick-insight"), "10.7.7.8"));
+    expect(otherIp.status).toBe(200);
+    expect((await readRouteSse(otherIp)).done).not.toBeNull();
     mockedGetSession.mockResolvedValue({ userId: "u1", email: "a@b.co" });
     mockedHasUsedFree.mockResolvedValue(true);
-    expect((await POST(req(body("quick-insight"), ip))).status).toBe(200);
+    const signedIn = await POST(req(body("quick-insight"), ip));
+    expect(signedIn.status).toBe(200);
+    expect((await readRouteSse(signedIn)).done).not.toBeNull();
   });
 
   it("a failed generation does not consume a guest IP slot; a successful one consumes exactly one", async () => {
@@ -305,14 +320,19 @@ describe("POST /api/reading/generate — first free Quick Insight", () => {
     // Fill to max-1, then fail more times than the one slot left.
     for (let i = 0; i < rule.max - 1; i++) await recordRateLimit(key, rule);
     vi.mocked(globalThis.fetch).mockResolvedValue({ ok: false, status: 500, json: async () => ({}) } as Response);
-    for (let i = 0; i < 3; i++) expect((await POST(req(body("quick-insight"), ip))).status).toBe(503);
+    for (let i = 0; i < 3; i++) {
+      const failed = await POST(req(body("quick-insight"), ip));
+      expect(failed.status).toBe(200);
+      expect((await readRouteSse(failed)).error?.status).toBe(503);
+    }
     expect(await isRateLimited(key, rule)).toBe(false);
     // Success now still works and takes the last slot.
-    vi.mocked(globalThis.fetch).mockResolvedValue({
-      ok: true,
-      json: async () => ({ choices: [{ message: { content: READING_TEXT } }], model: "nvidia/nemotron-3-ultra-550b-a55b:free" }),
-    } as Response);
-    expect((await POST(req(body("quick-insight"), ip))).status).toBe(200);
+    vi.mocked(globalThis.fetch).mockImplementation(async () =>
+      openRouterStreamResponse(READING_TEXT, "nvidia/nemotron-3-ultra-550b-a55b:free")
+    );
+    const okRes = await POST(req(body("quick-insight"), ip));
+    expect(okRes.status).toBe(200);
+    expect((await readRouteSse(okRes)).done).not.toBeNull();
     expect(await isRateLimited(key, rule)).toBe(true);
   });
 
@@ -325,7 +345,7 @@ describe("POST /api/reading/generate — first free Quick Insight", () => {
     mockedHasUsedFree.mockResolvedValue(false);
     const res = await POST(req(body("celtic-cross"), "10.0.0.13"));
     expect(res.status).toBe(200);
-    expect((await res.json()).free).toBe(false);
+    expect((await readRouteSse(res)).done?.free).toBe(false);
     expect(mockedSave).toHaveBeenCalledTimes(1);
     expect(mockedSave.mock.calls[0][2]).toBe(false);
     expect(mockedSave.mock.calls[0][1]).toEqual(expect.objectContaining({ free: false }));
@@ -343,11 +363,11 @@ describe("POST /api/reading/generate — first free Quick Insight", () => {
     mockedGetSession.mockResolvedValue({ userId: "u1", email: "a@b.co" });
     mockedHasUsedFree.mockResolvedValue(true);
     const res = await POST(req(body("quick-insight"), "10.0.0.11"));
-    const data = await res.json();
+    const { done: data } = await readRouteSse(res);
     expect(mockedSave).toHaveBeenCalledTimes(1);
     const saved = mockedSave.mock.calls[0][1] as unknown as { id: string; interpretation: string };
-    expect(data.reading.id).toBe(saved.id);
-    expect(saved.interpretation).toBe(data.interpretation);
+    expect((data?.reading as { id: string } | undefined)?.id).toBe(saved.id);
+    expect(saved.interpretation).toBe(data?.interpretation);
   });
 
   it("signed-in: writes nothing and returns 402 when the transaction finds no credit", async () => {
@@ -355,8 +375,11 @@ describe("POST /api/reading/generate — first free Quick Insight", () => {
     mockedHasUsedFree.mockResolvedValue(true);
     mockedSave.mockResolvedValue({ ok: false, free: false });
     const res = await POST(req(body("quick-insight"), "10.0.0.12"));
-    expect(res.status).toBe(402);
-    expect((await res.json()).reading).toBeUndefined();
+    expect(res.status).toBe(200);
+    const { done, error } = await readRouteSse(res);
+    expect(done).toBeNull();
+    expect(error?.status).toBe(402);
+    expect(error?.error).toContain("No Oracle was spent");
   });
 });
 
@@ -368,13 +391,11 @@ describe("POST /api/reading/generate — input validation (Phase 2, 2.4)", () =>
     mockedGuestUsed.mockResolvedValue(false);
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => ({
-          choices: [{ message: { content: READING_TEXT } }],
-          model: "nvidia/nemotron-3-ultra-550b-a55b:free",
-        }),
-      })
+      // A fresh Response per call: a body can only be consumed once,
+      // and some tests make several successful POSTs in one run.
+      vi.fn().mockImplementation(async () =>
+        openRouterStreamResponse(READING_TEXT, "nvidia/nemotron-3-ultra-550b-a55b:free")
+      )
     );
   });
 
