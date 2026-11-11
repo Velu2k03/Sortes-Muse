@@ -540,11 +540,11 @@ export function ImpressionStep({ f, drawnCards }: { f: IntakeState; drawnCards: 
  * rotating status lines. Nothing here claims the reading is saved:
  * the `done` event is the save confirmation, and only then does the
  * flow navigate to the reading page. */
-export function ProcessingStage({ activeStep, complete, streamedText }: { activeStep: number; complete: boolean; streamedText: string }) {
+export function ProcessingStage({ activeStep, complete, streamedText, drawnCards }: { activeStep: number; complete: boolean; streamedText: string; drawnCards?: DrawnCard[] | null }) {
   const ref = useStepFocus<HTMLDivElement>();
   return (
     <div ref={ref} tabIndex={-1} aria-label="Creating your reading" className="flex min-h-[55vh] scroll-mt-32 flex-col items-center justify-center text-center outline-none">
-      <ReadingWait activeStep={activeStep} complete={complete} />
+      <ReadingWait activeStep={activeStep} complete={complete} drawnCards={drawnCards} />
       {streamedText.length > 0 && (
         <div className="mt-8 w-full text-left">
           <p className="text-xs uppercase tracking-[0.25em] text-gold">Writing your reading</p>
