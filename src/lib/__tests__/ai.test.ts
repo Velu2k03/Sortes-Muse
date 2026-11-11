@@ -33,7 +33,6 @@ describe("getModelList", () => {
     expect(getModelList()).toEqual([
       "openrouter/free",
       "nvidia/nemotron-3-ultra-550b-a55b:free",
-      "xingchen-agi/xing4.0-29b-a4b:free",
     ]);
     expect(getModelList()).toEqual(OPENROUTER_DEFAULT_MODELS.split(","));
   });
@@ -502,7 +501,7 @@ describe("generateChat", () => {
       apiKey: "k",
       system: "s",
       user: "u",
-      models: ["xingchen-agi/xing4.0-29b-a4b:free"],
+      models: ["model-a:free"],
       fetchFn: fetchFn as unknown as typeof fetch,
       retryDelayMs: 0,
       maxPasses: 1,
@@ -556,7 +555,6 @@ describe("generateChat", () => {
       expect(AI_NEMOTRON_TIMEOUT_MS).toBe(60000);
       expect(AI_TIMEOUT_MS).toBe(25000);
       expect(getModelTimeoutMs("nvidia/nemotron-3-ultra-550b-a55b:free")).toBe(60000);
-      expect(getModelTimeoutMs("xingchen-agi/xing4.0-29b-a4b:free")).toBe(25000);
       expect(getModelTimeoutMs("openrouter/free")).toBe(25000);
       expect(getModelTimeoutMs("some/future-model:free")).toBe(25000);
     });
