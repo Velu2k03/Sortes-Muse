@@ -97,9 +97,13 @@ export default function Home() {
               3-card spread is PLANNED as the visible next step after
               the first reading (not built yet; a follow-up feature,
               not part of this change). Note: this subhead does not
-              say "tarot" (the Batch 11 subhead did); the title tag,
-              metadata, and footer still carry it. text-balance keeps
-              the subhead wrapping clean. */}
+              say "tarot" (the Batch 11 subhead did); the title tag
+              does NOT carry it either (Fable caught this: the title
+              is "Sortes by Resonant Atlas | Cast the lots. Read your
+              story."), only the meta description and social metadata
+              do. The title-tag fix is a follow-up needing Velu's
+              approval as copy. text-balance keeps the subhead
+              wrapping clean. */}
           <h1 className="mt-6 text-balance font-display text-5xl leading-tight text-goldbright sm:text-6xl md:text-7xl">
             Sortes
           </h1>
