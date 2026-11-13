@@ -90,16 +90,25 @@ export default function Home() {
               still leads the title tag and the footer. */}
           {/* Batch 11 (Velu, 2026-11-13): the hero is the one-word
               brand "Sortes". The Batch 6b one-sentence headline is
-              gone. The subhead carries what the app does ("a clear
-              tarot reading you can trust", with "tarot" added on
-              Claude's review so the visible hero says what the
-              product is). text-balance keeps the subhead wrapping
-              clean. */}
+              gone. Batch 12 (Velu, 2026-11-13, Option B): the subhead
+              is Claude's line "A question on your mind? Ask the
+              cards. Get a clear answer." The H1 "Sortes" stays, the
+              free reading stays 1-card Quick Insight only, and the
+              3-card spread is PLANNED as the visible next step after
+              the first reading (not built yet; a follow-up feature,
+              not part of this change). Note: this subhead does not
+              say "tarot" (the Batch 11 subhead did); the title tag
+              does NOT carry it either (Fable caught this: the title
+              is "Sortes by Resonant Atlas | Cast the lots. Read your
+              story."), only the meta description and social metadata
+              do. The title-tag fix is a follow-up needing Velu's
+              approval as copy. text-balance keeps the subhead
+              wrapping clean. */}
           <h1 className="mt-6 text-balance font-display text-5xl leading-tight text-goldbright sm:text-6xl md:text-7xl">
             Sortes
           </h1>
           <p className="mt-6 max-w-xl text-base leading-relaxed text-cream/80">
-            Ask what is on your mind and get a clear tarot reading you can trust.
+            A question on your mind? Ask the cards. Get a clear answer.
           </p>
           {/* AF-034 homepage diet: the Latin etymology line is gone
               (it belongs on /about, which needs Velu's identity copy
