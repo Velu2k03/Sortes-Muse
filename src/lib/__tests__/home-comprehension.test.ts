@@ -29,8 +29,9 @@ describe("home page: first-visit comprehension", () => {
     // "Sortes". Batch 12 (Velu, 2026-11-13, Option B): the subhead
     // is Claude's line "A question on your mind? Ask the cards.
     // Get a clear answer." The free reading stays 1-card Quick
-    // Insight only; the 3-card spread is the next step, not the
-    // hero promise. The Batch 6b sentence headline is gone.
+    // Insight only; the 3-card spread is PLANNED as the next step
+    // (not built yet), not the hero promise. The Batch 6b sentence
+    // headline is gone.
     expect(src).toContain(
       "A question on your mind? Ask the cards. Get a clear answer."
     );

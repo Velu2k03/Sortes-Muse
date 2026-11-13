@@ -9,14 +9,15 @@ import path from "path";
 // 2026-11-13, Option B): the subhead is Claude's line "A question
 // on your mind? Ask the cards. Get a clear answer." The H1
 // "Sortes" stays, the free reading stays 1-card Quick Insight
-// only, and the 3-card spread is the visible next step after the
-// first reading — so the subhead must NOT promise three cards.
-// The button is singular ("Ask your question", one reading takes
-// one question) and no longer says "First reading free" (Velu's
-// explicit order). The friction line says "No credit card" so it
-// cannot read as "no tarot card". The TAGLINE constant ("Cast the
-// lots. Read your story.") is the brand line for the footer, share
-// text, and metadata — it is NOT the hero, so it stays unchanged.
+// only, and the 3-card spread is PLANNED as the visible next step
+// after the first reading (not built yet; a follow-up feature) —
+// so the subhead must NOT promise three cards. The button is
+// singular ("Ask your question", one reading takes one question)
+// and no longer says "First reading free" (Velu's explicit order).
+// The friction line says "No credit card" so it cannot read as
+// "no tarot card". The TAGLINE constant ("Cast the lots. Read
+// your story.") is the brand line for the footer, share text, and
+// metadata — it is NOT the hero, so it stays unchanged.
 
 const src = (rel: string) =>
   readFileSync(path.resolve(process.cwd(), rel), "utf8");
@@ -31,11 +32,20 @@ describe("Batch 11: one-word brand hero", () => {
   });
 
   it("the subhead is Claude's line and does not promise three cards", () => {
-    const page = src("src/app/page.tsx").replace(/\s+/g, " ");
-    expect(page).toContain(
+    const page = src("src/app/page.tsx");
+    // Assert on the hero <p> itself, not the whole file: the comment
+    // above the H1 quotes the subhead, so a whole-file toContain
+    // would pass even if the <p> were reverted (Sonnet review).
+    const match = page.match(
+      /<p className="mt-6 max-w-xl text-base[^"]*">([\s\S]*?)<\/p>/
+    );
+    expect(match).not.toBeNull();
+    const subhead = (match as RegExpMatchArray)[1].replace(/\s+/g, " ").trim();
+    expect(subhead).toBe(
       "A question on your mind? Ask the cards. Get a clear answer."
     );
-    expect(page).not.toContain("Draw three cards");
+    const flat = page.replace(/\s+/g, " ");
+    expect(flat).not.toMatch(/(draw|pick)\s+(three|3)\s+cards?/i);
   });
 
   it("the button is singular and does not say 'First reading free'", () => {
