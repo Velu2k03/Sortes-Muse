@@ -2,6 +2,12 @@ export const SITE_URL = "https://sortes.resonantatlas.com";
 export const APP_NAME = "Sortes by Resonant Atlas";
 export const APP_SHORT = "Sortes";
 export const TAGLINE = "Cast the lots. Read your story.";
+// Title-tag fix (Velu, 2026-11-14, Fable's suggestion): the <title>
+// must say "tarot" — the old default ("Sortes by Resonant Atlas |
+// Cast the lots. Read your story.") had no "tarot" in it, so the
+// title, H1 and hero all lacked the word. TAGLINE stays the
+// footer/share brand line; it is NOT the title any more.
+export const TITLE_DEFAULT = "Sortes | AI Tarot Reading Online";
 export const CONTACT_EMAIL = "support@resonantatlas.com";
 
 export interface CreditPack {
