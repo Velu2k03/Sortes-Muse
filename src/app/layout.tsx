@@ -11,7 +11,7 @@ import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 import { AuthProvider } from "@/components/AuthProvider";
 import MotionProvider from "@/components/MotionProvider";
 import { PageTransition } from "@/components/ReactBitsNew";
-import { APP_NAME, APP_SHORT, TAGLINE, SITE_URL, CONTACT_EMAIL } from "@/lib/site";
+import { APP_NAME, APP_SHORT, TITLE_DEFAULT, SITE_URL, CONTACT_EMAIL } from "@/lib/site";
 import { serializeJsonLd } from "@/lib/json-ld";
 
 const display = Cormorant_Garamond({
@@ -32,7 +32,7 @@ const body = Inter({
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: `${APP_NAME} | ${TAGLINE}`,
+    default: TITLE_DEFAULT,
     template: `%s | ${APP_SHORT}`,
   },
   // AF-071: 140-160 characters. AF-081: the obsolete keywords meta
