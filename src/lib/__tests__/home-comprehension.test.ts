@@ -26,11 +26,13 @@ const src = readFileSync(path.resolve(process.cwd(), "src/app/page.tsx"), "utf8"
 describe("home page: first-visit comprehension", () => {
   it("states what Sortes does", () => {
     // Batch 11 (Velu, 2026-11-13): the hero is the one-word brand
-    // "Sortes". The subhead carries what the app does, with "tarot"
-    // added on Claude's review so the visible hero says what the
-    // product is. The Batch 6b sentence headline is gone.
+    // "Sortes". Batch 12 (Velu, 2026-11-13, Option B): the subhead
+    // is Claude's line "A question on your mind? Ask the cards.
+    // Get a clear answer." The free reading stays 1-card Quick
+    // Insight only; the 3-card spread is the next step, not the
+    // hero promise. The Batch 6b sentence headline is gone.
     expect(src).toContain(
-      "Ask what is on your mind and get a clear tarot reading you can trust."
+      "A question on your mind? Ask the cards. Get a clear answer."
     );
     // Batch 6a: the "mirror" line is replaced by the plain version.
     expect(src).toContain("78 cards. Tarot helps you think. It doesn&apos;t predict.");
