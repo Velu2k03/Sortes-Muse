@@ -83,19 +83,23 @@ export default function Home() {
           {/* AF-042: the hero motion wrappers were no-ops (initial
               false, animate to the final values), so they are plain
               elements now — one less animation instance each. */}
-          {/* AF-071: the H1 is the value proposition with keywords,
-              not the one-word brand. The brand still leads the title
-              tag and the footer. */}
-          {/* Batch 6b (Velu, 2026-11-11): the hero is ONE sentence
-              only, not a tagline plus a headline. Velu picked this
-              sentence (Muse's Option 1; Argon's options were not
-              good, Argon is not used). text-balance keeps the long
-              line wrapping clean. */}
+          {/* AF-071 (superseded by Batch 11, Velu 2026-11-13): the H1
+              used to be the value proposition with keywords. Velu
+              chose the one-word brand instead, and the subhead now
+              carries the tarot keyword and the promise. The brand
+              still leads the title tag and the footer. */}
+          {/* Batch 11 (Velu, 2026-11-13): the hero is the one-word
+              brand "Sortes". The Batch 6b one-sentence headline is
+              gone. The subhead carries what the app does ("a clear
+              tarot reading you can trust", with "tarot" added on
+              Claude's review so the visible hero says what the
+              product is). text-balance keeps the subhead wrapping
+              clean. */}
           <h1 className="mt-6 text-balance font-display text-5xl leading-tight text-goldbright sm:text-6xl md:text-7xl">
-            Ask a question and get a clear AI tarot reading that helps you think it through.
+            Sortes
           </h1>
           <p className="mt-6 max-w-xl text-base leading-relaxed text-cream/80">
-            Draw a free daily card, explore 78 meanings.
+            Ask what is on your mind and get a clear tarot reading you can trust.
           </p>
           {/* AF-034 homepage diet: the Latin etymology line is gone
               (it belongs on /about, which needs Velu's identity copy
@@ -105,11 +109,11 @@ export default function Home() {
               href="/spreads/quick-insight"
               className="btn-gold rounded-2xl px-6 py-4 text-center text-base font-bold leading-snug sm:shrink-0 sm:px-8 sm:text-lg"
             >
-              Ask your question · First reading free
+              Ask your question
             </Link>
           </div>
           <p className="mt-5 text-sm text-mist">
-            No card, no account.
+            No credit card, no account.
           </p>
           {/* AF-034: the pricing line and the charts line are gone
               from the hero. Pricing lives on /oracles; charts have

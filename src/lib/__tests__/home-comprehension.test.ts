@@ -25,18 +25,22 @@ const src = readFileSync(path.resolve(process.cwd(), "src/app/page.tsx"), "utf8"
 
 describe("home page: first-visit comprehension", () => {
   it("states what Sortes does", () => {
-    // Batch 6b (Velu, 2026-11-11): the hero is ONE sentence only,
-    // not a tagline plus a headline. Velu picked this sentence.
+    // Batch 11 (Velu, 2026-11-13): the hero is the one-word brand
+    // "Sortes". The subhead carries what the app does, with "tarot"
+    // added on Claude's review so the visible hero says what the
+    // product is. The Batch 6b sentence headline is gone.
     expect(src).toContain(
-      "Ask a question and get a clear AI tarot reading that helps you think it through."
+      "Ask what is on your mind and get a clear tarot reading you can trust."
     );
     // Batch 6a: the "mirror" line is replaced by the plain version.
     expect(src).toContain("78 cards. Tarot helps you think. It doesn&apos;t predict.");
   });
 
   it("states what is free", () => {
-    // Round-3 sample text for the hero small print.
-    expect(src).toContain("No card, no account.");
+    // Round-3 sample text for the hero small print. Batch 11:
+    // "No card" became "No credit card" so it cannot read as
+    // "no tarot card".
+    expect(src).toContain("No credit card, no account.");
     expect(src).toContain("First free · then 1 Oracle");
   });
 
@@ -73,7 +77,10 @@ describe("home page: first-visit comprehension", () => {
   });
 
   it("has one primary CTA, the free reading (AF-034)", () => {
-    expect(src).toContain("Ask your question · First reading free");
+    // Batch 11: the button is singular "Ask your question" and no
+    // longer says "First reading free" (Velu's explicit order).
+    expect(src).toContain("Ask your question");
+    expect(src).not.toContain("Ask your question · First reading free");
     expect(src).not.toContain("All spreads, one Oracle each");
     expect(src).not.toContain("Sortes is Latin for lots");
   });
