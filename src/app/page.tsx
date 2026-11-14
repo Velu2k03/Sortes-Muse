@@ -12,6 +12,7 @@ import { useAuth, deviceHeldSession } from "@/components/AuthProvider";
 import { isFreeAvailableFor } from "@/lib/free-reading";
 import StatsStrip from "@/components/StatsStrip";
 import SampleReading from "@/components/SampleReading";
+import TodaySample from "@/components/TodaySample";
 import ReturnLoop from "@/components/ReturnLoop";
 import AccountDeletedNotice from "@/components/AccountDeletedNotice";
 import { Orb } from "@/components/ReactBitsNew";
@@ -227,6 +228,10 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Remodel Phase 1 batch 2: today's card as the sample
+          reading, directly below the hero. One card, one line. */}
+      <TodaySample />
+
       <StatsStrip />
 
       {/* WHAT'S ON YOUR MIND */}
@@ -313,29 +318,42 @@ export default function Home() {
           </p>
         </motion.div>
 
-        <motion.div key={`${revealKey}-steps`} {...fadeUp} className="mt-12 grid gap-4 sm:grid-cols-3">
-          {[
-            {
-              title: "Draw",
-              text: "Shuffle, lay the cards face down, tap each one to reveal it.",
-            },
-            {
-              title: "Reflect",
-              text: "Read the meanings first, then the interpretation for your question.",
-            },
-            {
-              title: "Return",
-              text: "Every reading is saved to your journal. Patterns across weeks show more than single days.",
-            },
-          ].map((s) => (
-            <div
-              key={s.title}
-              className="rounded-2xl border border-gold/20 bg-panel/60 p-6"
-            >
-              <p className="font-display text-2xl text-gold">{s.title}</p>
-              <p className="mt-2 text-sm leading-relaxed text-cream/80">{s.text}</p>
-            </div>
-          ))}
+        {/* Remodel Phase 1 batch 2: the 3 steps are How it works
+            (Ask, Draw, Read), following the funnel. The "What is
+            tarot?" one-liner above stays where it is. React Bits
+            MagicBento was the plan's pick for these cards, but its
+            vendored file fails the repo lint (react-hooks/refs
+            errors, no-img-element warning) and Phase 4C already
+            removed its cursor glow from this page as a gimmick, so
+            the existing motion step cards stay. */}
+        <motion.div key={`${revealKey}-steps`} {...fadeUp} className="mt-12">
+          <h3 className="text-center font-display text-3xl text-goldbright">
+            How it works
+          </h3>
+          <div className="mt-8 grid gap-4 sm:grid-cols-3">
+            {[
+              {
+                title: "Ask",
+                text: "Type the question on your mind.",
+              },
+              {
+                title: "Draw",
+                text: "Draw a card from the deck.",
+              },
+              {
+                title: "Read",
+                text: "Get a reading written for your question.",
+              },
+            ].map((s) => (
+              <div
+                key={s.title}
+                className="rounded-2xl border border-gold/20 bg-panel/60 p-6"
+              >
+                <p className="font-display text-2xl text-gold">{s.title}</p>
+                <p className="mt-2 text-sm leading-relaxed text-cream/80">{s.text}</p>
+              </div>
+            ))}
+          </div>
         </motion.div>
       </section>
 

@@ -66,8 +66,11 @@ describe("home page: first-visit comprehension", () => {
   });
 
   it("states what a paid reading gives", () => {
-    expect(src).toContain("Read the meanings first, then the interpretation for your question.");
-    expect(src).toContain("Every reading is saved to your journal.");
+    // Remodel Phase 1 batch 2: the old Draw/Reflect/Return steps are
+    // now Ask/Draw/Read. The Read step states the interpretation, and
+    // the hero privacy line states the journal save.
+    expect(src).toContain("Get a reading written for your question.");
+    expect(src).toContain("Saved with it in your journal.");
     // The sample section is a component on the homepage.
     const sampleSrc = readFileSync(
       path.resolve(process.cwd(), "src/components/SampleReading.tsx"),
