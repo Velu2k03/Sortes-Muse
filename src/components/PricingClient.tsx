@@ -5,6 +5,10 @@ import Link from "next/link";
 import { Card } from "@astryxdesign/core/Card";
 import { Badge } from "@astryxdesign/core/Badge";
 import { Button } from "@astryxdesign/core/Button";
+import { Section } from "@astryxdesign/core/Section";
+import { VStack } from "@astryxdesign/core/VStack";
+import { HStack } from "@astryxdesign/core/HStack";
+import { Grid } from "@astryxdesign/core/Grid";
 import { StarBorder } from "@/components/ReactBits";
 import CountUp from "@/components/CountUp";
 
@@ -111,19 +115,26 @@ export default function PricingClient() {
   const [billing, setBilling] = useState<Billing>("monthly");
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
-      <div className="text-center">
+    // Page-level layout is Astryx Section / Stack / Grid (repo rule:
+    // components handle layout, no raw <div> wrappers). The one
+    // remaining <div> is the mt-auto spacer inside each Card that
+    // pushes the button to the bottom — Astryx has no Spacer
+    // component, so it stays. The tier grid reflows by width
+    // (minWidth 300, max 3) instead of the old sm:grid-cols-3, so
+    // three columns start near 1000px rather than 640px.
+    <Section variant="transparent" maxWidth="64rem" padding={8} paddingInline={4} className="mx-auto">
+      <VStack gap={0} className="text-center">
         <p className="text-xs uppercase tracking-[0.35em] text-gold">Pricing</p>
         <h1 className="mt-3 font-display text-5xl text-goldbright sm:text-6xl">
           Choose your plan
         </h1>
         <p className="mx-auto mt-4 max-w-xl text-sm text-cream/75">
-          Monthly credits for readings, charts, and reports. Top up any
-          time. Purchased credits never expire.
+          Monthly credits for readings, charts, and reports. Top-ups
+          arrive with subscriptions. Purchased credits never expire.
         </p>
-      </div>
+      </VStack>
 
-      <div className="mt-8 flex justify-center">
+      <HStack hAlign="center" gap={0} className="mt-8">
         <button
           type="button"
           aria-pressed={billing === "monthly"}
@@ -148,12 +159,12 @@ export default function PricingClient() {
         >
           Annual
         </button>
-      </div>
+      </HStack>
       <p className="mt-3 text-center text-sm text-cream/75">
         Annual billing: save $16 on Spark, $30 on Star, $60 on Moon.
       </p>
 
-      <div className="mt-6 grid items-stretch gap-4 sm:grid-cols-3">
+      <Grid columns={{ minWidth: 300, max: 3 }} gap={4} className="mt-6">
         {TIERS.map((tier) => {
           const price = billing === "monthly" ? tier.monthly : tier.annual;
           const card = (
@@ -162,11 +173,11 @@ export default function PricingClient() {
               elevation={tier.id === "star" ? "med" : "none"}
               height="100%"
             >
-              <div className="flex h-full flex-col text-center">
+              <VStack gap={0} className="h-full text-center">
                 <h2 className="font-display text-xl text-cream">{tier.name}</h2>
-                <div className="mt-1 flex h-6 items-center justify-center">
+                <HStack hAlign="center" vAlign="center" gap={0} className="mt-1 h-6">
                   {tier.popular && <Badge label="Most popular" variant="warning" />}
-                </div>
+                </HStack>
                 <p className="mt-3 font-display text-[40px] font-bold leading-none text-goldbright lining-nums tabular-nums">
                   ${price.toFixed(2)}
                 </p>
@@ -197,7 +208,7 @@ export default function PricingClient() {
                     width="100%"
                   />
                 </div>
-              </div>
+              </VStack>
             </Card>
           );
           return (
@@ -220,7 +231,7 @@ export default function PricingClient() {
             </article>
           );
         })}
-      </div>
+      </Grid>
 
       <p className="mt-6 text-center text-sm text-cream/75">
         Subscriptions open soon — Oracle packs available now.{" "}
@@ -233,13 +244,17 @@ export default function PricingClient() {
         <h2 id="topups-heading" className="text-center font-display text-3xl text-goldbright">
           Top up any time
         </h2>
+        <HStack hAlign="center" gap={0} className="mt-3">
+          <Badge label="Coming soon" variant="neutral" />
+        </HStack>
         <p className="mx-auto mt-2 max-w-xl text-center text-sm text-cream/75">
-          Need more credits? Top-ups never expire, and anyone can buy them.
+          Top-ups launch with subscriptions: 1,000 credits for $9.99 and
+          3,000 for $24.99. Purchased credits never expire.
         </p>
-        <div className="mx-auto mt-6 grid max-w-2xl gap-4 sm:grid-cols-2">
+        <Grid columns={{ minWidth: 280, max: 2 }} gap={4} maxWidth="42rem" className="mx-auto mt-6">
           {TOPUPS.map((topup) => (
             <Card key={topup.credits} padding={4}>
-              <div className="text-center">
+              <VStack gap={0} className="text-center">
                 <p className="font-display text-3xl font-bold text-goldbright lining-nums tabular-nums">
                   ${topup.price.toFixed(2)}
                 </p>
@@ -250,16 +265,20 @@ export default function PricingClient() {
                   credits
                 </p>
                 <p className="mt-1 text-sm text-cream/75">Never expires</p>
-              </div>
+              </VStack>
             </Card>
           ))}
-        </div>
+        </Grid>
       </section>
 
       <section className="mt-12" aria-labelledby="costs-heading">
         <h2 id="costs-heading" className="text-center font-display text-3xl text-goldbright">
           What a reading costs
         </h2>
+        <p className="mx-auto mt-2 max-w-xl text-center text-sm text-cream/75">
+          Planned costs for subscriptions — readings cost 1 Oracle each
+          today.
+        </p>
         <ul className="mx-auto mt-6 max-w-md space-y-2 text-sm text-cream/85">
           {CREDIT_COSTS.map((cost) => (
             <li
@@ -274,6 +293,6 @@ export default function PricingClient() {
           ))}
         </ul>
       </section>
-    </div>
+    </Section>
   );
 }

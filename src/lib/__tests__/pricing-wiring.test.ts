@@ -139,10 +139,11 @@ describe("Pricing feature lists: only what exists in code (4/3/3)", () => {
 describe("Pricing video formula: one badge, one lifted tier, one primary button", () => {
   it("has exactly one Most popular badge, on Star only", () => {
     const c = client();
-    expect([...c.matchAll(/<Badge/g)].length).toBe(1);
-    const badge = c.match(/<Badge[^>]*\/>/);
-    expect(badge).not.toBeNull();
-    expect((badge as RegExpMatchArray)[0]).toContain('label="Most popular"');
+    expect([...c.matchAll(/<Badge/g)].length).toBe(2);
+    const badges = [...c.matchAll(/<Badge[^>]*\/>/g)].map((m) => m[0]);
+    expect(badges).toHaveLength(2);
+    expect(badges.filter((b) => b.includes('label="Most popular"'))).toHaveLength(1);
+    expect(badges.filter((b) => b.includes('label="Coming soon"'))).toHaveLength(1);
     expect(c).toContain("{tier.popular && <Badge");
     expect([...c.matchAll(/popular: true,/g)].length).toBe(1);
   });
@@ -190,7 +191,7 @@ describe("Pricing toggle, savings, top-ups, credit costs", () => {
     expect(c).toContain('{billing === "annual" && (');
   });
 
-  it("shows both top-ups with exact prices, never expiring", () => {
+  it("shows both top-ups with exact prices, never expiring, marked coming soon", () => {
     const c = client();
     const topups = c.match(/const TOPUPS = \[([\s\S]*?)\];/);
     expect(topups).not.toBeNull();
@@ -198,6 +199,11 @@ describe("Pricing toggle, savings, top-ups, credit costs", () => {
     expect((topups as RegExpMatchArray)[1]).toContain("{ credits: 3000, price: 24.99 }");
     expect(c).toContain("Never expires");
     expect(c).toContain("Top up any time");
+    // Codex P2 (PR #86): top-ups have no purchase action yet, so
+    // the page must not present them as buyable now.
+    expect(c).toContain('label="Coming soon"');
+    expect(c).toContain("Top-ups launch with subscriptions");
+    expect(c).not.toContain("anyone can buy them");
   });
 
   it("shows the credit costs: 1-card 100, 3-card 200, chart 300, follow-up 50", () => {
@@ -217,6 +223,10 @@ describe("Pricing toggle, savings, top-ups, credit costs", () => {
       '{ label: "Follow-up question", credits: 50 }'
     );
     expect(c).toContain("What a reading costs");
+    // CodeRabbit Minor (PR #86): the 100/200/300/50 schedule is
+    // planned, not live — readings cost 1 Oracle each today.
+    expect(c).toContain("Planned costs for subscriptions");
+    expect(c).toContain("readings cost 1 Oracle each");
   });
 });
 
@@ -287,6 +297,24 @@ describe("Pricing page: Astryx pilot wiring", () => {
     expect(existsSync(path.resolve(process.cwd(), "src/themes/sortes/sortesTheme.ts"))).toBe(true);
     expect(existsSync(path.resolve(process.cwd(), "src/themes/sortes/sortes.css"))).toBe(true);
     expect(existsSync(path.resolve(process.cwd(), "src/astryx-themes.ts"))).toBe(true);
+  });
+
+  it("lays the page out with Astryx Section / Stack / Grid, not raw divs (Codex P1, PR #86)", () => {
+    const c = client();
+    expect(c).toContain('import { Section } from "@astryxdesign/core/Section";');
+    expect(c).toContain('import { VStack } from "@astryxdesign/core/VStack";');
+    expect(c).toContain('import { HStack } from "@astryxdesign/core/HStack";');
+    expect(c).toContain('import { Grid } from "@astryxdesign/core/Grid";');
+    expect(c).toContain("<Section");
+    expect(c).toContain("<VStack");
+    expect(c).toContain("<HStack");
+    expect(c).toContain("<Grid");
+    // The only raw <div> left is the mt-auto spacer inside each
+    // Card that pushes the button to the bottom — Astryx has no
+    // Spacer component. Count JSX divs only: the file's comments
+    // mention <div> twice, so match the className form.
+    expect([...c.matchAll(/<div className="/g)].length).toBe(1);
+    expect(c).toContain('<div className="mt-auto pt-6">');
   });
 
   it("uses no dropped or forbidden bits on this page", () => {
