@@ -19,9 +19,12 @@
     "db:restore": "node scripts/restore.mjs"
   },
   "dependencies": {
+    "@astryxdesign/core": "^0.7.16",
+    "@astryxdesign/theme-neutral": "^0.7.16",
     "@gsap/react": "^2.1.2",
     "@hugeicons/core-free-icons": "^4.4.0",
     "@hugeicons/react": "^1.1.10",
+    "@stylexjs/stylex": "^0.19.2",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.118.0",
     "@upstash/ratelimit": "^2.2.0",
@@ -40,6 +43,7 @@
     "tz-lookup": "^6.1.25"
   },
   "devDependencies": {
+    "@astryxdesign/cli": "^0.7.16",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

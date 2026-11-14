@@ -27,7 +27,9 @@ const nextConfig: NextConfig = {
       // AF-073/AF-084 (audit-fixes W3): dead typed URLs found 404 in
       // the audits. Permanent (308) redirects to the canonical route.
       // /contact is NOT redirected: AF-079 adds a real /contact page.
-      { source: "/pricing", destination: "/oracles", permanent: true },
+      // /pricing is NOT redirected either: Phase 2 batch 1
+      // (2026-11-14) ships a real /pricing page, and the old
+      // /pricing → /oracles redirect (removed here) would outrank it.
       { source: "/login", destination: "/account", permanent: true },
       { source: "/signin", destination: "/account", permanent: true },
       { source: "/sign-in", destination: "/account", permanent: true },
