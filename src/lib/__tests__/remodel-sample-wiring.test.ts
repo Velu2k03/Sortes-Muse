@@ -62,6 +62,12 @@ describe("Remodel sample: today's card below the hero", () => {
     // repo, the draw is a per-device random draw stored for the day.
     expect(sample).toContain("getDailyCard()");
     expect(sample).not.toContain("drawSingle");
+    // Codex P2 (PR #84): the fixed example renders on the server
+    // and first paint, so the sample is visible before hydration
+    // and to JS-disabled visitors. No loaded gate that returns
+    // null: reverting to one must fail this test.
+    expect(sample).not.toContain("loaded");
+    expect(sample).not.toContain("return null");
     // No card drawn yet: the plan's fixed example, The Star with
     // the plan's example line.
     expect(sample).toContain('getCard(SAMPLE_CARD_ID)');
