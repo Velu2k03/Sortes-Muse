@@ -140,7 +140,13 @@ async function upsertFromSubscriptionAttrs(
     tier: variant.tier,
     billingInterval: variant.interval,
     status: String(attrs.status ?? "active"),
-    currentPeriodStart: periodStart ?? attrs.created_at ?? null,
+    // No invoice supplied a period start: pass null so the upsert
+    // keeps the existing cycle start. Falling back to the
+    // subscription's created_at here would reset the annual cycle
+    // on every subscription_updated (renewals fire one), and the
+    // drip cron would then re-grant year-1 months instead of the
+    // new cycle's months.
+    currentPeriodStart: periodStart ?? null,
     currentPeriodEnd: attrs.renews_at ?? attrs.ends_at ?? null,
     renewsAt: attrs.renews_at ?? null,
     endsAt: attrs.ends_at ?? null,

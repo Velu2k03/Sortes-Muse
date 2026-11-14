@@ -143,3 +143,30 @@ the conversion needs holders emailed first and pack sales stopped.
   removed in a later cleanup batch.
 - Update this runbook with the actual run date, backup run id,
   and the conversion totals.
+
+## Known limitations (Claude review, PR #92 — accepted, not blockers)
+
+- **Refunded annual invoice only revokes month 0.** A refunded
+  subscription invoice revokes that period's single grant
+  (`revokeSubscriptionGrant`). If the subscription stays `active`
+  after the refund, the drip cron keeps granting months 1-11 for
+  money that was returned. Before the cutover, confirm whether
+  Lemon Squeezy cancels or expires the subscription on a refund
+  and test that path; if it stays active, stop the drip for the
+  refunded subscription (or revoke the remaining months) as part
+  of the cutover. Do not rely on the refund alone.
+- **Re-subscribe during the grace period keeps the old monthly
+  balance.** A user who resubscribes while the old subscription
+  is still live keeps the old subscription's leftover monthly
+  credits (capped at two months of the plan); the old expiry does
+  not zero them because the new subscription is live. This is an
+  accepted trade-off: the leftover is at most two months of the
+  plan and the user paid for both periods.
+- **A null cycle start is "keep existing".** The webhook passes a
+  null `currentPeriodStart` for non-invoice events and the upsert
+  preserves the existing value (Postgres COALESCE / local
+  preserve). Only an invoice (payment_success) supplies a new
+  start, so a `subscription_updated` on renewal cannot reset the
+  annual cycle. The drip cron falls back to the row's `created_at`
+  when the start is null (a brand-new row before its first
+  invoice).

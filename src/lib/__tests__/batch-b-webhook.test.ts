@@ -153,6 +153,37 @@ describe("handleSubscriptionWebhook", () => {
     expect(grantArgs.tier).toBe("star");
   });
 
+  it("subscription_updated after a renewal payment keeps the cycle start", async () => {
+    // Year-2 renewal: the invoice date is the new cycle start.
+    stubFetch(
+      subscriptionJson("sub_1"),
+      invoiceJson("inv_2", { billing_reason: "renewal", created_at: "2027-11-15T00:00:00.000Z" })
+    );
+    const pay = await handleSubscriptionWebhook("subscription_payment_success", {
+      meta: { event_name: "subscription_payment_success" },
+      data: { id: "inv_2", attributes: { store_id: 42, subscription_id: "sub_1", billing_reason: "renewal", total: 1499, user_email: "buyer@example.com", created_at: "2027-11-15T00:00:00.000Z" } },
+    });
+    expect(pay.status).toBe(200);
+    expect(mockedUpsertSubscription).toHaveBeenCalledTimes(1);
+    expect(
+      (mockedUpsertSubscription.mock.calls[0][0] as { currentPeriodStart: string | null }).currentPeriodStart
+    ).toBe("2027-11-15T00:00:00.000Z");
+    // The renewal also fires subscription_updated; it must NOT reset
+    // the start to the subscription's original created_at (year 1),
+    // or the annual drip would re-grant year-1 months and never
+    // grant year-2 months 1-11. A null start means "keep existing".
+    stubFetch(subscriptionJson("sub_1"), null);
+    const upd = await handleSubscriptionWebhook("subscription_updated", {
+      meta: { event_name: "subscription_updated", custom_data: { user_id: "u1" } },
+      data: { id: "sub_1", attributes: { store_id: 42 } },
+    });
+    expect(upd.status).toBe(200);
+    expect(mockedUpsertSubscription).toHaveBeenCalledTimes(2);
+    expect(
+      (mockedUpsertSubscription.mock.calls[1][0] as { currentPeriodStart: string | null }).currentPeriodStart
+    ).toBeNull();
+  });
+
   it("subscription_payment_success with billing_reason updated grants nothing", async () => {
     stubFetch(
       subscriptionJson("sub_1"),

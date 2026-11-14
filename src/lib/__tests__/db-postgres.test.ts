@@ -833,4 +833,31 @@ describe.skipIf(SKIP)("money paths on real Postgres (staging only)", () => {
     // Another account cannot follow up on it (the route's "not found").
     expect((await db.appendFollowUpWithSpend(other.id, local.id, { question: "x", answer: "y", free: true }, 0, 3, true)).ok).toBe(false);
   });
+
+  it("Phase 2 batch 3: upsertSubscription keeps the cycle start when passed null (Postgres COALESCE)", async () => {
+    // A subscription_updated on an annual renewal must not reset
+    // current_period_start to the original creation date, or the
+    // drip cron re-grants year-1 months and never grants year-2
+    // months 1-11. Only an invoice (payment_success) supplies a
+    // new start; a null start means "keep existing".
+    const user = await db.createUser("upsert-start@example.com");
+    const base = {
+      userId: user.id,
+      lemonsqueezySubscriptionId: "sub_keep_start",
+      lemonsqueezyCustomerId: "7",
+      tier: "star" as const,
+      billingInterval: "annual" as const,
+      status: "active",
+      currentPeriodEnd: "2028-11-15T00:00:00.000Z",
+      renewsAt: "2028-11-15T00:00:00.000Z",
+      endsAt: null,
+      cancelAtPeriodEnd: false,
+    };
+    const first = await db.upsertSubscription({ ...base, currentPeriodStart: "2027-11-15T00:00:00.000Z" });
+    expect(first.current_period_start).toBe("2027-11-15T00:00:00.000Z");
+    const kept = await db.upsertSubscription({ ...base, currentPeriodStart: null });
+    expect(kept.current_period_start).toBe("2027-11-15T00:00:00.000Z");
+    const moved = await db.upsertSubscription({ ...base, currentPeriodStart: "2028-11-15T00:00:00.000Z" });
+    expect(moved.current_period_start).toBe("2028-11-15T00:00:00.000Z");
+  });
 });

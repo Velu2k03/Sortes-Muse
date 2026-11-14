@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { getWinbackCandidates, markWinbackSent } from "@/lib/db";
 import { sendWinbackEmail } from "@/lib/email";
@@ -17,7 +18,11 @@ export async function GET(req: NextRequest) {
       { status: 500 }
     );
   }
-  if (req.headers.get("authorization") !== `Bearer ${secret}`) {
+  // Constant-time comparison: a plain !== leaks the secret length
+  // through timing. Same pattern as verifyWebhookSignature.
+  const provided = Buffer.from(req.headers.get("authorization") ?? "");
+  const expected = Buffer.from(`Bearer ${secret}`);
+  if (provided.length !== expected.length || !timingSafeEqual(provided, expected)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

@@ -74,7 +74,11 @@ function newSubscriptionId(): string {
 /**
  * Insert or update a subscription by its Lemon Squeezy id. The
  * webhook calls this on every subscription event, so a redelivered
- * event is a no-op update, never a duplicate row.
+ * event is a no-op update, never a duplicate row. A null
+ * currentPeriodStart means "keep the existing cycle start": only
+ * an invoice (payment_success) supplies a new one, so a
+ * subscription_updated on renewal cannot reset the annual cycle
+ * to the original creation date.
  */
 export async function upsertSubscription(args: SubscriptionUpsert): Promise<DbSubscription> {
   await ensureSchema();
@@ -93,7 +97,7 @@ export async function upsertSubscription(args: SubscriptionUpsert): Promise<DbSu
         tier = EXCLUDED.tier,
         billing_interval = EXCLUDED.billing_interval,
         status = EXCLUDED.status,
-        current_period_start = EXCLUDED.current_period_start,
+        current_period_start = COALESCE(EXCLUDED.current_period_start, subscriptions.current_period_start),
         current_period_end = EXCLUDED.current_period_end,
         renews_at = EXCLUDED.renews_at,
         ends_at = EXCLUDED.ends_at,
@@ -112,7 +116,7 @@ export async function upsertSubscription(args: SubscriptionUpsert): Promise<DbSu
     existing.tier = args.tier;
     existing.billing_interval = args.billingInterval;
     existing.status = args.status;
-    existing.current_period_start = args.currentPeriodStart ?? null;
+    existing.current_period_start = args.currentPeriodStart ?? existing.current_period_start;
     existing.current_period_end = args.currentPeriodEnd ?? null;
     existing.renews_at = args.renewsAt ?? null;
     existing.ends_at = args.endsAt ?? null;
