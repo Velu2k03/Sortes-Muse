@@ -27,6 +27,7 @@ function invoicePayload() {
         attributes: {
           status: "paid",
           subscription_id: "sub_1",
+          billing_reason: "initial",
           created_at: "2026-11-15T00:00:00.000Z",
         },
       },
@@ -35,6 +36,7 @@ function invoicePayload() {
         attributes: {
           status: "paid",
           subscription_id: "sub_2",
+          billing_reason: "renewal",
           created_at: "2026-11-15T00:00:00.000Z",
         },
       },
@@ -46,6 +48,15 @@ function invoicePayload() {
           created_at: "2026-11-15T00:00:00.000Z",
         },
       },
+      {
+        id: "inv_4",
+        attributes: {
+          status: "paid",
+          subscription_id: "sub_4",
+          billing_reason: "updated",
+          created_at: "2026-11-15T00:00:00.000Z",
+        },
+      },
     ],
   };
 }
@@ -53,9 +64,10 @@ function invoicePayload() {
 describe("toReconcileInvoices", () => {
   it("pulls subscription, period and status out of the list payload", () => {
     expect(toReconcileInvoices(invoicePayload())).toEqual([
-      { subscriptionId: "sub_1", periodKey: "2026-11", status: "paid" },
-      { subscriptionId: "sub_2", periodKey: "2026-11", status: "paid" },
-      { subscriptionId: "sub_3", periodKey: "2026-11", status: "refunded" },
+      { subscriptionId: "sub_1", periodKey: "2026-11", status: "paid", billingReason: "initial" },
+      { subscriptionId: "sub_2", periodKey: "2026-11", status: "paid", billingReason: "renewal" },
+      { subscriptionId: "sub_3", periodKey: "2026-11", status: "refunded", billingReason: undefined },
+      { subscriptionId: "sub_4", periodKey: "2026-11", status: "paid", billingReason: "updated" },
     ]);
   });
 
@@ -78,7 +90,9 @@ describe("findMissingPaidGrants", () => {
     const granted = new Map([["sub_1", new Set(["2026-11"])]]);
     const result = findMissingPaidGrants(toReconcileInvoices(invoicePayload()), granted);
     // sub_1 has its grant; sub_2 does not; sub_3 is refunded, so its
-    // revoked grant is not "missing".
+    // revoked grant is not "missing"; sub_4 is a paid plan-change
+    // invoice (billing_reason "updated"), which the webhook
+    // deliberately never grants — counting it would be a false alarm.
     expect(result.checked).toBe(2);
     expect(result.missing).toEqual([{ subscriptionId: "sub_2", periodKey: "2026-11" }]);
   });

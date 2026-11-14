@@ -183,8 +183,10 @@ function logError(event: string, fields: Record<string, unknown>) {
  * Status split: config-class errors (store not configured, store
  * mismatch, unrecognized variant, unexpected currency, invoice
  * store mismatch) return 500 — Lemon Squeezy retries non-2xx
- * deliveries, so the event stays alive while the config is fixed.
- * Malformed payloads (missing subscription id) and data
+ * deliveries (bounded retries, a few attempts), so a 500 keeps the
+ * event alive for a retry window while the config is fixed. The
+ * daily reconcile cron is the real backstop if the retries run
+ * out. Malformed payloads (missing subscription id) and data
  * inconsistencies (invoice subscription mismatch) return 400:
  * retrying those cannot help.
  */

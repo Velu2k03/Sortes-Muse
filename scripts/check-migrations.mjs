@@ -25,8 +25,10 @@
  * .mjs and cannot import the TypeScript generated list.
  *
  * Read-only: one SELECT from schema_migrations. It never applies
- * anything. Connection via DATABASE_URL (fall back to POSTGRES_URL),
- * the same variables the app uses.
+ * anything. Connection via POSTGRES_URL (fall back to DATABASE_URL),
+ * the same order the app uses (src/lib/db/client.ts) — the guard
+ * must check the database the app actually runs against. Set
+ * exactly one of the two variables when they could disagree.
  */
 import { readdirSync } from "fs";
 import path from "path";
@@ -53,9 +55,9 @@ if (isMain) {
     console.log("check-migrations: skipping migration check (SORTES_CHECK_MIGRATIONS is not 1).");
     process.exit(0);
   }
-  const connectionString = process.env.DATABASE_URL || process.env.POSTGRES_URL || "";
+  const connectionString = process.env.POSTGRES_URL || process.env.DATABASE_URL || "";
   if (!connectionString) {
-    console.error("check-migrations: DATABASE_URL (or POSTGRES_URL) is not set; cannot check migrations.");
+    console.error("check-migrations: POSTGRES_URL (or DATABASE_URL) is not set; cannot check migrations.");
     process.exit(1);
   }
   const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");

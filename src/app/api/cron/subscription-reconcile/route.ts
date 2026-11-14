@@ -71,9 +71,11 @@ export async function GET(req: NextRequest) {
   const invoices = toReconcileInvoices(payload);
   // One grant-list query per subscription that has a paid invoice
   // (not one per invoice): several invoices can share a subscription.
+  // A paid "updated" invoice is a plan change, not a new month, so
+  // it needs no grant lookup either (findMissingPaidGrants skips it).
   const granted = new Map<string, Set<string>>();
   for (const inv of invoices) {
-    if (inv.status !== "paid" || granted.has(inv.subscriptionId)) continue;
+    if (inv.status !== "paid" || inv.billingReason === "updated" || granted.has(inv.subscriptionId)) continue;
     granted.set(
       inv.subscriptionId,
       new Set(await listGrantedSubscriptionPeriods(inv.subscriptionId))

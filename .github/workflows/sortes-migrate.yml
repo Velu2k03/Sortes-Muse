@@ -48,12 +48,15 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Confirm
+        env:
+          CONFIRM_INPUT: ${{ inputs.confirm }}
+          BACKUP_RUN_ID_INPUT: ${{ inputs.backup_run_id }}
         run: |
-          if [ "${{ inputs.confirm }}" != "APPLY" ]; then
+          if [ "$CONFIRM_INPUT" != "APPLY" ]; then
             echo "::error::Type APPLY in the confirm input to run a production migration."
             exit 1
           fi
-          if [ -z "${{ inputs.backup_run_id }}" ]; then
+          if [ -z "$BACKUP_RUN_ID_INPUT" ]; then
             echo "::error::A fresh backup run id is required (backup_run_id input, from the sortes-backup.yml run)."
             exit 1
           fi
@@ -61,29 +64,31 @@ jobs:
       - name: Verify fresh backup run
         env:
           GH_TOKEN: ${{ github.token }}
+          BACKUP_RUN_ID_INPUT: ${{ inputs.backup_run_id }}
         run: |
-          RUN_JSON=$(gh api "repos/${{ github.repository }}/actions/runs/${{ inputs.backup_run_id }}") || {
-            echo "::error::No workflow run with id ${{ inputs.backup_run_id }} exists (or it cannot be read). Take a fresh backup first (sortes-backup.yml, workflow_dispatch) and pass its run id."
+          RUN_JSON=$(gh api "repos/${{ github.repository }}/actions/runs/$BACKUP_RUN_ID_INPUT") || {
+            echo "::error::No workflow run with id $BACKUP_RUN_ID_INPUT exists (or it cannot be read). Take a fresh backup first (sortes-backup.yml, workflow_dispatch) and pass its run id."
             exit 1
           }
           NAME=$(echo "$RUN_JSON" | jq -r '.name')
+          WORKFLOW_PATH=$(echo "$RUN_JSON" | jq -r '.path')
           STATUS=$(echo "$RUN_JSON" | jq -r '.status')
           CONCLUSION=$(echo "$RUN_JSON" | jq -r '.conclusion')
           UPDATED_AT=$(echo "$RUN_JSON" | jq -r '.updated_at')
-          if [ "$NAME" != "Daily production backup (fallback)" ]; then
-            echo "::error::Run ${{ inputs.backup_run_id }} is workflow '$NAME', not the production backup (Daily production backup (fallback)). Pass the run id of a fresh sortes-backup.yml run."
+          if [ "$NAME" != "Daily production backup (fallback)" ] || [ "$WORKFLOW_PATH" != ".github/workflows/sortes-backup.yml" ]; then
+            echo "::error::Run $BACKUP_RUN_ID_INPUT is workflow '$NAME' ($WORKFLOW_PATH), not the production backup (Daily production backup (fallback), .github/workflows/sortes-backup.yml). Pass the run id of a fresh sortes-backup.yml run."
             exit 1
-          fi
+          }
           if [ "$STATUS" != "completed" ] || [ "$CONCLUSION" != "success" ]; then
-            echo "::error::Backup run ${{ inputs.backup_run_id }} has not completed successfully (status=$STATUS, conclusion=$CONCLUSION). Wait for it to finish, or take a fresh backup."
+            echo "::error::Backup run $BACKUP_RUN_ID_INPUT has not completed successfully (status=$STATUS, conclusion=$CONCLUSION). Wait for it to finish, or take a fresh backup."
             exit 1
           fi
           AGE_MINUTES=$(( ( $(date +%s) - $(date -d "$UPDATED_AT" +%s) ) / 60 ))
           if [ "$AGE_MINUTES" -ge 15 ]; then
-            echo "::error::Backup run ${{ inputs.backup_run_id }} finished $AGE_MINUTES minutes ago — older than the 15-minute freshness window. Take a fresh backup and pass its run id."
+            echo "::error::Backup run $BACKUP_RUN_ID_INPUT finished $AGE_MINUTES minutes ago — older than the 15-minute freshness window. Take a fresh backup and pass its run id."
             exit 1
           fi
-          echo "Backup run ${{ inputs.backup_run_id }} verified: completed successfully $AGE_MINUTES minute(s) ago."
+          echo "Backup run $BACKUP_RUN_ID_INPUT verified: completed successfully $AGE_MINUTES minute(s) ago."
 
       - name: Set up Node
         uses: actions/setup-node@v4

@@ -22,9 +22,9 @@
 import postgres from "postgres";
 import { sslForScriptUrl } from "./db-ssl.mjs";
 
-const connectionString = process.env.DATABASE_URL || process.env.POSTGRES_URL || "";
+const connectionString = process.env.POSTGRES_URL || process.env.DATABASE_URL || "";
 if (!connectionString) {
-  console.error("post-apply-aggregates: DATABASE_URL (or POSTGRES_URL) is not set.");
+  console.error("post-apply-aggregates: POSTGRES_URL (or DATABASE_URL) is not set.");
   process.exit(1);
 }
 
