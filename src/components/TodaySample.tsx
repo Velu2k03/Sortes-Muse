@@ -31,18 +31,17 @@ function firstSentence(text: string): string {
 }
 
 export default function TodaySample() {
-  const [loaded, setLoaded] = useState(false);
   const [daily, setDaily] = useState<DailyCardState | null>(null);
   useEffect(() => {
     // ReturnLoop pattern: read localStorage in a microtask past the
-    // effect, so the server HTML (no card yet) and the first client
-    // render match and nothing flashes the wrong card.
+    // effect. The fixed example renders on the server and on first
+    // paint (Codex P2, PR #84: JS-disabled visitors and crawlers
+    // otherwise never see the sample), then the stored daily card
+    // swaps in after hydration if the visitor drew one today.
     queueMicrotask(() => {
       setDaily(getDailyCard());
-      setLoaded(true);
     });
   }, []);
-  if (!loaded) return null;
 
   const card = daily ? getCard(daily.cardId) : getCard(SAMPLE_CARD_ID);
   const line = daily
