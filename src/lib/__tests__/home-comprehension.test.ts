@@ -25,14 +25,18 @@ const src = readFileSync(path.resolve(process.cwd(), "src/app/page.tsx"), "utf8"
 
 describe("home page: first-visit comprehension", () => {
   it("states what Sortes does", () => {
-    // Remodel (Velu, 2026-11-14, Fable's review): the hero is the
-    // product. The H1 is Fable's explanation and the subhead is
-    // Fable's fix. The free reading stays 1-card Quick Insight
-    // only; the 3-card spread is PLANNED as the next step (not
-    // built yet), not the hero promise.
-    expect(src).toContain(
-      "A question on your mind? Ask the cards. Get a clearer way to see it."
-    );
+    // Hero rotation (Velu, 2026-11-15): the hero subhead is the
+    // rotating variant H2 (personal insights into love, life, and
+    // the choices ahead), rendered from the variants data. The free
+    // reading stays 1-card Quick Insight only; the 3-card spread is
+    // PLANNED as the next step (not built yet), not the hero promise.
+    const variantsSrc = readFileSync(
+      path.resolve(process.cwd(), "src/lib/hero-variants.ts"),
+      "utf8"
+    ).replace(/\s+/g, " ");
+    expect(variantsSrc).toContain("Get personal insights");
+    expect(variantsSrc).toContain("Explore personal insights");
+    expect(src).toContain("{variant.h2}");
     // Batch 6a: the "mirror" line is replaced by the plain version.
     expect(src).toContain("78 cards. Tarot helps you think. It doesn&apos;t predict.");
   });
@@ -80,13 +84,21 @@ describe("home page: first-visit comprehension", () => {
   });
 
   it("has one primary CTA, the free reading (AF-034)", () => {
-    // Remodel: the hero CTA is the gold submit "Draw my card —
-    // free" on the question box, and it works with no question
-    // typed (Velu's pick, Fable's review). The "free" wording is
-    // gated on freeAvailable (Batch 6a rule), so a returner who
-    // already used the free reading sees plain "Draw my card".
-    expect(src).toContain("Draw my card — free");
-    expect(src).toContain("Draw my card");
+    // Hero rotation (Velu, 2026-11-15): the hero CTA is the gold
+    // submit with the variant's primary CTA label ("Find Your
+    // Clarity" / "Begin Your Reading" / "Discover Your Future"),
+    // and it works with no question typed. The "free" wording now
+    // lives only in the friction line below, still gated on
+    // freeAvailable (Batch 6a rule), so a returner who already
+    // used the free reading sees the hero without the free promise.
+    const variantsSrc = readFileSync(
+      path.resolve(process.cwd(), "src/lib/hero-variants.ts"),
+      "utf8"
+    ).replace(/\s+/g, " ");
+    expect(variantsSrc).toContain("Find Your Clarity");
+    expect(variantsSrc).toContain("Begin Your Reading");
+    expect(variantsSrc).toContain("Discover Your Future");
+    expect(src).toContain("{variant.primaryCta}");
     expect(src).not.toContain("Ask your question");
     expect(src).not.toContain("All spreads, one Oracle each");
     expect(src).not.toContain("Sortes is Latin for lots");

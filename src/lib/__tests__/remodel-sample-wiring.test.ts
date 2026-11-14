@@ -28,7 +28,9 @@ describe("Remodel sample: today's card below the hero", () => {
     const sampleAt = page.indexOf("<TodaySample />");
     expect(sampleAt).toBeGreaterThan(-1);
     // Below the hero (after its submit button) and above StatsStrip.
-    expect(sampleAt).toBeGreaterThan(page.indexOf("Draw my card"));
+    // Hero rotation (Velu, 2026-11-15): the submit button renders
+    // the variant's primary CTA, not "Draw my card".
+    expect(sampleAt).toBeGreaterThan(page.indexOf("{variant.primaryCta}"));
     expect(sampleAt).toBeLessThan(page.indexOf("<StatsStrip />"));
   });
 

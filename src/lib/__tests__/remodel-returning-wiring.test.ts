@@ -39,8 +39,10 @@ describe("Remodel returning home: dynamic homepage switch", () => {
     expect(page).not.toContain("setHasHistory");
     expect(page).not.toContain("setDrewToday");
     // The switch is an early return before the hero, not a route.
+    // Hero rotation (Velu, 2026-11-15): the hero H1 renders the
+    // variant H1, so the switch is checked against that element.
     expect(page.indexOf("if (isReturning)")).toBeLessThan(
-      page.indexOf("Ask a question. Draw a tarot card. Get an AI reading.")
+      page.indexOf("{variant.h1}")
     );
     expect(page).not.toContain("/dashboard");
     expect(src("src/components/ReturningHome.tsx")).not.toContain("/dashboard");
@@ -48,7 +50,10 @@ describe("Remodel returning home: dynamic homepage switch", () => {
 
   it("new visitors still get the cold landing copy", () => {
     const page = src("src/app/page.tsx");
-    expect(page).toContain("Ask a question. Draw a tarot card. Get an AI reading.");
+    // Hero rotation (Velu, 2026-11-15): the hero H1 renders the
+    // variant H1 (variant A on first paint); the cold landing
+    // sections below it are unchanged.
+    expect(page).toContain("{variant.h1}");
     expect(page).toContain("<TodaySample />");
     expect(page).toContain("How it works");
     expect(page).toContain("<ReturnLoop />");
@@ -68,13 +73,15 @@ describe("Hero for all signed-out guests (Velu's Option B, 2026-11-14)", () => {
     expect(page).toContain("isFreeAvailableFor({");
     expect(page).toContain("deviceFree: !usedFree,");
     // The free wording is gated on the actual JSX elements: the
-    // button ternary and the friction line's freeAvailable guard.
+    // friction line's freeAvailable guard. Hero rotation (Velu,
+    // 2026-11-15): the submit button renders the variant's primary
+    // CTA, not the old free-gated "Draw my card — free".
     const button = page.match(
       /<button[^>]*type="submit"[^>]*>([\s\S]*?)<\/button>/
     );
     expect(button).not.toBeNull();
-    expect((button as RegExpMatchArray)[1]).toContain(
-      'freeAvailable ? "Draw my card — free" : "Draw my card"'
+    expect((button as RegExpMatchArray)[1].replace(/\s+/g, " ").trim()).toBe(
+      "{variant.primaryCta}"
     );
     expect(page).toContain("{freeAvailable && (");
   });
