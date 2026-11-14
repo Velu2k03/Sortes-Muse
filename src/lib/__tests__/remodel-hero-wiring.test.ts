@@ -140,12 +140,14 @@ describe("Remodel hero: explanation H1, question box, example questions", () => 
     expect(hook).toContain("takeHeroQuestion");
     expect(hook).toContain("peekHeroQuestion");
     // Review fixes: consume only once the intake is usable (gate
-    // null) AND the device flags are known (draftReady), or a guest
-    // who leaves to sign in loses the typed question. The slug is
-    // checked BEFORE the destructive read, so another spread's intake
-    // cannot discard the Quick Insight question. A pending hero
-    // question discards the old draft instead of merging with it.
-    expect(hook).toContain("gate !== null || !draftReady");
+    // null), the device flags are known (draftReady), AND a category
+    // is selected — the draft save skips while categoryKey is null,
+    // so consuming on the category step would lose the question on a
+    // refresh. The slug is checked BEFORE the destructive read, so
+    // another spread's intake cannot discard the Quick Insight
+    // question. A pending hero question discards the old draft instead
+    // of merging with it.
+    expect(hook).toContain("gate !== null || !draftReady || categoryKey === null");
     expect(hook).toContain('if (slug !== "quick-insight") return;');
     expect(hook).toContain("clearIntakeDraft()");
     expect(hook).toContain('slug === "quick-insight"');
