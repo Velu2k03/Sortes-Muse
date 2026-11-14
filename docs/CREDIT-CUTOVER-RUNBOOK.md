@@ -171,6 +171,57 @@ the conversion needs holders emailed first and pack sales stopped.
 - Update this runbook with the actual run date, backup run id,
   and the conversion totals.
 
+## Webhook + reconcile alerts (Notes N2, B4)
+
+These log lines are the money-path alarms. Each is one JSON line
+with `source: "sortes-webhook"` (webhook) or `source:
+"sortes-cron"` (reconcile). Alert on any occurrence; the fix is
+almost always config or a re-delivery, not code.
+
+- **subscription-verify-failed.** The webhook could not verify a
+  subscription against the Lemon Squeezy API (lookup failed, or
+  the API subscription does not match the claimed id / store /
+  variant). The event answered 500, so Lemon Squeezy retries it
+  a few times. What to do: check the Lemon Squeezy API key and
+  store id in Vercel env vars, then check the subscription in
+  the Lemon Squeezy dashboard. If the subscription is real and
+  the config is right, re-deliver the webhook from the dashboard.
+- **subscription-invoice-verify-failed.** The webhook could not
+  verify a paid invoice (not paid, wrong store / subscription,
+  or the amount does not match the tier — including a discount
+  the verifier does not recognise). The event answered 500 and
+  Lemon Squeezy retries. What to do: look up the invoice in the
+  Lemon Squeezy dashboard and compare total / subtotal /
+  discount_total against the tier price; fix the variant price or
+  the verifier, then re-deliver the webhook.
+- **subscription-refund-verify-failed.** A refund event could not
+  be verified as refunded / partially refunded. The event
+  answered 500 and Lemon Squeezy retries. What to do: check the
+  invoice status in the dashboard; if it is refunded, re-deliver
+  the webhook — the revoke is idempotent, so a duplicate delivery
+  revokes nothing twice.
+- **subscription-store-not-configured.** `LEMONSQUEEZY_STORE_ID`
+  is unset, so every subscription event answered 500. What to
+  do: set the store id in Vercel env vars and redeploy; Lemon
+  Squeezy retries the queued events, and the daily reconcile
+  catches any month that still has no grant.
+- **subscription-store-mismatch.** A webhook arrived for a
+  different store id than configured. The event answered 500 so
+  it is retried, not dropped. What to do: check whether the
+  webhook in the Lemon Squeezy dashboard points at the right
+  store, and whether the Vercel store id is the live one (not a
+  test-mode store). Fix the mismatch, then re-deliver.
+- **subscription-reconcile-run (missing > 0).** The daily
+  reconcile found paid invoices with no monthly grant in the
+  database. The summary lists the missing subscription ids
+  (`missingSubscriptions`) and periods (`missingPeriods`). What
+  to do: for each missing period, verify the payment in the
+  Lemon Squeezy dashboard, then re-deliver that invoice's
+  `subscription_payment_success` webhook from the dashboard —
+  the grant is idempotent, so a re-delivery cannot double-grant.
+  If the same subscription goes missing repeatedly, check the
+  webhook delivery log for that subscription's events.
+
 ## Known limitations (Claude review, PR #92 — accepted, not blockers)
 
 - **Refunded annual invoice now revokes all months and stops the

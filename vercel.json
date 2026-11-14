@@ -1,1 +1,16 @@
-{"crons":[{"path":"/api/cron/winback","schedule":"0 2 * * *"},{"path":"/api/cron/subscription-drip","schedule":"0 3 * * *"}]}
+{
+  "crons": [
+    {
+      "path": "/api/cron/winback",
+      "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/cron/subscription-drip",
+      "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron/subscription-reconcile",
+      "schedule": "0 4 * * *"
+    }
+  ]
+}

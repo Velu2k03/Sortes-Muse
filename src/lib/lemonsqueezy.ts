@@ -551,12 +551,69 @@ export async function getSubscriptionInvoice(
 }
 
 /**
+ * List the most recent subscription invoices for a store, newest
+ * first (the API orders by created_at descending). Used by the
+ * daily subscription reconcile cron, which checks each paid
+ * invoice has a monthly grant in the database. Returns the parsed
+ * JSON:API payload ({ data: [...] }), or null when it cannot be
+ * retrieved (no API key, non-OK status, network failure, bad
+ * JSON). Never throws. fetchFn is injectable so tests never call
+ * the live API.
+ *
+ * Pagination: follows the JSON:API `links.next` cursor until
+ * `limit` invoices are collected or there is no next page, so a
+ * missed paid invoice cannot fall off a single page just because
+ * more than one page of invoices arrived since the last run.
+ * `limit` is the total cap (default 50 = one page of 50); the
+ * page size is min(50, limit). Any page fetch that fails returns
+ * null (fail closed — the cron answers 500 and the run is visible
+ * as failed instead of silently checking a partial list).
+ */
+export async function listSubscriptionInvoices(
+  storeId: string,
+  fetchFn: typeof fetch = fetch,
+  timeoutMs = 8000,
+  limit = 50
+) {
+  const apiKey = process.env.LEMONSQUEEZY_API_KEY?.trim();
+  if (!apiKey || !storeId) return null;
+  const pageSize = Math.min(50, Math.max(1, limit));
+  const all: unknown[] = [];
+  let url: string | null =
+    `${API_BASE}/subscription-invoices?filter%5Bstore_id%5D=${encodeURIComponent(storeId)}&page%5Bsize%5D=${pageSize}`;
+  try {
+    while (url && all.length < limit) {
+      const res: Response = await fetchFn(url, {
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          Accept: "application/vnd.api+json",
+        },
+        signal: AbortSignal.timeout(timeoutMs),
+      });
+      if (!res.ok) return null;
+      const json: unknown = await res.json();
+      const data = Array.isArray((json as { data?: unknown })?.data)
+        ? (json as { data: unknown[] }).data
+        : [];
+      all.push(...data);
+      const next: unknown = (json as { links?: { next?: unknown } })?.links?.next;
+      url = typeof next === "string" && next.length > 0 ? next : null;
+    }
+    return { data: all.slice(0, limit) };
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Does the invoice the API returned match the one the webhook
  * claims? Same id, same store, same subscription, status paid, and
  * the total matches the expected charge for that subscription's
- * tier + interval (tax-on-top accepted, discounts/underpayment
- * refused — the same rule as verifyOrderAmount). A mismatch is a
- * 500 (retry), never a grant.
+ * tier + interval (tax-on-top accepted; a discount code that
+ * lowers the total is accepted when discount_total explains the
+ * gap; any other lower total is underpayment and refused — the
+ * same rule as verifyOrderAmount, plus the discount case).
+ * A mismatch is a 500 (retry), never a grant.
  */
 export function verifyApiSubscriptionInvoice(
   invoice: unknown,
@@ -579,6 +636,7 @@ export function verifyApiSubscriptionInvoice(
     subscription_id?: unknown;
     total?: number | string;
     subtotal?: number | string;
+    discount_total?: number | string;
   };
   if (attrs.status !== "paid") return false;
   if (String(attrs.store_id ?? "") !== expected.storeId) return false;
@@ -587,6 +645,23 @@ export function verifyApiSubscriptionInvoice(
   if (total === expected.expectedTotalCents) return true;
   const subtotal = Number(attrs.subtotal);
   if (subtotal === expected.expectedTotalCents && total > expected.expectedTotalCents) return true;
+  // A discount code lowers the total below the tier price: accept
+  // when the subtotal still matches the tier, a discount was
+  // actually applied, and the total is no lower than subtotal
+  // minus the discount (tax on top of the discounted price is
+  // allowed, so the total may sit above that floor). Without a
+  // discount a lower total is still underpayment and is rejected.
+  // discount_total is a positive integer in cents on the
+  // subscription-invoice object (Lemon Squeezy API docs).
+  const discountTotal = Number(attrs.discount_total ?? 0);
+  if (
+    subtotal === expected.expectedTotalCents &&
+    discountTotal > 0 &&
+    total < expected.expectedTotalCents &&
+    total >= subtotal - discountTotal
+  ) {
+    return true;
+  }
   return false;
 }
 

@@ -164,6 +164,13 @@ auto-applies pending migrations in production (verify-only). The
 database password comes from Secure Vault, never from chat or a
 committed file.
 
+**The order for every migration PR is: (1) back up, (2) apply,
+(3) merge** — see §8. The migrate workflow
+(`.github/workflows/sortes-migrate.yml`) takes the fresh backup's
+run id as a required input and refuses to run without a successful
+backup less than 15 minutes old; the PR must carry the
+`migration-applied-to-prod` label before it merges.
+
 **Migration 006 — session version (`migrations/006_session_version.sql`, Phase B R5):**
 one statement, `ALTER TABLE users ADD COLUMN IF NOT EXISTS pwd_ver
 INTEGER NOT NULL DEFAULT 1`. It is in the auto-applied set (the app
@@ -322,6 +329,18 @@ everyone out).
 production (procedure §4, with a `pg_dump` before AND after) BEFORE
 the release-candidate branch is merged and deployed. This is a hard
 gate on the launch checklist, not a nice-to-have.
+
+**The order, always: (1) back up, (2) apply, (3) merge.** A PR that
+changes `migrations/` must record the fresh backup run id and the
+migrate run id in its description (see `.github/pull_request_template.md`)
+and carry the `migration-applied-to-prod` label; the
+`migration-label-check` workflow fails the PR without it. The
+`prebuild` guard (`scripts/check-migrations.mjs`, §13) is the
+second net: with `SORTES_CHECK_MIGRATIONS=1` set on Vercel
+Production, a build fails before deploying code whose migration
+is not applied yet. The label check is the gate; the prebuild
+guard is the backstop; `GET /api/health` is the monitor that
+catches any drift after the fact.
 
 **Why:** production has no `schema_migrations` table and no
 `free_readings` table, and its `users` table has no `pwd_ver`
@@ -517,3 +536,31 @@ zeroed every balance) and proved the fix. The 009 down file was
 drilled the same way in Batch N3 (009 → down → down again, balances
 unchanged, kind CHECK restored to the pre-009 list); see the
 progress log.
+
+## 13. Prebuild migration guard (Notes N2, B1a) — Vercel dashboard step
+
+**Status: CODE DONE, DASHBOARD STEP OWED (Velu).** `scripts/check-migrations.mjs`
+is wired as the `prebuild` script in `package.json`: every `npm run build`
+runs it first. It reads `migrations/*.sql`, reads the target database's
+`schema_migrations` ledger (read-only, one SELECT), and exits non-zero
+listing any missing version — which fails the build before the code
+deploys. A failed Vercel build leaves the old deployment live.
+
+**The guard runs ONLY when `SORTES_CHECK_MIGRATIONS=1`.** Without it,
+the script prints "skipping migration check" and exits 0, so local dev
+and Preview builds are unaffected. That is deliberate: Preview points
+at staging, and the in-app runner already auto-applies pending
+migrations there.
+
+**Dashboard step (Velu — do NOT set this from an agent):** Vercel →
+sortes-muse → Settings → Environment Variables → Add
+`SORTES_CHECK_MIGRATIONS`, value `1`, Environment = **Production
+only**. Never tick Preview or Development. After setting it, the next
+Production build checks the ledger; if a migration is pending, the
+build fails loudly instead of deploying broken code. The variable is
+not a secret and needs no rotation.
+
+**What breaks if the variable is set but the database URL is missing
+at build time:** the script exits 1 (fail closed) and the build
+fails. That is the intended behaviour — deploying without checking
+is exactly the failure this guard exists to prevent.

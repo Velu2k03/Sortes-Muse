@@ -191,6 +191,20 @@ describe("handleSubscriptionWebhook", () => {
     ).toBeNull();
   });
 
+  it("subscription_payment_recovered grants the month, like payment_success", async () => {
+    stubFetch(subscriptionJson("sub_1"), invoiceJson("inv_1"));
+    const result = await handleSubscriptionWebhook("subscription_payment_recovered", {
+      meta: { event_name: "subscription_payment_recovered" },
+      data: { id: "inv_1", attributes: { store_id: 42, subscription_id: "sub_1", billing_reason: "renewal", total: 1499, user_email: "buyer@example.com", created_at: "2026-11-15T00:00:00.000Z" } },
+    });
+    expect(result.status).toBe(200);
+    expect(result.body.granted).toBe(true);
+    expect(mockedGrantMonthlyCredits).toHaveBeenCalledTimes(1);
+    const grantArgs = mockedGrantMonthlyCredits.mock.calls[0][0] as { periodKey: string; tier: string };
+    expect(grantArgs.periodKey).toBe("2026-11");
+    expect(grantArgs.tier).toBe("star");
+  });
+
   it("subscription_payment_success with billing_reason updated grants nothing", async () => {
     stubFetch(
       subscriptionJson("sub_1"),
@@ -226,11 +240,21 @@ describe("handleSubscriptionWebhook", () => {
     expect(mockedExpireMonthlyBalance).toHaveBeenCalledWith("u1", "sub_1");
   });
 
-  it("a store mismatch is refused", async () => {
+  it("a store mismatch is a 500 (config error, so Lemon Squeezy retries)", async () => {
     stubFetch(subscriptionJson("sub_1"), null);
     const result = await handleSubscriptionWebhook("subscription_created", {
       meta: { event_name: "subscription_created", custom_data: { user_id: "u1" } },
       data: { id: "sub_1", attributes: { store_id: 999 } },
+    });
+    expect(result.status).toBe(500);
+    expect(mockedUpsertSubscription).not.toHaveBeenCalled();
+  });
+
+  it("a missing subscription id stays a 400 (malformed payload, retrying will not help)", async () => {
+    stubFetch(subscriptionJson("sub_1"), null);
+    const result = await handleSubscriptionWebhook("subscription_created", {
+      meta: { event_name: "subscription_created", custom_data: { user_id: "u1" } },
+      data: { id: "", attributes: { store_id: 42 } },
     });
     expect(result.status).toBe(400);
     expect(mockedUpsertSubscription).not.toHaveBeenCalled();

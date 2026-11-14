@@ -244,6 +244,67 @@ describe("subscription verify rules", () => {
     ).toBe(false);
     expect(verifyApiSubscriptionInvoice(null, expected)).toBe(false);
   });
+
+  it("verifyApiSubscriptionInvoice: a discounted invoice is accepted when the discount explains the lower total", () => {
+    // Star monthly is 1499; a 500-cent discount code makes the total
+    // 999. The subtotal still matches the tier price, discount_total
+    // is positive, and the total is at least subtotal minus discount.
+    const invoice = {
+      data: {
+        id: "inv_1",
+        attributes: {
+          status: "paid",
+          store_id: 42,
+          subscription_id: "sub_1",
+          total: 999,
+          subtotal: 1499,
+          discount_total: 500,
+        },
+      },
+    };
+    const expected = { invoiceId: "inv_1", storeId: "42", subscriptionId: "sub_1", expectedTotalCents: 1499 };
+    expect(verifyApiSubscriptionInvoice(invoice, expected)).toBe(true);
+    // A discount plus tax on top is still a discount, not an overcharge.
+    expect(
+      verifyApiSubscriptionInvoice(
+        { ...invoice, data: { ...invoice.data, attributes: { ...invoice.data.attributes, total: 1050 } } },
+        expected
+      )
+    ).toBe(true);
+  });
+
+  it("verifyApiSubscriptionInvoice: a lower total with no discount is still rejected", () => {
+    const invoice = {
+      data: {
+        id: "inv_1",
+        attributes: {
+          status: "paid",
+          store_id: 42,
+          subscription_id: "sub_1",
+          total: 999,
+          subtotal: 1499,
+          discount_total: 0,
+        },
+      },
+    };
+    const expected = { invoiceId: "inv_1", storeId: "42", subscriptionId: "sub_1", expectedTotalCents: 1499 };
+    expect(verifyApiSubscriptionInvoice(invoice, expected)).toBe(false);
+    // A total below subtotal minus discount cannot be explained by
+    // the discount either (the discount is smaller than the gap).
+    expect(
+      verifyApiSubscriptionInvoice(
+        { ...invoice, data: { ...invoice.data, attributes: { ...invoice.data.attributes, total: 900, discount_total: 500 } } },
+        expected
+      )
+    ).toBe(false);
+    // discount_total absent entirely is the same as no discount.
+    expect(
+      verifyApiSubscriptionInvoice(
+        { ...invoice, data: { ...invoice.data, attributes: { total: 999, subtotal: 1499, discount_total: undefined } } },
+        expected
+      )
+    ).toBe(false);
+  });
 });
 
 describe("period keys and drip month math", () => {

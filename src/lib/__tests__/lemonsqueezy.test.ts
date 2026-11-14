@@ -9,6 +9,7 @@ import {
   createCheckout,
   getOrder,
   verifyApiOrder,
+  listSubscriptionInvoices,
 } from "@/lib/lemonsqueezy";
 
 describe("lemonsqueezy helpers", () => {
@@ -357,5 +358,89 @@ describe("lemonsqueezy helpers", () => {
       expect(elapsed).toBeLessThan(1000);
       expect(fetchFn).toHaveBeenCalledTimes(1);
     }, 1500);
+  });
+
+  describe("listSubscriptionInvoices", () => {
+    it("lists the store's invoices, newest first, page size 50", async () => {
+      let capturedUrl: unknown;
+      const payload = { data: [], meta: { page: { total: 0 } } };
+      const fetchFn = vi.fn(async (url: unknown) => {
+        capturedUrl = url;
+        return { ok: true, json: async () => payload };
+      });
+      const result = await listSubscriptionInvoices("42", fetchFn as unknown as typeof fetch);
+      // Only the invoice list is returned (meta is dropped).
+      expect(result).toEqual({ data: [] });
+      expect(String(capturedUrl)).toContain("/v1/subscription-invoices?");
+      expect(String(capturedUrl)).toContain("filter%5Bstore_id%5D=42");
+      expect(String(capturedUrl)).toContain("page%5Bsize%5D=50");
+    });
+
+    it("follows links.next until the limit is reached", async () => {
+      const page1 = {
+        data: [{ id: "inv_1" }, { id: "inv_2" }],
+        links: { next: "https://api.lemonsqueezy.com/v1/subscription-invoices?page[number]=2" },
+      };
+      const page2 = { data: [{ id: "inv_3" }], links: { next: null } };
+      const fetchFn = vi.fn(async (url: unknown) => {
+        const page = String(url).includes("page[number]=2") ? page2 : page1;
+        return { ok: true, json: async () => page };
+      });
+      const result = await listSubscriptionInvoices(
+        "42",
+        fetchFn as unknown as typeof fetch,
+        8000,
+        150
+      );
+      expect(result).toEqual({ data: [{ id: "inv_1" }, { id: "inv_2" }, { id: "inv_3" }] });
+      expect(fetchFn).toHaveBeenCalledTimes(2);
+    });
+
+    it("stops paging once the limit is collected", async () => {
+      const page1 = {
+        data: [{ id: "inv_1" }, { id: "inv_2" }],
+        links: { next: "https://api.lemonsqueezy.com/v1/subscription-invoices?page[number]=2" },
+      };
+      const fetchFn = vi.fn(async () => ({ ok: true, json: async () => page1 }));
+      const result = await listSubscriptionInvoices(
+        "42",
+        fetchFn as unknown as typeof fetch,
+        8000,
+        2
+      );
+      expect(result).toEqual({ data: [{ id: "inv_1" }, { id: "inv_2" }] });
+      expect(fetchFn).toHaveBeenCalledTimes(1);
+    });
+
+    it("returns null when a later page fails (fail closed, no partial list)", async () => {
+      const page1 = {
+        data: [{ id: "inv_1" }],
+        links: { next: "https://api.lemonsqueezy.com/v1/subscription-invoices?page[number]=2" },
+      };
+      const fetchFn = vi.fn(async (url: unknown) =>
+        String(url).includes("page[number]=2")
+          ? { ok: false, status: 500 }
+          : { ok: true, json: async () => page1 }
+      );
+      await expect(
+        listSubscriptionInvoices("42", fetchFn as unknown as typeof fetch, 8000, 150)
+      ).resolves.toBeNull();
+    });
+
+    it("returns null on a non-OK response and never throws", async () => {
+      const fetchFn = vi.fn(async () => ({ ok: false, status: 500 }));
+      await expect(
+        listSubscriptionInvoices("42", fetchFn as unknown as typeof fetch)
+      ).resolves.toBeNull();
+    });
+
+    it("returns null without an API key (fail closed, no unauthenticated call)", async () => {
+      delete process.env.LEMONSQUEEZY_API_KEY;
+      const fetchFn = vi.fn(async () => ({ ok: true, json: async () => ({ data: [] }) }));
+      await expect(
+        listSubscriptionInvoices("42", fetchFn as unknown as typeof fetch)
+      ).resolves.toBeNull();
+      expect(fetchFn).not.toHaveBeenCalled();
+    });
   });
 });
