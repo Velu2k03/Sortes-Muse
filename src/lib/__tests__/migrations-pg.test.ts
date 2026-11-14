@@ -112,7 +112,7 @@ describe.skipIf(SKIP)("migrations on real Postgres (staging only)", () => {
     });
   }
 
-  it("CLI applies 001+002+003+006+007+008 to the production-like schema, keeps data, re-runs as a no-op", async () => {
+  it("CLI applies 001+002+003+006+007+008+009 to the production-like schema, keeps data, re-runs as a no-op", async () => {
     const first = runCli();
     expect(first).toContain("001 baseline — applied");
     expect(first).toContain("002 indexes_constraints — applied");
@@ -120,6 +120,7 @@ describe.skipIf(SKIP)("migrations on real Postgres (staging only)", () => {
     expect(first).toContain("006 session_version — applied");
     expect(first).toContain("007 order_id_unique — applied");
     expect(first).toContain("008 credit_ledgers — applied");
+    expect(first).toContain("009 subscriptions — applied");
     // Existing data survived the migration.
     const user = (await raw`SELECT credits FROM users WHERE id = 'u_old'`) as Array<{ credits: number }>;
     expect(user[0].credits).toBe(7);
@@ -175,10 +176,10 @@ describe.skipIf(SKIP)("migrations on real Postgres (staging only)", () => {
     (process.env as Record<string, string | undefined>).POSTGRES_URL = TEST_URL;
     const db = (await import("@/lib/db")) as typeof import("@/lib/db");
     // ensureSchema is the in-app trigger; the ledger already has
-    // all six versions, so this must be a no-op, not an error.
+    // all seven versions, so this must be a no-op, not an error.
     await expect(db.ensureSchema()).resolves.toBeUndefined();
     const ledger = (await raw`SELECT version FROM schema_migrations ORDER BY version`) as Array<{ version: string }>;
-    expect(ledger.map((r) => r.version)).toEqual(["001", "002", "003", "006", "007", "008"]);
+    expect(ledger.map((r) => r.version)).toEqual(["001", "002", "003", "006", "007", "008", "009"]);
     // The app works against the migrated schema.
     const user = await db.getUserByEmail("old@example.com");
     expect(user?.credits).toBe(7);
@@ -225,7 +226,7 @@ describe.skipIf(SKIP)("migrations on real Postgres (staging only)", () => {
     await expect(db.ensureSchema()).rejects.toThrow(/Pending database migrations.*002/);
     // Nothing was applied: the ledger still lacks 002 (003 and 006 stay).
     const ledger = (await raw`SELECT version FROM schema_migrations ORDER BY version`) as Array<{ version: string }>;
-    expect(ledger.map((r) => r.version)).toEqual(["001", "003", "006", "007", "008"]);
+    expect(ledger.map((r) => r.version)).toEqual(["001", "003", "006", "007", "008", "009"]);
     // Restore the ledger via the CLI (NODE_ENV=test) so later tests
     // see the fully migrated schema again.
     env.NODE_ENV = "test";

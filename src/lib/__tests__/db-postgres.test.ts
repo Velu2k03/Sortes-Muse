@@ -52,17 +52,17 @@ describe.skipIf(SKIP)("money paths on real Postgres (staging only)", () => {
     await raw?.end();
   });
 
-  it("migrations applied: 8 tables, ledger rows, indexes, CHECK constraint", async () => {
+  it("migrations applied: 9 tables, ledger rows, indexes, CHECK constraint", async () => {
     const tables = (await raw`
       SELECT table_name FROM information_schema.tables
       WHERE table_schema = 'public' AND table_name IN
-        ('users','auth_codes','transactions','readings','reports','free_interpretations','free_readings','credit_grants')
+        ('users','auth_codes','transactions','readings','reports','free_interpretations','free_readings','credit_grants','subscriptions')
     `) as Array<{ table_name: string }>;
     expect(tables.map((t) => t.table_name).sort()).toEqual(
-      ["auth_codes", "credit_grants", "free_interpretations", "free_readings", "readings", "reports", "transactions", "users"]
+      ["auth_codes", "credit_grants", "free_interpretations", "free_readings", "readings", "reports", "subscriptions", "transactions", "users"]
     );
     const ledger = (await raw`SELECT version FROM schema_migrations ORDER BY version`) as Array<{ version: string }>;
-    expect(ledger.map((r) => r.version)).toEqual(["001", "002", "003", "006", "007", "008"]);
+    expect(ledger.map((r) => r.version)).toEqual(["001", "002", "003", "006", "007", "008", "009"]);
     const indexes = (await raw`
       SELECT indexname FROM pg_indexes WHERE schemaname = 'public'
         AND indexname LIKE 'idx\_%'`) as Array<{ indexname: string }>;
@@ -72,6 +72,7 @@ describe.skipIf(SKIP)("money paths on real Postgres (staging only)", () => {
       "idx_credit_grants_user_created",
       "idx_readings_user_created",
       "idx_reports_user_created",
+      "idx_subscriptions_user_created",
       "idx_transactions_order_id_unique",
       "idx_transactions_pack_type",
       "idx_transactions_user_created",
