@@ -30,6 +30,7 @@ import { accessSync, constants, existsSync, rmSync } from "fs";
 import { homedir } from "os";
 import path from "path";
 import { libpqEnv } from "./db-ssl.mjs";
+import { buildVerifySql } from "./restore-verify.mjs";
 
 function arg(name) {
   const eq = process.argv.find((a) => a.startsWith(`--${name}=`));
@@ -147,17 +148,30 @@ try {
 }
 if (process.exitCode) process.exit(process.exitCode);
 
-const verifySql = `
-SELECT 'users', count(*) FROM users UNION ALL
-SELECT 'auth_codes', count(*) FROM auth_codes UNION ALL
-SELECT 'credit_grants', (SELECT count(*) FROM credit_grants) WHERE to_regclass('public.credit_grants') IS NOT NULL UNION ALL
-SELECT 'transactions', count(*) FROM transactions UNION ALL
-SELECT 'readings', count(*) FROM readings UNION ALL
-SELECT 'reports', count(*) FROM reports UNION ALL
-SELECT 'free_readings', count(*) FROM free_readings UNION ALL
-SELECT 'free_interpretations', count(*) FROM free_interpretations UNION ALL
-SELECT 'schema_migrations', count(*) FROM schema_migrations
-ORDER BY 1;`;
+// Batch N3 (A4/B6): probe for the optional tables FIRST, then build a
+// verify query that mentions only tables that exist. The old query
+// named credit_grants inside a SELECT guarded by to_regclass in the
+// WHERE clause, but Postgres resolves table names at parse time, so
+// the whole statement failed with "relation does not exist" on any
+// pre-008 dump — after the data was already restored.
+function tableExists(table) {
+  const res = spawnSync(
+    "psql",
+    [target, "-t", "-A", "-c", `SELECT to_regclass('public.${table}')`],
+    { encoding: "utf8", env: libpqEnv(target) },
+  );
+  if (res.status !== 0) {
+    console.error(`restore: could not probe for table ${table}`);
+    process.exit(1);
+  }
+  return res.stdout.trim() !== "";
+}
+
+const verifySql = buildVerifySql({
+  hasCreditGrants: tableExists("credit_grants"),
+  hasSubscriptions: tableExists("subscriptions"),
+  hasSchemaMigrations: tableExists("schema_migrations"),
+});
 console.log("restore: row counts in the restored database:");
 run("psql", [target, "-c", verifySql.trim()], libpqEnv(target));
 console.log("restore: OK - verify the counts above against the source before using this database.");

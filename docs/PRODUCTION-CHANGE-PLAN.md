@@ -28,6 +28,9 @@ app is deployed from `main`; the release candidate branch is
 - `users (id TEXT PK, email TEXT UNIQUE NOT NULL, credits INTEGER
   NOT NULL DEFAULT 0, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   winback_sent_at TIMESTAMPTZ, password_hash TEXT)`
+  — **SUPERSEDED by migration 008 (§11):** `credits` is now a
+  GENERATED column (`monthly_credits + purchased_credits`), and
+  the plain `credits INTEGER` column no longer exists.
 - `auth_codes (email TEXT PK, code_hash TEXT NOT NULL,
   expires_at TIMESTAMPTZ NOT NULL, attempts INTEGER NOT NULL DEFAULT 0)`
 - `transactions (id TEXT PK, user_id TEXT REFERENCES users(id),
@@ -77,6 +80,10 @@ needed: the change is purely additive.
 - `CHECK (credits >= 0)` constraint `users_credits_nonnegative` on
   `users` (added inside a DO block that swallows `duplicate_object`,
   so re-running is a no-op).
+  — **SUPERSEDED by migration 008 (§11):** 008 dropped this
+  constraint with the old `credits` column and replaced it with
+  per-ledger CHECKs (`users_monthly_credits_nonnegative`,
+  `users_purchased_credits_nonnegative`).
 - JSONB repair loop: every row in `readings`/`reports` whose `data`
   is a JSON string (double-encoded by the old
   `${JSON.stringify(x)}::jsonb` pattern) is re-encoded in place to a
@@ -106,7 +113,10 @@ the log if one appears).
 
 **Rollback:** `DROP INDEX IF EXISTS` for the four indexes;
 `ALTER TABLE users DROP CONSTRAINT IF EXISTS
-users_credits_nonnegative;`. The JSONB repair has no inverse and
+users_credits_nonnegative;` — **SUPERSEDED by migration 008
+(§11):** that constraint no longer exists; the 008 rollback
+(`migrations/rollback/008_credit_ledgers.down.sql`) re-adds it
+when it restores the pre-008 single `credits` column. The JSONB repair has no inverse and
 needs none — the re-encoded value is identical JSON, only stored
 with the correct type.
 
@@ -381,3 +391,129 @@ need Velu's per-item approval.
 - [ ] Do NOT add `DATABASE_URL` or `NEXTAUTH_SECRET`.
 - [ ] Postgres 17.11.0.018 upgrade — separate decision, not part of
       this plan.
+
+## 11. Migration 008 — two-ledger credits (`migrations/008_credit_ledgers.sql`) — APPLIED 2026-11-14
+
+**Status: APPLIED to production** (sortes-migrate.yml run
+43603589517, after fresh backup run 43603448653; PR #87 merged as
+c53cab8). This section is the G14 record (effect, risk, rollback)
+for that change. The drill of the rollback is recorded in
+`~/workspace/sortes-verify/fix-run-progress.md` (Batch N3, A3).
+
+**Exact effect:**
+
+- `users` gains `monthly_credits INTEGER NOT NULL DEFAULT 0` and
+  `purchased_credits INTEGER NOT NULL DEFAULT 0`. Backfill: every
+  existing Oracle balance becomes purchased credit
+  (`purchased_credits = credits` where both ledgers are 0 and
+  `credits > 0`); monthly starts at 0 for everyone (no subscription
+  existed yet).
+- `users.credits` becomes a GENERATED column
+  (`monthly_credits + purchased_credits` STORED). Dropping the old
+  column also dropped the 002 CHECK `users_credits_nonnegative`,
+  replaced by per-ledger CHECKs (`users_monthly_credits_nonnegative`,
+  `users_purchased_credits_nonnegative`).
+- New table `credit_grants` (audit/idempotency ledger: one row per
+  monthly grant, unique per subscription + period; one row per Oracle
+  conversion, unique per user).
+
+**Tables/rows affected:** all `users` rows (backfill rewrites
+`purchased_credits` for every user with a balance; on production
+that was a handful of rows). `credit_grants` starts empty.
+
+**Idempotency:** fully idempotent (IF NOT EXISTS / guarded DO
+blocks / backfill guard `monthly = 0 AND purchased = 0 AND
+credits > 0`); re-running is a no-op.
+
+**What breaks if it goes wrong:** from apply until the new deploy
+goes live, the OLD code's `SET credits = ...` writes fail loudly
+("cannot update a generated column") — spends, purchase fulfilment
+and possibly sign-up. That window is the known 008 risk (see the
+Batch A miss-check, item 2): Lemon Squeezy retries failed webhooks,
+but a purchase landing in the window must be reconciled. Future
+migrations that change a column in use must use expand/contract
+(keep the old column writable, deploy code that writes both, drop
+the old column later) instead of a same-day drop.
+
+**Rollback:** `migrations/rollback/008_credit_ledgers.down.sql`
+(drill result in the progress log). It restores the pre-008 single
+plain `credits` column (summed balance), drops both ledger columns,
+archives `credit_grants` into `credit_grants_archive` before
+dropping it, and re-adds `users_credits_nonnegative`. See §12 for
+the order — code and schema must move together; rolling back code
+alone (Vercel instant rollback) against the 008 schema breaks
+purchases and spends.
+
+**Re-applying 008 after a rollback** (Claude review, PR #93): the
+fresh `credit_grants` table is EMPTY, so the conversion/period
+unique indexes have no rows — a user already converted could be
+converted again. Before re-applying, copy the archived rows back
+into `credit_grants` (`INSERT INTO credit_grants SELECT * FROM
+credit_grants_archive` — by id, skipping rows already present).
+Also note the rollback folds any live monthly balance into plain
+`credits`, which becomes PERMANENT purchased credit on re-apply;
+a monthly balance that had not yet expired is no longer expirable.
+
+**Risk: MEDIUM** (one-way column change with a live apply-to-deploy
+window; mitigated by the pre-apply backup, the apply-before-merge
+order, and the drilled rollback).
+
+## 12. Rollback order — code and schema move together (Batch N3, A3)
+
+A Vercel instant rollback to the previous deployment runs OLD code
+against the CURRENT schema, so purchases and spends break whenever
+the schema changed under the code (008 proved this: old code cannot
+write a generated `credits` column; new code cannot run against the
+pre-008 plain column). A rollback is therefore a single ordered
+operation, never "roll back the code and see":
+
+1. **Freeze writes.** Stop the money paths first: pause the
+   subscription-drip and winback crons, and block new purchase and
+   spend requests. Make the Lemon Squeezy webhook endpoint return a
+   non-2xx status until the rollback completes, so Lemon Squeezy
+   retries the deliveries. Wait for in-flight writes to finish.
+   (Pausing only the crons is NOT enough: purchase/spend requests
+   and webhook deliveries still reach the app during steps 2-3 and
+   would fail against the mismatched schema. Concrete routes: blank
+   `LEMONSQUEEZY_WEBHOOK_SECRET` and redeploy — a missing secret
+   makes every webhook return 401 — or disable the webhook in the
+   Lemon Squeezy dashboard. Blocking spends needs a deploy; there is
+   no kill switch in the code. Lemon Squeezy retries are bounded,
+   so keep the freeze short and reconcile paid orders against
+   `transactions.order_id` afterwards; the reconcile step is the
+   backstop for any delivery whose retries run out.)
+2. **Roll back the code** (Vercel instant rollback to the previous
+   deployment, or redeploy the previous main).
+3. **Run the down file** for the migration being undone, in reverse
+   apply order (009 before 008):
+   `migrations/rollback/009_subscriptions.down.sql`,
+   `migrations/rollback/008_credit_ledgers.down.sql`. The 009 down
+   file archives `subscriptions` into `subscriptions_archive` and
+   archives + deletes any `expiry` grant rows before restoring the
+   old kind CHECK; the 008 down file archives `credit_grants` into
+   `credit_grants_archive`. pg_dump BEFORE running. Run with `psql
+   -v ON_ERROR_STOP=1 -f <down file>` — each down file manages its
+   own transaction (BEGIN/COMMIT inside), so do NOT add
+   `--single-transaction` on top of it.
+4. **Delete the migration row(s)** from the ledger so the migration(s)
+   can apply again later — one row per migration rolled back:
+   `DELETE FROM schema_migrations WHERE version = '008';` and/or
+   `DELETE FROM schema_migrations WHERE version = '009';`
+   (check the actual version values recorded by
+   `scripts/migrate.mjs` first). Deleting only '008' after rolling
+   back 009 leaves 009 marked applied while `subscriptions` is
+   gone, so a later deploy would skip recreating the table.
+5. **Verify:** sign-up + login + `/api/auth/me` work, balances match
+   the pre-change dump per user, and the Lemon Squeezy delivery log
+   shows no failed webhook in the window; reconcile paid orders
+   against `transactions.order_id`.
+
+A rollback that was never executed is AMBER, not GREEN (playbook
+G14): the 008 down file was drilled locally against the pre-apply
+backup (008 → down → down again → 008, per-user balances compared
+at each step; result in the progress log). The drill also found and
+fixed a re-run hazard in the 008 down file (an unguarded re-run
+zeroed every balance) and proved the fix. The 009 down file was
+drilled the same way in Batch N3 (009 → down → down again, balances
+unchanged, kind CHECK restored to the pre-009 list); see the
+progress log.

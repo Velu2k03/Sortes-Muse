@@ -59,6 +59,21 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Batch N3: the restore tests need pg_dump/pg_restore 16 to match
+      # the postgres:16 service. The runner (Ubuntu 26.04) ships PG 18
+      # tools only, and a PG 17+ dump carries `SET transaction_timeout`
+      # which PG 16 rejects, so pg_restore exits 1. Ubuntu 26.04 has no
+      # PG 16 in its own archive, so install the 16 client from PGDG.
+      # The test picks /usr/lib/postgresql/16/bin when it exists.
+      - name: Install PostgreSQL 16 client (restore tests)
+        run: |
+          sudo apt-get update -qq
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq postgresql-common ca-certificates
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+          sudo apt-get update -qq
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq postgresql-client-16
+          /usr/lib/postgresql/16/bin/pg_dump --version
+
       - name: Run lint gate
         run: npm run lint:gate
 
