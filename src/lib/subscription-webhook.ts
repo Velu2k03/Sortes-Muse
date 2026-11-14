@@ -35,6 +35,19 @@ import {
  *                             the other 11 annual months). Skips
  *                             billing_reason "updated" (a plan-change
  *                             invoice is not a new month).
+ *   subscription_payment_recovered — a previously failed charge
+ *                             that later succeeded (card update /
+ *                             retry). Routed through the same success
+ *                             path as payment_success. Lemon Squeezy
+ *                             docs say a payment_success is always
+ *                             sent alongside a recovered event, so in
+ *                             practice this is a second delivery of
+ *                             the same paid invoice — and the grant is
+ *                             idempotent per (subscription, period),
+ *                             so the duplicate is a no-op. Handling
+ *                             it anyway means the month is still
+ *                             granted if Lemon Squeezy ever sends a
+ *                             recovered event on its own.
  *   subscription_payment_failed — sync past_due, grant nothing.
  *   subscription_cancelled — grace period until ends_at; grants
  *                             continue until the period ends.
@@ -167,6 +180,13 @@ function logError(event: string, fields: Record<string, unknown>) {
  * Handle one subscription webhook event. Returns the HTTP status +
  * body the route should answer with. Throws on a transient failure
  * (the route turns it into a 500 so Lemon Squeezy retries).
+ * Status split: config-class errors (store not configured, store
+ * mismatch, unrecognized variant, unexpected currency, invoice
+ * store mismatch) return 500 — Lemon Squeezy retries non-2xx
+ * deliveries, so the event stays alive while the config is fixed.
+ * Malformed payloads (missing subscription id) and data
+ * inconsistencies (invoice subscription mismatch) return 400:
+ * retrying those cannot help.
  */
 export async function handleSubscriptionWebhook(
   eventName: string,
@@ -179,7 +199,7 @@ export async function handleSubscriptionWebhook(
   // order branch refuses the same way when it is unset.
   if (!expectedStoreId) {
     logError("subscription-store-not-configured", { eventName });
-    return { status: 400, body: { error: "Store not configured." } };
+    return { status: 500, body: { error: "Store not configured." } };
   }
   const dataId = String(event.data?.id ?? "");
   const attrs = (event.data?.attributes ?? {}) as Record<string, unknown>;
@@ -187,7 +207,7 @@ export async function handleSubscriptionWebhook(
   if (!dataId) return { status: 400, body: { error: "Missing subscription id." } };
   if (String(attrs.store_id ?? "") !== expectedStoreId) {
     logError("subscription-store-mismatch", { eventName, id: dataId });
-    return { status: 400, body: { error: "Store mismatch." } };
+    return { status: 500, body: { error: "Store mismatch." } };
   }
 
   // --- Subscription-object events (created/updated/cancelled/expired/resumed/paused/unpaused) ---
@@ -209,7 +229,7 @@ export async function handleSubscriptionWebhook(
     }
     const apiAttrs = (apiSub as { data: { attributes: SubscriptionAttrs } }).data.attributes;
     const variant = subscriptionVariantForId(String(apiAttrs.first_subscription_item?.variant_id ?? ""));
-    if (!variant) return { status: 400, body: { error: "Unrecognized subscription variant." } };
+    if (!variant) return { status: 500, body: { error: "Unrecognized subscription variant." } };
     // The user email is not on the Subscription object; the
     // subscription row (from an earlier event) or custom_data
     // identifies the user. A brand-new subscription_created always
@@ -225,9 +245,10 @@ export async function handleSubscriptionWebhook(
     return { status: 200, body: { ok: true } };
   }
 
-  // --- Subscription-invoice events (payment success/failed/refunded) ---
+  // --- Subscription-invoice events (payment success/failed/refunded/recovered) ---
   if (
     eventName === "subscription_payment_success" ||
+    eventName === "subscription_payment_recovered" ||
     eventName === "subscription_payment_failed" ||
     eventName === "subscription_payment_refunded"
   ) {
@@ -236,7 +257,7 @@ export async function handleSubscriptionWebhook(
     if (!subscriptionId) return { status: 400, body: { error: "Missing subscription id." } };
     if (invAttrs.currency && invAttrs.currency !== "USD") {
       logError("subscription-invoice-currency", { eventName, invoiceId: dataId, currency: invAttrs.currency });
-      return { status: 400, body: { error: "Unexpected currency." } };
+      return { status: 500, body: { error: "Unexpected currency." } };
     }
     // Fetch the subscription to learn the tier/interval (the invoice
     // carries no variant). Verify it against the API first.
@@ -247,7 +268,7 @@ export async function handleSubscriptionWebhook(
     }
     const apiAttrs = (apiSub as { data: { attributes: SubscriptionAttrs } }).data.attributes;
     const variant = subscriptionVariantForId(String(apiAttrs.first_subscription_item?.variant_id ?? ""));
-    if (!variant) return { status: 400, body: { error: "Unrecognized subscription variant." } };
+    if (!variant) return { status: 500, body: { error: "Unrecognized subscription variant." } };
     const expectedTotal = expectedCentsForSubscription(variant.tier, variant.interval);
 
     if (eventName === "subscription_payment_failed") {
@@ -269,7 +290,7 @@ export async function handleSubscriptionWebhook(
         return { status: 500, body: { error: "Refund invoice could not be verified." } };
       }
       if (String(inv.store_id ?? "") !== expectedStoreId) {
-        return { status: 400, body: { error: "Invoice store mismatch." } };
+        return { status: 500, body: { error: "Invoice store mismatch." } };
       }
       if (String(inv.subscription_id ?? "") !== subscriptionId) {
         return { status: 400, body: { error: "Invoice subscription mismatch." } };
@@ -298,10 +319,10 @@ export async function handleSubscriptionWebhook(
       return { status: 200, body: { ok: true, refunded: result.revoked } };
     }
 
-    // subscription_payment_success: a paid invoice. Verify it
-    // (paid, same store + subscription, amount matches the tier)
-    // before granting anything. A plan-change invoice
-    // (billing_reason "updated") is not a new month — skip it.
+    // subscription_payment_success / subscription_payment_recovered:
+    // a paid invoice. Verify it (paid, same store + subscription,
+    // amount matches the tier) before granting anything. A plan-change
+    // invoice (billing_reason "updated") is not a new month — skip it.
     if (invAttrs.billing_reason === "updated") {
       log("subscription-invoice-updated-skipped", { subscriptionId, invoiceId: dataId });
       return { status: 200, body: { ok: true, ignored: "updated" } };

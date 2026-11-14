@@ -551,12 +551,47 @@ export async function getSubscriptionInvoice(
 }
 
 /**
+ * List the most recent subscription invoices for a store, newest
+ * first (the API orders by created_at descending). Used by the
+ * daily subscription reconcile cron, which checks each paid
+ * invoice has a monthly grant in the database. Returns the parsed
+ * JSON:API payload, or null when it cannot be retrieved (no API
+ * key, non-OK status, network failure, bad JSON). Never throws.
+ * fetchFn is injectable so tests never call the live API.
+ */
+export async function listSubscriptionInvoices(
+  storeId: string,
+  fetchFn: typeof fetch = fetch,
+  timeoutMs = 8000,
+  limit = 50
+) {
+  const apiKey = process.env.LEMONSQUEEZY_API_KEY?.trim();
+  if (!apiKey || !storeId) return null;
+  try {
+    const url = `${API_BASE}/subscription-invoices?filter%5Bstore_id%5D=${encodeURIComponent(storeId)}&page%5Bsize%5D=${limit}`;
+    const res = await fetchFn(url, {
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        Accept: "application/vnd.api+json",
+      },
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Does the invoice the API returned match the one the webhook
  * claims? Same id, same store, same subscription, status paid, and
  * the total matches the expected charge for that subscription's
- * tier + interval (tax-on-top accepted, discounts/underpayment
- * refused — the same rule as verifyOrderAmount). A mismatch is a
- * 500 (retry), never a grant.
+ * tier + interval (tax-on-top accepted; a discount code that
+ * lowers the total is accepted when discount_total explains the
+ * gap; any other lower total is underpayment and refused — the
+ * same rule as verifyOrderAmount, plus the discount case).
+ * A mismatch is a 500 (retry), never a grant.
  */
 export function verifyApiSubscriptionInvoice(
   invoice: unknown,
@@ -579,6 +614,7 @@ export function verifyApiSubscriptionInvoice(
     subscription_id?: unknown;
     total?: number | string;
     subtotal?: number | string;
+    discount_total?: number | string;
   };
   if (attrs.status !== "paid") return false;
   if (String(attrs.store_id ?? "") !== expected.storeId) return false;
@@ -587,6 +623,23 @@ export function verifyApiSubscriptionInvoice(
   if (total === expected.expectedTotalCents) return true;
   const subtotal = Number(attrs.subtotal);
   if (subtotal === expected.expectedTotalCents && total > expected.expectedTotalCents) return true;
+  // A discount code lowers the total below the tier price: accept
+  // when the subtotal still matches the tier, a discount was
+  // actually applied, and the total is no lower than subtotal
+  // minus the discount (tax on top of the discounted price is
+  // allowed, so the total may sit above that floor). Without a
+  // discount a lower total is still underpayment and is rejected.
+  // discount_total is a positive integer in cents on the
+  // subscription-invoice object (Lemon Squeezy API docs).
+  const discountTotal = Number(attrs.discount_total ?? 0);
+  if (
+    subtotal === expected.expectedTotalCents &&
+    discountTotal > 0 &&
+    total < expected.expectedTotalCents &&
+    total >= subtotal - discountTotal
+  ) {
+    return true;
+  }
   return false;
 }
 

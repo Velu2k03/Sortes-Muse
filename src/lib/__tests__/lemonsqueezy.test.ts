@@ -9,6 +9,7 @@ import {
   createCheckout,
   getOrder,
   verifyApiOrder,
+  listSubscriptionInvoices,
 } from "@/lib/lemonsqueezy";
 
 describe("lemonsqueezy helpers", () => {
@@ -357,5 +358,37 @@ describe("lemonsqueezy helpers", () => {
       expect(elapsed).toBeLessThan(1000);
       expect(fetchFn).toHaveBeenCalledTimes(1);
     }, 1500);
+  });
+
+  describe("listSubscriptionInvoices", () => {
+    it("lists the store's invoices, newest first, page size 50", async () => {
+      let capturedUrl: unknown;
+      const payload = { data: [], meta: { page: { total: 0 } } };
+      const fetchFn = vi.fn(async (url: unknown) => {
+        capturedUrl = url;
+        return { ok: true, json: async () => payload };
+      });
+      const result = await listSubscriptionInvoices("42", fetchFn as unknown as typeof fetch);
+      expect(result).toEqual(payload);
+      expect(String(capturedUrl)).toContain("/v1/subscription-invoices?");
+      expect(String(capturedUrl)).toContain("filter%5Bstore_id%5D=42");
+      expect(String(capturedUrl)).toContain("page%5Bsize%5D=50");
+    });
+
+    it("returns null on a non-OK response and never throws", async () => {
+      const fetchFn = vi.fn(async () => ({ ok: false, status: 500 }));
+      await expect(
+        listSubscriptionInvoices("42", fetchFn as unknown as typeof fetch)
+      ).resolves.toBeNull();
+    });
+
+    it("returns null without an API key (fail closed, no unauthenticated call)", async () => {
+      delete process.env.LEMONSQUEEZY_API_KEY;
+      const fetchFn = vi.fn(async () => ({ ok: true, json: async () => ({ data: [] }) }));
+      await expect(
+        listSubscriptionInvoices("42", fetchFn as unknown as typeof fetch)
+      ).resolves.toBeNull();
+      expect(fetchFn).not.toHaveBeenCalled();
+    });
   });
 });
