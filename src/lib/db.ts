@@ -68,6 +68,15 @@ export {
   fulfillOrder,
   revokeOrder,
 } from "./db/orders";
+export type { DbSubscription } from "./db/types";
+export {
+  upsertSubscription,
+  getSubscriptionByProviderId,
+  getActiveSubscriptionForUser,
+  listActiveAnnualSubscriptions,
+  expireMonthlyBalance,
+  revokeSubscriptionGrant,
+} from "./db/subscriptions";
 export type { FollowUpAppendResult } from "./db/readings";
 export {
   saveReadingForUser,

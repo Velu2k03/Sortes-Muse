@@ -15,6 +15,7 @@ import {
 import type { ReportType, SavedReport } from "@/lib/reports";
 import { generateChat } from "@/lib/ai";
 import { preCheckOracleBalance } from "@/lib/credit-precheck";
+import { reportCost } from "@/lib/subscription-tiers";
 import { validateReportText, anchorTerms } from "@/lib/output-validation";
 import { checkRateLimit, clientIp, ipLimitKey, rateLimitExceeded, RATE_LIMITS } from "@/lib/rateLimit";
 
@@ -167,7 +168,7 @@ export async function POST(req: NextRequest) {
   // credits got a full model call and only then a 402. The spend
   // after generation stays as the atomic enforcement.
   // F11: shared helper (src/lib/credit-precheck.ts). No free use here.
-  const preCheck = await preCheckOracleBalance(session.userId, true, "report");
+  const preCheck = await preCheckOracleBalance(session.userId, true, "report", reportCost());
   if (preCheck.denied) return preCheck.denied;
 
   // One shared client (src/lib/ai.ts): the :free chain, per-model
@@ -233,7 +234,7 @@ export async function POST(req: NextRequest) {
   // Spend only after a real generation, in the same transaction as the
   // report row. If the balance cannot cover it, nothing is written and the
   // text is withheld rather than delivered unpaid.
-  const saved = await saveReportWithSpend(session.userId, { ...report });
+  const saved = await saveReportWithSpend(session.userId, { ...report }, reportCost());
   if (saved.conflict) {
     return NextResponse.json(
       { error: "That report id is already in use. No Oracle was spent." },

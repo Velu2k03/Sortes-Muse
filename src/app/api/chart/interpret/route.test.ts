@@ -124,7 +124,7 @@ describe("POST /api/chart/interpret", () => {
     expect(data.interpretation).toContain("chart reflection");
     // Free claim and the reading row are one call (one transaction).
     expect(mockedSave).toHaveBeenCalledTimes(1);
-    expect(mockedSave).toHaveBeenCalledWith("u1", expect.objectContaining({ free: true }), true, "western");
+    expect(mockedSave).toHaveBeenCalledWith("u1", expect.objectContaining({ free: true }), true, "western", 1);
   });
 
   // Batch D (B4): the server stores the interpretation and returns it with
@@ -136,7 +136,7 @@ describe("POST /api/chart/interpret", () => {
       req({ system: "western", chart: CHART, category: "general", chartSummary: "Western chart. Sun: Aries." }, "10.0.2.6")
     );
     const data = await res.json();
-    expect(mockedSave).toHaveBeenCalledWith("u1", expect.objectContaining({ free: false }), false, "western");
+    expect(mockedSave).toHaveBeenCalledWith("u1", expect.objectContaining({ free: false }), false, "western", 1);
     const saved = mockedSave.mock.calls[0][1] as unknown as { id: string; interpretation: string; chartSummary: string; spreadSlug: string };
     expect(data.reading.id).toBe(saved.id);
     expect(saved.interpretation).toBe(data.interpretation);
@@ -206,6 +206,6 @@ describe("POST /api/chart/interpret", () => {
     expect(res.status).toBe(200);
     const data = await res.json();
     expect(data.free).toBe(false);
-    expect(mockedSave).toHaveBeenCalledWith("u1", expect.anything(), true, "western");
+    expect(mockedSave).toHaveBeenCalledWith("u1", expect.anything(), true, "western", 1);
   });
 });

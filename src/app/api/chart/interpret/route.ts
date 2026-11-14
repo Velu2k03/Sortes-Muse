@@ -6,6 +6,7 @@ import { getReadingForUser, getUserById, hasUsedFreeInterpretation, saveReadingW
 import { isUuid } from "@/lib/ids";
 import { generateChat } from "@/lib/ai";
 import { preCheckOracleBalance } from "@/lib/credit-precheck";
+import { chartCost } from "@/lib/subscription-tiers";
 import { validateChartText, anchorTerms } from "@/lib/output-validation";
 import { checkRateLimit, clientIp, ipLimitKey, rateLimitExceeded, RATE_LIMITS } from "@/lib/rateLimit";
 
@@ -305,7 +306,7 @@ Write the personalized chart reflection now.`;
   // spend after generation stays as the atomic enforcement; this is
   // the early, quota-saving check.
   // F11: shared helper (src/lib/credit-precheck.ts).
-  const preCheck = await preCheckOracleBalance(session.userId, !serverFree, "interpretation");
+  const preCheck = await preCheckOracleBalance(session.userId, !serverFree, "interpretation", chartCost());
   if (preCheck.denied) return preCheck.denied;
   // One shared client (src/lib/ai.ts): the :free chain, per-model
   // timeout, retry across models, structured failure logging.
@@ -370,7 +371,7 @@ Write the personalized chart reflection now.`;
     free: serverFree,
     chartSummary: chartSummary || `${systemName} chart.`,
   };
-  const saved = await saveReadingWithSpend(session.userId, reading, serverFree, system);
+  const saved = await saveReadingWithSpend(session.userId, reading, serverFree, system, chartCost());
   if (saved.conflict) {
     return NextResponse.json(
       { error: "That reading id is already in use. No Oracle was spent." },

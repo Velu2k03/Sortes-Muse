@@ -4,8 +4,13 @@ import {
   readingsForVariant,
   packIdForVariant,
   verifyOrderAmount,
+  verifyTopUpOrderAmount,
   getOrder,
   verifyApiOrder,
+  verifyApiTopUpOrder,
+  topUpCreditsForVariant,
+  topUpIdForVariant,
+  subscriptionVariantForId,
 } from "@/lib/lemonsqueezy";
 import {
   getUserByEmail,
@@ -15,19 +20,28 @@ import {
   revokeOrder,
   type DbUser,
 } from "@/lib/db";
+import { handleSubscriptionWebhook } from "@/lib/subscription-webhook";
+import { CREDIT_COSTS_ENABLED } from "@/lib/subscription-tiers";
 
 export const dynamic = "force-dynamic";
 
 /**
  * Lemon Squeezy webhook. Verifies the HMAC signature, then:
- * - `order_created`: verifies the store, currency and amount against
- *   the expected pack values in the signed payload, then confirms
- *   the order independently against the Lemon Squeezy API (Phase B,
- *   R4: paid, same order id, same store, same variant and amount)
- *   before fulfilling atomically (transaction row + credit grant in
- *   one DB transaction, idempotent per order). An API lookup failure
- *   or mismatch returns 500 so Lemon Squeezy retries; it never
- *   fulfils on an unverified order.
+ * - `subscription_*`: delegated to src/lib/subscription-webhook.ts
+ *   — the month is granted on subscription_payment_success, expiry
+ *   zeroes the remaining monthly balance, a refund revokes that
+ *   period's grant. A subscription purchase ALSO arrives as an
+ *   order_created; it is skipped in the order branch below so the
+ *   month is never granted twice.
+ * - `order_created`: a pack purchase (or a top-up once the
+ *   credit-cost flag is ON) — verifies the store, currency and
+ *   amount against the expected values in the signed payload, then
+ *   confirms the order independently against the Lemon Squeezy API
+ *   (Phase B, R4: paid, same order id, same store, same variant
+ *   and amount) before fulfilling atomically (transaction row +
+ *   credit grant in one DB transaction, idempotent per order). An
+ *   API lookup failure or mismatch returns 500 so Lemon Squeezy
+ *   retries; it never fulfils on an unverified order.
  * - `order_refunded`: verifies the store id in the payload (Phase B,
  *   R14) before revoking the granted credits idempotently, never
  *   driving the balance below 0.
@@ -63,6 +77,7 @@ export async function POST(req: NextRequest) {
           store_id?: number;
           status?: string;
           first_order_item?: { variant_id?: number };
+          first_subscription_item?: { variant_id?: number } | null;
         };
       };
     };
@@ -73,6 +88,16 @@ export async function POST(req: NextRequest) {
     }
 
     eventName = event.meta?.event_name ?? null;
+
+    // Phase 2 batch 3: subscription events carry a subscription /
+    // invoice id, not an order id, and are handled by their own
+    // module (verify against the API, grant the month on payment
+    // success, expire/revoke on the matching events).
+    if (eventName?.startsWith("subscription_")) {
+      const result = await handleSubscriptionWebhook(eventName, event);
+      return NextResponse.json(result.body, { status: result.status });
+    }
+
     orderId = event.data?.id ?? "";
 
     // Phase G follow-up: a handled event with no order id can never
@@ -128,7 +153,31 @@ export async function POST(req: NextRequest) {
     const attrs = event.data?.attributes;
     const email = (attrs?.user_email ?? "").trim().toLowerCase();
     const variantId = String(attrs?.first_order_item?.variant_id ?? "");
-    const readings = readingsForVariant(variantId);
+    // Phase 2 batch 3: a subscription purchase always arrives as an
+    // order_created alongside subscription_created. Skip it here —
+    // the subscription branch grants the month on payment success,
+    // and granting on both would double-grant. Detected two ways:
+    // the payload carries a first_subscription_item, or the variant
+    // is one of the configured subscription variants.
+    const isSubscriptionOrder =
+      (typeof attrs?.first_subscription_item === "object" && attrs?.first_subscription_item !== null) ||
+      subscriptionVariantForId(variantId) !== null;
+    if (isSubscriptionOrder) {
+      console.log(
+        JSON.stringify({
+          source: "sortes-webhook",
+          event: "order-subscription-skipped",
+          orderId,
+          variantId,
+        })
+      );
+      return NextResponse.json({ ok: true, ignored: "subscription" });
+    }
+    // Phase 2 batch 3: a top-up order grants credits (never
+    // Oracles). It is not a pack, so readingsForVariant is null for
+    // it — the top-up path below handles it.
+    const topUpCredits = topUpCreditsForVariant(variantId);
+    const readings = topUpCredits === null ? readingsForVariant(variantId) : topUpCredits;
     if (!email || readings === null) {
       return NextResponse.json({ error: "Unrecognized order." }, { status: 400 });
     }
@@ -137,10 +186,11 @@ export async function POST(req: NextRequest) {
     }
 
     // Phase 1 (1.4): the order must be for this store, in USD, and for
-    // the pack's price. A signed webhook is already authentic, so a
-    // mismatch here means the store is misconfigured (wrong variant
-    // price, tax/discount surprise) — refuse to grant, and log it loudly
-    // instead of silently fulfilling the wrong pack.
+    // the pack's (or top-up's) price. A signed webhook is already
+    // authentic, so a mismatch here means the store is misconfigured
+    // (wrong variant price, tax/discount surprise) — refuse to grant,
+    // and log it loudly instead of silently fulfilling the wrong
+    // product.
     const expectedStoreId = process.env.LEMONSQUEEZY_STORE_ID;
     if (!expectedStoreId || String(attrs?.store_id ?? "") !== expectedStoreId) {
       console.error(`[webhook] order ${orderId}: store_id mismatch (got ${attrs?.store_id}, expected ${expectedStoreId ?? "unset"}). Not fulfilling.`);
@@ -150,7 +200,11 @@ export async function POST(req: NextRequest) {
       console.error(`[webhook] order ${orderId}: unexpected currency ${attrs?.currency}. Not fulfilling.`);
       return NextResponse.json({ error: "Unexpected currency." }, { status: 400 });
     }
-    if (!verifyOrderAmount(attrs, variantId)) {
+    const amountOk =
+      topUpCredits === null
+        ? verifyOrderAmount(attrs, variantId)
+        : verifyTopUpOrderAmount(attrs, variantId);
+    if (!amountOk) {
       console.error(`[webhook] order ${orderId}: amount mismatch (total ${attrs?.total}, subtotal ${attrs?.subtotal}) for variant ${variantId}. Not fulfilling.`);
       return NextResponse.json({ error: "Amount mismatch." }, { status: 400 });
     }
@@ -163,8 +217,14 @@ export async function POST(req: NextRequest) {
     // Lemon Squeezy retries: a transient API outage must not drop a
     // paid order, and a genuinely mismatched order must not be
     // fulfilled while a human fixes the configuration.
+    // Phase 2 batch 3: top-ups verify against their own price
+    // (verifyApiOrder is pack-derived and returns false for them).
     const apiOrder = await getOrder(orderId);
-    if (!verifyApiOrder(apiOrder, { orderId, storeId: expectedStoreId, variantId })) {
+    const apiOk =
+      topUpCredits === null
+        ? verifyApiOrder(apiOrder, { orderId, storeId: expectedStoreId, variantId })
+        : verifyApiTopUpOrder(apiOrder, { orderId, storeId: expectedStoreId, variantId });
+    if (!apiOk) {
       console.error(
         JSON.stringify({
           source: "sortes-webhook",
@@ -218,13 +278,22 @@ export async function POST(req: NextRequest) {
       user = (await getUserByEmail(email)) ?? (await createUser(email));
     }
     const amount = Number(attrs?.total ?? 0) / 100;
+    // Phase 2 batch 3: the grant unit. Packs grant Oracles while the
+    // credit-cost flag is OFF and credits (Oracles x 300) once it is
+    // ON; top-ups always grant credits. fulfillOrder records the
+    // granted amount on the transaction row, so a later refund reads
+    // the same unit the grant used.
+    const isTopUp = topUpCredits !== null;
     const result = await fulfillOrder({
       userId: user.id,
       email: user.email,
-      packType: `${packIdForVariant(variantId)} (lemonsqueezy:${orderId})`,
+      packType: isTopUp
+        ? `${topUpIdForVariant(variantId)} (lemonsqueezy:${orderId})`
+        : `${packIdForVariant(variantId)} (lemonsqueezy:${orderId})`,
       amount,
       readings,
       orderId,
+      grantUnit: isTopUp ? "credits" : CREDIT_COSTS_ENABLED ? "credits" : "oracles",
     });
     if (result.duplicate) return NextResponse.json({ ok: true, duplicate: true });
     console.log(
@@ -234,6 +303,7 @@ export async function POST(req: NextRequest) {
         orderId,
         userId: user.id,
         readings,
+        grantUnit: isTopUp ? "credits" : CREDIT_COSTS_ENABLED ? "credits" : "oracles",
       })
     );
 

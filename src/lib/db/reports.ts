@@ -42,7 +42,14 @@ export async function saveReportForUser(userId: string, report: { id: string; [k
 // id and is a no-op (ON CONFLICT DO NOTHING).
 export async function saveReportWithSpend(
   userId: string,
-  report: { id: string; [k: string]: unknown }
+  report: { id: string; [k: string]: unknown },
+  /**
+   * Phase 2 batch 3: the flag-aware cost of a report (1 while the
+   * credit-cost flag is OFF; 300 once it is ON, from reportCost at
+   * the call site). Defaults to 1 so older callers keep the Oracle
+   * unit.
+   */
+  cost = 1
 ): Promise<{ ok: boolean; existing?: boolean; conflict?: boolean }> {
   assertUuid(report.id);
   await ensureSchema();
@@ -56,7 +63,9 @@ export async function saveReportWithSpend(
       if (prior.length > 0) return { ok: true, existing: true };
       // Phase 2 batch 2: 1 per report, monthly first. Null means
       // insufficient — nothing spent, no report row written.
-      const spent = await spendFromLedgers(tx, userId, 1);
+      // Phase 2 batch 3: `cost` is the flag-aware price (1 while
+      // the flag is OFF; 300 once it is ON).
+      const spent = await spendFromLedgers(tx, userId, cost);
       if (!spent) return { ok: false };
       const inserted = await tx`INSERT INTO reports (id, user_id, data, created_at)
         VALUES (${report.id}, ${userId}, ${jsonbParam(report)}, NOW())
@@ -84,7 +93,7 @@ export async function saveReportWithSpend(
   if (list.some((r) => r.id === report.id && r.user_id === userId)) return { ok: true, existing: true };
   if (list.some((r) => r.id === report.id)) return { ok: false, conflict: true };
   const u = db.users.find((x) => x.id === userId);
-  if (!applySpendToUser(u, 1)) return { ok: false };
+  if (!applySpendToUser(u, cost)) return { ok: false };
   list.unshift({ id: report.id, user_id: userId, data: report, created_at: new Date().toISOString() });
   await writeLocal(db);
   return { ok: true };

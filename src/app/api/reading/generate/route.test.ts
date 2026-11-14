@@ -145,7 +145,7 @@ describe("POST /api/reading/generate — first free Quick Insight", () => {
     const { done: data } = await readRouteSse(res);
     expect(data?.free).toBe(true);
     expect(data?.interpretation).toContain("The Fool");
-    expect(mockedSave).toHaveBeenCalledWith("u1", expect.objectContaining({ interpretation: expect.stringContaining("The Fool") }), true);
+    expect(mockedSave).toHaveBeenCalledWith("u1", expect.objectContaining({ interpretation: expect.stringContaining("The Fool") }), true, undefined, 1);
   });
 
   it("charges a signed-in user on the second Quick Insight", async () => {
@@ -154,7 +154,7 @@ describe("POST /api/reading/generate — first free Quick Insight", () => {
     const res = await POST(req(body("quick-insight"), "10.0.0.2"));
     expect(res.status).toBe(200);
     expect((await readRouteSse(res)).done?.free).toBe(false);
-    expect(mockedSave).toHaveBeenCalledWith("u1", expect.objectContaining({ interpretation: expect.stringContaining("The Fool") }), false);
+    expect(mockedSave).toHaveBeenCalledWith("u1", expect.objectContaining({ interpretation: expect.stringContaining("The Fool") }), false, undefined, 1);
   });
 
   // Phase B (R7): the free claim is atomic. When a concurrent
@@ -169,7 +169,7 @@ describe("POST /api/reading/generate — first free Quick Insight", () => {
     const { done: data } = await readRouteSse(res);
     expect(data?.free).toBe(false);
     expect(data?.interpretation).toContain("The Fool");
-    expect(mockedSave).toHaveBeenCalledWith("u1", expect.objectContaining({ interpretation: expect.stringContaining("The Fool") }), true);
+    expect(mockedSave).toHaveBeenCalledWith("u1", expect.objectContaining({ interpretation: expect.stringContaining("The Fool") }), true, undefined, 1);
   });
 
   it("returns 402 when the lost-race spend cannot be covered", async () => {
@@ -243,7 +243,7 @@ describe("POST /api/reading/generate — first free Quick Insight", () => {
     const res = await POST(req(body("past-present-future"), "10.0.0.4"));
     expect(res.status).toBe(200);
     expect((await readRouteSse(res)).done?.free).toBe(false);
-    expect(mockedSave).toHaveBeenCalledWith("u1", expect.objectContaining({ interpretation: expect.stringContaining("The Fool") }), false);
+    expect(mockedSave).toHaveBeenCalledWith("u1", expect.objectContaining({ interpretation: expect.stringContaining("The Fool") }), false, undefined, 1);
   });
 
   // Batch 2b: the route streams, so it cannot set the guest-free

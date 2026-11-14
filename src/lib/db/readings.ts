@@ -42,7 +42,14 @@ export async function saveReadingWithSpend(
   userId: string,
   reading: { id: string; free: boolean; [k: string]: unknown },
   tryFree: boolean,
-  freeSystem?: string
+  freeSystem?: string,
+  /**
+   * Phase 2 batch 3: the flag-aware cost of this reading (1 while
+   * the credit-cost flag is OFF; 100/200/300 once it is ON, from
+   * readingCostForSpreadCards / chartCost at the call site).
+   * Defaults to 1 so older callers keep the Oracle unit.
+   */
+  cost = 1
 ): Promise<{ ok: boolean; free: boolean; existing?: boolean; conflict?: boolean }> {
   assertUuid(reading.id);
   await ensureSchema();
@@ -67,7 +74,9 @@ export async function saveReadingWithSpend(
       if (!free) {
         // Phase 2 batch 2: 1 per reading, monthly first. Null means
         // insufficient — nothing spent, no reading row written.
-        const spent = await spendFromLedgers(tx, userId, 1);
+        // Phase 2 batch 3: `cost` is the flag-aware price (1 while
+        // the flag is OFF; 100/200/300 once it is ON).
+        const spent = await spendFromLedgers(tx, userId, cost);
         if (!spent) return { ok: false, free: false };
       }
       const data = { ...reading, free };
@@ -114,7 +123,7 @@ export async function saveReadingWithSpend(
   }
   if (!free) {
     const u = db.users.find((x) => x.id === userId);
-    if (!applySpendToUser(u, 1)) return { ok: false, free: false };
+    if (!applySpendToUser(u, cost)) return { ok: false, free: false };
   }
   db.readings.unshift({
     id: reading.id,

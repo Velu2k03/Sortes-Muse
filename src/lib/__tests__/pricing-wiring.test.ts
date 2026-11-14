@@ -3,14 +3,16 @@ import { readFileSync, existsSync } from "fs";
 import path from "path";
 
 // Sortes Phase 2 batch 1 (Velu, 2026-11-14): the Astryx scoped
-// pilot — pricing page UI only. No billing, no checkout wiring, no
-// ledger changes: subscription variants do not exist yet, so the
-// tier buttons are disabled placeholders and the page links to
-// /oracles for the packs that exist today. Copy is asserted on the
-// actual data and JSX elements, not the whole file: the comments
-// above the TIERS array quote the numbers, so a whole-file
-// toContain would pass even if the rendered values were reverted
-// (remodel wiring lesson).
+// pilot — pricing page UI only. Phase 2 batch 3 wired the
+// checkout: the tier buttons call POST /api/checkout/subscription
+// (kind "subscription") and the top-up cards call the same route
+// (kind "topup"), enabled only when the Lemon Squeezy variants
+// are configured (props from the server page). Until then the
+// buttons stay disabled and the page shows "Coming soon".
+// Copy is asserted on the actual data and JSX elements, not the
+// whole file: the comments above the TIERS array quote the
+// numbers, so a whole-file toContain would pass even if the
+// rendered values were reverted (remodel wiring lesson).
 //
 // Deliberately NOT on this page: GradientText / ShinyText (the
 // shadcn CLI vendored them cleanly, but both fail the repo lint
@@ -167,16 +169,24 @@ describe("Pricing video formula: one badge, one lifted tier, one primary button"
     expect(c).toContain('radius="1.5rem"');
   });
 
-  it("has one primary button (Star) and outlined secondary on Spark/Moon", () => {
+  it("has one primary button (Star) and outlined secondary on Spark/Moon, plus a secondary top-up button", () => {
     const c = client();
-    expect([...c.matchAll(/<Button/g)].length).toBe(1);
-    const button = c.match(/<Button[\s\S]*?\/>/);
-    expect(button).not.toBeNull();
-    expect((button as RegExpMatchArray)[0]).toContain(
-      'variant={tier.id === "star" ? "primary" : "secondary"}'
-    );
-    expect((button as RegExpMatchArray)[0]).toContain("isDisabled");
-    expect((button as RegExpMatchArray)[0]).toContain("label={`Choose ${tier.name}`}");
+    // Phase 2 batch 3: two Buttons — the tier button and the
+    // top-up button. The tier button is primary on Star, secondary
+    // on Spark/Moon; the top-up button is always secondary.
+    expect([...c.matchAll(/<Button/g)].length).toBe(2);
+    const buttons = [...c.matchAll(/<Button[\s\S]*?\/>/g)].map((m) => m[0]);
+    expect(buttons).toHaveLength(2);
+    const tierButton = buttons.find((b) => b.includes("Choose ${tier.name}"));
+    expect(tierButton).toBeDefined();
+    expect(tierButton).toContain('variant={tier.id === "star" ? "primary" : "secondary"}');
+    // Gated on the server prop: disabled until the variants are
+    // configured, enabled after.
+    expect(tierButton).toContain("isDisabled={!subscriptionsEnabled}");
+    const topUpButton = buttons.find((b) => b.includes("Top up ${topup.credits.toLocaleString()}"));
+    expect(topUpButton).toBeDefined();
+    expect(topUpButton).toContain('variant="secondary"');
+    expect(topUpButton).toContain("isDisabled={!topupsEnabled}");
   });
 });
 
@@ -237,12 +247,14 @@ describe("Pricing toggle, savings, top-ups, credit costs", () => {
   });
 });
 
-describe("Pricing honesty: disabled CTAs, packs link, no checkout wiring", () => {
-  it("renders disabled tier buttons and the subscriptions-open-soon line to /oracles", () => {
+describe("Pricing honesty: gated CTAs, packs link, checkout wiring", () => {
+  it("renders tier buttons gated on the config prop, and the subscriptions-open-soon line to /oracles when disabled", () => {
     const c = client();
     const button = c.match(/<Button[\s\S]*?\/>/);
     expect(button).not.toBeNull();
-    expect((button as RegExpMatchArray)[0]).toContain("isDisabled");
+    // Phase 2 batch 3: the tier button is disabled only while the
+    // variants are unconfigured (the server prop), not forever.
+    expect((button as RegExpMatchArray)[0]).toContain("isDisabled={!subscriptionsEnabled}");
     expect(c).toContain("Subscriptions open soon — Oracle packs available now.");
     const link = c.match(
       /<Link href="\/oracles"[^>]*>([\s\S]*?)<\/Link>/
@@ -251,16 +263,23 @@ describe("Pricing honesty: disabled CTAs, packs link, no checkout wiring", () =>
     expect((link as RegExpMatchArray)[1]).toContain("See Oracle packs");
   });
 
-  it("wires nothing to checkout: no Lemon Squeezy, no checkout route, no invented route", () => {
+  it("wires checkout to the subscription route only (no invented route)", () => {
+    // Phase 2 batch 3: the tier and top-up buttons POST to the one
+    // subscription checkout route. No Lemon Squeezy client call, no
+    // invented /pricing/checkout or /subscribe route.
     const c = client();
     const p = page();
-    expect(c).not.toContain("lemonsqueezy");
-    expect(c).not.toContain("/api/checkout");
-    expect(c).not.toContain("window.location");
-    expect(p).not.toContain("lemonsqueezy");
-    expect(p).not.toContain("/api/checkout");
+    expect(c).toContain('fetch("/api/checkout/subscription"');
+    expect(c).toContain('checkout("subscription",');
+    expect(c).toContain('checkout("topup",');
+    expect(c).toContain("window.location.assign(data.url)");
     expect(c).not.toContain("/pricing/checkout");
     expect(c).not.toContain("/subscribe");
+    expect(p).not.toContain("/api/checkout");
+    expect(p).toContain("subscriptionsConfigured()");
+    expect(p).toContain("topUpsConfigured()");
+    expect(p).toContain("subscriptionsEnabled={subscriptionsConfigured()}");
+    expect(p).toContain("topupsEnabled={topUpsConfigured()}");
   });
 
   it("leaves /oracles untouched: the packs are still there", () => {
@@ -363,12 +382,18 @@ describe("Pricing page: Astryx pilot wiring", () => {
     expect(p).toContain('import { sortesTheme } from "@/themes/sortes/sortes.js";');
     expect(p).toContain('import { Theme } from "@astryxdesign/core/theme";');
     expect(p).toContain('<Theme theme={sortesTheme} mode="dark">');
-    expect(p).toContain("<PricingClient />");
+    // Phase 2 batch 3: the page passes the Lemon Squeezy config
+    // (read at request time) into the client as props.
+    expect(p).toContain("<PricingClient");
+    expect(p).toContain("subscriptionsEnabled={subscriptionsConfigured()}");
+    expect(p).toContain("topupsEnabled={topUpsConfigured()}");
     expect(p).toContain('title: "Pricing"');
     expect(p).toContain('canonical: "/pricing"');
-    // Sonnet nit (PR #86): the meta/OG descriptions are search
-    // snippets, so they must not promise subscriptions as live.
-    expect(p).toContain("Sortes subscriptions, coming soon:");
+    // Phase 2 batch 3: the meta/OG descriptions describe the live
+    // subscriptions (the checkout is wired); the "Coming soon"
+    // state is a client-side badge, gated on the config props.
+    expect(p).toContain("Sortes subscriptions: Spark $7.99");
+    expect(p).not.toContain("coming soon");
   });
 
   it("renders tiers with Astryx Card / Badge / Button, StarBorder, CountUp", () => {
@@ -394,12 +419,14 @@ describe("Pricing page: Astryx pilot wiring", () => {
     expect(c).toContain("<VStack");
     expect(c).toContain("<HStack");
     expect(c).toContain("<Grid");
-    // The only raw <div> left is the mt-auto spacer inside each
-    // Card that pushes the button to the bottom — Astryx has no
+    // Two raw <div>s left: the mt-auto spacer inside each tier Card
+    // that pushes the button to the bottom, and the mt-4 wrapper
+    // around the top-up button (Phase 2 batch 3) — Astryx has no
     // Spacer component. Count JSX divs only: the file's comments
     // mention <div> twice, so match the className form.
-    expect([...c.matchAll(/<div className="/g)].length).toBe(1);
+    expect([...c.matchAll(/<div className="/g)].length).toBe(2);
     expect(c).toContain('<div className="mt-auto pt-6">');
+    expect(c).toContain('<div className="mt-4">');
   });
 
   it("uses no dropped or forbidden bits on this page", () => {

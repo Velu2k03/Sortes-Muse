@@ -10,6 +10,7 @@ import { computeSpreadFacts, type FactCard } from "@/lib/spread-facts";
 import { generateChatStream } from "@/lib/ai";
 import { sseEvent, sseResponse } from "@/lib/sse-server";
 import { preCheckOracleBalance } from "@/lib/credit-precheck";
+import { readingCostForSpreadCards } from "@/lib/subscription-tiers";
 import { validateReadingText } from "@/lib/output-validation";
 import { logGuestGeneration } from "@/lib/guestLogging";
 import { checkRateLimit, clientIp, ipLimitKey, isRateLimited, rateLimitExceeded, recordRateLimit, RATE_LIMITS } from "@/lib/rateLimit";
@@ -341,13 +342,27 @@ export async function POST(req: NextRequest) {
     // Unknown slug: keep the raw slug as the label.
   }
 
+  // Phase 2 batch 3: the flag-aware cost of this reading. The
+  // spread names the product (1-card 100, 3-card 200, celtic-cross
+  // 300 once the flag is ON; 1 while it is OFF). An unknown slug
+  // falls back to the drawn card count, so a custom spread is
+  // priced by what was actually drawn.
+  const readingCost = (() => {
+    try {
+      if (body.spreadSlug) return readingCostForSpreadCards(getSpread(body.spreadSlug).cards);
+    } catch {
+      // Unknown slug: fall through to the card count.
+    }
+    return readingCostForSpreadCards(cards.length);
+  })();
+
   // Phase 6 (N5): check the balance BEFORE calling the model. A
   // signed-in user with 0 credits and no free use got a full model
   // call and only then a 402 — wasted quota on every attempt. The
   // spend after generation stays as the atomic enforcement; this is
   // the early, quota-saving check.
   // F11: shared helper (src/lib/credit-precheck.ts).
-  const preCheck = await preCheckOracleBalance(session?.userId, !!session && !serverFree, "reading");
+  const preCheck = await preCheckOracleBalance(session?.userId, !!session && !serverFree, "reading", readingCost);
   if (preCheck.denied) return preCheck.denied;
 
   // Batch 2b (SSE): after the pre-checks, the reading streams live.
@@ -454,7 +469,7 @@ export async function POST(req: NextRequest) {
         firstName: intake.firstName,
         free: serverFree,
       };
-      const saved = await saveReadingWithSpend(session.userId, reading, serverFree);
+      const saved = await saveReadingWithSpend(session.userId, reading, serverFree, undefined, readingCost);
       if (saved.conflict) {
         send(
           sseEvent("error", {

@@ -1,6 +1,7 @@
 import { usePostgres, pg, sql, ensureSchema, txWithSignal } from "./client";
 import { readLocal, writeLocal } from "./json-store";
 import { applyGrantToUser, applyRevokeToUser } from "./ledgers";
+import { CREDIT_COSTS_ENABLED, ORACLE_TO_CREDITS } from "../subscription-tiers";
 import type { DbTransaction } from "./types";
 import { withDbTimeout } from "../db-timeout";
 import { getUserByEmail } from "./users";
@@ -73,7 +74,25 @@ type FulfillOrderArgs = {
   amount: number;
   readings: number;
   orderId: string;
+  /**
+   * Phase 2 batch 3: what unit `readings` is in. "oracles" (default,
+   * pack purchases) is multiplied by ORACLE_TO_CREDITS once the
+   * credit-cost flag is ON, so a 5-Oracle pack grants 1,500 credits;
+   * "credits" (top-ups) is already in credits and is granted
+   * as-is. The stored transaction row records the granted amount.
+   */
+  grantUnit?: "oracles" | "credits";
 };
+
+/**
+ * The amount actually granted for an order, in the balance's
+ * current unit. Packs are denominated in Oracles until the flag
+ * flips; top-ups are always denominated in credits.
+ */
+export function grantedCreditsForOrder(readings: number, grantUnit: "oracles" | "credits"): number {
+  if (grantUnit === "credits") return readings;
+  return CREDIT_COSTS_ENABLED ? readings * ORACLE_TO_CREDITS : readings;
+}
 
 /** Postgres branch of fulfillOrder: lock the user, dedupe, insert, grant. One transaction. */
 async function fulfillOrderPostgres(
@@ -81,6 +100,7 @@ async function fulfillOrderPostgres(
   row: DbTransaction
 ): Promise<{ transaction: DbTransaction | null; credits: number; duplicate: boolean }> {
   if (!pg) throw new Error("Database not configured");
+  const granted = grantedCreditsForOrder(args.readings, args.grantUnit ?? "oracles");
   const controller = new AbortController();
   const begin = pg.begin(async (rawTx) => {
     const tx = txWithSignal(rawTx, controller.signal);
@@ -119,11 +139,13 @@ async function fulfillOrderPostgres(
       };
     }
     await tx`INSERT INTO transactions (id, user_id, email, pack_type, amount, readings, order_id, created_at)
-      VALUES (${row.id}, ${row.user_id}, ${row.email}, ${row.pack_type}, ${row.amount}, ${row.readings}, ${args.orderId}, NOW())`;
+      VALUES (${row.id}, ${row.user_id}, ${row.email}, ${row.pack_type}, ${row.amount}, ${granted}, ${args.orderId}, NOW())`;
     // Phase 2 batch 2: a pack purchase grants PURCHASED credits
     // (never expires). `credits` in the RETURNING is the generated
     // total, so the caller's balance stays the same shape.
-    const upd = await tx`UPDATE users SET purchased_credits = purchased_credits + ${args.readings} WHERE id = ${args.userId} RETURNING credits`;
+    // Phase 2 batch 3: `granted` is the unit-aware amount (pack
+    // Oracles × 300 once the flag is ON; top-up credits as-is).
+    const upd = await tx`UPDATE users SET purchased_credits = purchased_credits + ${granted} WHERE id = ${args.userId} RETURNING credits`;
     if (upd.length === 0) throw new Error("User not found during fulfillment");
     return { transaction: row, credits: (upd[0] as { credits: number }).credits, duplicate: false };
   });
@@ -135,6 +157,7 @@ async function fulfillOrderLocal(
   args: FulfillOrderArgs,
   row: DbTransaction
 ): Promise<{ transaction: DbTransaction | null; credits: number; duplicate: boolean }> {
+  const granted = grantedCreditsForOrder(args.readings, args.grantUnit ?? "oracles");
   const marker = `lemonsqueezy:${args.orderId})`;
   const db = await readLocal();
   // After a refund, a redelivered order_created is treated as a duplicate
@@ -153,10 +176,10 @@ async function fulfillOrderLocal(
   }
   const u = db.users.find((x) => x.id === args.userId);
   if (!u) throw new Error("User not found during fulfillment");
-  db.transactions.unshift(row);
-  applyGrantToUser(u, "purchased", args.readings);
+  db.transactions.unshift({ ...row, readings: granted });
+  applyGrantToUser(u, "purchased", granted);
   await writeLocal(db);
-  return { transaction: row, credits: u.credits, duplicate: false };
+  return { transaction: { ...row, readings: granted }, credits: u.credits, duplicate: false };
 }
 
 /**
@@ -171,13 +194,18 @@ async function fulfillOrderLocal(
  */
 export async function fulfillOrder(args: FulfillOrderArgs): Promise<{ transaction: DbTransaction | null; credits: number; duplicate: boolean }> {
   await ensureSchema();
+  // Phase 2 batch 3: the stored row records the granted amount in
+  // the balance's current unit (pack Oracles × 300 once the flag is
+  // ON; top-up credits as-is), so the revoke proration reads the
+  // same unit the grant used.
+  const granted = grantedCreditsForOrder(args.readings, args.grantUnit ?? "oracles");
   const row: DbTransaction = {
     id: newTransactionId(),
     user_id: args.userId,
     email: args.email,
     pack_type: args.packType,
     amount: args.amount,
-    readings: args.readings,
+    readings: granted,
     created_at: new Date().toISOString(),
     order_id: args.orderId,
   };
@@ -271,15 +299,31 @@ async function revokeOrderPostgres(
     const refundRow = buildRefundRow(orig, userId, refundMarker, delta);
     await tx`INSERT INTO transactions (id, user_id, email, pack_type, amount, readings, created_at)
       VALUES (${refundRow.id}, ${refundRow.user_id}, ${refundRow.email}, ${refundRow.pack_type}, ${refundRow.amount}, ${refundRow.readings}, NOW())`;
+    // Phase 2 batch 3 (Batch A miss-check item 5): a pack fulfilled
+    // BEFORE the user's Oracle conversion was granted in Oracles;
+    // the balance is now in credits, so the amount actually taken
+    // back is delta × 300. The refund ROW stays in the original
+    // unit (its readings feed the "already revoked" sum above, which
+    // must stay in the fulfilment's unit), but the balance deduction
+    // uses the converted amount. A fulfilment after the conversion
+    // (or no conversion at all) needs no multiplier.
+    const converted = (await tx`SELECT granted_at FROM credit_grants WHERE user_id = ${userId} AND kind = 'conversion' LIMIT 1`) as Array<{
+      granted_at: string | Date;
+    }>;
+    const multiplier =
+      converted.length > 0 && new Date(orig.created_at) < new Date(converted[0].granted_at)
+        ? ORACLE_TO_CREDITS
+        : 1;
+    const deltaCurrent = delta * multiplier;
     // Phase 2 batch 2: take the grant back from purchased first
     // (packs always grant purchased), remainder from monthly,
     // clamped at 0 per ledger — the same total-clamp as before.
     // All SET expressions read the OLD row values.
     await tx`UPDATE users
-      SET purchased_credits = GREATEST(0, purchased_credits - LEAST(purchased_credits, ${delta})),
-          monthly_credits = GREATEST(0, monthly_credits - (${delta} - LEAST(purchased_credits, ${delta})))
+      SET purchased_credits = GREATEST(0, purchased_credits - LEAST(purchased_credits, ${deltaCurrent})),
+          monthly_credits = GREATEST(0, monthly_credits - (${deltaCurrent} - LEAST(purchased_credits, ${deltaCurrent})))
       WHERE id = ${userId}`;
-    return { revoked: true, readings: delta };
+    return { revoked: true, readings: deltaCurrent };
   });
   return await withDbTimeout(begin, controller);
 }
@@ -300,9 +344,15 @@ async function revokeOrderLocal(
   const u = db.users.find((x) => x.id === userId);
   if (!u) return { revoked: false, readings: orig.readings };
   db.transactions.unshift(buildRefundRow(orig, userId, refundMarker, delta));
-  applyRevokeToUser(u, delta);
+  // Phase 2 batch 3: same cross-cutover multiplier as the Postgres
+  // branch (see above) — the refund row stays in the original unit,
+  // the balance deduction uses the converted amount.
+  const converted = (db.creditGrants ?? []).find((g) => g.user_id === userId && g.kind === "conversion");
+  const multiplier =
+    converted && new Date(orig.created_at) < new Date(converted.granted_at) ? ORACLE_TO_CREDITS : 1;
+  applyRevokeToUser(u, delta * multiplier);
   await writeLocal(db);
-  return { revoked: true, readings: delta };
+  return { revoked: true, readings: delta * multiplier };
 }
 
 /**
