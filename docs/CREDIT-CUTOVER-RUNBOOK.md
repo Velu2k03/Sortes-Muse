@@ -42,12 +42,21 @@ the conversion needs holders emailed first and pack sales stopped.
   recorded in `transactions` after the flag-flip time (packs and
   top-ups record there, not in credit_grants — no code writes a
   `purchased` grant row). The runner MUST pass `flagFlippedAt`
-  (the flag-ON deploy time) for the purchase check; without it
-  only the monthly-grant check runs. A pack bought after the flag
-  flipped is already in credits (fulfillOrder grants credits when
-  the flag is ON), so the guard skips that user instead of
-  multiplying the balance by 300. The runner is NOT built yet;
-  build it before scheduling the cutover.
+  (the flag-ON deploy time, REQUIRED — omitting it is a type
+  error); without a correct flip time the purchase check cannot
+  run. A pack bought after the flag flipped is already in credits
+  (fulfillOrder grants credits when the flag is ON), so the guard
+  skips that user instead of multiplying the balance by 300. The
+  runner is NOT built yet; build it before scheduling the cutover.
+- **Refused users need a manual path.** A user with pre-flag
+  Oracles who ALSO bought a pack/top-up or a subscription after
+  the flip is refused outright (safe direction) and keeps
+  unconverted Oracles. The runner must LIST refused users
+  (user id, email, Oracle balance, refuse reason) for manual
+  handling: verify the post-flag purchase, convert only the
+  pre-flag Oracle portion by hand, and record the decision. Do
+  not re-run the conversion on a refused user without that
+  manual check — it would multiply the post-flag credits.
 
 ## Preconditions (all must be true)
 

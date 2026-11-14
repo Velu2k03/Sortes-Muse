@@ -1,15 +1,21 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
-vi.mock("@/lib/db", () => ({
-  getUserByEmail: vi.fn(),
-  getUserById: vi.fn(),
-  createUser: vi.fn(),
-  grantMonthlyCredits: vi.fn(),
-  upsertSubscription: vi.fn(),
-  getSubscriptionByProviderId: vi.fn(),
-  expireMonthlyBalance: vi.fn(),
-  revokeAllSubscriptionGrants: vi.fn(),
-}));
+vi.mock("@/lib/db", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/db")>();
+  return {
+    getUserByEmail: vi.fn(),
+    getUserById: vi.fn(),
+    createUser: vi.fn(),
+    grantMonthlyCredits: vi.fn(),
+    upsertSubscription: vi.fn(),
+    getSubscriptionByProviderId: vi.fn(),
+    expireMonthlyBalance: vi.fn(),
+    revokeAllSubscriptionGrants: vi.fn(),
+    // The real cycle-key helper: the test asserts the webhook
+    // passes the invoice cycle's months to the revoke call.
+    cyclePeriodKeys: actual.cyclePeriodKeys,
+  };
+});
 
 import {
   getUserByEmail,
@@ -252,7 +258,13 @@ describe("handleSubscriptionWebhook", () => {
     });
     expect(result.status).toBe(200);
     expect(mockedRevokeAllSubscriptionGrants).toHaveBeenCalledTimes(1);
-    const revokeArgs = mockedRevokeAllSubscriptionGrants.mock.calls[0][0] as { totalCents: number; refundedCents: number };
+    const revokeArgs = mockedRevokeAllSubscriptionGrants.mock.calls[0][0] as {
+      periodKeys: string[];
+      totalCents: number;
+      refundedCents: number;
+    };
+    // Star monthly: the cycle is just the invoice's month.
+    expect(revokeArgs.periodKeys).toEqual(["2026-11"]);
     expect(revokeArgs.totalCents).toBe(1499);
     expect(revokeArgs.refundedCents).toBe(1499);
   });

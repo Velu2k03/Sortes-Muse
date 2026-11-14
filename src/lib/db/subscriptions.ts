@@ -231,7 +231,7 @@ export async function listActiveAnnualSubscriptions(limit = 500, offset = 0): Pr
               AND s2.created_at > subscriptions.created_at
           )
         )
-      ORDER BY created_at ASC LIMIT ${limit} OFFSET ${offset}`;
+      ORDER BY created_at ASC, id ASC LIMIT ${limit} OFFSET ${offset}`;
     return (rows as Array<Record<string, unknown>>).map((r) => rowToSubscription(r as never));
   }
   const db = await readLocal();
@@ -467,33 +467,64 @@ export async function listGrantedSubscriptionPeriods(subscriptionId: string): Pr
  * continues and the drip continues for future months. Returns
  * the total revoked and how many months were touched.
  */
+/**
+ * The YYYY-MM period keys in one billing cycle, starting from a
+ * date (the invoice's creation month, which is the cycle start).
+ * Monthly: just that month. Annual: that month + the next 11.
+ * The webhook passes these to revokeAllSubscriptionGrants so a
+ * refund only touches the refunded invoice's cycle — never a
+ * previous or later cycle's months (Claude review of PR #94).
+ */
+export function cyclePeriodKeys(startDate: Date | string, interval: "monthly" | "annual"): string[] {
+  const d = typeof startDate === "string" ? new Date(startDate) : startDate;
+  const months = interval === "annual" ? 12 : 1;
+  const keys: string[] = [];
+  for (let i = 0; i < months; i++) {
+    const y = d.getUTCFullYear();
+    const m = d.getUTCMonth() + i;
+    const year = y + Math.floor(m / 12);
+    const month = (m % 12) + 1;
+    keys.push(`${year}-${String(month).padStart(2, "0")}`);
+  }
+  return keys;
+}
+
+/**
+ * Revoke every monthly grant in ONE billing cycle after a refund.
+ * The caller passes the cycle's period keys (from
+ * cyclePeriodKeys, built from the refunded invoice's creation
+ * month + billing interval) — a refund of the year-2 renewal
+ * must not revoke year-1 months, and a monthly-plan refund
+ * revokes only that month. A full refund also stamps
+ * refunded_at on the subscription row, which excludes it
+ * from listActiveAnnualSubscriptions and stops the drip. A
+ * partial refund leaves refunded_at unset: the subscription
+ * continues and the drip continues for future months. Returns
+ * the total revoked and how many months were touched.
+ *
+ * The stamp goes FIRST and unconditionally on a full refund
+ * (Claude review of PR #94): if the revoke loop throws after
+ * revoking, a webhook retry finds nothing left to revoke
+ * (periods 0) and would never stamp, leaving the plan dripping
+ * forever. Stamping first is idempotent, and the per-month
+ * already-revoked check keeps a retry from double-revoking.
+ */
 export async function revokeAllSubscriptionGrants(args: {
   userId: string;
   subscriptionId: string;
+  /** The cycle's period keys (YYYY-MM) — only these months are revoked. */
+  periodKeys: string[];
   /** Invoice total in cents (the cycle's charge). */
   totalCents: number;
   /** Cumulative refunded amount in cents; undefined/0 = full refund. */
   refundedCents?: number;
 }): Promise<{ revoked: boolean; amount: number; periods: number }> {
-  const periodKeys = await listGrantedSubscriptionPeriods(args.subscriptionId);
-  let amount = 0;
-  let periods = 0;
-  for (const periodKey of periodKeys) {
-    const result = await revokeSubscriptionGrant({
-      userId: args.userId,
-      subscriptionId: args.subscriptionId,
-      periodKey,
-      totalCents: args.totalCents,
-      refundedCents: args.refundedCents,
-    });
-    if (result.revoked) {
-      amount += result.amount;
-      periods += 1;
-    }
-  }
   const isFullRefund =
     !args.refundedCents || args.refundedCents <= 0 || args.totalCents <= 0 || args.refundedCents >= args.totalCents;
-  if (isFullRefund && periods > 0) {
+  // Stamp first, unconditionally on a full refund (see the header
+  // comment): the drip must stop even if the revoke loop throws
+  // or there is nothing to revoke yet.
+  if (isFullRefund) {
     await ensureSchema();
     if (usePostgres) {
       if (!pg) throw new Error("Database not configured");
@@ -509,6 +540,27 @@ export async function revokeAllSubscriptionGrants(args: {
         row.updated_at = new Date().toISOString();
         await writeLocal(db);
       }
+    }
+  }
+  // Only the cycle's months, intersected with what was granted.
+  // listGrantedSubscriptionPeriods returns every granted month
+  // for the subscription (all cycles); the cycle filter is what
+  // keeps a year-2 refund out of year-1 months.
+  const granted = new Set(await listGrantedSubscriptionPeriods(args.subscriptionId));
+  let amount = 0;
+  let periods = 0;
+  for (const periodKey of args.periodKeys) {
+    if (!granted.has(periodKey)) continue;
+    const result = await revokeSubscriptionGrant({
+      userId: args.userId,
+      subscriptionId: args.subscriptionId,
+      periodKey,
+      totalCents: args.totalCents,
+      refundedCents: args.refundedCents,
+    });
+    if (result.revoked) {
+      amount += result.amount;
+      periods += 1;
     }
   }
   return { revoked: periods > 0, amount, periods };

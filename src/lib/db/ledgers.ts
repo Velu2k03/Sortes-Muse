@@ -354,7 +354,7 @@ export async function grantMonthlyCredits(args: GrantMonthlyArgs): Promise<Month
 /** Postgres branch: lock the user, convert once, record the conversion line. One transaction. */
 async function convertOraclesPostgres(
   userId: string,
-  opts?: { flagFlippedAt?: string }
+  opts: { flagFlippedAt: string }
 ): Promise<OracleConversionResult> {
   if (!pg) throw new Error("Database not configured");
   const controller = new AbortController();
@@ -404,22 +404,22 @@ async function convertOraclesPostgres(
         balances: current,
       };
     }
-    if (opts?.flagFlippedAt) {
-      const postFlag = (await tx`SELECT 1 FROM transactions
-        WHERE user_id = ${userId} AND pack_type <> 'oracle-conversion' AND created_at >= ${opts.flagFlippedAt} LIMIT 1`) as Array<{
-        "?column?": number;
-      }>;
-      if (postFlag.length > 0) {
-        return {
-          converted: false,
-          alreadyConverted: false,
-          refused: true,
-          refuseReason: "user has a purchase after the flag flip — already credits, do not convert",
-          oracles: 0,
-          credits: 0,
-          balances: current,
-        };
-      }
+    // flagFlippedAt is required, so the purchase guard always
+    // runs (Claude review of PR #94).
+    const postFlag = (await tx`SELECT 1 FROM transactions
+      WHERE user_id = ${userId} AND pack_type <> 'oracle-conversion' AND created_at >= ${opts.flagFlippedAt} LIMIT 1`) as Array<{
+      "?column?": number;
+    }>;
+    if (postFlag.length > 0) {
+      return {
+        converted: false,
+        alreadyConverted: false,
+        refused: true,
+        refuseReason: "user has a purchase after the flag flip — already credits, do not convert",
+        oracles: 0,
+        credits: 0,
+        balances: current,
+      };
     }
     // Precondition (launch order): no subscription grant has run
     // yet, so the whole balance sits in purchased — the backfilled
@@ -458,7 +458,7 @@ async function convertOraclesPostgres(
 /** Local-file branch of convertOraclesToCredits (dev only). */
 async function convertOraclesLocal(
   userId: string,
-  opts?: { flagFlippedAt?: string }
+  opts: { flagFlippedAt: string }
 ): Promise<OracleConversionResult> {
   const db = await readLocal();
   const u = db.users.find((x) => x.id === userId);
@@ -494,28 +494,27 @@ async function convertOraclesLocal(
       balances: current,
     };
   }
-  if (opts?.flagFlippedAt) {
-    const txs = db.transactions ?? [];
-    const flipMs = new Date(opts.flagFlippedAt as string).getTime();
-    if (
-      txs.some(
-        (t) =>
-          t.user_id === userId &&
-          t.pack_type !== "oracle-conversion" &&
-          t.created_at &&
-          new Date(t.created_at).getTime() >= flipMs
-      )
-    ) {
-      return {
-        converted: false,
-        alreadyConverted: false,
-        refused: true,
-        refuseReason: "user has a purchase after the flag flip — already credits, do not convert",
-        oracles: 0,
-        credits: 0,
-        balances: current,
-      };
-    }
+  // flagFlippedAt is required, so the purchase guard always runs.
+  const txs = db.transactions ?? [];
+  const flipMs = new Date(opts.flagFlippedAt).getTime();
+  if (
+    txs.some(
+      (t) =>
+        t.user_id === userId &&
+        t.pack_type !== "oracle-conversion" &&
+        t.created_at &&
+        new Date(t.created_at).getTime() >= flipMs
+    )
+  ) {
+    return {
+      converted: false,
+      alreadyConverted: false,
+      refused: true,
+      refuseReason: "user has a purchase after the flag flip — already credits, do not convert",
+      oracles: 0,
+      credits: 0,
+      balances: current,
+    };
   }
   const oracles = u.purchased_credits ?? 0;
   const credits = oracleToCredits(oracles);
@@ -568,12 +567,14 @@ async function convertOraclesLocal(
  * flagFlippedAt (the flag-ON deploy time) so the post-flag guard
  * can refuse users who bought a pack/top-up or a subscription
  * after the flip; those balances are already credits and must
- * never be multiplied by 300. A second run for the same user is
- * a no-op (alreadyConverted, balance unchanged).
+ * never be multiplied by 300. flagFlippedAt is REQUIRED (Claude
+ * review of PR #94): omitting it would silently drop the
+ * purchase guard on money-critical code. A second run for the
+ * same user is a no-op (alreadyConverted, balance unchanged).
  */
 export async function convertOraclesToCredits(
   userId: string,
-  opts?: { flagFlippedAt?: string }
+  opts: { flagFlippedAt: string }
 ): Promise<OracleConversionResult> {
   await ensureSchema();
   if (usePostgres) return convertOraclesPostgres(userId, opts);

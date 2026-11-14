@@ -225,7 +225,9 @@ describe.skipIf(SKIP)("two-ledger credits on real Postgres (staging only)", () =
   it("Oracle conversion: 1 Oracle = 300 purchased credits, once, with a conversion line", async () => {
     const user = await db.createUser(`ledger-convert-${RUN}@example.com`);
     await db.addUserCredits(user.id, 5);
-    const done = await db.convertOraclesToCredits(user.id);
+    // flagFlippedAt is required; a far-future flip means no
+    // purchase is post-flag, so the guard passes.
+    const done = await db.convertOraclesToCredits(user.id, { flagFlippedAt: "2999-01-01T00:00:00.000Z" });
     expect(done).toEqual({
       converted: true,
       alreadyConverted: false,
@@ -243,7 +245,7 @@ describe.skipIf(SKIP)("two-ledger credits on real Postgres (staging only)", () =
     const txs = await db.listTransactions(user.id);
     expect(txs.some((t) => t.pack_type === "oracle-conversion" && t.readings === 1500)).toBe(true);
     // A second run is a no-op: same balance, no second row.
-    const again = await db.convertOraclesToCredits(user.id);
+    const again = await db.convertOraclesToCredits(user.id, { flagFlippedAt: "2999-01-01T00:00:00.000Z" });
     expect(again.converted).toBe(false);
     expect(again.alreadyConverted).toBe(true);
     expect(again.credits).toBe(1500);
@@ -256,7 +258,7 @@ describe.skipIf(SKIP)("two-ledger credits on real Postgres (staging only)", () =
 
   it("Oracle conversion of a zero balance converts to zero and marks the user converted", async () => {
     const user = await db.createUser(`ledger-convert-zero-${RUN}@example.com`);
-    const done = await db.convertOraclesToCredits(user.id);
+    const done = await db.convertOraclesToCredits(user.id, { flagFlippedAt: "2999-01-01T00:00:00.000Z" });
     expect(done).toEqual({
       converted: true,
       alreadyConverted: false,
@@ -270,7 +272,7 @@ describe.skipIf(SKIP)("two-ledger credits on real Postgres (staging only)", () =
     expect(grants[0].amount).toBe(0);
     // No history noise for a zero conversion.
     expect(await db.listTransactions(user.id)).toHaveLength(0);
-    expect((await db.convertOraclesToCredits(user.id)).alreadyConverted).toBe(true);
+    expect((await db.convertOraclesToCredits(user.id, { flagFlippedAt: "2999-01-01T00:00:00.000Z" })).alreadyConverted).toBe(true);
   });
 
   it("existing spend sites still spend 1 per reading/report/follow-up, monthly first", async () => {
@@ -376,9 +378,11 @@ describe.skipIf(SKIP)("two-ledger credits on real Postgres (staging only)", () =
     }
     expect(await db.getCreditBalances(user.id)).toEqual({ monthly: 2000, purchased: 0, total: 2000 });
     // Full refund of the annual charge (Spark annual $79.88).
+    // The cycle keys come from the invoice's creation month.
     const revoked = await db.revokeAllSubscriptionGrants({
       userId: user.id,
       subscriptionId: subId,
+      periodKeys: db.cyclePeriodKeys("2026-11-15T00:00:00.000Z", "annual"),
       totalCents: 7988,
       refundedCents: 7988,
     });
@@ -398,6 +402,7 @@ describe.skipIf(SKIP)("two-ledger credits on real Postgres (staging only)", () =
     const again = await db.revokeAllSubscriptionGrants({
       userId: user.id,
       subscriptionId: subId,
+      periodKeys: db.cyclePeriodKeys("2026-11-15T00:00:00.000Z", "annual"),
       totalCents: 7988,
       refundedCents: 7988,
     });
@@ -433,6 +438,7 @@ describe.skipIf(SKIP)("two-ledger credits on real Postgres (staging only)", () =
     const revoked = await db.revokeAllSubscriptionGrants({
       userId: user.id,
       subscriptionId: subId,
+      periodKeys: db.cyclePeriodKeys("2026-11-15T00:00:00.000Z", "annual"),
       totalCents: 7988,
       refundedCents: 3994,
     });
@@ -441,6 +447,114 @@ describe.skipIf(SKIP)("two-ledger credits on real Postgres (staging only)", () =
     // Partial refund does NOT stamp refunded_at: the drip continues.
     expect((await db.getSubscriptionByProviderId(subId))?.refunded_at).toBeNull();
     expect((await db.listActiveAnnualSubscriptions()).some((s) => s.lemonsqueezy_subscription_id === subId)).toBe(true);
+  });
+
+  it("a year-2 renewal refund revokes only year-2 months, never year-1", async () => {
+    const user = await db.createUser(`ledger-renewal-refund-${RUN}@example.com`);
+    const subId = `sub_renewal_refund-${RUN}`;
+    await db.upsertSubscription({
+      userId: user.id,
+      lemonsqueezySubscriptionId: subId,
+      lemonsqueezyCustomerId: "7",
+      tier: "spark",
+      billingInterval: "annual",
+      status: "active",
+      currentPeriodStart: "2027-11-15T00:00:00.000Z",
+      currentPeriodEnd: "2028-11-15T00:00:00.000Z",
+      renewsAt: "2028-11-15T00:00:00.000Z",
+      endsAt: null,
+      cancelAtPeriodEnd: false,
+    });
+    // Year-1 months, then spend them down so the year-2 grants
+    // land under the two-month rollover cap.
+    for (const periodKey of ["2026-11", "2026-12"]) {
+      await db.grantMonthlyCredits({ userId: user.id, subscriptionId: subId, tier: "spark", periodKey });
+    }
+    expect(await db.spendUserCredits(user.id, 2000)).toBe(true);
+    for (const periodKey of ["2027-11", "2027-12"]) {
+      await db.grantMonthlyCredits({ userId: user.id, subscriptionId: subId, tier: "spark", periodKey });
+    }
+    expect(await db.getCreditBalances(user.id)).toEqual({ monthly: 2000, purchased: 0, total: 2000 });
+    // Full refund of the YEAR-2 renewal invoice only.
+    const revoked = await db.revokeAllSubscriptionGrants({
+      userId: user.id,
+      subscriptionId: subId,
+      periodKeys: db.cyclePeriodKeys("2027-11-15T00:00:00.000Z", "annual"),
+      totalCents: 7988,
+      refundedCents: 7988,
+    });
+    expect(revoked).toEqual({ revoked: true, amount: 2000, periods: 2 });
+    expect(await db.getCreditBalances(user.id)).toEqual({ monthly: 0, purchased: 0, total: 0 });
+    // The audit shows only year-2 months revoked; year-1 months
+    // have no refund rows.
+    const refundRows = (await db.listCreditGrants(user.id)).filter((g) => g.kind === "refund");
+    expect(refundRows).toHaveLength(2);
+    expect(refundRows.map((g) => g.period_key).sort()).toEqual(["2027-11", "2027-12"]);
+  });
+
+  it("a monthly-plan refund revokes only that month, not the other months", async () => {
+    const user = await db.createUser(`ledger-monthly-refund-${RUN}@example.com`);
+    const subId = `sub_monthly_refund-${RUN}`;
+    await db.upsertSubscription({
+      userId: user.id,
+      lemonsqueezySubscriptionId: subId,
+      lemonsqueezyCustomerId: "7",
+      tier: "spark",
+      billingInterval: "monthly",
+      status: "active",
+      currentPeriodStart: "2026-12-15T00:00:00.000Z",
+      currentPeriodEnd: "2027-01-15T00:00:00.000Z",
+      renewsAt: "2027-01-15T00:00:00.000Z",
+      endsAt: null,
+      cancelAtPeriodEnd: false,
+    });
+    for (const periodKey of ["2026-11", "2026-12"]) {
+      await db.grantMonthlyCredits({ userId: user.id, subscriptionId: subId, tier: "spark", periodKey });
+    }
+    expect(await db.getCreditBalances(user.id)).toEqual({ monthly: 2000, purchased: 0, total: 2000 });
+    // Full refund of the 2026-12 monthly invoice (Spark $7.99).
+    const revoked = await db.revokeAllSubscriptionGrants({
+      userId: user.id,
+      subscriptionId: subId,
+      periodKeys: db.cyclePeriodKeys("2026-12-15T00:00:00.000Z", "monthly"),
+      totalCents: 799,
+      refundedCents: 799,
+    });
+    expect(revoked).toEqual({ revoked: true, amount: 1000, periods: 1 });
+    expect(await db.getCreditBalances(user.id)).toEqual({ monthly: 1000, purchased: 0, total: 1000 });
+    const refundRows = (await db.listCreditGrants(user.id)).filter((g) => g.kind === "refund");
+    expect(refundRows).toHaveLength(1);
+    expect(refundRows[0].period_key).toBe("2026-12");
+  });
+
+  it("a full refund stamps refunded_at even when nothing was granted yet", async () => {
+    const user = await db.createUser(`ledger-refund-nogrant-${RUN}@example.com`);
+    const subId = `sub_refund_nogrant-${RUN}`;
+    await db.upsertSubscription({
+      userId: user.id,
+      lemonsqueezySubscriptionId: subId,
+      lemonsqueezyCustomerId: "7",
+      tier: "spark",
+      billingInterval: "annual",
+      status: "active",
+      currentPeriodStart: "2026-11-15T00:00:00.000Z",
+      currentPeriodEnd: "2027-11-15T00:00:00.000Z",
+      renewsAt: "2027-11-15T00:00:00.000Z",
+      endsAt: null,
+      cancelAtPeriodEnd: false,
+    });
+    // No grants at all (e.g. the refund arrived before the drip).
+    // The stamp must still land so the plan never drips.
+    const revoked = await db.revokeAllSubscriptionGrants({
+      userId: user.id,
+      subscriptionId: subId,
+      periodKeys: db.cyclePeriodKeys("2026-11-15T00:00:00.000Z", "annual"),
+      totalCents: 7988,
+      refundedCents: 7988,
+    });
+    expect(revoked).toEqual({ revoked: false, amount: 0, periods: 0 });
+    expect((await db.getSubscriptionByProviderId(subId))?.refunded_at).not.toBeNull();
+    expect((await db.listActiveAnnualSubscriptions()).some((s) => s.lemonsqueezy_subscription_id === subId)).toBe(false);
   });
 
   it("conversion refuses a user with a monthly grant (post-flag)", async () => {
@@ -452,7 +566,7 @@ describe.skipIf(SKIP)("two-ledger credits on real Postgres (staging only)", () =
       tier: "spark",
       periodKey: "2026-11",
     });
-    const refused = await db.convertOraclesToCredits(user.id);
+    const refused = await db.convertOraclesToCredits(user.id, { flagFlippedAt: "2999-01-01T00:00:00.000Z" });
     expect(refused.converted).toBe(false);
     expect(refused.refused).toBe(true);
     expect(refused.refuseReason).toMatch(/monthly/);
