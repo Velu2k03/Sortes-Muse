@@ -52,35 +52,47 @@ describe.skipIf(SKIP)("money paths on real Postgres (staging only)", () => {
     await raw?.end();
   });
 
-  it("migrations applied: 7 tables, ledger rows, indexes, CHECK constraint", async () => {
+  it("migrations applied: 8 tables, ledger rows, indexes, CHECK constraint", async () => {
     const tables = (await raw`
       SELECT table_name FROM information_schema.tables
       WHERE table_schema = 'public' AND table_name IN
-        ('users','auth_codes','transactions','readings','reports','free_interpretations','free_readings')
+        ('users','auth_codes','transactions','readings','reports','free_interpretations','free_readings','credit_grants')
     `) as Array<{ table_name: string }>;
     expect(tables.map((t) => t.table_name).sort()).toEqual(
-      ["auth_codes", "free_interpretations", "free_readings", "readings", "reports", "transactions", "users"]
+      ["auth_codes", "credit_grants", "free_interpretations", "free_readings", "readings", "reports", "transactions", "users"]
     );
     const ledger = (await raw`SELECT version FROM schema_migrations ORDER BY version`) as Array<{ version: string }>;
-    expect(ledger.map((r) => r.version)).toEqual(["001", "002", "003", "006", "007"]);
+    expect(ledger.map((r) => r.version)).toEqual(["001", "002", "003", "006", "007", "008"]);
     const indexes = (await raw`
       SELECT indexname FROM pg_indexes WHERE schemaname = 'public'
         AND indexname LIKE 'idx\_%'`) as Array<{ indexname: string }>;
     expect(indexes.map((i) => i.indexname).sort()).toEqual([
+      "idx_credit_grants_conversion_unique",
+      "idx_credit_grants_period_unique",
+      "idx_credit_grants_user_created",
       "idx_readings_user_created",
       "idx_reports_user_created",
       "idx_transactions_order_id_unique",
       "idx_transactions_pack_type",
       "idx_transactions_user_created",
     ]);
+    // Phase 2 batch 2: the 002 single-balance CHECK is gone with the
+    // old credits column; each ledger has its own CHECK, and credits
+    // is the generated total of the two.
     const checks = (await raw`
-      SELECT conname FROM pg_constraint WHERE conname = 'users_credits_nonnegative'`) as Array<{ conname: string }>;
-    expect(checks).toHaveLength(1);
-    // The CHECK really bites: direct SQL cannot drive a balance negative.
+      SELECT conname FROM pg_constraint WHERE conname IN ('users_monthly_credits_nonnegative', 'users_purchased_credits_nonnegative', 'users_credits_nonnegative')`) as Array<{ conname: string }>;
+    expect(checks.map((c) => c.conname).sort()).toEqual([
+      "users_monthly_credits_nonnegative",
+      "users_purchased_credits_nonnegative",
+    ]);
+    // The CHECKs really bite: direct SQL cannot drive either ledger negative.
     const user = await db.createUser("check-a@example.com");
     await expect(
-      raw.unsafe(`UPDATE users SET credits = -1 WHERE id = '${user.id}'`)
-    ).rejects.toThrow(/users_credits_nonnegative/);
+      raw.unsafe(`UPDATE users SET monthly_credits = -1 WHERE id = '${user.id}'`)
+    ).rejects.toThrow(/users_monthly_credits_nonnegative/);
+    await expect(
+      raw.unsafe(`UPDATE users SET purchased_credits = -1 WHERE id = '${user.id}'`)
+    ).rejects.toThrow(/users_purchased_credits_nonnegative/);
     // Phase B (R5): migration 006 added the session-version column;
     // a new user starts at version 1, which is also the value a
     // legacy token (no pwdVer claim) is read as.
@@ -304,7 +316,7 @@ describe.skipIf(SKIP)("money paths on real Postgres (staging only)", () => {
       raw.begin(async (tx) => {
         await tx`INSERT INTO transactions (id, user_id, email, pack_type, amount, readings, created_at)
           VALUES ('t_crash', ${user.id}, ${user.email}, 'pack5 (lemonsqueezy:order-1004)', 3.99, 5, NOW())`;
-        await tx`UPDATE users SET credits = credits + 5 WHERE id = ${user.id}`;
+        await tx`UPDATE users SET purchased_credits = purchased_credits + 5 WHERE id = ${user.id}`;
         throw new Error("simulated crash between the two writes");
       })
     ).rejects.toThrow(/simulated crash/);

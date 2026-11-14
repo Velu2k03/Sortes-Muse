@@ -33,8 +33,10 @@
  * account's email). First create the signed-in user in the
  * staging DB, then run with --user-id and a DIFFERENT --email:
  *
- *   psql $DATABASE_URL -c "INSERT INTO users (id, email, credits, password_hash, created_at)
- *     VALUES ('u_sim_signedin', 'signedin-sim@example.com', 0, NULL, NOW());"
+ *   psql $DATABASE_URL -c "INSERT INTO users (id, email, password_hash, created_at)
+ *     VALUES ('u_sim_signedin', 'signedin-sim@example.com', NULL, NOW());"
+ *   (Phase 2 batch 2: `credits` is a generated total — never insert
+ *   it; both ledgers default to 0.)
  *   LEMONSQUEEZY_WEBHOOK_SECRET=<that secret> \
  *   LEMONSQUEEZY_STORE_ID=999999 LEMONSQUEEZY_VARIANT_PACK5=111111 \
  *   node scripts/simulate-webhook.mjs [--url http://localhost:3000] \

@@ -1,23 +1,38 @@
-import { usePostgres, sql, ensureSchema } from "./client";
+import { usePostgres, pg, sql, ensureSchema } from "./client";
 import { readLocal, writeLocal } from "./json-store";
+import { applyGrantToUser, applySpendToUser, spendFromLedgers } from "./ledgers";
 
 /*
  * F9 (2026-11-09): credits and free-use claims.
  * Moved verbatim out of src/lib/db.ts, which is now a re-export barrel.
+ *
+ * Phase 2 batch 2: balances are the two ledgers (monthly +
+ * purchased); users.credits is their generated total. A grant here
+ * is a PURCHASED grant (pack/top-up credit, never expires); monthly
+ * grants go through grantMonthlyCredits in ledgers.ts. A spend takes
+ * monthly first, then purchased.
  */
 
 export async function addUserCredits(userId: string, n: number): Promise<number> {
   await ensureSchema();
   if (usePostgres) {
+    if (!pg) throw new Error("Database not configured");
     // GREATEST(0, ...) so a refund can never drive the balance
     // negative (Phase 1, 1.4). The local branch already clamped.
-    const { rows } = await sql`UPDATE users SET credits = GREATEST(0, credits + ${n}) WHERE id = ${userId} RETURNING credits`;
-    return (rows[0] as { credits: number }).credits;
+    const rows = (await pg`UPDATE users SET purchased_credits = GREATEST(0, purchased_credits + ${n}) WHERE id = ${userId} RETURNING credits`) as Array<{
+      credits: number;
+    }>;
+    return rows[0].credits;
   }
   const db = await readLocal();
   const u = db.users.find((x) => x.id === userId);
   if (!u) throw new Error("User not found");
-  u.credits = Math.max(0, u.credits + n);
+  // A negative grant clamps at 0 per ledger, like the Postgres
+  // GREATEST above: apply the grant, then floor the purchased
+  // ledger at 0 (the total follows).
+  applyGrantToUser(u, "purchased", n);
+  u.purchased_credits = Math.max(0, u.purchased_credits ?? 0);
+  u.credits = (u.monthly_credits ?? 0) + (u.purchased_credits ?? 0);
   await writeLocal(db);
   return u.credits;
 }
@@ -27,19 +42,19 @@ export async function spendUserCredits(userId: string, n: number): Promise<boole
   // with the guard credits >= -5 passes trivially). No caller passes
   // a negative value today, but this function is exported and one
   // call site passes a computed value, so fail loudly instead of
-  // minting. Both branches share this one check.
+  // minting. Both branches share this one check (spendFromLedgers
+  // and spendFromBalances throw the same way).
   if (!Number.isFinite(n) || n <= 0) {
     throw new Error("spendUserCredits: n must be a positive number of Oracles.");
   }
   await ensureSchema();
   if (usePostgres) {
-    const { rows } = await sql`UPDATE users SET credits = credits - ${n} WHERE id = ${userId} AND credits >= ${n} RETURNING credits`;
-    return rows.length > 0;
+    if (!pg) throw new Error("Database not configured");
+    return (await spendFromLedgers(pg, userId, n)) !== null;
   }
   const db = await readLocal();
   const u = db.users.find((x) => x.id === userId);
-  if (!u || u.credits < n) return false;
-  u.credits -= n;
+  if (!applySpendToUser(u, n)) return false;
   await writeLocal(db);
   return true;
 }

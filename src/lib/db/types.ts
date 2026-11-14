@@ -7,6 +7,13 @@ export interface DbUser {
   id: string;
   email: string;
   credits: number;
+  // Phase 2 batch 2: the two ledgers. `credits` is the generated total
+  // (monthly + purchased) on Postgres; on the local JSON store the
+  // helpers in ledgers.ts keep it in sync. Optional because local
+  // files written before 008 have neither key; readers treat a
+  // missing ledger as 0.
+  monthly_credits?: number;
+  purchased_credits?: number;
   created_at: string;
   winback_sent_at?: string | null;
   password_hash?: string | null;
@@ -29,4 +36,23 @@ export interface DbTransaction {
   // order, UNIQUE where not null. Null/absent on refund rows, markers,
   // and rows written before 007.
   order_id?: string | null;
+}
+
+/**
+ * Phase 2 batch 2: one row of the credit_grants audit/idempotency
+ * ledger (migration 008). One row per monthly grant (unique per
+ * subscription + period), one row per Oracle conversion (unique per
+ * user). Purchased top-ups and pack grants are NOT recorded here —
+ * they already have their transactions row.
+ */
+export interface CreditGrant {
+  id: string;
+  user_id: string;
+  kind: "monthly" | "purchased" | "conversion";
+  amount: number;
+  subscription_id: string | null;
+  period_key: string | null;
+  tier: string | null;
+  expires_at: string | null;
+  granted_at: string;
 }

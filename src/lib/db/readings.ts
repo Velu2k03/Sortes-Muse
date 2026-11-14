@@ -2,6 +2,7 @@ import { usePostgres, pg, sql, jsonbParam, ensureSchema, txWithSignal } from "./
 import { readLocal, writeLocal } from "./json-store";
 import { withDbTimeout } from "../db-timeout";
 import { assertUuid, IdTakenError } from "../ids";
+import { applySpendToUser, spendFromLedgers } from "./ledgers";
 
 /*
  * F9 (2026-11-09): synced readings and follow-ups.
@@ -64,8 +65,10 @@ export async function saveReadingWithSpend(
         free = c.length > 0;
       }
       if (!free) {
-        const spent = await tx`UPDATE users SET credits = credits - 1 WHERE id = ${userId} AND credits >= 1 RETURNING credits`;
-        if (spent.length === 0) return { ok: false, free: false };
+        // Phase 2 batch 2: 1 per reading, monthly first. Null means
+        // insufficient — nothing spent, no reading row written.
+        const spent = await spendFromLedgers(tx, userId, 1);
+        if (!spent) return { ok: false, free: false };
       }
       const data = { ...reading, free };
       const inserted = await tx`INSERT INTO readings (id, user_id, data, created_at)
@@ -111,8 +114,7 @@ export async function saveReadingWithSpend(
   }
   if (!free) {
     const u = db.users.find((x) => x.id === userId);
-    if (!u || u.credits < 1) return { ok: false, free: false };
-    u.credits -= 1;
+    if (!applySpendToUser(u, 1)) return { ok: false, free: false };
   }
   db.readings.unshift({
     id: reading.id,
@@ -232,8 +234,8 @@ export async function appendFollowUpWithSpend(
         followUpToStore = { ...followUpToStore, free: false };
       }
       if (effectiveCost > 0) {
-        const spent = await tx`UPDATE users SET credits = credits - ${effectiveCost} WHERE id = ${userId} AND credits >= ${effectiveCost} RETURNING credits`;
-        if (spent.length === 0) return { ok: false, reason: "insufficient" as const };
+        const spent = await spendFromLedgers(tx, userId, effectiveCost);
+        if (!spent) return { ok: false, reason: "insufficient" as const };
       }
       const updated = await tx`
         UPDATE readings
@@ -278,8 +280,7 @@ export async function appendFollowUpWithSpend(
   }
   const user = db.users.find((x) => x.id === userId);
   if (effectiveCost > 0) {
-    if (!user || user.credits < effectiveCost) return { ok: false, reason: "insufficient" };
-    user.credits -= effectiveCost;
+    if (!applySpendToUser(user, effectiveCost)) return { ok: false, reason: "insufficient" };
   }
   const next = [...existing, followUpToStore];
   row.data = { ...data, followUps: next };

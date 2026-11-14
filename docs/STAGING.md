@@ -18,6 +18,10 @@ still needs Velu's explicit approval.
     `authenticated` below, password `sortes_test_local` as hardcoded
     in `rls-005.test.ts` (NOT the `sortes_test` password), LOGIN so
     the test can connect as them directly)
+  - `sortes_pgtest_ledgers` — Phase 2 two-ledger credit tests
+    (`db-credit-ledgers.test.ts`); its own database because
+    `db-postgres.test.ts` drops all tables in its beforeAll, which
+    landed mid-run in the ledger suite's tests on the shared money DB
   - `sortes_staging` — manual staging checks
 - Roles `anon` and `authenticated` (password `sortes_test_local`,
   local only, fixed by `rls-005.test.ts` `roleUrl()`) exist for the RLS test only; in real Supabase they are
@@ -41,7 +45,7 @@ sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
 sudo -u postgres psql -c "CREATE ROLE sortes_test LOGIN PASSWORD '<placeholder>';"
 sudo -u postgres psql -c "CREATE ROLE anon LOGIN PASSWORD 'sortes_test_local';"
 sudo -u postgres psql -c "CREATE ROLE authenticated LOGIN PASSWORD 'sortes_test_local';"
-for db in sortes_pgtest_money sortes_pgtest_migrations sortes_pgtest_rls sortes_staging; do
+for db in sortes_pgtest_money sortes_pgtest_migrations sortes_pgtest_rls sortes_pgtest_ledgers sortes_staging; do
   sudo -u postgres createdb -O sortes_test "$db"
 done
 ```
@@ -125,19 +129,25 @@ Rules:
 -- 1. Ledger: which versions applied, in order.
 SELECT version, applied_at FROM schema_migrations ORDER BY version;
 
--- 2. Tables present (expect 7: users, auth_codes, transactions,
---    readings, reports, free_interpretations, free_readings).
+-- 2. Tables present (expect 8: users, auth_codes, transactions,
+--    readings, reports, free_interpretations, free_readings, plus
+--    credit_grants from 008).
 SELECT table_name FROM information_schema.tables
 WHERE table_schema = 'public' ORDER BY table_name;
 
--- 3. Indexes present (expect the 4 secondary indexes from 002).
+-- 3. Indexes present (expect 8 secondary idx_ indexes: 4 from 002,
+--    1 from 007, 3 from 008).
 SELECT indexname, tablename FROM pg_indexes
 WHERE schemaname = 'public' AND indexname NOT LIKE '%_pkey'
 ORDER BY tablename, indexname;
 
--- 4. Credit guard: the CHECK (credits >= 0) exists on users.
+-- 4. Credit guard (008): one CHECK per ledger, and credits is the
+--    generated total (monthly_credits + purchased_credits).
 SELECT conname FROM pg_constraint
 WHERE conrelid = 'users'::regclass AND contype = 'c';
+SELECT column_name, is_generated FROM information_schema.columns
+WHERE table_schema = 'public' AND table_name = 'users'
+  AND column_name IN ('monthly_credits', 'purchased_credits', 'credits');
 
 -- 5. No double-encoded JSONB left (readings/reports data must be
 --    objects, not JSON strings).

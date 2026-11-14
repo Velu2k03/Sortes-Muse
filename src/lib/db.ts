@@ -7,11 +7,13 @@
  * - json-store.ts: the local-dev JSON file store
  * - users.ts, credits.ts, auth-codes.ts, orders.ts (fulfilment and
  *   refunds), readings.ts, reports.ts, stats.ts (social proof, win-back)
+ * - ledgers.ts: Phase 2 two-ledger credits (monthly/purchased,
+ *   monthly grants, Oracle conversion)
  * Only the names exported here are public; the shared internals
  * (pg, sql, readLocal, ...) stay private to src/lib/db/.
  */
 
-export type { DbUser, DbTransaction } from "./db/types";
+export type { DbUser, DbTransaction, CreditGrant } from "./db/types";
 export {
   validatePostgresUrl,
   APP_STATEMENT_TIMEOUT_MS,
@@ -45,6 +47,15 @@ export {
   hasUsedFreeInterpretation,
   markFreeInterpretationUsed,
 } from "./db/credits";
+export type { CreditBalances, MonthlyGrantResult, OracleConversionResult } from "./db/ledgers";
+export {
+  spendFromLedgers,
+  spendFromBalances,
+  getCreditBalances,
+  listCreditGrants,
+  grantMonthlyCredits,
+  convertOraclesToCredits,
+} from "./db/ledgers";
 export {
   storeAuthCode,
   getAuthCode,
