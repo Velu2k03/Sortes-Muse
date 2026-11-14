@@ -10,6 +10,7 @@ import { MAJORS, cardSlug, getCard } from "@/lib/cards";
 import { setHeroQuestion, freeReadingUsed } from "@/lib/storage";
 import { useAuth, deviceHeldSession } from "@/components/AuthProvider";
 import { isFreeAvailableFor } from "@/lib/free-reading";
+import { HERO_VARIANTS, randomHeroVariantIndex } from "@/lib/hero-variants";
 import ReturningHome from "@/components/ReturningHome";
 import StatsStrip from "@/components/StatsStrip";
 import SampleReading from "@/components/SampleReading";
@@ -87,6 +88,21 @@ export default function Home() {
   const { user, freeReadingAvailable, authFailed, loading: authLoading } = useAuth();
   const [usedFree, setUsedFree] = useState(false);
   const [hadSession, setHadSession] = useState(false);
+  // Hero copy rotation (Velu, 2026-11-15): the H1, subhead, and CTA
+  // labels rotate randomly among three variants on each page load.
+  // The page is server-rendered, so the hero renders variant A
+  // (index 0) on the server and on first paint, then picks a random
+  // variant after mount. A random pick during render would disagree
+  // between server and client (hydration mismatch). The setState
+  // runs in a microtask, the same pattern as the device flags below
+  // (react-hooks/set-state-in-effect is an error in this repo).
+  const [variantIndex, setVariantIndex] = useState(0);
+  const variant = HERO_VARIANTS[variantIndex];
+  useEffect(() => {
+    queueMicrotask(() => {
+      setVariantIndex(randomHeroVariantIndex());
+    });
+  }, []);
   // Velu's Option B (2026-11-14, "Show the hero to all signed-out
   // guests"): the hero shows to EVERY signed-out guest, regardless
   // of device flags. The Batch 3 four-signal rule (signed in, used
@@ -173,26 +189,27 @@ export default function Home() {
           {/* AF-042: the hero motion wrappers were no-ops (initial
               false, animate to the final values), so they are plain
               elements now — one less animation instance each. */}
-          {/* Remodel (Velu, 2026-11-14, Fable's review): the hero
-              is the product. The one-word brand H1 (Batch 11) and
-              the Batch 12 subhead are superseded: the H1 is now
-              Fable's explanation, "Sortes" lives in the header logo,
-              and the subhead is Fable's fix. The free reading stays
-              1-card Quick Insight only, and the 3-card spread is
-              still PLANNED as the next step after the first reading.
-              The "free" wording is gated on freeAvailable (Batch 6a
-              rule): it never promises a free reading to someone who
-              must sign in first, and it fails closed while auth is
-              loading. No entrance animation on the hero copy: it renders at
-              full opacity on first paint (the old fade left the
-              first frame almost empty behind the moon image), and
-              the example questions stay visible as tappable chips
-              instead of rotating one at a time. */}
+          {/* Hero copy rotation (Velu, 2026-11-15): the H1, subhead,
+              and CTA labels rotate randomly among three variants
+              (src/lib/hero-variants.ts) on each page load. The old
+              Fable H1 ("Ask a question. Draw a tarot card. Get an AI
+              reading.") and subhead are retired by his decision. The
+              free reading stays 1-card Quick Insight only, and the
+              3-card spread is still PLANNED as the next step after
+              the first reading. The "free" wording is gated on
+              freeAvailable (Batch 6a rule): it never promises a free
+              reading to someone who must sign in first, and it fails
+              closed while auth is loading. No entrance animation on
+              the hero copy: it renders at full opacity on first
+              paint (the old fade left the first frame almost empty
+              behind the moon image), and the example questions stay
+              visible as tappable chips instead of rotating one at a
+              time. */}
           <h1 className="mt-6 text-balance font-display text-4xl leading-tight text-goldbright sm:text-5xl">
-            Ask a question. Draw a tarot card. Get an AI reading.
+            {variant.h1}
           </h1>
           <p className="mt-6 max-w-xl text-base leading-relaxed text-cream/80">
-            A question on your mind? Ask the cards. Get a clearer way to see it.
+            {variant.h2}
           </p>
           <p className="mt-4 text-sm text-cream/70">
             No experience needed. Just a question.
@@ -221,9 +238,18 @@ export default function Home() {
               type="submit"
               className="btn-gold rounded-2xl px-6 py-4 text-center text-base font-bold leading-snug sm:shrink-0 sm:px-8 sm:text-lg"
             >
-              {freeAvailable ? "Draw my card — free" : "Draw my card"}
+              {variant.primaryCta}
             </button>
           </form>
+          {/* Hero rotation: the secondary CTA goes to the readings
+              list (/spreads). Its label rotates with the variant;
+              the destination does not change. */}
+          <Link
+            href="/spreads"
+            className="btn-ghost mt-4 inline-block rounded-2xl px-6 py-3 text-sm font-semibold"
+          >
+            {variant.secondaryCta}
+          </Link>
           {/* Sonnet review: the chips are a labelled group with 44px
               touch targets. A fieldset + legend, not role="group":
               the repo lints role="group" as an error against the

@@ -2,11 +2,11 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "fs";
 import path from "path";
 
-// Remodel Phase 1 batch 1 (Velu, 2026-11-14, Fable's review): the
-// hero is the product. The H1 is Fable's explanation, the subhead is
-// Fable's fix, "Sortes" lives in the header logo, and the question
-// box starts the reading on the homepage. The one-word brand H1
-// (Batch 11) and the Batch 12 subhead are superseded. The free
+// Hero copy rotation (Velu, 2026-11-15): the hero H1, subhead, and
+// CTA labels rotate randomly among three variants (see
+// src/lib/hero-variants.ts and hero-rotation.test.ts) on each page
+// load. The Fable H1 ("Ask a question. Draw a tarot card. Get an AI
+// reading.") and subhead are retired by his decision. The free
 // reading stays 1-card Quick Insight only, and the 3-card spread is
 // PLANNED as the next step after the first reading — so the hero
 // must NOT promise three cards. Copy is asserted on the actual JSX
@@ -27,26 +27,28 @@ import path from "path";
 const src = (rel: string) =>
   readFileSync(path.resolve(process.cwd(), rel), "utf8");
 
-describe("Remodel hero: explanation H1, question box, example questions", () => {
-  it("the H1 is Fable's explanation, not the one-word brand", () => {
+describe("Remodel hero: rotating H1, question box, example questions", () => {
+  it("the H1 renders the rotating variant H1, not a fixed string", () => {
     const page = src("src/app/page.tsx");
     const match = page.match(/<h1[^>]*>([\s\S]*?)<\/h1>/);
     expect(match).not.toBeNull();
     const h1 = (match as RegExpMatchArray)[1].replace(/\s+/g, " ").trim();
-    expect(h1).toBe("Ask a question. Draw a tarot card. Get an AI reading.");
+    expect(h1).toBe("{variant.h1}");
     expect(h1).not.toBe("Sortes");
+    // The retired Fable H1 is gone from the hero element.
+    expect(page).not.toContain(
+      ">Ask a question. Draw a tarot card. Get an AI reading.<"
+    );
   });
 
-  it("the subhead is Fable's fix and does not promise a clear answer", () => {
+  it("the subhead renders the rotating variant H2 and does not promise a clear answer", () => {
     const page = src("src/app/page.tsx");
     const match = page.match(
       /<p className="mt-6 max-w-xl text-base[^"]*">([\s\S]*?)<\/p>/
     );
     expect(match).not.toBeNull();
     const subhead = (match as RegExpMatchArray)[1].replace(/\s+/g, " ").trim();
-    expect(subhead).toBe(
-      "A question on your mind? Ask the cards. Get a clearer way to see it."
-    );
+    expect(subhead).toBe("{variant.h2}");
     expect(subhead).not.toContain("Get a clear answer");
     const flat = page.replace(/\s+/g, " ");
     expect(flat).not.toMatch(/(draw|pick)\s+(three|3)\s+cards?/i);
@@ -57,16 +59,18 @@ describe("Remodel hero: explanation H1, question box, example questions", () => 
     expect(page).toContain("No experience needed. Just a question.");
   });
 
-  it("the hero has a question box with a gold submit button", () => {
+  it("the hero has a question box with a gold submit button (rotating primary CTA)", () => {
     const page = src("src/app/page.tsx");
     const flat = page.replace(/\s+/g, " ");
     expect(flat).toContain('placeholder="What\'s on your mind?"');
-    // The "free" wording is gated: it shows only when the first
-    // reading is actually free, and fails closed while auth is
-    // loading (Batch 6a rule, ReturnLoop pattern).
-    expect(flat).toContain(
-      'freeAvailable ? "Draw my card — free" : "Draw my card"'
-    );
+    // Hero rotation (Velu, 2026-11-15): the submit button renders
+    // the variant's primary CTA label ("Find Your Clarity" /
+    // "Begin Your Reading" / "Discover Your Future"), not the old
+    // free-gated "Draw my card — free". The "free" wording now
+    // lives only in the friction line below, still gated on
+    // freeAvailable (Batch 6a rule, ReturnLoop pattern).
+    expect(flat).toContain("{variant.primaryCta}");
+    expect(flat).not.toContain('"Draw my card — free"');
     expect(flat).toContain("isFreeAvailableFor");
     expect(flat).toContain("<form");
     expect(flat).toContain('type="submit"');
