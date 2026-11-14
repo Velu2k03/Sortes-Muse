@@ -85,9 +85,11 @@ html[data-theme="light"] {
    the sortes theme is the single source for the pricing page's
    dark palette, so a palette change there flows here with no
    second copy to keep in sync. The hex after each var() is only
-   the fallback if the theme variable is ever out of scope — the
-   live check measures the rendered colours, so a dead token
-   reference would show up as dark text, not a silent pass. */
+   the fallback if the theme variable is ever out of scope — and a
+   fallback would HIDE a broken reference by painting the right
+   colour anyway, so the live contrast measurement (clean-profile
+   Playwright check + PIL pixel sampling) is what catches a dead
+   token, not this stylesheet. */
 .pricing-card-dark {
   --color-ink: var(--color-background-body, #0a0e1a);
   --color-navy: var(--color-background-surface, #141b2e);

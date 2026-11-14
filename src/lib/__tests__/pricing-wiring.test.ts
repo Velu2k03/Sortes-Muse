@@ -296,12 +296,14 @@ describe("Pricing card contrast: dark islands on the light page", () => {
     // Codex P1 (PR #88): the values reference the Astryx theme
     // tokens — the sortes theme is the single source for the
     // pricing page's dark palette, so there is no second copy of
-    // the palette to drift. The hex after each var() is only the
-    // fallback if the theme variable is ever out of scope.
-    expect(body).toContain("--color-cream: var(--color-text-primary, #ede6d6);");
-    expect(body).toContain("--color-goldbright: var(--color-text-accent, #f4d03f);");
-    expect(body).toContain("--color-gold: var(--color-accent, #d4af37);");
-    expect(body).toContain("--color-panel: var(--color-background-card, #1a1f2e);");
+    // the palette to drift. Assert the token reference, not the
+    // fallback hex: pinning the fallback would make a theme edit
+    // require a test edit as well, the sync cost the P1 was
+    // about (Sonnet nit, PR #88).
+    expect(body).toContain("--color-cream: var(--color-text-primary");
+    expect(body).toContain("--color-goldbright: var(--color-text-accent");
+    expect(body).toContain("--color-gold: var(--color-accent");
+    expect(body).toContain("--color-panel: var(--color-background-card");
     // No bare hex as the primary value: a duplicate palette.
     expect(body).not.toContain("--color-cream: #ede6d6;");
     expect(body).not.toContain("--color-goldbright: #f4d03f;");
@@ -328,11 +330,12 @@ describe("Pricing card contrast: dark islands on the light page", () => {
     );
     expect(topupStack).not.toBeNull();
     expect((topupStack as RegExpMatchArray)[1]).toContain("${topup.price.toFixed(2)}");
-    // The page-level hero VStack (Pricing eyebrow, h1, intro) and
-    // the credit-costs list sit on the light paper and must NOT
-    // carry the dark scope.
+    // The page-level hero VStack (Pricing eyebrow, h1, intro) sits
+    // on the light paper and must NOT carry the dark scope. The
+    // count of 2 above plus the two VStack regexes already pin
+    // placement; no whitespace-fragile negative assertion is
+    // needed (Sonnet nit, PR #88).
     expect(c).toContain('<VStack gap={0} className="text-center">');
-    expect(c).not.toContain('className="pricing-card-dark text-center">\n        <p className="text-xs uppercase');
   });
 
   it("keeps the card text on the existing Tailwind classes (no new colours invented)", () => {
