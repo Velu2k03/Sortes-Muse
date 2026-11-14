@@ -372,6 +372,50 @@ export function clearIntakeDraft(): void {
   }
 }
 
+// Remodel hero question handoff (Velu, 2026-11-14): the question
+// typed in the hero question box travels to the intake in
+// sessionStorage, not the URL — a question in the URL would land in
+// server logs. One-time read: takeHeroQuestion clears it, so a
+// stale question never prefills a later reading.
+const HERO_QUESTION_KEY = "sortes-hero-question";
+
+export function setHeroQuestion(q: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    sessionStorage.setItem(HERO_QUESTION_KEY, JSON.stringify(q));
+  } catch {
+    // Storage unavailable; the intake just opens empty.
+  }
+}
+
+export function takeHeroQuestion(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = sessionStorage.getItem(HERO_QUESTION_KEY);
+    sessionStorage.removeItem(HERO_QUESTION_KEY);
+    if (raw === null) return null;
+    const q: unknown = JSON.parse(raw);
+    return typeof q === "string" && q.trim().length > 0 ? q : null;
+  } catch {
+    return null;
+  }
+}
+
+// Peek without consuming: the intake mount effect needs to know a
+// hero question is pending (so it discards the old draft instead of
+// merging) before the intake is usable enough to consume it.
+export function peekHeroQuestion(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = sessionStorage.getItem(HERO_QUESTION_KEY);
+    if (raw === null) return null;
+    const q: unknown = JSON.parse(raw);
+    return typeof q === "string" && q.trim().length > 0 ? q : null;
+  } catch {
+    return null;
+  }
+}
+
 // Point 6: where to land after signing in. The gate sends the seeker to
 // /account?returnTo=/intake/<slug>. Password and code sign-in finish on that
 // page, but Google and the email link come back through /auth/callback (which

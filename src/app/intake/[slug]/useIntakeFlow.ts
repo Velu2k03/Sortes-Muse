@@ -19,6 +19,8 @@ import {
   getIntakeDraft,
   saveIntakeDraft,
   clearIntakeDraft,
+  takeHeroQuestion,
+  peekHeroQuestion,
 } from "@/lib/storage";
 import { unconfirmedMessage, requireSavedReading } from "@/lib/generate-failure";
 import { intakeGate } from "@/lib/intake-gate";
@@ -142,9 +144,25 @@ export function useIntakeFlow(slug: string) {
   // once on mount, saved as they type, cleared after a successful generation.
   // Birth-sensitive answers are never stored.
   const [draftReady, setDraftReady] = useState(false);
+  // Remodel: whether a hero question was pending at mount. A ref, so
+  // a StrictMode double-run of the mount effect still skips the draft
+  // restore after the question was consumed by the effect below.
+  const heroQuestionSeenRef = useRef(false);
   useEffect(() => {
     queueMicrotask(() => {
-      const d = getIntakeDraft(slug);
+      // Remodel (Velu, 2026-11-14): a question typed in the hero
+      // question box is pending in sessionStorage. It is the freshest
+      // intent, so the old draft is discarded, not merged: a new
+      // question on top of an unrelated old story and category is a
+      // mismatch. Only the Quick Insight intake reads it: the hero
+      // only routes there.
+      if (slug === "quick-insight" && peekHeroQuestion() !== null) {
+        heroQuestionSeenRef.current = true;
+        clearIntakeDraft();
+      }
+      const d = heroQuestionSeenRef.current
+        ? null
+        : getIntakeDraft(slug);
       if (d && d.categoryKey && getCategory(d.categoryKey)) {
         setCategoryKey(d.categoryKey);
         setAnswers(d.answers);
@@ -155,6 +173,20 @@ export function useIntakeFlow(slug: string) {
       setDraftReady(true);
     });
   }, [slug]);
+  // Remodel: consume the hero question only once the intake is usable
+  // (the sign-in gate is null). If the gate is showing, the seeker
+  // leaves to sign in and comes back; consuming now would lose the
+  // question, because the draft save only runs once a category is
+  // picked and the question lives only in React state until then.
+  // The read runs in a microtask, like the draft restore above: the
+  // repo lints synchronous setState in an effect body as an error.
+  useEffect(() => {
+    if (authLoading || gate !== null) return;
+    queueMicrotask(() => {
+      const heroQuestion = takeHeroQuestion();
+      if (slug === "quick-insight" && heroQuestion) setQuestion(heroQuestion);
+    });
+  }, [slug, authLoading, gate]);
   useEffect(() => {
     if (!draftReady || !categoryKey) return;
     const safe: Record<string, string> = {};
