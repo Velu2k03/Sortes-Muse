@@ -225,7 +225,9 @@ describe.skipIf(SKIP)("two-ledger credits on real Postgres (staging only)", () =
   it("Oracle conversion: 1 Oracle = 300 purchased credits, once, with a conversion line", async () => {
     const user = await db.createUser(`ledger-convert-${RUN}@example.com`);
     await db.addUserCredits(user.id, 5);
-    const done = await db.convertOraclesToCredits(user.id);
+    // flagFlippedAt is required; a far-future flip means no
+    // purchase is post-flag, so the guard passes.
+    const done = await db.convertOraclesToCredits(user.id, { flagFlippedAt: "2999-01-01T00:00:00.000Z" });
     expect(done).toEqual({
       converted: true,
       alreadyConverted: false,
@@ -243,7 +245,7 @@ describe.skipIf(SKIP)("two-ledger credits on real Postgres (staging only)", () =
     const txs = await db.listTransactions(user.id);
     expect(txs.some((t) => t.pack_type === "oracle-conversion" && t.readings === 1500)).toBe(true);
     // A second run is a no-op: same balance, no second row.
-    const again = await db.convertOraclesToCredits(user.id);
+    const again = await db.convertOraclesToCredits(user.id, { flagFlippedAt: "2999-01-01T00:00:00.000Z" });
     expect(again.converted).toBe(false);
     expect(again.alreadyConverted).toBe(true);
     expect(again.credits).toBe(1500);
@@ -256,7 +258,7 @@ describe.skipIf(SKIP)("two-ledger credits on real Postgres (staging only)", () =
 
   it("Oracle conversion of a zero balance converts to zero and marks the user converted", async () => {
     const user = await db.createUser(`ledger-convert-zero-${RUN}@example.com`);
-    const done = await db.convertOraclesToCredits(user.id);
+    const done = await db.convertOraclesToCredits(user.id, { flagFlippedAt: "2999-01-01T00:00:00.000Z" });
     expect(done).toEqual({
       converted: true,
       alreadyConverted: false,
@@ -270,7 +272,7 @@ describe.skipIf(SKIP)("two-ledger credits on real Postgres (staging only)", () =
     expect(grants[0].amount).toBe(0);
     // No history noise for a zero conversion.
     expect(await db.listTransactions(user.id)).toHaveLength(0);
-    expect((await db.convertOraclesToCredits(user.id)).alreadyConverted).toBe(true);
+    expect((await db.convertOraclesToCredits(user.id, { flagFlippedAt: "2999-01-01T00:00:00.000Z" })).alreadyConverted).toBe(true);
   });
 
   it("existing spend sites still spend 1 per reading/report/follow-up, monthly first", async () => {
@@ -344,23 +346,384 @@ describe.skipIf(SKIP)("two-ledger credits on real Postgres (staging only)", () =
     expect(await db.getCreditBalances(user.id)).toEqual({ monthly: 0, purchased: 0, total: 0 });
   });
 
-  it("revoke spills into monthly when purchased is below the refund", async () => {
-    const user = await db.createUser(`ledger-revoke-spill-${RUN}@example.com`);
-    const fulfilled = await db.fulfillOrder({
+  it("annual full refund revokes every dripped month, writes kind 'refund', and stops the drip", async () => {
+    const user = await db.createUser(`ledger-annual-refund-${RUN}@example.com`);
+    const subId = `sub_annual_refund-${RUN}`;
+    await db.upsertSubscription({
+      userId: user.id,
+      lemonsqueezySubscriptionId: subId,
+      lemonsqueezyCustomerId: "7",
+      tier: "spark",
+      billingInterval: "annual",
+      status: "active",
+      currentPeriodStart: "2026-11-15T00:00:00.000Z",
+      currentPeriodEnd: "2027-11-15T00:00:00.000Z",
+      renewsAt: "2027-11-15T00:00:00.000Z",
+      endsAt: null,
+      cancelAtPeriodEnd: false,
+    });
+    // Two months dripped (Spark: 1,000/month). The rollover cap is
+    // two months of the plan, so a third month would grant 0; two
+    // months is enough to prove ALL months are revoked, not just
+    // the current one (the old single-month behaviour).
+    for (const periodKey of ["2026-11", "2026-12"]) {
+      const grant = await db.grantMonthlyCredits({
+        userId: user.id,
+        subscriptionId: subId,
+        tier: "spark",
+        periodKey,
+        periodEnd: "2027-11-15T00:00:00.000Z",
+      });
+      expect(grant.granted).toBe(true);
+    }
+    expect(await db.getCreditBalances(user.id)).toEqual({ monthly: 2000, purchased: 0, total: 2000 });
+    // Full refund of the annual charge (Spark annual $79.88).
+    // The cycle keys come from the invoice's creation month.
+    const revoked = await db.revokeAllSubscriptionGrants({
+      userId: user.id,
+      subscriptionId: subId,
+      periodKeys: db.cyclePeriodKeys("2026-11-15T00:00:00.000Z", "annual"),
+      totalCents: 7988,
+      refundedCents: 7988,
+    });
+    expect(revoked).toEqual({ revoked: true, amount: 2000, periods: 2 });
+    expect(await db.getCreditBalances(user.id)).toEqual({ monthly: 0, purchased: 0, total: 0 });
+    // The revoke is audited as kind 'refund', not 'expiry':
+    // two rows (one per month), amounts 1,000 / 1,000.
+    const refundRows = (await db.listCreditGrants(user.id)).filter((g) => g.kind === "refund");
+    expect(refundRows).toHaveLength(2);
+    expect(refundRows.map((g) => g.amount).sort()).toEqual([1000, 1000]);
+    expect(refundRows.every((g) => g.subscription_id === subId)).toBe(true);
+    // The subscription is stamped refunded and leaves the drip list.
+    const row = await db.getSubscriptionByProviderId(subId);
+    expect(row?.refunded_at).not.toBeNull();
+    expect((await db.listActiveAnnualSubscriptions()).some((s) => s.lemonsqueezy_subscription_id === subId)).toBe(false);
+    // A redelivery revokes nothing more.
+    const again = await db.revokeAllSubscriptionGrants({
+      userId: user.id,
+      subscriptionId: subId,
+      periodKeys: db.cyclePeriodKeys("2026-11-15T00:00:00.000Z", "annual"),
+      totalCents: 7988,
+      refundedCents: 7988,
+    });
+    expect(again).toEqual({ revoked: false, amount: 0, periods: 0 });
+  });
+
+  it("annual partial refund revokes the same share of each month and leaves the drip running", async () => {
+    const user = await db.createUser(`ledger-annual-partial-${RUN}@example.com`);
+    const subId = `sub_annual_partial-${RUN}`;
+    await db.upsertSubscription({
+      userId: user.id,
+      lemonsqueezySubscriptionId: subId,
+      lemonsqueezyCustomerId: "7",
+      tier: "spark",
+      billingInterval: "annual",
+      status: "active",
+      currentPeriodStart: "2026-11-15T00:00:00.000Z",
+      currentPeriodEnd: "2027-11-15T00:00:00.000Z",
+      renewsAt: "2027-11-15T00:00:00.000Z",
+      endsAt: null,
+      cancelAtPeriodEnd: false,
+    });
+    for (const periodKey of ["2026-11", "2026-12"]) {
+      await db.grantMonthlyCredits({
+        userId: user.id,
+        subscriptionId: subId,
+        tier: "spark",
+        periodKey,
+        periodEnd: "2027-11-15T00:00:00.000Z",
+      });
+    }
+    // Half the annual charge back: half of each month's 1,000.
+    const revoked = await db.revokeAllSubscriptionGrants({
+      userId: user.id,
+      subscriptionId: subId,
+      periodKeys: db.cyclePeriodKeys("2026-11-15T00:00:00.000Z", "annual"),
+      totalCents: 7988,
+      refundedCents: 3994,
+    });
+    expect(revoked).toEqual({ revoked: true, amount: 1000, periods: 2 });
+    expect(await db.getCreditBalances(user.id)).toEqual({ monthly: 1000, purchased: 0, total: 1000 });
+    // Partial refund does NOT stamp refunded_at: the drip continues.
+    expect((await db.getSubscriptionByProviderId(subId))?.refunded_at).toBeNull();
+    expect((await db.listActiveAnnualSubscriptions()).some((s) => s.lemonsqueezy_subscription_id === subId)).toBe(true);
+  });
+
+  it("a year-2 renewal refund revokes only year-2 months, never year-1", async () => {
+    const user = await db.createUser(`ledger-renewal-refund-${RUN}@example.com`);
+    const subId = `sub_renewal_refund-${RUN}`;
+    await db.upsertSubscription({
+      userId: user.id,
+      lemonsqueezySubscriptionId: subId,
+      lemonsqueezyCustomerId: "7",
+      tier: "spark",
+      billingInterval: "annual",
+      status: "active",
+      currentPeriodStart: "2027-11-15T00:00:00.000Z",
+      currentPeriodEnd: "2028-11-15T00:00:00.000Z",
+      renewsAt: "2028-11-15T00:00:00.000Z",
+      endsAt: null,
+      cancelAtPeriodEnd: false,
+    });
+    // Year-1 months, then spend only half down: year-1 keeps a
+    // 1,000 balance, so a leaky revoke into year-1 WOULD write a
+    // refund row there and fail the assertion below. (Spending it
+    // all to 0 would hide a leak — the revoke clamps to the
+    // balance and writes nothing.)
+    for (const periodKey of ["2026-11", "2026-12"]) {
+      await db.grantMonthlyCredits({ userId: user.id, subscriptionId: subId, tier: "spark", periodKey });
+    }
+    expect(await db.spendUserCredits(user.id, 1000)).toBe(true);
+    // Year-2 months: 2027-11 lands (balance back to the 2,000
+    // cap); 2027-12 grants 0 (at the cap).
+    await db.grantMonthlyCredits({ userId: user.id, subscriptionId: subId, tier: "spark", periodKey: "2027-11" });
+    await db.grantMonthlyCredits({ userId: user.id, subscriptionId: subId, tier: "spark", periodKey: "2027-12" });
+    expect(await db.getCreditBalances(user.id)).toEqual({ monthly: 2000, purchased: 0, total: 2000 });
+    // Full refund of the YEAR-2 renewal invoice only.
+    const revoked = await db.revokeAllSubscriptionGrants({
+      userId: user.id,
+      subscriptionId: subId,
+      periodKeys: db.cyclePeriodKeys("2027-11-15T00:00:00.000Z", "annual"),
+      totalCents: 7988,
+      refundedCents: 7988,
+    });
+    // Only the year-2 month that held credits is revoked; the
+    // year-1 balance (1,000) survives, and no year-1 refund row
+    // is written.
+    expect(revoked).toEqual({ revoked: true, amount: 1000, periods: 1 });
+    expect(await db.getCreditBalances(user.id)).toEqual({ monthly: 1000, purchased: 0, total: 1000 });
+    const refundRows = (await db.listCreditGrants(user.id)).filter((g) => g.kind === "refund");
+    expect(refundRows).toHaveLength(1);
+    expect(refundRows[0].period_key).toBe("2027-11");
+  });
+
+  it("a monthly-plan refund revokes only that month, not the other months", async () => {
+    const user = await db.createUser(`ledger-monthly-refund-${RUN}@example.com`);
+    const subId = `sub_monthly_refund-${RUN}`;
+    await db.upsertSubscription({
+      userId: user.id,
+      lemonsqueezySubscriptionId: subId,
+      lemonsqueezyCustomerId: "7",
+      tier: "spark",
+      billingInterval: "monthly",
+      status: "active",
+      currentPeriodStart: "2026-12-15T00:00:00.000Z",
+      currentPeriodEnd: "2027-01-15T00:00:00.000Z",
+      renewsAt: "2027-01-15T00:00:00.000Z",
+      endsAt: null,
+      cancelAtPeriodEnd: false,
+    });
+    for (const periodKey of ["2026-11", "2026-12"]) {
+      await db.grantMonthlyCredits({ userId: user.id, subscriptionId: subId, tier: "spark", periodKey });
+    }
+    expect(await db.getCreditBalances(user.id)).toEqual({ monthly: 2000, purchased: 0, total: 2000 });
+    // Full refund of the 2026-12 monthly invoice (Spark $7.99).
+    const revoked = await db.revokeAllSubscriptionGrants({
+      userId: user.id,
+      subscriptionId: subId,
+      periodKeys: db.cyclePeriodKeys("2026-12-15T00:00:00.000Z", "monthly"),
+      totalCents: 799,
+      refundedCents: 799,
+    });
+    expect(revoked).toEqual({ revoked: true, amount: 1000, periods: 1 });
+    expect(await db.getCreditBalances(user.id)).toEqual({ monthly: 1000, purchased: 0, total: 1000 });
+    const refundRows = (await db.listCreditGrants(user.id)).filter((g) => g.kind === "refund");
+    expect(refundRows).toHaveLength(1);
+    expect(refundRows[0].period_key).toBe("2026-12");
+  });
+
+  it("a full refund stamps refunded_at even when nothing was granted yet", async () => {
+    const user = await db.createUser(`ledger-refund-nogrant-${RUN}@example.com`);
+    const subId = `sub_refund_nogrant-${RUN}`;
+    await db.upsertSubscription({
+      userId: user.id,
+      lemonsqueezySubscriptionId: subId,
+      lemonsqueezyCustomerId: "7",
+      tier: "spark",
+      billingInterval: "annual",
+      status: "active",
+      currentPeriodStart: "2026-11-15T00:00:00.000Z",
+      currentPeriodEnd: "2027-11-15T00:00:00.000Z",
+      renewsAt: "2027-11-15T00:00:00.000Z",
+      endsAt: null,
+      cancelAtPeriodEnd: false,
+    });
+    // No grants at all (e.g. the refund arrived before the drip).
+    // The stamp must still land so the plan never drips.
+    const revoked = await db.revokeAllSubscriptionGrants({
+      userId: user.id,
+      subscriptionId: subId,
+      periodKeys: db.cyclePeriodKeys("2026-11-15T00:00:00.000Z", "annual"),
+      totalCents: 7988,
+      refundedCents: 7988,
+    });
+    expect(revoked).toEqual({ revoked: false, amount: 0, periods: 0 });
+    expect((await db.getSubscriptionByProviderId(subId))?.refunded_at).not.toBeNull();
+    expect((await db.listActiveAnnualSubscriptions()).some((s) => s.lemonsqueezy_subscription_id === subId)).toBe(false);
+  });
+
+  it("conversion refuses a user with a monthly grant (post-flag)", async () => {
+    const user = await db.createUser(`ledger-convert-monthly-${RUN}@example.com`);
+    await db.addUserCredits(user.id, 5);
+    await db.grantMonthlyCredits({
+      userId: user.id,
+      subscriptionId: `sub_convert_monthly-${RUN}`,
+      tier: "spark",
+      periodKey: "2026-11",
+    });
+    const refused = await db.convertOraclesToCredits(user.id, { flagFlippedAt: "2999-01-01T00:00:00.000Z" });
+    expect(refused.converted).toBe(false);
+    expect(refused.refused).toBe(true);
+    expect(refused.refuseReason).toMatch(/monthly/);
+    expect(await db.getCreditBalances(user.id)).toEqual({ monthly: 1000, purchased: 5, total: 1005 });
+  });
+
+  it("conversion refuses a post-flag purchase and allows a pre-flag one", async () => {
+    const user = await db.createUser(`ledger-convert-postflag-${RUN}@example.com`);
+    await db.fulfillOrder({
       userId: user.id,
       email: user.email,
-      packType: `pack5 (lemonsqueezy:order-ledger-spill-${RUN})`,
+      packType: `pack5 (lemonsqueezy:order-convert-postflag-${RUN})`,
       amount: 3.99,
       readings: 5,
-      orderId: `order-ledger-spill-${RUN}`,
+      orderId: `order-convert-postflag-${RUN}`,
     });
-    expect(fulfilled.credits).toBe(5);
-    // Seed the spill directly: purchased 3 of the 5-pack refund, monthly
-    // 3 to absorb the remainder. (No spend path takes purchased first —
-    // spend is monthly-first — so a real flow cannot produce this shape.)
-    await raw`UPDATE users SET monthly_credits = 3, purchased_credits = 3 WHERE id = ${user.id}`;
-    const revoked = await db.revokeOrder(`order-ledger-spill-${RUN}`, user.email);
-    expect(revoked).toEqual({ revoked: true, readings: 5 });
-    expect(await db.getCreditBalances(user.id)).toEqual({ monthly: 1, purchased: 0, total: 1 });
+    expect(await db.getCreditBalances(user.id)).toEqual({ monthly: 0, purchased: 5, total: 5 });
+    // The purchase is after a 2000 flip time: refuse, balance unchanged.
+    const refused = await db.convertOraclesToCredits(user.id, { flagFlippedAt: "2000-01-01T00:00:00.000Z" });
+    expect(refused.converted).toBe(false);
+    expect(refused.refused).toBe(true);
+    expect(await db.getCreditBalances(user.id)).toEqual({ monthly: 0, purchased: 5, total: 5 });
+    // The same purchase is before a 2999 flip time: convert normally.
+    const done = await db.convertOraclesToCredits(user.id, { flagFlippedAt: "2999-01-01T00:00:00.000Z" });
+    expect(done.converted).toBe(true);
+    expect(done.credits).toBe(1500);
+    expect(await db.getCreditBalances(user.id)).toEqual({ monthly: 0, purchased: 1500, total: 1500 });
+  });
+
+  it("listGrantedSubscriptionPeriods returns only the granted months; the drip list pages", async () => {
+    const user = await db.createUser(`ledger-periods-${RUN}@example.com`);
+    const subId = `sub_periods-${RUN}`;
+    await db.upsertSubscription({
+      userId: user.id,
+      lemonsqueezySubscriptionId: subId,
+      lemonsqueezyCustomerId: "7",
+      tier: "spark",
+      billingInterval: "annual",
+      status: "active",
+      currentPeriodStart: "2026-11-15T00:00:00.000Z",
+      currentPeriodEnd: "2027-11-15T00:00:00.000Z",
+      renewsAt: "2027-11-15T00:00:00.000Z",
+      endsAt: null,
+      cancelAtPeriodEnd: false,
+    });
+    await db.grantMonthlyCredits({ userId: user.id, subscriptionId: subId, tier: "spark", periodKey: "2026-11" });
+    await db.grantMonthlyCredits({ userId: user.id, subscriptionId: subId, tier: "spark", periodKey: "2027-01" });
+    expect(await db.listGrantedSubscriptionPeriods(subId)).toEqual(["2026-11", "2027-01"]);
+    // Paging: the list is ordered by created_at and the shared
+    // ledgers DB holds rows from earlier runs, so assert on shape
+    // and on my rows being present, not on page position.
+    const all = await db.listActiveAnnualSubscriptions(1000, 0);
+    expect(all.some((s) => s.lemonsqueezy_subscription_id === subId)).toBe(true);
+    const page1 = await db.listActiveAnnualSubscriptions(1, 0);
+    expect(page1).toHaveLength(1);
+    const page2 = await db.listActiveAnnualSubscriptions(1, 1);
+    expect(page2).toHaveLength(1);
+    expect(page2[0].lemonsqueezy_subscription_id).not.toBe(page1[0].lemonsqueezy_subscription_id);
+  });
+
+  it("a cancelled row leaves the drip list once a newer live row exists for the user", async () => {
+    const user = await db.createUser(`ledger-resub-${RUN}@example.com`);
+    const oldId = `sub_resub_old-${RUN}`;
+    const newId = `sub_resub_new-${RUN}`;
+    await db.upsertSubscription({
+      userId: user.id,
+      lemonsqueezySubscriptionId: oldId,
+      lemonsqueezyCustomerId: "7",
+      tier: "spark",
+      billingInterval: "annual",
+      status: "cancelled",
+      currentPeriodStart: "2026-11-15T00:00:00.000Z",
+      currentPeriodEnd: "2027-11-15T00:00:00.000Z",
+      renewsAt: null,
+      endsAt: "2027-11-15T00:00:00.000Z",
+      cancelAtPeriodEnd: true,
+    });
+    await db.upsertSubscription({
+      userId: user.id,
+      lemonsqueezySubscriptionId: newId,
+      lemonsqueezyCustomerId: "7",
+      tier: "star",
+      billingInterval: "annual",
+      status: "active",
+      currentPeriodStart: "2026-11-16T00:00:00.000Z",
+      currentPeriodEnd: "2027-11-16T00:00:00.000Z",
+      renewsAt: "2027-11-16T00:00:00.000Z",
+      endsAt: null,
+      cancelAtPeriodEnd: false,
+    });
+    const ids = (await db.listActiveAnnualSubscriptions(500, 0)).map((s) => s.lemonsqueezy_subscription_id);
+    expect(ids).toContain(newId);
+    expect(ids).not.toContain(oldId);
+  });
+
+  it("upsert never reassigns a subscription to another user", async () => {
+    const u1 = await db.createUser(`ledger-owner1-${RUN}@example.com`);
+    const u2 = await db.createUser(`ledger-owner2-${RUN}@example.com`);
+    const subId = `sub_owner-${RUN}`;
+    await db.upsertSubscription({
+      userId: u1.id,
+      lemonsqueezySubscriptionId: subId,
+      lemonsqueezyCustomerId: "7",
+      tier: "spark",
+      billingInterval: "monthly",
+      status: "active",
+      currentPeriodStart: "2026-11-15T00:00:00.000Z",
+      currentPeriodEnd: "2026-12-15T00:00:00.000Z",
+      renewsAt: "2026-12-15T00:00:00.000Z",
+      endsAt: null,
+      cancelAtPeriodEnd: false,
+    });
+    await db.upsertSubscription({
+      userId: u2.id,
+      lemonsqueezySubscriptionId: subId,
+      lemonsqueezyCustomerId: "7",
+      tier: "star",
+      billingInterval: "monthly",
+      status: "active",
+      currentPeriodStart: "2026-11-15T00:00:00.000Z",
+      currentPeriodEnd: "2026-12-15T00:00:00.000Z",
+      renewsAt: "2026-12-15T00:00:00.000Z",
+      endsAt: null,
+      cancelAtPeriodEnd: false,
+    });
+    const row = await db.getSubscriptionByProviderId(subId);
+    expect(row?.user_id).toBe(u1.id);
+    // The tier still updates (only the owner is pinned).
+    expect(row?.tier).toBe("star");
+  });
+
+  it("the cycle start never moves backward on a late year-1 payment", async () => {
+    const user = await db.createUser(`ledger-cycle-${RUN}@example.com`);
+    const subId = `sub_cycle-${RUN}`;
+    const base = {
+      userId: user.id,
+      lemonsqueezySubscriptionId: subId,
+      lemonsqueezyCustomerId: "7",
+      tier: "spark" as const,
+      billingInterval: "annual" as const,
+      status: "active",
+      currentPeriodEnd: "2027-01-15T00:00:00.000Z",
+      renewsAt: "2027-01-15T00:00:00.000Z",
+      endsAt: null,
+      cancelAtPeriodEnd: false,
+    };
+    await db.upsertSubscription({ ...base, currentPeriodStart: "2026-01-15T00:00:00.000Z" });
+    // A late year-1 event carries an earlier start: it must not win.
+    await db.upsertSubscription({ ...base, currentPeriodStart: "2025-06-15T00:00:00.000Z" });
+    expect((await db.getSubscriptionByProviderId(subId))?.current_period_start).toBe("2026-01-15T00:00:00.000Z");
+    // A genuinely later start (a renewal) still moves it forward.
+    await db.upsertSubscription({ ...base, currentPeriodStart: "2027-01-15T00:00:00.000Z" });
+    expect((await db.getSubscriptionByProviderId(subId))?.current_period_start).toBe("2027-01-15T00:00:00.000Z");
   });
 });

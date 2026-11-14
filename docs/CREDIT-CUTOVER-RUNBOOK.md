@@ -36,12 +36,39 @@ the conversion needs holders emailed first and pack sales stopped.
   a reading would still cost 1 *credit* — one 300-credit Oracle
   would buy 300 readings. Never do this.
 - **A purchase landing in the window** is handled by the
-  conversion runner's post-flag-grant check (see below): the
-  runner converts only balances that have not already been
-  converted, and a pack bought after the flag flipped is already
-  in credits (fulfillOrder grants credits when the flag is ON), so
-  the runner must skip it. The runner is NOT built yet (Batch A
-  miss-check item 5); build it before scheduling the cutover.
+  conversion guard in `convertOraclesToCredits` (migration 010
+  batch): the function refuses any user with a `monthly` grant
+  (subscriptions only exist after the flag flips) or a purchase
+  recorded in `transactions` after the flag-flip time (packs and
+  top-ups record there, not in credit_grants — no code writes a
+  `purchased` grant row). The runner MUST pass `flagFlippedAt`
+  (the flag-ON deploy time, REQUIRED — omitting it is a type
+  error); without a correct flip time the purchase check cannot
+  run. A pack bought after the flag flipped is already in credits
+  (fulfillOrder grants credits when the flag is ON), so the guard
+  skips that user instead of multiplying the balance by 300. The
+  runner is NOT built yet; build it before scheduling the cutover.
+- **Refused users need a manual path.** A user with pre-flag
+  Oracles who ALSO bought a pack/top-up or a subscription after
+  the flip is refused outright (safe direction) and keeps
+  unconverted Oracles. The runner must LIST refused users
+  (user id, email, Oracle balance, refuse reason) for manual
+  handling: verify the post-flag purchase, convert only the
+  pre-flag Oracle portion by hand, and record the decision. Do
+  not re-run the conversion on a refused user without that
+  manual check — it would multiply the post-flag credits.
+- **A full refund stamps refunded_at on the whole subscription
+  row, not just the refunded cycle.** The revoke itself is
+  scoped to the refunded invoice's cycle (cyclePeriodKeys), but
+  the stamp stops the drip for the entire subscription. So a
+  full refund of a year-1 invoice, issued after year-2 has
+  already renewed and been paid, would stop the paid year-2
+  plan from dripping. This is an edge case (refunds normally
+  arrive for the current invoice), and the stamp-first order
+  is deliberate — but if a late refund of an old cycle arrives,
+  check whether a newer cycle is already paid and, if so, clear
+  refunded_at by hand after the revoke so the current cycle
+  resumes dripping.
 
 ## Preconditions (all must be true)
 
@@ -146,15 +173,15 @@ the conversion needs holders emailed first and pack sales stopped.
 
 ## Known limitations (Claude review, PR #92 — accepted, not blockers)
 
-- **Refunded annual invoice only revokes month 0.** A refunded
-  subscription invoice revokes that period's single grant
-  (`revokeSubscriptionGrant`). If the subscription stays `active`
-  after the refund, the drip cron keeps granting months 1-11 for
-  money that was returned. Before the cutover, confirm whether
-  Lemon Squeezy cancels or expires the subscription on a refund
-  and test that path; if it stays active, stop the drip for the
-  refunded subscription (or revoke the remaining months) as part
-  of the cutover. Do not rely on the refund alone.
+- **Refunded annual invoice now revokes all months and stops the
+  drip (FIXED in the notes batch, migration 010).** A refunded
+  subscription invoice revokes every monthly grant for the cycle
+  (`revokeAllSubscriptionGrants`) and stamps `refunded_at` on the
+  subscription row, which excludes it from the drip cron. A
+  partial refund revokes the same share of each month and leaves
+  the subscription (and the drip) running. Before the cutover,
+  still confirm whether Lemon Squeezy cancels or expires the
+  subscription on a refund and test that path.
 - **Re-subscribe during the grace period keeps the old monthly
   balance.** A user who resubscribes while the old subscription
   is still live keeps the old subscription's leftover monthly

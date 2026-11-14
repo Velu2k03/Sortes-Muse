@@ -76,6 +76,9 @@ export {
   listActiveAnnualSubscriptions,
   expireMonthlyBalance,
   revokeSubscriptionGrant,
+  revokeAllSubscriptionGrants,
+  cyclePeriodKeys,
+  listGrantedSubscriptionPeriods,
 } from "./db/subscriptions";
 export type { FollowUpAppendResult } from "./db/readings";
 export {

@@ -1,15 +1,21 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
-vi.mock("@/lib/db", () => ({
-  getUserByEmail: vi.fn(),
-  getUserById: vi.fn(),
-  createUser: vi.fn(),
-  grantMonthlyCredits: vi.fn(),
-  upsertSubscription: vi.fn(),
-  getSubscriptionByProviderId: vi.fn(),
-  expireMonthlyBalance: vi.fn(),
-  revokeSubscriptionGrant: vi.fn(),
-}));
+vi.mock("@/lib/db", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/db")>();
+  return {
+    getUserByEmail: vi.fn(),
+    getUserById: vi.fn(),
+    createUser: vi.fn(),
+    grantMonthlyCredits: vi.fn(),
+    upsertSubscription: vi.fn(),
+    getSubscriptionByProviderId: vi.fn(),
+    expireMonthlyBalance: vi.fn(),
+    revokeAllSubscriptionGrants: vi.fn(),
+    // The real cycle-key helper: the test asserts the webhook
+    // passes the invoice cycle's months to the revoke call.
+    cyclePeriodKeys: actual.cyclePeriodKeys,
+  };
+});
 
 import {
   getUserByEmail,
@@ -19,7 +25,7 @@ import {
   upsertSubscription,
   getSubscriptionByProviderId,
   expireMonthlyBalance,
-  revokeSubscriptionGrant,
+  revokeAllSubscriptionGrants,
 } from "@/lib/db";
 import { handleSubscriptionWebhook } from "@/lib/subscription-webhook";
 
@@ -35,7 +41,7 @@ const mockedGrantMonthlyCredits = vi.mocked(grantMonthlyCredits);
 const mockedUpsertSubscription = vi.mocked(upsertSubscription);
 const mockedGetSubscriptionByProviderId = vi.mocked(getSubscriptionByProviderId);
 const mockedExpireMonthlyBalance = vi.mocked(expireMonthlyBalance);
-const mockedRevokeSubscriptionGrant = vi.mocked(revokeSubscriptionGrant);
+const mockedRevokeAllSubscriptionGrants = vi.mocked(revokeAllSubscriptionGrants);
 
 function subscriptionJson(id: string, status = "active", variantId = "s3") {
   return {
@@ -101,12 +107,13 @@ describe("handleSubscriptionWebhook", () => {
       renews_at: "2026-12-15T00:00:00.000Z",
       ends_at: null,
       cancel_at_period_end: false,
+      refunded_at: null,
       created_at: "2026-11-15T00:00:00.000Z",
       updated_at: "2026-11-15T00:00:00.000Z",
     }));
     mockedGrantMonthlyCredits.mockResolvedValue({ granted: true, amount: 2500, balances: { monthly: 2500, purchased: 0, total: 2500 } } as never);
     mockedExpireMonthlyBalance.mockResolvedValue(0);
-    mockedRevokeSubscriptionGrant.mockResolvedValue({ revoked: true, amount: 2500 } as never);
+    mockedRevokeAllSubscriptionGrants.mockResolvedValue({ revoked: true, amount: 2500, periods: 1 } as never);
   });
 
   afterEach(() => {
@@ -240,7 +247,7 @@ describe("handleSubscriptionWebhook", () => {
     expect(mockedGrantMonthlyCredits).not.toHaveBeenCalled();
   });
 
-  it("subscription_payment_refunded revokes that period's grant", async () => {
+  it("subscription_payment_refunded revokes every monthly grant for the cycle", async () => {
     stubFetch(
       subscriptionJson("sub_1"),
       invoiceJson("inv_1", { status: "refunded", refunded_amount: 1499 })
@@ -250,9 +257,14 @@ describe("handleSubscriptionWebhook", () => {
       data: { id: "inv_1", attributes: { store_id: 42, subscription_id: "sub_1", total: 1499, user_email: "buyer@example.com", created_at: "2026-11-15T00:00:00.000Z" } },
     });
     expect(result.status).toBe(200);
-    expect(mockedRevokeSubscriptionGrant).toHaveBeenCalledTimes(1);
-    const revokeArgs = mockedRevokeSubscriptionGrant.mock.calls[0][0] as { periodKey: string; totalCents: number; refundedCents: number };
-    expect(revokeArgs.periodKey).toBe("2026-11");
+    expect(mockedRevokeAllSubscriptionGrants).toHaveBeenCalledTimes(1);
+    const revokeArgs = mockedRevokeAllSubscriptionGrants.mock.calls[0][0] as {
+      periodKeys: string[];
+      totalCents: number;
+      refundedCents: number;
+    };
+    // Star monthly: the cycle is just the invoice's month.
+    expect(revokeArgs.periodKeys).toEqual(["2026-11"]);
     expect(revokeArgs.totalCents).toBe(1499);
     expect(revokeArgs.refundedCents).toBe(1499);
   });

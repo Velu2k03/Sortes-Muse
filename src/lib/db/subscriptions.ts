@@ -46,6 +46,7 @@ function rowToSubscription(row: {
   renews_at: string | null;
   ends_at: string | null;
   cancel_at_period_end: boolean;
+  refunded_at: string | Date | null;
   created_at: string | Date;
   updated_at: string | Date;
 }): DbSubscription {
@@ -62,6 +63,7 @@ function rowToSubscription(row: {
     renews_at: row.renews_at ? new Date(row.renews_at).toISOString() : null,
     ends_at: row.ends_at ? new Date(row.ends_at).toISOString() : null,
     cancel_at_period_end: row.cancel_at_period_end,
+    refunded_at: row.refunded_at ? new Date(row.refunded_at).toISOString() : null,
     created_at: new Date(row.created_at).toISOString(),
     updated_at: new Date(row.updated_at).toISOString(),
   };
@@ -78,7 +80,12 @@ function newSubscriptionId(): string {
  * currentPeriodStart means "keep the existing cycle start": only
  * an invoice (payment_success) supplies a new one, so a
  * subscription_updated on renewal cannot reset the annual cycle
- * to the original creation date.
+ * to the original creation date. The cycle start never moves
+ * backward: a late year-1 payment_success is clamped to the
+ * existing start with GREATEST, so the drip cron cannot re-grant
+ * year-1 months. The user_id is set on insert only and never
+ * reassigned on conflict: events are signed and verified, but a
+ * subscription must not be movable to another user.
  */
 export async function upsertSubscription(args: SubscriptionUpsert): Promise<DbSubscription> {
   await ensureSchema();
@@ -92,12 +99,15 @@ export async function upsertSubscription(args: SubscriptionUpsert): Promise<DbSu
         ${args.currentPeriodStart ?? null}, ${args.currentPeriodEnd ?? null}, ${args.renewsAt ?? null}, ${args.endsAt ?? null},
         ${args.cancelAtPeriodEnd ?? false}, NOW(), NOW())
       ON CONFLICT (lemonsqueezy_subscription_id) DO UPDATE SET
-        user_id = EXCLUDED.user_id,
         lemonsqueezy_customer_id = EXCLUDED.lemonsqueezy_customer_id,
         tier = EXCLUDED.tier,
         billing_interval = EXCLUDED.billing_interval,
         status = EXCLUDED.status,
-        current_period_start = COALESCE(EXCLUDED.current_period_start, subscriptions.current_period_start),
+        current_period_start = CASE
+          WHEN EXCLUDED.current_period_start IS NULL THEN subscriptions.current_period_start
+          WHEN subscriptions.current_period_start IS NULL THEN EXCLUDED.current_period_start
+          ELSE GREATEST(EXCLUDED.current_period_start, subscriptions.current_period_start)
+        END,
         current_period_end = EXCLUDED.current_period_end,
         renews_at = EXCLUDED.renews_at,
         ends_at = EXCLUDED.ends_at,
@@ -111,12 +121,22 @@ export async function upsertSubscription(args: SubscriptionUpsert): Promise<DbSu
   const now = new Date().toISOString();
   const existing = list.find((s) => s.lemonsqueezy_subscription_id === args.lemonsqueezySubscriptionId);
   if (existing) {
-    existing.user_id = args.userId;
+    // user_id is set on insert only, never reassigned (see the
+    // Postgres branch). refunded_at is never cleared here: a
+    // later event must not resume the drip for a refunded cycle.
     existing.lemonsqueezy_customer_id = args.lemonsqueezyCustomerId ?? null;
     existing.tier = args.tier;
     existing.billing_interval = args.billingInterval;
     existing.status = args.status;
-    existing.current_period_start = args.currentPeriodStart ?? existing.current_period_start;
+    // Never move the cycle start backward (GREATEST, same as the
+    // Postgres branch): a null new start keeps the existing one.
+    if (args.currentPeriodStart) {
+      const incoming = new Date(args.currentPeriodStart).getTime();
+      const current = existing.current_period_start ? new Date(existing.current_period_start).getTime() : NaN;
+      if (Number.isNaN(current) || incoming > current) {
+        existing.current_period_start = args.currentPeriodStart;
+      }
+    }
     existing.current_period_end = args.currentPeriodEnd ?? null;
     existing.renews_at = args.renewsAt ?? null;
     existing.ends_at = args.endsAt ?? null;
@@ -138,6 +158,7 @@ export async function upsertSubscription(args: SubscriptionUpsert): Promise<DbSu
     renews_at: args.renewsAt ?? null,
     ends_at: args.endsAt ?? null,
     cancel_at_period_end: args.cancelAtPeriodEnd ?? false,
+    refunded_at: null,
     created_at: now,
     updated_at: now,
   };
@@ -184,21 +205,53 @@ export async function getActiveSubscriptionForUser(userId: string): Promise<DbSu
 /**
  * Active annual subscriptions, for the monthly drip cron. A
  * cancelled (grace-period) annual row is included — the year was
- * paid for, so the drip runs until the period ends. Expired rows
- * are excluded.
+ * paid for, so the drip runs until the period ends — UNLESS the
+ * user has since started a newer live annual plan, in which case
+ * the new plan's drip covers them and the old row stops dripping
+ * (otherwise both would grant into the same monthly pool).
+ * Refunded rows are excluded: a full refund stops the drip
+ * (revokeAllSubscriptionGrants sets refunded_at). Expired rows
+ * are excluded. Paged by (limit, offset) so the drip cron can
+ * walk more than 500 subscriptions.
  */
-export async function listActiveAnnualSubscriptions(limit = 500): Promise<DbSubscription[]> {
+export async function listActiveAnnualSubscriptions(limit = 500, offset = 0): Promise<DbSubscription[]> {
   await ensureSchema();
   if (usePostgres) {
     const { rows } = await sql`SELECT * FROM subscriptions
       WHERE billing_interval = 'annual' AND status IN ('active', 'on_trial', 'cancelled', 'past_due')
-      ORDER BY created_at ASC LIMIT ${limit}`;
+        AND refunded_at IS NULL
+        AND NOT (
+          status = 'cancelled'
+          AND EXISTS (
+            SELECT 1 FROM subscriptions s2
+            WHERE s2.user_id = subscriptions.user_id
+              AND s2.billing_interval = 'annual'
+              AND s2.status IN ('active', 'on_trial', 'past_due')
+              AND s2.refunded_at IS NULL
+              AND s2.created_at > subscriptions.created_at
+          )
+        )
+      ORDER BY created_at ASC, id ASC LIMIT ${limit} OFFSET ${offset}`;
     return (rows as Array<Record<string, unknown>>).map((r) => rowToSubscription(r as never));
   }
   const db = await readLocal();
-  return (db.subscriptions ?? [])
+  const all = (db.subscriptions ?? [])
     .filter((s) => s.billing_interval === "annual" && ["active", "on_trial", "cancelled", "past_due"].includes(s.status))
-    .slice(0, limit);
+    .filter((s) => !s.refunded_at)
+    .filter(
+      (s) =>
+        s.status !== "cancelled" ||
+        !(db.subscriptions ?? []).some(
+          (o) =>
+            o.user_id === s.user_id &&
+            o.billing_interval === "annual" &&
+            ["active", "on_trial", "past_due"].includes(o.status) &&
+            !o.refunded_at &&
+            new Date(o.created_at).getTime() > new Date(s.created_at).getTime()
+        )
+    )
+    .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+  return all.slice(offset, offset + limit);
 }
 
 /**
@@ -312,10 +365,12 @@ export async function revokeSubscriptionGrant(args: {
       }>;
       if (grant.length === 0) return { revoked: false, amount: 0 };
       const granted = grant[0].amount;
-      // Already-revoked for this period: expiry rows are the only
-      // negative monthly adjustments tracked per period; sum them.
+      // Already-revoked for this period: refund revokes are
+      // audited as kind 'refund' (migration 010); pre-010 revokes
+      // wrote 'expiry' for the same purpose, so sum both kinds
+      // for backward compatibility.
       const already = (await tx`SELECT COALESCE(SUM(amount), 0)::int AS done FROM credit_grants
-        WHERE subscription_id = ${args.subscriptionId} AND period_key = ${args.periodKey} AND kind = 'expiry'`) as Array<{
+        WHERE subscription_id = ${args.subscriptionId} AND period_key = ${args.periodKey} AND kind IN ('expiry', 'refund')`) as Array<{
         done: number;
       }>;
       const delta = prorateRevoke(granted, args.totalCents / 100, args.refundedCents, already[0].done);
@@ -333,7 +388,7 @@ export async function revokeSubscriptionGrant(args: {
         WHERE id = ${args.userId}`;
       await tx`INSERT INTO credit_grants
         (id, user_id, kind, amount, subscription_id, period_key, tier, expires_at, granted_at)
-        VALUES (${`g_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`}, ${args.userId}, 'expiry', ${actual}, ${args.subscriptionId}, ${args.periodKey}, NULL, NULL, NOW())`;
+        VALUES (${`g_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`}, ${args.userId}, 'refund', ${actual}, ${args.subscriptionId}, ${args.periodKey}, NULL, NULL, NOW())`;
       return { revoked: true, amount: actual };
     });
     return await withDbTimeout(begin, controller);
@@ -347,7 +402,7 @@ export async function revokeSubscriptionGrant(args: {
   );
   if (!grant) return { revoked: false, amount: 0 };
   const already = grants
-    .filter((g) => g.subscription_id === args.subscriptionId && g.period_key === args.periodKey && g.kind === "expiry")
+    .filter((g) => g.subscription_id === args.subscriptionId && g.period_key === args.periodKey && ["expiry", "refund"].includes(g.kind))
     .reduce((n, g) => n + g.amount, 0);
   const delta = prorateRevoke(grant.amount, args.totalCents / 100, args.refundedCents, already);
   if (delta <= 0) return { revoked: false, amount: 0 };
@@ -360,7 +415,7 @@ export async function revokeSubscriptionGrant(args: {
   grants.unshift({
     id: `g_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`,
     user_id: args.userId,
-    kind: "expiry",
+    kind: "refund",
     amount: actual,
     subscription_id: args.subscriptionId,
     period_key: args.periodKey,
@@ -370,4 +425,129 @@ export async function revokeSubscriptionGrant(args: {
   });
   await writeLocal(db);
   return { revoked: true, amount: actual };
+}
+
+/**
+ * The period keys (YYYY-MM) that already have a 'monthly' grant
+ * for a subscription. The drip cron uses this to skip months it
+ * already granted (one query instead of one transaction per
+ * month), and revokeAllSubscriptionGrants uses it to find every
+ * month a refund must revoke.
+ */
+export async function listGrantedSubscriptionPeriods(subscriptionId: string): Promise<string[]> {
+  await ensureSchema();
+  if (usePostgres) {
+    const { rows } = await sql`SELECT DISTINCT period_key FROM credit_grants
+      WHERE subscription_id = ${subscriptionId} AND kind = 'monthly' AND period_key IS NOT NULL
+      ORDER BY period_key`;
+    return (rows as Array<{ period_key: string }>).map((r) => r.period_key);
+  }
+  const db = await readLocal();
+  const keys = new Set<string>();
+  for (const g of db.creditGrants ?? []) {
+    if (g.subscription_id === subscriptionId && g.kind === "monthly" && g.period_key) {
+      keys.add(g.period_key);
+    }
+  }
+  return [...keys].sort();
+}
+
+/**
+ * The YYYY-MM period keys in one billing cycle, starting from a
+ * date (the invoice's creation month, which is the cycle start).
+ * Monthly: just that month. Annual: that month + the next 11.
+ * The webhook passes these to revokeAllSubscriptionGrants so a
+ * refund only touches the refunded invoice's cycle — never a
+ * previous or later cycle's months (Claude review of PR #94).
+ */
+export function cyclePeriodKeys(startDate: Date | string, interval: "monthly" | "annual"): string[] {
+  const d = typeof startDate === "string" ? new Date(startDate) : startDate;
+  if (Number.isNaN(d.getTime())) throw new Error("cyclePeriodKeys: invalid start date");
+  const months = interval === "annual" ? 12 : 1;
+  const keys: string[] = [];
+  for (let i = 0; i < months; i++) {
+    const y = d.getUTCFullYear();
+    const m = d.getUTCMonth() + i;
+    const year = y + Math.floor(m / 12);
+    const month = (m % 12) + 1;
+    keys.push(`${year}-${String(month).padStart(2, "0")}`);
+  }
+  return keys;
+}
+
+/**
+ * Revoke every monthly grant in ONE billing cycle after a refund.
+ * The caller passes the cycle's period keys (from
+ * cyclePeriodKeys, built from the refunded invoice's creation
+ * month + billing interval) — a refund of the year-2 renewal
+ * must not revoke year-1 months, and a monthly-plan refund
+ * revokes only that month. A full refund also stamps
+ * refunded_at on the subscription row, which excludes it
+ * from listActiveAnnualSubscriptions and stops the drip. A
+ * partial refund leaves refunded_at unset: the subscription
+ * continues and the drip continues for future months. Returns
+ * the total revoked and how many months were touched.
+ *
+ * The stamp goes FIRST and unconditionally on a full refund
+ * (Claude review of PR #94): if the revoke loop throws after
+ * revoking, a webhook retry finds nothing left to revoke
+ * (periods 0) and would never stamp, leaving the plan dripping
+ * forever. Stamping first is idempotent, and the per-month
+ * already-revoked check keeps a retry from double-revoking.
+ */
+export async function revokeAllSubscriptionGrants(args: {
+  userId: string;
+  subscriptionId: string;
+  /** The cycle's period keys (YYYY-MM) — only these months are revoked. */
+  periodKeys: string[];
+  /** Invoice total in cents (the cycle's charge). */
+  totalCents: number;
+  /** Cumulative refunded amount in cents; undefined/0 = full refund. */
+  refundedCents?: number;
+}): Promise<{ revoked: boolean; amount: number; periods: number }> {
+  const isFullRefund =
+    !args.refundedCents || args.refundedCents <= 0 || args.totalCents <= 0 || args.refundedCents >= args.totalCents;
+  // Stamp first, unconditionally on a full refund (see the header
+  // comment): the drip must stop even if the revoke loop throws
+  // or there is nothing to revoke yet.
+  if (isFullRefund) {
+    await ensureSchema();
+    if (usePostgres) {
+      if (!pg) throw new Error("Database not configured");
+      await sql`UPDATE subscriptions SET refunded_at = NOW(), updated_at = NOW()
+        WHERE lemonsqueezy_subscription_id = ${args.subscriptionId}`;
+    } else {
+      const db = await readLocal();
+      const row = (db.subscriptions ?? []).find(
+        (s) => s.lemonsqueezy_subscription_id === args.subscriptionId
+      );
+      if (row) {
+        row.refunded_at = new Date().toISOString();
+        row.updated_at = new Date().toISOString();
+        await writeLocal(db);
+      }
+    }
+  }
+  // Only the cycle's months, intersected with what was granted.
+  // listGrantedSubscriptionPeriods returns every granted month
+  // for the subscription (all cycles); the cycle filter is what
+  // keeps a year-2 refund out of year-1 months.
+  const granted = new Set(await listGrantedSubscriptionPeriods(args.subscriptionId));
+  let amount = 0;
+  let periods = 0;
+  for (const periodKey of args.periodKeys) {
+    if (!granted.has(periodKey)) continue;
+    const result = await revokeSubscriptionGrant({
+      userId: args.userId,
+      subscriptionId: args.subscriptionId,
+      periodKey,
+      totalCents: args.totalCents,
+      refundedCents: args.refundedCents,
+    });
+    if (result.revoked) {
+      amount += result.amount;
+      periods += 1;
+    }
+  }
+  return { revoked: periods > 0, amount, periods };
 }
