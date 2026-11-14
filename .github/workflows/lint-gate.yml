@@ -31,6 +31,7 @@ jobs:
       SORTES_TEST_DATABASE_URL: postgres://sortes_test:ci_only_throwaway@127.0.0.1:5432/sortes_pgtest_money?sslmode=disable
       SORTES_TEST_DATABASE_URL_MIGRATIONS: postgres://sortes_test:ci_only_throwaway@127.0.0.1:5432/sortes_pgtest_migrations?sslmode=disable
       SORTES_TEST_DATABASE_URL_RLS: postgres://sortes_test:ci_only_throwaway@127.0.0.1:5432/sortes_pgtest_rls?sslmode=disable
+      SORTES_TEST_DATABASE_URL_LEDGERS: postgres://sortes_test:ci_only_throwaway@127.0.0.1:5432/sortes_pgtest_ledgers?sslmode=disable
     services:
       postgres:
         image: postgres:16
@@ -69,13 +70,14 @@ jobs:
         env:
           PGPASSWORD: ci_only_throwaway
         run: |
-          for v in SORTES_TEST_DATABASE_URL SORTES_TEST_DATABASE_URL_MIGRATIONS SORTES_TEST_DATABASE_URL_RLS; do
+          for v in SORTES_TEST_DATABASE_URL SORTES_TEST_DATABASE_URL_MIGRATIONS SORTES_TEST_DATABASE_URL_RLS SORTES_TEST_DATABASE_URL_LEDGERS; do
             if [ -z "${!v}" ]; then echo "::error::$v is empty"; exit 1; fi
           done
           pg_isready -h 127.0.0.1 -p 5432 -U sortes_test || { echo "::error::Postgres service not reachable"; exit 1; }
           psql -h 127.0.0.1 -U sortes_test -d sortes_pgtest_money -v ON_ERROR_STOP=1 <<'SQL'
           CREATE DATABASE sortes_pgtest_migrations;
           CREATE DATABASE sortes_pgtest_rls;
+          CREATE DATABASE sortes_pgtest_ledgers;
           CREATE ROLE anon LOGIN PASSWORD 'sortes_test_local';
           CREATE ROLE authenticated LOGIN PASSWORD 'sortes_test_local';
           SQL

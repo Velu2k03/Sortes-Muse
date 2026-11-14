@@ -1,6 +1,6 @@
 import { promises as fs } from "fs";
 import path from "path";
-import type { DbTransaction, DbUser } from "./types";
+import type { CreditGrant, DbTransaction, DbUser } from "./types";
 
 /*
  * F9 (2026-11-09): the local-dev JSON file store (data/local-db.json).
@@ -21,6 +21,10 @@ export interface LocalDb {
   // M4.1: optional because local files written before M4.1 have no
   // reports key; report functions fall back to an empty list.
   reports?: Array<{ id: string; user_id: string; data: unknown; created_at: string }>;
+  // Phase 2 batch 2: optional because local files written before 008
+  // have no creditGrants key; the ledger functions fall back to an
+  // empty list.
+  creditGrants?: CreditGrant[];
 }
 
 export async function readLocal(): Promise<LocalDb> {

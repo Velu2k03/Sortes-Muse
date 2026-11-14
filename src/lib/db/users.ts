@@ -35,11 +35,15 @@ export async function createUser(email: string): Promise<DbUser> {
     id: uid(),
     email,
     credits: 0,
+    monthly_credits: 0,
+    purchased_credits: 0,
     created_at: new Date().toISOString(),
     pwd_ver: 1,
   };
   if (usePostgres) {
-    await sql`INSERT INTO users (id, email, credits, password_hash, created_at) VALUES (${user.id}, ${user.email}, 0, ${null}, NOW()) ON CONFLICT (email) DO NOTHING`;
+    // Phase 2 batch 2: `credits` is a generated column (migration
+    // 008) — it cannot be inserted. The ledgers default to 0.
+    await sql`INSERT INTO users (id, email, password_hash, created_at) VALUES (${user.id}, ${user.email}, ${null}, NOW()) ON CONFLICT (email) DO NOTHING`;
     return (await getUserByEmail(email)) as DbUser;
   }
   const db = await readLocal();
@@ -70,13 +74,15 @@ export async function createUserWithPassword(
     id: uid(),
     email,
     credits: 0,
+    monthly_credits: 0,
+    purchased_credits: 0,
     created_at: new Date().toISOString(),
     password_hash: passwordHash,
     pwd_ver: 1,
   };
   if (usePostgres) {
-    const { rows } = await sql`INSERT INTO users (id, email, credits, password_hash, created_at)
-      VALUES (${user.id}, ${user.email}, 0, ${passwordHash}, NOW())
+    const { rows } = await sql`INSERT INTO users (id, email, password_hash, created_at)
+      VALUES (${user.id}, ${user.email}, ${passwordHash}, NOW())
       ON CONFLICT (email) DO NOTHING RETURNING *`;
     return (rows[0] as DbUser) ?? null;
   }
@@ -142,6 +148,7 @@ export async function deleteUser(userId: string): Promise<boolean> {
       await tx`DELETE FROM free_interpretations WHERE user_id = ${userId}`;
       await tx`DELETE FROM readings WHERE user_id = ${userId}`;
       await tx`DELETE FROM reports WHERE user_id = ${userId}`;
+      await tx`DELETE FROM credit_grants WHERE user_id = ${userId}`;
       await tx`DELETE FROM transactions WHERE user_id = ${userId} OR email = ${email}`;
       await tx`DELETE FROM users WHERE id = ${userId}`;
       return true;
@@ -154,6 +161,7 @@ export async function deleteUser(userId: string): Promise<boolean> {
   db.users = db.users.filter((x) => x.id !== userId);
   db.readings = db.readings.filter((r) => r.user_id !== userId);
   db.reports = (db.reports ?? []).filter((r) => r.user_id !== userId);
+  db.creditGrants = (db.creditGrants ?? []).filter((g) => g.user_id !== userId);
   db.transactions = db.transactions.filter(
     (t) => t.user_id !== userId && t.email !== user.email
   );

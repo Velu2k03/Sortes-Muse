@@ -2,6 +2,7 @@ import { usePostgres, pg, sql, jsonbParam, ensureSchema, txWithSignal } from "./
 import { readLocal, writeLocal } from "./json-store";
 import { withDbTimeout } from "../db-timeout";
 import { assertUuid, IdTakenError } from "../ids";
+import { applySpendToUser, spendFromLedgers } from "./ledgers";
 
 /*
  * F9 (2026-11-09): keep-forever reports.
@@ -53,8 +54,10 @@ export async function saveReportWithSpend(
       // Point 1: idempotent replay (same client id = already saved + spent).
       const prior = await tx`SELECT id FROM reports WHERE id = ${report.id} AND user_id = ${userId}`;
       if (prior.length > 0) return { ok: true, existing: true };
-      const spent = await tx`UPDATE users SET credits = credits - 1 WHERE id = ${userId} AND credits >= 1 RETURNING credits`;
-      if (spent.length === 0) return { ok: false };
+      // Phase 2 batch 2: 1 per report, monthly first. Null means
+      // insufficient — nothing spent, no report row written.
+      const spent = await spendFromLedgers(tx, userId, 1);
+      if (!spent) return { ok: false };
       const inserted = await tx`INSERT INTO reports (id, user_id, data, created_at)
         VALUES (${report.id}, ${userId}, ${jsonbParam(report)}, NOW())
         ON CONFLICT (id) DO NOTHING RETURNING id`;
@@ -81,8 +84,7 @@ export async function saveReportWithSpend(
   if (list.some((r) => r.id === report.id && r.user_id === userId)) return { ok: true, existing: true };
   if (list.some((r) => r.id === report.id)) return { ok: false, conflict: true };
   const u = db.users.find((x) => x.id === userId);
-  if (!u || u.credits < 1) return { ok: false };
-  u.credits -= 1;
+  if (!applySpendToUser(u, 1)) return { ok: false };
   list.unshift({ id: report.id, user_id: userId, data: report, created_at: new Date().toISOString() });
   await writeLocal(db);
   return { ok: true };

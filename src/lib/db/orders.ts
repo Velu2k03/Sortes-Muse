@@ -1,5 +1,6 @@
 import { usePostgres, pg, sql, ensureSchema, txWithSignal } from "./client";
 import { readLocal, writeLocal } from "./json-store";
+import { applyGrantToUser, applyRevokeToUser } from "./ledgers";
 import type { DbTransaction } from "./types";
 import { withDbTimeout } from "../db-timeout";
 import { getUserByEmail } from "./users";
@@ -119,7 +120,10 @@ async function fulfillOrderPostgres(
     }
     await tx`INSERT INTO transactions (id, user_id, email, pack_type, amount, readings, order_id, created_at)
       VALUES (${row.id}, ${row.user_id}, ${row.email}, ${row.pack_type}, ${row.amount}, ${row.readings}, ${args.orderId}, NOW())`;
-    const upd = await tx`UPDATE users SET credits = credits + ${args.readings} WHERE id = ${args.userId} RETURNING credits`;
+    // Phase 2 batch 2: a pack purchase grants PURCHASED credits
+    // (never expires). `credits` in the RETURNING is the generated
+    // total, so the caller's balance stays the same shape.
+    const upd = await tx`UPDATE users SET purchased_credits = purchased_credits + ${args.readings} WHERE id = ${args.userId} RETURNING credits`;
     if (upd.length === 0) throw new Error("User not found during fulfillment");
     return { transaction: row, credits: (upd[0] as { credits: number }).credits, duplicate: false };
   });
@@ -150,7 +154,7 @@ async function fulfillOrderLocal(
   const u = db.users.find((x) => x.id === args.userId);
   if (!u) throw new Error("User not found during fulfillment");
   db.transactions.unshift(row);
-  u.credits = Math.max(0, u.credits + args.readings);
+  applyGrantToUser(u, "purchased", args.readings);
   await writeLocal(db);
   return { transaction: row, credits: u.credits, duplicate: false };
 }
@@ -267,7 +271,14 @@ async function revokeOrderPostgres(
     const refundRow = buildRefundRow(orig, userId, refundMarker, delta);
     await tx`INSERT INTO transactions (id, user_id, email, pack_type, amount, readings, created_at)
       VALUES (${refundRow.id}, ${refundRow.user_id}, ${refundRow.email}, ${refundRow.pack_type}, ${refundRow.amount}, ${refundRow.readings}, NOW())`;
-    await tx`UPDATE users SET credits = GREATEST(0, credits - ${delta}) WHERE id = ${userId}`;
+    // Phase 2 batch 2: take the grant back from purchased first
+    // (packs always grant purchased), remainder from monthly,
+    // clamped at 0 per ledger — the same total-clamp as before.
+    // All SET expressions read the OLD row values.
+    await tx`UPDATE users
+      SET purchased_credits = GREATEST(0, purchased_credits - LEAST(purchased_credits, ${delta})),
+          monthly_credits = GREATEST(0, monthly_credits - (${delta} - LEAST(purchased_credits, ${delta})))
+      WHERE id = ${userId}`;
     return { revoked: true, readings: delta };
   });
   return await withDbTimeout(begin, controller);
@@ -289,7 +300,7 @@ async function revokeOrderLocal(
   const u = db.users.find((x) => x.id === userId);
   if (!u) return { revoked: false, readings: orig.readings };
   db.transactions.unshift(buildRefundRow(orig, userId, refundMarker, delta));
-  u.credits = Math.max(0, u.credits - delta);
+  applyRevokeToUser(u, delta);
   await writeLocal(db);
   return { revoked: true, readings: delta };
 }

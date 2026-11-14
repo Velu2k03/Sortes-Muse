@@ -78,7 +78,7 @@ describe.skipIf(SKIP)("005 zero-policy RLS on real Postgres (staging only)", () 
     );
     // Seed one victim row per table as the owner (RLS bypass).
     await raw.unsafe(
-      `INSERT INTO users (id, email, credits, password_hash) VALUES ('u_rls', 'rls-victim@example.com', 5, 'hash-secret')`
+      `INSERT INTO users (id, email, purchased_credits, password_hash) VALUES ('u_rls', 'rls-victim@example.com', 5, 'hash-secret')`
     );
     await raw.unsafe(
       `INSERT INTO auth_codes (email, code_hash, expires_at, attempts) VALUES ('rls-victim@example.com', 'codehash-secret', NOW() + interval '1 hour', 0)`
@@ -152,7 +152,7 @@ describe.skipIf(SKIP)("005 zero-policy RLS on real Postgres (staging only)", () 
   it("anon INSERT fails with a row-level security violation", async () => {
     await expect(
       anon.unsafe(
-        `INSERT INTO users (id, email, credits) VALUES ('u_anon', 'anon@example.com', 0)`
+        `INSERT INTO users (id, email, purchased_credits) VALUES ('u_anon', 'anon@example.com', 0)`
       )
     ).rejects.toThrow(/row-level security/);
     await expect(
@@ -173,7 +173,7 @@ describe.skipIf(SKIP)("005 zero-policy RLS on real Postgres (staging only)", () 
     }>;
     expect(code).toEqual([{ code_hash: "codehash-secret" }]);
     await raw.unsafe(
-      `INSERT INTO users (id, email, credits) VALUES ('u_owner', 'owner@example.com', 0)`
+      `INSERT INTO users (id, email, purchased_credits) VALUES ('u_owner', 'owner@example.com', 0)`
     );
     const count = (await raw`SELECT count(*)::int AS n FROM users`) as Array<{ n: number }>;
     expect(count[0].n).toBe(2);
