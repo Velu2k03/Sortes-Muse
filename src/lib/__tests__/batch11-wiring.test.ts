@@ -8,9 +8,9 @@ import path from "path";
 // Fable's review): the H1 is now Fable's explanation, the subhead
 // is Fable's fix, and "Sortes" lives in the header logo. The free
 // reading stays 1-card Quick Insight only, and the 3-card spread is
-// PLANNED as the visible next step after the first reading (not
-// built yet; a follow-up feature) — so the hero must NOT promise
-// three cards. The TAGLINE constant ("Cast the lots. Read your
+// PLANNED as the visible next step after the first reading (the nudge
+// link to it is built in remodel batch 3; the spread itself already
+// exists) — so the hero must NOT promise three cards. The TAGLINE constant ("Cast the lots. Read your
 // story.") is the brand line for the footer, share text, and
 // metadata — it is NOT the hero, so it stays unchanged.
 

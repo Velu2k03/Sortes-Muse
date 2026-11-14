@@ -75,6 +75,31 @@ export function GuestKeepNotice() {
 }
 
 /**
+ * Remodel Phase 1 batch 3: the nudge after the first reading. It
+ * sits directly under the save prompt (save first, then the next
+ * step) and only on a free Quick Insight reading. It is a link to
+ * the Past · Present · Future spread, never a second free reading:
+ * the cost is labelled 1 Oracle, and the free reading stays 1-card
+ * Quick Insight only.
+ */
+export function ThreeCardNudge() {
+  return (
+    <section className="mx-auto mt-6 max-w-xl rounded-2xl border border-gold/40 bg-panel/70 p-5 text-center">
+      <h2 className="font-display text-xl text-goldbright">Go deeper with three cards</h2>
+      <p className="mt-2 text-sm text-cream/80">
+        Past, present, and future — three cards tracing where you have been, where you stand, and where the path leads.
+      </p>
+      <Link
+        href="/intake/past-present-future"
+        className="mt-4 inline-block rounded-full bg-gold px-5 py-3 text-sm font-semibold text-ink hover:bg-goldbright"
+      >
+        Try Past · Present · Future — 1 Oracle
+      </Link>
+    </section>
+  );
+}
+
+/**
  * Personal Phase 1: at a glance, computed from this draw only.
  * No AI, no invented story: dominant suit and tension pair are
  * deterministic facts about the cards drawn, shown here so the

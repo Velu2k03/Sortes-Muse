@@ -7,9 +7,10 @@ import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { useCanHide } from "@/lib/use-mounted";
 import { MAJORS, cardSlug, getCard } from "@/lib/cards";
-import { setHeroQuestion, freeReadingUsed } from "@/lib/storage";
+import { setHeroQuestion, freeReadingUsed, getDailyCard, getHistory } from "@/lib/storage";
 import { useAuth, deviceHeldSession } from "@/components/AuthProvider";
 import { isFreeAvailableFor } from "@/lib/free-reading";
+import ReturningHome from "@/components/ReturningHome";
 import StatsStrip from "@/components/StatsStrip";
 import SampleReading from "@/components/SampleReading";
 import TodaySample from "@/components/TodaySample";
@@ -86,10 +87,23 @@ export default function Home() {
   const { user, freeReadingAvailable, authFailed, loading: authLoading } = useAuth();
   const [usedFree, setUsedFree] = useState(false);
   const [hadSession, setHadSession] = useState(false);
+  // Remodel Phase 1 batch 3: the returning signals, read in the
+  // same microtask as the device flags above. Signed in, used the
+  // free reading, has journal history, or drew today's card: a
+  // returning visitor, shown the returning home instead of the
+  // cold landing copy below. The server render is always the
+  // landing (auth and device state are client-side), so this flips
+  // after mount.
+  const [hasHistory, setHasHistory] = useState(false);
+  const [drewToday, setDrewToday] = useState(false);
+  const [signalsReady, setSignalsReady] = useState(false);
   useEffect(() => {
     queueMicrotask(() => {
       setUsedFree(freeReadingUsed());
       setHadSession(deviceHeldSession());
+      setHasHistory(getHistory().length > 0);
+      setDrewToday(getDailyCard() !== null);
+      setSignalsReady(true);
     });
     router.prefetch("/intake/quick-insight");
   }, [router]);
@@ -115,6 +129,20 @@ export default function Home() {
     setHeroQuestion(question.trim());
     router.push("/intake/quick-insight");
   };
+  // Remodel Phase 1 batch 3: the dynamic homepage. A returning
+  // visitor gets the returning home, not the cold landing copy.
+  // `user` arrives when the auth refresh lands, so a signed-in
+  // visitor flips here too; the local signals cover guests.
+  const isReturning =
+    signalsReady && (!!user || usedFree || hasHistory || drewToday);
+  if (isReturning) {
+    return (
+      <div>
+        <AccountDeletedNotice />
+        <ReturningHome />
+      </div>
+    );
+  }
   return (
     <div>
       <AccountDeletedNotice />
