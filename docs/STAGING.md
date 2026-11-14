@@ -18,6 +18,11 @@ still needs Velu's explicit approval.
     `authenticated` below, password `sortes_test_local` as hardcoded
     in `rls-005.test.ts` (NOT the `sortes_test` password), LOGIN so
     the test can connect as them directly)
+  - `sortes_pgtest_rls2` — RLS 011 tests (Notes N4; migration 011 on
+    credit_grants + subscriptions). Its own database because
+    rls-005 and rls-011 both drop + rebuild in beforeAll; two files
+    on one DB race on concurrent DDL (observed: duplicate key on
+    pg_type_typname_nsp_index). Same anon/authenticated roles.
   - `sortes_pgtest_ledgers` — Phase 2 two-ledger credit tests
     (`db-credit-ledgers.test.ts`); its own database because
     `db-postgres.test.ts` drops all tables in its beforeAll, which
@@ -49,7 +54,7 @@ sudo -u postgres psql -c "CREATE ROLE sortes_test LOGIN CREATEDB PASSWORD '<plac
 #   sudo -u postgres psql -c "ALTER ROLE sortes_test CREATEDB;" — Claude review, PR #93.)
 sudo -u postgres psql -c "CREATE ROLE anon LOGIN PASSWORD 'sortes_test_local';"
 sudo -u postgres psql -c "CREATE ROLE authenticated LOGIN PASSWORD 'sortes_test_local';"
-for db in sortes_pgtest_money sortes_pgtest_migrations sortes_pgtest_rls sortes_pgtest_ledgers sortes_staging; do
+for db in sortes_pgtest_money sortes_pgtest_migrations sortes_pgtest_rls sortes_pgtest_rls2 sortes_pgtest_ledgers sortes_staging; do
   sudo -u postgres createdb -O sortes_test "$db"
 done
 ```

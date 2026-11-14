@@ -62,7 +62,7 @@ describe.skipIf(SKIP)("money paths on real Postgres (staging only)", () => {
       ["auth_codes", "credit_grants", "free_interpretations", "free_readings", "readings", "reports", "subscriptions", "transactions", "users"]
     );
     const ledger = (await raw`SELECT version FROM schema_migrations ORDER BY version`) as Array<{ version: string }>;
-    expect(ledger.map((r) => r.version)).toEqual(["001", "002", "003", "006", "007", "008", "009", "010"]);
+    expect(ledger.map((r) => r.version)).toEqual(["001", "002", "003", "006", "007", "008", "009", "010", "011"]);
     const indexes = (await raw`
       SELECT indexname FROM pg_indexes WHERE schemaname = 'public'
         AND indexname LIKE 'idx\_%'`) as Array<{ indexname: string }>;
