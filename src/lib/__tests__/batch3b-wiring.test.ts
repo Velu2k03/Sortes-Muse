@@ -69,4 +69,14 @@ describe("Batch 3b: the light theme fix", () => {
     expect(wait).toContain("var(--color-goldbright)");
     expect(wait).toContain("var(--color-gold)");
   });
+
+  it("globals.css has exactly one .num rule (no duplicate, no malformed selector)", () => {
+    // Batch N3 (C1/C2): globals.css once carried TWO identical
+    // `.num, .font-number` rules, one of them malformed (a stray
+    // qualifier inside the selector). The line anchor below fails
+    // both the old malformed selector and any future duplicate.
+    const css = src("src/app/globals.css");
+    const matches = css.match(/^\.num, \.font-number \{/gm);
+    expect(matches).toHaveLength(1);
+  });
 });

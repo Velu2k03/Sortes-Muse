@@ -191,15 +191,6 @@ summary {
   scroll-margin-top: 6rem;
 }
 
-/* Numbers: genjutsu paint method, distinct readable numerals. Inter
-   with tabular figures, so prices, credits, degrees and counts line
-   up and never inherit the display serif. Applied via .num and the
-   font-number utility in both dark and light themes. */
-.num, .font-number {
-  font-family: var(--font-number);
-  font-variant-numeric: tabular-nums;
-}
-
 body {
   background-color: var(--color-ink);
   color: var(--color-cream);

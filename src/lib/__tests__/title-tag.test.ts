@@ -37,8 +37,11 @@ describe("Title tag carries tarot", () => {
     const layout = src("src/app/layout.tsx");
     // One copy of the wording: metadata, OG, Twitter and JSON-LD
     // all use SITE_DESCRIPTION, so it cannot drift between them.
-    expect(layout).toContain(
-      'const SITE_DESCRIPTION =\n  "Free tarot reading online, with AI interpretation. Draw a free daily card, explore 78 card meanings, and get a reading for your question. First reading free.";'
+    // Loose match (Batch N3, C3): the exact-string assertion broke
+    // on any Prettier reflow or wording edit. The two object-literal
+    // regexes below already pin that the JSON-LD nodes use the const.
+    expect(layout).toMatch(
+      /const SITE_DESCRIPTION =\s*"[^"]*tarot[^"]*"/,
     );
     // Assert on the actual object literals, not a whole-file
     // contains: a comment quoting the text would pass that.

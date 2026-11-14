@@ -12,13 +12,38 @@
 --
 -- Order matters: drop the generated column first, re-add it as a
 -- plain column holding the summed balance, then drop the ledgers.
-
-ALTER TABLE users DROP COLUMN IF EXISTS credits;
-ALTER TABLE users ADD COLUMN credits INTEGER NOT NULL DEFAULT 0;
-UPDATE users SET credits = monthly_credits + purchased_credits;
+-- The column swap runs ONLY while the ledger columns still exist
+-- (Batch N3, A3 — drill find): an unguarded re-run dropped the
+-- plain `credits` column (with the restored balances in it),
+-- re-added it as 0, and then failed on the missing ledger columns,
+-- zeroing every balance. With the guard a re-run is a no-op.
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns
+             WHERE table_schema = 'public' AND table_name = 'users'
+               AND column_name = 'monthly_credits') THEN
+    ALTER TABLE users DROP COLUMN credits;
+    ALTER TABLE users ADD COLUMN credits INTEGER NOT NULL DEFAULT 0;
+    UPDATE users SET credits = monthly_credits + purchased_credits;
+  END IF;
+END
+$$;
 
 ALTER TABLE users DROP COLUMN IF EXISTS monthly_credits;
 ALTER TABLE users DROP COLUMN IF EXISTS purchased_credits;
+-- Archive the audit/idempotency rows BEFORE dropping the table
+-- (Batch N3, A3): the down file used to lose them. The archive keeps
+-- them for the post-rollback audit. Guarded on both tables so a
+-- re-run is a no-op: if the archive already exists nothing is
+-- re-copied, and if credit_grants is already gone nothing is read.
+DO $$
+BEGIN
+  IF to_regclass('public.credit_grants') IS NOT NULL
+     AND to_regclass('public.credit_grants_archive') IS NULL THEN
+    EXECUTE 'CREATE TABLE credit_grants_archive AS SELECT * FROM credit_grants';
+  END IF;
+END
+$$;
 DROP TABLE IF EXISTS credit_grants;
 
 -- Restore the 002 non-negative CHECK (008 dropped it with the old
