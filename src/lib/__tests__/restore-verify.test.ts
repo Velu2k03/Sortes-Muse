@@ -39,6 +39,19 @@ describe("restore verify SQL builder", () => {
     expect(sql).toContain("SELECT 'subscriptions', count(*) FROM subscriptions");
   });
 
+  it("omits schema_migrations on a pre-ledger dump", () => {
+    // Claude review, PR #93: schema_migrations itself predates nothing
+    // in practice, but a dump from before the migration system existed
+    // would hit the same parse-time failure, so it is probed too.
+    const sql = buildVerifySql({
+      hasCreditGrants: false,
+      hasSubscriptions: false,
+      hasSchemaMigrations: false,
+    });
+    expect(sql).not.toContain("schema_migrations");
+    expect(sql).toContain("FROM users");
+  });
+
   it("never references a table only inside a subquery guard", () => {
     // The old bug: the table name appeared inside a SELECT guarded by
     // to_regclass in the WHERE clause. A guarded mention is still a

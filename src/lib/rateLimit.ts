@@ -157,7 +157,7 @@ export function durationString(windowMs: number): string {
  * Vercel-managed `sortes-rate-limit` store, Preview uses the Personal
  * account `sortes-rate-limit-preview` store. The prefix is now
  * redundant, but it is kept on purpose: it protects against a future
- * single-store regression (see D6 in batch-D-claude-miss-check.md).
+ * single-store regression (Batch N3, D6 — KEEP the prefix).
  * Keys are `rl:<env>:<key>` (was `rl:<key>`); old keys expire via TTL.
  */
 export function rateLimitPrefix(): string {

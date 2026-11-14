@@ -11,21 +11,68 @@
 --   DELETE FROM schema_migrations WHERE version = '009';
 -- (Check the actual version value recorded by scripts/migrate.mjs.)
 --
--- IMPORTANT: delete any credit_grants rows with kind = 'expiry'
+-- Run with: psql -v ON_ERROR_STOP=1 -f <this file>
+-- (CodeRabbit review, PR #93: without ON_ERROR_STOP a failed step
+-- would still run the statements below it. Claude review, PR #93:
+-- the file manages its own transaction — \set ON_ERROR_STOP on plus
+-- BEGIN / COMMIT — so a failure part-way rolls everything back.
+-- Do NOT add --single-transaction on top of the file's own BEGIN.)
+--
+-- Order matters: archive + drop the subscriptions table first,
+-- archive + delete any 'expiry' grant rows, then restore the old
+-- CHECK. Roll back in reverse apply order: 009 before 008.
+-- All statements are idempotent.
+
+\set ON_ERROR_STOP on
+BEGIN;
+
+-- Archive the subscriptions rows BEFORE dropping the table
+-- (Claude review, PR #93): the table holds Lemon Squeezy
+-- subscription ids, tiers, and current_period_start (the drip cycle
+-- anchor). Re-applying 009 after a rollback would otherwise leave
+-- paying subscribers with no local record. Same append-by-id
+-- pattern as the 008 credit_grants archive, so a second rollback
+-- cycle appends new rows instead of losing them.
+DO $$
+BEGIN
+  IF to_regclass('public.subscriptions') IS NOT NULL THEN
+    IF to_regclass('public.subscriptions_archive') IS NULL THEN
+      EXECUTE 'CREATE TABLE subscriptions_archive AS SELECT * FROM subscriptions';
+    ELSE
+      EXECUTE 'INSERT INTO subscriptions_archive SELECT s.* FROM subscriptions s WHERE NOT EXISTS (SELECT 1 FROM subscriptions_archive a WHERE a.id = s.id)';
+    END IF;
+  END IF;
+END
+$$;
+-- Archive tables hold user ids: keep them out of the anon /
+-- authenticated roles (Claude review, PR #93). RLS with zero
+-- policies blocks every non-owner role.
+ALTER TABLE IF EXISTS subscriptions_archive ENABLE ROW LEVEL SECURITY;
+DROP TABLE IF EXISTS subscriptions;
+
+-- Archive + delete any credit_grants rows with kind = 'expiry'
 -- BEFORE restoring the old CHECK, or the ADD CONSTRAINT fails
 -- (those rows violate the pre-009 CHECK). Expiry rows are the audit
--- trail of monthly balances zeroed on subscription expiry; archive
--- them first if the audit trail must be kept:
---   CREATE TABLE IF NOT EXISTS credit_grants_expiry_archive AS
---     SELECT * FROM credit_grants WHERE kind = 'expiry';
---   DELETE FROM credit_grants WHERE kind = 'expiry';
--- (The archive step is left to the operator: it is only needed when
--- expiry rows exist, and the operator decides whether to keep them.)
---
--- Order matters: drop the subscriptions table first, then restore
--- the old CHECK. All statements are idempotent.
-
-DROP TABLE IF EXISTS subscriptions;
+-- trail of monthly balances zeroed on subscription expiry.
+-- Done in-file (Claude review, PR #93): leaving it to the operator
+-- meant a forgotten step aborted the whole transaction with a
+-- check_violation. The archive keeps the trail, so nothing is lost.
+-- CTAS on the first cycle, append-by-id after that; re-running is a
+-- no-op once the rows are gone. CTAS copies no indexes, so a second
+-- cycle cannot collide on the archive's unique indexes.
+DO $$
+BEGIN
+  IF to_regclass('public.credit_grants') IS NOT NULL THEN
+    IF to_regclass('public.credit_grants_expiry_archive') IS NULL THEN
+      EXECUTE 'CREATE TABLE credit_grants_expiry_archive AS SELECT * FROM credit_grants WHERE kind = ''expiry''';
+    ELSE
+      EXECUTE 'INSERT INTO credit_grants_expiry_archive SELECT g.* FROM credit_grants g WHERE g.kind = ''expiry'' AND NOT EXISTS (SELECT 1 FROM credit_grants_expiry_archive a WHERE a.id = g.id)';
+    END IF;
+    EXECUTE 'DELETE FROM credit_grants WHERE kind = ''expiry''';
+  END IF;
+END
+$$;
+ALTER TABLE IF EXISTS credit_grants_expiry_archive ENABLE ROW LEVEL SECURITY;
 
 -- Restore the 008 kind CHECK (without 'expiry'). Postgres has no
 -- ALTER CONSTRAINT; drop + re-add, guarded so a re-run is a no-op.
@@ -51,3 +98,6 @@ BEGIN
   END IF;
 END
 $$;
+
+COMMIT;
+-- End of 009 rollback.
