@@ -12,6 +12,11 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Astryx `theme build` artifacts (sortes.js/.css/.d.ts and kin):
+    // generated, header says do not edit, and the emitted .d.ts
+    // trips @typescript-eslint/triple-slash-reference. The authored
+    // source (sortesTheme.ts, sortesTheme.doc.mjs) stays linted.
+    "src/themes/sortes/sortes.*",
   ]),
 ]);
 

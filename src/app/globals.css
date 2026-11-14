@@ -1,4 +1,23 @@
-@import "tailwindcss";
+@layer reset, theme, base, astryx-base, astryx-theme, components, utilities;
+
+@import "tailwindcss"; /* the app's own entry, unchanged */
+@import "@astryxdesign/core/reset.css";
+@import "@astryxdesign/core/astryx.css";
+@import "@astryxdesign/theme-neutral/theme.css";
+@import "../themes/sortes/sortes.css";
+/* sortes.css is the built navy+gold theme (src/themes/sortes/):
+   every rule is @scope-d to [data-astryx-theme="sortes"], so
+   loading it here styles nothing outside the pricing page's
+   Theme provider. It loads from globals.css (not from the page)
+   because Next only allows global CSS from the root layout. */
+/* Astryx scoped pilot (pricing page only, Velu 2026-11-14): the
+   @layer line MUST stay above the Tailwind import — below it, the
+   statement can only add reset/astryx-base/astryx-theme after
+   Tailwind's utilities and the Astryx reset outranks every utility
+   class. tailwind-theme.css is deliberately NOT imported: it would
+   remap the app's own Tailwind classes (rounded-lg, shadow-md).
+   The custom navy+gold theme lives in src/themes/sortes/ and is
+   imported by src/astryx-themes.ts, not here. */
 
 @theme {
   --color-ink: #0a0e1a;
