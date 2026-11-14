@@ -206,6 +206,14 @@ describe.skipIf(SKIP)("two-ledger credits on real Postgres (staging only)", () =
     ).rejects.toThrow(/YYYY-MM/);
     await expect(
       db.grantMonthlyCredits({
+        userId: user.id,
+        subscriptionId: `sub_ledger_bad-${RUN}`,
+        tier: "spark",
+        periodKey: "2026-13",
+      })
+    ).rejects.toThrow(/YYYY-MM/);
+    await expect(
+      db.grantMonthlyCredits({
         userId: "no-such-user",
         subscriptionId: `sub_ledger_bad-${RUN}`,
         tier: "spark",

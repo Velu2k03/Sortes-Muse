@@ -337,7 +337,7 @@ export async function grantMonthlyCredits(args: GrantMonthlyArgs): Promise<Month
   if (!isSubscriptionTierId(args.tier)) {
     throw new Error(`grantMonthlyCredits: unknown tier ${String(args.tier)}.`);
   }
-  if (!/^\d{4}-\d{2}$/.test(args.periodKey)) {
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(args.periodKey)) {
     throw new Error(`grantMonthlyCredits: periodKey must be YYYY-MM, got ${args.periodKey}.`);
   }
   await ensureSchema();
