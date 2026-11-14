@@ -293,9 +293,18 @@ describe("Pricing card contrast: dark islands on the light page", () => {
     const scope = css.match(/\.pricing-card-dark \{([\s\S]*?)\}/);
     expect(scope).not.toBeNull();
     const body = (scope as RegExpMatchArray)[1];
-    expect(body).toContain("--color-cream: #ede6d6;");
-    expect(body).toContain("--color-goldbright: #f4d03f;");
-    expect(body).toContain("--color-gold: #d4af37;");
+    // Codex P1 (PR #88): the values reference the Astryx theme
+    // tokens — the sortes theme is the single source for the
+    // pricing page's dark palette, so there is no second copy of
+    // the palette to drift. The hex after each var() is only the
+    // fallback if the theme variable is ever out of scope.
+    expect(body).toContain("--color-cream: var(--color-text-primary, #ede6d6);");
+    expect(body).toContain("--color-goldbright: var(--color-text-accent, #f4d03f);");
+    expect(body).toContain("--color-gold: var(--color-accent, #d4af37);");
+    expect(body).toContain("--color-panel: var(--color-background-card, #1a1f2e);");
+    // No bare hex as the primary value: a duplicate palette.
+    expect(body).not.toContain("--color-cream: #ede6d6;");
+    expect(body).not.toContain("--color-goldbright: #f4d03f;");
     // The scope must NOT flip the page background itself: the
     // pricing page background stays the light paper.
     expect(body).not.toContain("#fdf9ee");
