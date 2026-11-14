@@ -1,0 +1,52 @@
+# Production migration runner (manual, GitHub Actions).
+# The VM cannot reach production Postgres directly (SSL_NOT_SUPPORTED on
+# the sandbox egress), so migrations run from this runner, which has
+# normal network access. Triggered by hand (workflow_dispatch) only.
+# Requires Velu's explicit approval per run: the operator takes a fresh
+# pg_dump first, then triggers this with confirm=APPLY.
+# Uses the existing SORTES_BACKUP_DATABASE_URL secret (the production
+# session-pooler URL). Applies pending migrations from migrations/*.sql
+# via `npm run db:migrate` (transactional per file, idempotent,
+# records versions in schema_migrations). See
+# docs/PRODUCTION-CHANGE-PLAN.md §4/§8 for the deploy-order gate.
+name: 'Production migration (manual)'
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type APPLY to confirm this run may write to production'
+        required: true
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Confirm
+        run: |
+          if [ "${{ inputs.confirm }}" != "APPLY" ]; then
+            echo "::error::Type APPLY in the confirm input to run a production migration."
+            exit 1
+          fi
+
+      - name: Apply pending migrations to production
+        env:
+          DATABASE_URL: ${{ secrets.SORTES_BACKUP_DATABASE_URL }}
+          SORTES_MIGRATE_PRODUCTION: '1'
+        run: npm run db:migrate
