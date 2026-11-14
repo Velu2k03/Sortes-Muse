@@ -174,19 +174,27 @@ export function useIntakeFlow(slug: string) {
     });
   }, [slug]);
   // Remodel: consume the hero question only once the intake is usable
-  // (the sign-in gate is null). If the gate is showing, the seeker
-  // leaves to sign in and comes back; consuming now would lose the
-  // question, because the draft save only runs once a category is
-  // picked and the question lives only in React state until then.
+  // (the sign-in gate is null) AND the device flags are known. The
+  // flags (usedFree, hadSession) are read in mount-effect microtasks,
+  // so on the first render a guest who already used the free reading
+  // still looks free and the gate is null; consuming then would lose
+  // the question when the gate flips to "signin". draftReady is set
+  // after those microtasks, so the gate is correct by the time this
+  // runs. If the gate is showing, the seeker leaves to sign in and
+  // comes back; the question waits in localStorage until then.
   // The read runs in a microtask, like the draft restore above: the
   // repo lints synchronous setState in an effect body as an error.
   useEffect(() => {
-    if (authLoading || gate !== null) return;
+    if (authLoading || gate !== null || !draftReady) return;
     queueMicrotask(() => {
+      // Check the slug BEFORE the destructive read: another spread's
+      // intake must not consume (and discard) the Quick Insight
+      // question.
+      if (slug !== "quick-insight") return;
       const heroQuestion = takeHeroQuestion();
-      if (slug === "quick-insight" && heroQuestion) setQuestion(heroQuestion);
+      if (heroQuestion) setQuestion(heroQuestion);
     });
-  }, [slug, authLoading, gate]);
+  }, [slug, authLoading, gate, draftReady]);
   useEffect(() => {
     if (!draftReady || !categoryKey) return;
     const safe: Record<string, string> = {};

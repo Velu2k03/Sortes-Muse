@@ -69,7 +69,7 @@ export default function Home() {
   const fanCards = MAJORS.slice(0, 5);
   const middle = (fanCards.length - 1) / 2;
   // Remodel: the hero question box. Submitting starts the reading
-  // on the intake page; a typed question travels in sessionStorage
+  // on the intake page; a typed question travels in localStorage
   // (see setHeroQuestion) and prefills there, and an empty submit
   // goes to the same intake with no question.
   const router = useRouter();
@@ -108,8 +108,10 @@ export default function Home() {
   };
   const onHeroSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const q = question.trim();
-    if (q) setHeroQuestion(q);
+    // Overwritten on every submit, even an empty one: a stale pending
+    // question must not survive an empty submission and prefill later.
+    // The reader treats a blank value as no question.
+    setHeroQuestion(question.trim());
     router.push("/intake/quick-insight");
   };
   return (

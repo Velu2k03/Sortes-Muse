@@ -14,12 +14,15 @@ import path from "path";
 // change, so a whole-file toContain would pass even if the element
 // were reverted (Sonnet review lesson from Batch 12).
 //
-// Sonnet review (NEEDS CHANGES, fixed in this batch): the "free"
-// wording is gated on freeAvailable (Batch 6a rule, ReturnLoop
-// pattern), the hero question is consumed only once the intake is
-// usable (gate null) so a guest who leaves to sign in does not lose
-// it, and a pending hero question discards the old draft instead of
-// merging with it.
+// Sonnet review (NEEDS CHANGES, fixed in this batch) and the PR
+// reviews (CodeRabbit Major, Copilot, Codex — all fixed in this
+// batch): the "free" wording is gated on freeAvailable (Batch 6a
+// rule, ReturnLoop pattern), the hero question is consumed only once
+// the intake is usable (gate null) AND the device flags are known
+// (draftReady), the slug is checked before the destructive read, an
+// empty submit overwrites a stale pending question, and the handoff
+// lives in localStorage with a 1-hour expiry so an email-link sign-in
+// (new tab) does not lose it.
 
 const src = (rel: string) =>
   readFileSync(path.resolve(process.cwd(), rel), "utf8");
@@ -118,22 +121,32 @@ describe("Remodel hero: explanation H1, question box, example questions", () => 
     );
   });
 
-  it("the hero question travels to the intake in sessionStorage, not the URL", () => {
+  it("the hero question travels to the intake in localStorage, not the URL", () => {
     const storage = src("src/lib/storage.ts");
     expect(storage).toContain("export function setHeroQuestion");
     expect(storage).toContain("export function takeHeroQuestion");
     expect(storage).toContain("export function peekHeroQuestion");
-    expect(storage).toContain("sessionStorage");
+    expect(storage).toContain("HERO_QUESTION_TTL_MS");
+    // localStorage, not sessionStorage: an email-link sign-in opens a
+    // new tab, and the return destination already survives through
+    // localStorage. One-time read with a 1-hour expiry.
+    expect(storage).toContain("write(K.heroQuestion, { q, at: Date.now() })");
     const page = src("src/app/page.tsx");
     expect(page).toContain("setHeroQuestion");
+    // Review fixes: an empty submit overwrites (clears) a stale
+    // pending question instead of leaving it to prefill later.
+    expect(page).toContain("setHeroQuestion(question.trim())");
     const hook = src("src/app/intake/[slug]/useIntakeFlow.ts");
     expect(hook).toContain("takeHeroQuestion");
     expect(hook).toContain("peekHeroQuestion");
-    // Sonnet review: consume only once the intake is usable (the
-    // sign-in gate is null), or a guest who leaves to sign in loses
-    // the typed question. A pending hero question discards the old
-    // draft instead of merging with it.
-    expect(hook).toContain("gate !== null");
+    // Review fixes: consume only once the intake is usable (gate
+    // null) AND the device flags are known (draftReady), or a guest
+    // who leaves to sign in loses the typed question. The slug is
+    // checked BEFORE the destructive read, so another spread's intake
+    // cannot discard the Quick Insight question. A pending hero
+    // question discards the old draft instead of merging with it.
+    expect(hook).toContain("gate !== null || !draftReady");
+    expect(hook).toContain('if (slug !== "quick-insight") return;');
     expect(hook).toContain("clearIntakeDraft()");
     expect(hook).toContain('slug === "quick-insight"');
   });

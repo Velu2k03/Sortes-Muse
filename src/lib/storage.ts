@@ -13,6 +13,7 @@ const K = {
   reports: "sortes-reports",
   birthProfiles: "sortes-birth-profiles",
   intakeDraft: "sortes-intake-draft",
+  heroQuestion: "sortes-hero-question",
   returnTo: "sortes-return-to",
   pendingIds: "sortes-pending-ids",
 } as const;
@@ -313,7 +314,7 @@ export function clearLocalAccountData(): void {
   try {
     for (const key of [
       K.history, K.reports, K.credits, K.purchases, K.dailyCard, K.dailyStreak,
-      K.aiCache, K.birthProfiles, K.intakeDraft, K.returnTo, K.pendingIds, "sortes-birth-details",
+      K.aiCache, K.birthProfiles, K.intakeDraft, K.heroQuestion, K.returnTo, K.pendingIds, "sortes-birth-details",
     ]) localStorage.removeItem(key);
     // Checkout email prefill (per-tab, but still the previous user's).
     window.sessionStorage?.removeItem("sortes-purchase-email");
@@ -374,46 +375,63 @@ export function clearIntakeDraft(): void {
 
 // Remodel hero question handoff (Velu, 2026-11-14): the question
 // typed in the hero question box travels to the intake in
-// sessionStorage, not the URL — a question in the URL would land in
-// server logs. One-time read: takeHeroQuestion clears it, so a
-// stale question never prefills a later reading.
-const HERO_QUESTION_KEY = "sortes-hero-question";
+// localStorage, not the URL (a question in the URL would land in
+// server logs) and not sessionStorage (an email-link sign-in opens a
+// new tab, and sessionStorage does not cross tabs; the return
+// destination already survives through localStorage). One-time read
+// with a 1-hour expiry: takeHeroQuestion clears it, and an expired
+// value never prefills a later reading. Cleared with the rest of the
+// per-user device data on sign-out (clearLocalAccountData).
+const HERO_QUESTION_TTL_MS = 60 * 60 * 1000;
 
-export function setHeroQuestion(q: string): void {
+interface HeroQuestionValue {
+  q: string;
+  at: number;
+}
+
+function readHeroQuestion(): string | null {
+  const v = read<HeroQuestionValue | null>(K.heroQuestion, null);
+  if (!v) return null;
+  if (
+    typeof v.q !== "string" ||
+    v.q.trim().length === 0 ||
+    typeof v.at !== "number" ||
+    Date.now() - v.at > HERO_QUESTION_TTL_MS
+  ) {
+    // Blank, malformed, or expired: dead either way, so drop it
+    // instead of leaving it to prefill a later reading.
+    clearHeroQuestionValue();
+    return null;
+  }
+  return v.q;
+}
+
+function clearHeroQuestionValue(): void {
   if (typeof window === "undefined") return;
   try {
-    sessionStorage.setItem(HERO_QUESTION_KEY, JSON.stringify(q));
+    localStorage.removeItem(K.heroQuestion);
   } catch {
-    // Storage unavailable; the intake just opens empty.
+    // Storage unavailable; there is nothing to clear.
   }
 }
 
+export function setHeroQuestion(q: string): void {
+  // Overwritten on every submit, even an empty one: an empty submit
+  // must clear a stale pending question, not leave it to prefill.
+  write(K.heroQuestion, { q, at: Date.now() });
+}
+
 export function takeHeroQuestion(): string | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = sessionStorage.getItem(HERO_QUESTION_KEY);
-    sessionStorage.removeItem(HERO_QUESTION_KEY);
-    if (raw === null) return null;
-    const q: unknown = JSON.parse(raw);
-    return typeof q === "string" && q.trim().length > 0 ? q : null;
-  } catch {
-    return null;
-  }
+  const q = readHeroQuestion();
+  clearHeroQuestionValue();
+  return q;
 }
 
 // Peek without consuming: the intake mount effect needs to know a
 // hero question is pending (so it discards the old draft instead of
 // merging) before the intake is usable enough to consume it.
 export function peekHeroQuestion(): string | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = sessionStorage.getItem(HERO_QUESTION_KEY);
-    if (raw === null) return null;
-    const q: unknown = JSON.parse(raw);
-    return typeof q === "string" && q.trim().length > 0 ? q : null;
-  } catch {
-    return null;
-  }
+  return readHeroQuestion();
 }
 
 // Point 6: where to land after signing in. The gate sends the seeker to
