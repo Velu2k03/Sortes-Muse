@@ -99,7 +99,7 @@ html[data-theme="light"] {
   --color-cream: var(--color-text-primary, #ede6d6);
   --color-mist: var(--color-text-secondary, #9ca3af);
 }
-html[data-theme="light"] /* Numbers: genjutsu paint method, distinct readable numerals. Inter
+/* Numbers: genjutsu paint method, distinct readable numerals. Inter
    with tabular figures, so prices, credits, degrees and counts line
    up and never inherit the display serif. Applied via .num and the
    font-number utility in both dark and light themes. */

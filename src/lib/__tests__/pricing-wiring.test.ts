@@ -318,15 +318,20 @@ describe("Pricing card contrast: dark islands on the light page", () => {
     expect([...c.matchAll(/pricing-card-dark/g)].length).toBe(2);
     // The {0} in gap={0} must be escaped: unescaped, {0} is a
     // regex quantifier (zero of the preceding token), so the
-    // literal "gap=" would never match.
+    // literal "gap=" would never match. The match is anchored to
+    // the closing </Card> (Sonnet nit, PR #88): a bare lazy
+    // [\s\S]*?</VStack> stops at the first closing VStack, so a
+    // nested VStack inside a card would silently shorten what the
+    // test checks. A nested close is never followed by </Card>,
+    // so the lazy match skips it and lands on the real close.
     const tierStack = c.match(
-      /<VStack gap=\{0\} className="pricing-card-dark h-full text-center">([\s\S]*?)<\/VStack>/
+      /<VStack gap=\{0\} className="pricing-card-dark h-full text-center">([\s\S]*?)<\/VStack>\s*<\/Card>/
     );
     expect(tierStack).not.toBeNull();
     expect((tierStack as RegExpMatchArray)[1]).toContain("{tier.name}");
     expect((tierStack as RegExpMatchArray)[1]).toContain("${price.toFixed(2)}");
     const topupStack = c.match(
-      /<VStack gap=\{0\} className="pricing-card-dark text-center">([\s\S]*?)<\/VStack>/
+      /<VStack gap=\{0\} className="pricing-card-dark text-center">([\s\S]*?)<\/VStack>\s*<\/Card>/
     );
     expect(topupStack).not.toBeNull();
     expect((topupStack as RegExpMatchArray)[1]).toContain("${topup.price.toFixed(2)}");
