@@ -57,6 +57,18 @@ the conversion needs holders emailed first and pack sales stopped.
   pre-flag Oracle portion by hand, and record the decision. Do
   not re-run the conversion on a refused user without that
   manual check — it would multiply the post-flag credits.
+- **A full refund stamps refunded_at on the whole subscription
+  row, not just the refunded cycle.** The revoke itself is
+  scoped to the refunded invoice's cycle (cyclePeriodKeys), but
+  the stamp stops the drip for the entire subscription. So a
+  full refund of a year-1 invoice, issued after year-2 has
+  already renewed and been paid, would stop the paid year-2
+  plan from dripping. This is an edge case (refunds normally
+  arrive for the current invoice), and the stamp-first order
+  is deliberate — but if a late refund of an old cycle arrives,
+  check whether a newer cycle is already paid and, if so, clear
+  refunded_at by hand after the revoke so the current cycle
+  resumes dripping.
 
 ## Preconditions (all must be true)
 

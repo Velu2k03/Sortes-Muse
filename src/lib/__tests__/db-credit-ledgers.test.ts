@@ -465,15 +465,19 @@ describe.skipIf(SKIP)("two-ledger credits on real Postgres (staging only)", () =
       endsAt: null,
       cancelAtPeriodEnd: false,
     });
-    // Year-1 months, then spend them down so the year-2 grants
-    // land under the two-month rollover cap.
+    // Year-1 months, then spend only half down: year-1 keeps a
+    // 1,000 balance, so a leaky revoke into year-1 WOULD write a
+    // refund row there and fail the assertion below. (Spending it
+    // all to 0 would hide a leak — the revoke clamps to the
+    // balance and writes nothing.)
     for (const periodKey of ["2026-11", "2026-12"]) {
       await db.grantMonthlyCredits({ userId: user.id, subscriptionId: subId, tier: "spark", periodKey });
     }
-    expect(await db.spendUserCredits(user.id, 2000)).toBe(true);
-    for (const periodKey of ["2027-11", "2027-12"]) {
-      await db.grantMonthlyCredits({ userId: user.id, subscriptionId: subId, tier: "spark", periodKey });
-    }
+    expect(await db.spendUserCredits(user.id, 1000)).toBe(true);
+    // Year-2 months: 2027-11 lands (balance back to the 2,000
+    // cap); 2027-12 grants 0 (at the cap).
+    await db.grantMonthlyCredits({ userId: user.id, subscriptionId: subId, tier: "spark", periodKey: "2027-11" });
+    await db.grantMonthlyCredits({ userId: user.id, subscriptionId: subId, tier: "spark", periodKey: "2027-12" });
     expect(await db.getCreditBalances(user.id)).toEqual({ monthly: 2000, purchased: 0, total: 2000 });
     // Full refund of the YEAR-2 renewal invoice only.
     const revoked = await db.revokeAllSubscriptionGrants({
@@ -483,13 +487,14 @@ describe.skipIf(SKIP)("two-ledger credits on real Postgres (staging only)", () =
       totalCents: 7988,
       refundedCents: 7988,
     });
-    expect(revoked).toEqual({ revoked: true, amount: 2000, periods: 2 });
-    expect(await db.getCreditBalances(user.id)).toEqual({ monthly: 0, purchased: 0, total: 0 });
-    // The audit shows only year-2 months revoked; year-1 months
-    // have no refund rows.
+    // Only the year-2 month that held credits is revoked; the
+    // year-1 balance (1,000) survives, and no year-1 refund row
+    // is written.
+    expect(revoked).toEqual({ revoked: true, amount: 1000, periods: 1 });
+    expect(await db.getCreditBalances(user.id)).toEqual({ monthly: 1000, purchased: 0, total: 1000 });
     const refundRows = (await db.listCreditGrants(user.id)).filter((g) => g.kind === "refund");
-    expect(refundRows).toHaveLength(2);
-    expect(refundRows.map((g) => g.period_key).sort()).toEqual(["2027-11", "2027-12"]);
+    expect(refundRows).toHaveLength(1);
+    expect(refundRows[0].period_key).toBe("2027-11");
   });
 
   it("a monthly-plan refund revokes only that month, not the other months", async () => {

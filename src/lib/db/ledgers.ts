@@ -495,8 +495,11 @@ async function convertOraclesLocal(
     };
   }
   // flagFlippedAt is required, so the purchase guard always runs.
+  // An invalid date is a hard error, not a silent pass: a NaN
+  // comparison is always false and would switch the guard off.
   const txs = db.transactions ?? [];
   const flipMs = new Date(opts.flagFlippedAt).getTime();
+  if (Number.isNaN(flipMs)) throw new Error("convertOraclesToCredits: invalid flagFlippedAt");
   if (
     txs.some(
       (t) =>

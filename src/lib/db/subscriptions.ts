@@ -453,21 +453,6 @@ export async function listGrantedSubscriptionPeriods(subscriptionId: string): Pr
 }
 
 /**
- * Revoke EVERY monthly grant for a subscription cycle after a
- * refund. An annual invoice covers 12 dripped months, so revoking
- * only the invoice's month (the old behaviour) left months 1-11
- * in the buyer's balance while the drip kept granting. Each
- * month is revoked by the same refund fraction (full refund =
- * every month in full; partial refund = the same share of each
- * month), via revokeSubscriptionGrant, so a redelivery is safe:
- * already-revoked months revoke 0. On a FULL refund the
- * subscription row is stamped refunded_at, which excludes it
- * from listActiveAnnualSubscriptions and stops the drip. A
- * partial refund leaves refunded_at unset: the subscription
- * continues and the drip continues for future months. Returns
- * the total revoked and how many months were touched.
- */
-/**
  * The YYYY-MM period keys in one billing cycle, starting from a
  * date (the invoice's creation month, which is the cycle start).
  * Monthly: just that month. Annual: that month + the next 11.
@@ -477,6 +462,7 @@ export async function listGrantedSubscriptionPeriods(subscriptionId: string): Pr
  */
 export function cyclePeriodKeys(startDate: Date | string, interval: "monthly" | "annual"): string[] {
   const d = typeof startDate === "string" ? new Date(startDate) : startDate;
+  if (Number.isNaN(d.getTime())) throw new Error("cyclePeriodKeys: invalid start date");
   const months = interval === "annual" ? 12 : 1;
   const keys: string[] = [];
   for (let i = 0; i < months; i++) {
