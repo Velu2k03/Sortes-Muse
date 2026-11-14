@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { motion, useReducedMotion } from "motion/react";
 import ReadingWait from "@/components/ReadingWait";
@@ -9,6 +9,7 @@ import TarotCard from "@/components/TarotCard";
 import SlideCommit from "@/components/SlideCommit";
 import SwipeToast from "@/components/SwipeToast";
 import { INTAKE_CATEGORIES, getCategory } from "@/lib/intake";
+import { peekHeroQuestion } from "@/lib/storage";
 import type { DrawnCard } from "@/lib/types";
 import type { IntakeState, Step } from "./useIntakeFlow";
 
@@ -105,6 +106,19 @@ export function SignInGate({ f }: { f: IntakeState }) {
 export function CategoryStep({ f }: { f: IntakeState }) {
   const { setStep, setCategoryKey, setAnswers } = f;
   const headingRef = useStepFocus<HTMLHeadingElement>();
+  // Remodel Phase 1 batch 2 (Sonnet nit 7): echo the pending hero
+  // question on the category step, so the seeker sees what will be
+  // asked. Peek, do not consume: the hook consumes it once a
+  // category is picked (useIntakeFlow), and consuming here would
+  // lose it on a refresh before a category is set. Quick Insight
+  // only: the hero routes there, and no other intake consumes it.
+  // Read in a microtask past the effect (repo pattern): the server
+  // HTML has no echo, so the first client render must match it.
+  const [pendingQuestion, setPendingQuestion] = useState<string | null>(null);
+  useEffect(() => {
+    if (f.spread.slug !== "quick-insight") return;
+    queueMicrotask(() => setPendingQuestion(peekHeroQuestion()));
+  }, [f.spread.slug]);
   return (
     <>
       <p className="text-xs uppercase tracking-[0.35em] text-gold">
@@ -116,6 +130,11 @@ export function CategoryStep({ f }: { f: IntakeState }) {
       <p className="mx-auto mt-3 max-w-md text-cream/75">
         Choose the area of life for this reading.
       </p>
+      {pendingQuestion && (
+        <p className="mx-auto mt-4 max-w-md rounded-2xl border border-gold/25 bg-panel/60 p-4 text-sm text-cream/85">
+          Your question: &ldquo;{pendingQuestion}&rdquo;
+        </p>
+      )}
       <div className="mt-8 grid gap-3 sm:grid-cols-2">
         {INTAKE_CATEGORIES.map((c, i) => (
           <motion.button
