@@ -278,8 +278,8 @@ describe("Pricing honesty: gated CTAs, packs link, checkout wiring", () => {
     expect(p).not.toContain("/api/checkout");
     expect(p).toContain("subscriptionsConfigured()");
     expect(p).toContain("topUpsConfigured()");
-    expect(p).toContain("subscriptionsEnabled={subscriptionsConfigured()}");
-    expect(p).toContain("topupsEnabled={topUpsConfigured()}");
+    expect(p).toContain("subscriptionsEnabled={subscriptionsConfigured() && CREDIT_COSTS_ENABLED}");
+    expect(p).toContain("topupsEnabled={topUpsConfigured() && CREDIT_COSTS_ENABLED}");
   });
 
   it("leaves /oracles untouched: the packs are still there", () => {
@@ -383,10 +383,14 @@ describe("Pricing page: Astryx pilot wiring", () => {
     expect(p).toContain('import { Theme } from "@astryxdesign/core/theme";');
     expect(p).toContain('<Theme theme={sortesTheme} mode="dark">');
     // Phase 2 batch 3: the page passes the Lemon Squeezy config
-    // (read at request time) into the client as props.
+    // (read at request time) into the client as props. The buttons
+    // ALSO need the credit flag ON (Codex P1): a subscription or
+    // top-up grants credits, and while the spend path still charges
+    // 1 per reading those credits would buy 1,000 readings for
+    // $7.99. The flag flips first in the cutover.
     expect(p).toContain("<PricingClient");
-    expect(p).toContain("subscriptionsEnabled={subscriptionsConfigured()}");
-    expect(p).toContain("topupsEnabled={topUpsConfigured()}");
+    expect(p).toContain("subscriptionsEnabled={subscriptionsConfigured() && CREDIT_COSTS_ENABLED}");
+    expect(p).toContain("topupsEnabled={topUpsConfigured() && CREDIT_COSTS_ENABLED}");
     expect(p).toContain('title: "Pricing"');
     expect(p).toContain('canonical: "/pricing"');
     // Phase 2 batch 3: the meta/OG descriptions describe the live
@@ -419,14 +423,15 @@ describe("Pricing page: Astryx pilot wiring", () => {
     expect(c).toContain("<VStack");
     expect(c).toContain("<HStack");
     expect(c).toContain("<Grid");
-    // Two raw <div>s left: the mt-auto spacer inside each tier Card
-    // that pushes the button to the bottom, and the mt-4 wrapper
-    // around the top-up button (Phase 2 batch 3) — Astryx has no
-    // Spacer component. Count JSX divs only: the file's comments
-    // mention <div> twice, so match the className form.
-    expect([...c.matchAll(/<div className="/g)].length).toBe(2);
+    // One raw <div> left: the mt-auto spacer inside each tier Card
+    // that pushes the button to the bottom — Astryx has no Spacer
+    // component. The top-up button's mt-4 wrapper is gone (Codex
+    // P1): the margin now lives on the Button's own className.
+    // Count JSX divs only: the file's comments mention <div> twice,
+    // so match the className form.
+    expect([...c.matchAll(/<div className="/g)].length).toBe(1);
     expect(c).toContain('<div className="mt-auto pt-6">');
-    expect(c).toContain('<div className="mt-4">');
+    expect(c).not.toContain('<div className="mt-4">');
   });
 
   it("uses no dropped or forbidden bits on this page", () => {

@@ -15,6 +15,8 @@ import {
   LoadErrorBanner,
   PasswordPanel,
   PurchaseHistory,
+  SubscriptionPanel,
+  type SubscriptionStatus,
 } from "./AccountPanels";
 
 type AuthStep = "email" | "sent" | "code";
@@ -38,6 +40,7 @@ export default function AccountPage() {
   });
   const { setTransactions } = settings;
   const { setStep, setEmail } = s;
+  const [subscription, setSubscription] = useState<SubscriptionStatus>(null);
 
   useEffect(() => {
     if (user) {
@@ -45,9 +48,14 @@ export default function AccountPage() {
         .then((r) => r.json())
         .then((d) => setTransactions(d.transactions ?? []))
         .catch(() => setTransactions([]));
+      fetch("/api/subscription")
+        .then((r) => r.json())
+        .then((d) => setSubscription(d.subscription ? d : { subscription: null, portalUrl: null, monthlyCredits: null, purchasedCredits: null }))
+        .catch(() => setSubscription({ subscription: null, portalUrl: null, monthlyCredits: null, purchasedCredits: null }));
     } else {
       queueMicrotask(() => {
         setTransactions(null);
+        setSubscription(null);
         setStep("email");
         // Prefill the email used at checkout, so guests who just paid can
         // sign in and claim their Oracles without retyping it.
@@ -81,6 +89,7 @@ export default function AccountPage() {
       ) : (
         <>
           <AccountSummary email={user.email} credits={credits} onSignOut={() => void signOut()} />
+          <SubscriptionPanel subscription={subscription} />
           <PurchaseHistory transactions={settings.transactions} />
           <PasswordPanel p={settings.password} />
           <DataPanel d={settings.data} userEmail={user?.email} />

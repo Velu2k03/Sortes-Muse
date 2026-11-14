@@ -7,12 +7,17 @@ import { Theme } from "@astryxdesign/core/theme";
 import { sortesTheme } from "@/themes/sortes/sortes.js";
 import { pageSocial } from "@/lib/seo";
 import { subscriptionsConfigured, topUpsConfigured } from "@/lib/lemonsqueezy";
+import { CREDIT_COSTS_ENABLED } from "@/lib/subscription-tiers";
 import PricingClient from "@/components/PricingClient";
 
 // Phase 2 batch 3: the page reads the Lemon Squeezy variant config
 // at request time, so the tier / top-up buttons enable as soon as
 // the variant ids land in env (no rebuild needed). Until then the
-// client shows the "Coming soon" state.
+// client shows the "Coming soon" state. The buttons ALSO need the
+// credit flag ON: a subscription/top-up grants credits, and while
+// the spend path still charges 1 per reading those credits would
+// buy 1,000 readings for $7.99. The flag flips first in the
+// cutover, so the checkout opens only once spending uses credits.
 export const dynamic = "force-dynamic";
 
 export const metadata = {
@@ -32,8 +37,8 @@ export default function Pricing() {
   return (
     <Theme theme={sortesTheme} mode="dark">
       <PricingClient
-        subscriptionsEnabled={subscriptionsConfigured()}
-        topupsEnabled={topUpsConfigured()}
+        subscriptionsEnabled={subscriptionsConfigured() && CREDIT_COSTS_ENABLED}
+        topupsEnabled={topUpsConfigured() && CREDIT_COSTS_ENABLED}
       />
     </Theme>
   );

@@ -97,13 +97,26 @@ export function wholeMonthsBetween(start: Date, end: Date): number {
   return Math.max(0, months);
 }
 
-/** The same UTC day-of-month, m months on (clamped by the Date constructor for short months). Exported for tests. */
+/**
+ * The same UTC day-of-month, m months on, clamped to the last day
+ * of the target month. Exported for tests. Date.UTC overflows an
+ * invalid day into the NEXT month (Jan 31 + 1 month = Mar 3), so
+ * without the clamp the drip cron would build the same YYYY-MM
+ * key for two months and skip a grant as a duplicate — an annual
+ * subscriber starting on the 29th-31st would receive fewer than
+ * 12 months of credits.
+ */
 export function addMonths(d: Date, m: number): Date {
+  const year = d.getUTCFullYear();
+  const month = d.getUTCMonth() + m;
+  // Day 0 of the month after the target is the target's last day.
+  const lastDay = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+  const day = Math.min(d.getUTCDate(), lastDay);
   return new Date(
     Date.UTC(
-      d.getUTCFullYear(),
-      d.getUTCMonth() + m,
-      d.getUTCDate(),
+      year,
+      month,
+      day,
       d.getUTCHours(),
       d.getUTCMinutes(),
       d.getUTCSeconds()

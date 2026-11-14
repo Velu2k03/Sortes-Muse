@@ -334,20 +334,19 @@ export default function PricingClient({
                   credits
                 </p>
                 <p className="mt-1 text-sm text-cream/75">Never expires</p>
-                <div className="mt-4">
-                  <Button
-                    label={
-                      processing === `topup-${topup.credits}`
-                        ? "Starting checkout…"
-                        : `Top up ${topup.credits.toLocaleString()} credits`
-                    }
-                    variant="secondary"
-                    isDisabled={!topupsEnabled}
-                    isLoading={processing === `topup-${topup.credits}`}
-                    width="100%"
-                    onClick={() => void checkout("topup", `topup-${topup.credits}`)}
-                  />
-                </div>
+                <Button
+                  label={
+                    processing === `topup-${topup.credits}`
+                      ? "Starting checkout…"
+                      : `Top up ${topup.credits.toLocaleString()} credits`
+                  }
+                  variant="secondary"
+                  isDisabled={!topupsEnabled}
+                  isLoading={processing === `topup-${topup.credits}`}
+                  width="100%"
+                  onClick={() => void checkout("topup", `topup-${topup.credits}`)}
+                  className="mt-4"
+                />
               </VStack>
             </Card>
           ))}

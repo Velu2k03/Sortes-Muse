@@ -270,6 +270,20 @@ describe("period keys and drip month math", () => {
     expect(periodKeyForMonth(addMonths(start, 12))).toBe("2027-11");
   });
 
+  it("addMonths clamps to the last day of a short month", () => {
+    // Jan 31 + 1 month is Feb 28 (2026 is not a leap year), NOT
+    // Mar 3 (what Date.UTC does when the day overflows). Without
+    // the clamp, months 1 and 2 would both build the period key
+    // "2026-03" and the Feb grant would be skipped as a duplicate.
+    const start = new Date("2026-01-31T00:00:00.000Z");
+    expect(addMonths(start, 1).toISOString()).toBe("2026-02-28T00:00:00.000Z");
+    expect(addMonths(start, 2).toISOString()).toBe("2026-03-31T00:00:00.000Z");
+    expect(addMonths(start, 3).toISOString()).toBe("2026-04-30T00:00:00.000Z");
+    expect(periodKeyForMonth(addMonths(start, 1))).toBe("2026-02");
+    expect(periodKeyForMonth(addMonths(start, 2))).toBe("2026-03");
+    expect(periodKeyForMonth(addMonths(start, 3))).toBe("2026-04");
+  });
+
   it("the drip never grants a future cycle's first month early", () => {
     // A Nov 15 2026 annual cycle: on Nov 1 2027 the elapsed whole
     // months are 11 (Nov 2026 -> Oct 2027), so the cron grants

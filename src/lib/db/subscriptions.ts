@@ -215,6 +215,18 @@ export async function expireMonthlyBalance(userId: string, subscriptionId: strin
         monthly_credits: number;
       }>;
       if (locked.length === 0) throw new Error("User not found during monthly expiry");
+      // The monthly pool is shared across a user's subscriptions.
+      // If another subscription is still live (e.g. the user
+      // re-subscribed during this one's grace period), the pool
+      // now belongs to it — zeroing here would take credits the
+      // other subscription granted.
+      const other = (await tx`SELECT 1 FROM subscriptions
+        WHERE user_id = ${userId}
+          AND lemonsqueezy_subscription_id <> ${subscriptionId}
+          AND status <> 'expired'
+          AND (ends_at IS NULL OR ends_at > NOW())
+        LIMIT 1`) as Array<{ "?column?": number }>;
+      if (other.length > 0) return 0;
       const removed = locked[0].monthly_credits;
       if (removed <= 0) return 0;
       await tx`UPDATE users SET monthly_credits = 0 WHERE id = ${userId}`;
@@ -228,6 +240,17 @@ export async function expireMonthlyBalance(userId: string, subscriptionId: strin
   const db = await readLocal();
   const u = db.users.find((x) => x.id === userId);
   if (!u) throw new Error("User not found during monthly expiry");
+  // Another live subscription owns the pool now (see the Postgres
+  // branch above); do not zero credits it granted.
+  const now = new Date();
+  const otherLive = (db.subscriptions ?? []).some(
+    (s) =>
+      s.user_id === userId &&
+      s.lemonsqueezy_subscription_id !== subscriptionId &&
+      s.status !== "expired" &&
+      (!s.ends_at || new Date(s.ends_at) > now)
+  );
+  if (otherLive) return 0;
   const removed = u.monthly_credits ?? 0;
   if (removed <= 0) return 0;
   u.monthly_credits = 0;
