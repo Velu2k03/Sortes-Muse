@@ -68,6 +68,30 @@ html[data-theme="light"] {
   --color-violet: #6d28d9;
   --color-danger: #b91c1c;
 }
+/* Pricing page dark islands (contrast fix, 2026-11-14): the Astryx
+   Cards are navy while the page is light, and the Astryx
+   <Theme mode="dark"> only scopes Astryx's own variables — it does
+   not touch the site's Tailwind --color-* tokens, which follow
+   html[data-theme="light"]. So text-cream / text-goldbright inside
+   the cards resolved to dark ink / dark gold on navy (1.06:1 and
+   2.70:1 — invisible). This scope re-declares the tokens the card
+   content uses to their dark @theme stops, so the existing Tailwind
+   classes resolve light inside the cards (cream #ede6d6 on navy is
+   about 13:1, bright gold #f4d03f about 11:1). Custom properties
+   inherit, so a declaration on this wrapper wins over the inherited
+   light value for everything inside it. Scoped to the pricing
+   cards only — the rest of the page keeps the light tokens. Values
+   are the @theme dark stops; keep them in sync with @theme above. */
+.pricing-card-dark {
+  --color-ink: #0a0e1a;
+  --color-navy: #141b2e;
+  --color-navydeep: #0f1424;
+  --color-panel: #1a1f2e;
+  --color-gold: #d4af37;
+  --color-goldbright: #f4d03f;
+  --color-cream: #ede6d6;
+  --color-mist: #9ca3af;
+}
 html[data-theme="light"] /* Numbers: genjutsu paint method, distinct readable numerals. Inter
    with tabular figures, so prices, credits, degrees and counts line
    up and never inherit the display serif. Applied via .num and the
