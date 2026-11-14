@@ -152,8 +152,13 @@ export function durationString(windowMs: number): string {
 
 /**
  * C1: every key is prefixed per deployment environment, so Preview and
- * Production never share buckets on the one Upstash database. Keys are
- * `rl:<env>:<key>` (was `rl:<key>`); old keys expire via their TTL.
+ * Production never share buckets. Since 2026-11-14 (Point 8, Option A)
+ * they also live in TWO separate Upstash stores: Production uses the
+ * Vercel-managed `sortes-rate-limit` store, Preview uses the Personal
+ * account `sortes-rate-limit-preview` store. The prefix is now
+ * redundant, but it is kept on purpose: it protects against a future
+ * single-store regression (see D6 in batch-D-claude-miss-check.md).
+ * Keys are `rl:<env>:<key>` (was `rl:<key>`); old keys expire via TTL.
  */
 export function rateLimitPrefix(): string {
   return "rl:" + (process.env.VERCEL_ENV ?? "development");

@@ -42,7 +42,10 @@ sudo sed -i 's| http://mirror.cogentco.com/pub/linux/ubuntu||' \
 sudo apt-get update -qq
 sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
   postgresql postgresql-contrib
-sudo -u postgres psql -c "CREATE ROLE sortes_test LOGIN PASSWORD '<placeholder>';"
+sudo -u postgres psql -c "CREATE ROLE sortes_test LOGIN CREATEDB PASSWORD '<placeholder>';"
+# (CREATEDB: the restore-pre008 test creates its own scratch
+# databases; in CI sortes_test is the service superuser, so it
+# already has this.)
 sudo -u postgres psql -c "CREATE ROLE anon LOGIN PASSWORD 'sortes_test_local';"
 sudo -u postgres psql -c "CREATE ROLE authenticated LOGIN PASSWORD 'sortes_test_local';"
 for db in sortes_pgtest_money sortes_pgtest_migrations sortes_pgtest_rls sortes_pgtest_ledgers sortes_staging; do
