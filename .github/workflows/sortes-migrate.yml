@@ -9,6 +9,19 @@
 # via `npm run db:migrate` (transactional per file, idempotent,
 # records versions in schema_migrations). See
 # docs/PRODUCTION-CHANGE-PLAN.md §4/§8 for the deploy-order gate.
+#
+# Notes N2 (A8): the Confirm step runs FIRST, before any install, so
+# a run without APPLY fails in seconds. The fresh backup is a
+# required input: backup_run_id (the sortes-backup.yml run that took
+# the pre-apply pg_dump) is verified via the GitHub API — the run
+# must exist, have completed successfully, and be less than 15
+# minutes old, or the job fails before touching the database.
+# There is deliberately NO `if: github.ref == 'refs/heads/main'`
+# guard here: a PR's migration only exists on the PR branch, so the
+# workflow MUST run on that branch to apply it before the merge
+# (migration 010 proved this — the apply-before-merge rule in
+# docs/PRODUCTION-CHANGE-PLAN.md §8). A main-only guard would make
+# the apply-before-merge order impossible.
 name: 'Production migration (manual)'
 
 on:
@@ -18,9 +31,14 @@ on:
         description: 'Type APPLY to confirm this run may write to production'
         required: true
         default: ''
+      backup_run_id:
+        description: 'The fresh pg_dump backup run id, from the sortes-backup.yml run'
+        required: true
+        default: ''
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
   migrate:
@@ -28,6 +46,44 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Confirm
+        run: |
+          if [ "${{ inputs.confirm }}" != "APPLY" ]; then
+            echo "::error::Type APPLY in the confirm input to run a production migration."
+            exit 1
+          fi
+          if [ -z "${{ inputs.backup_run_id }}" ]; then
+            echo "::error::A fresh backup run id is required (backup_run_id input, from the sortes-backup.yml run)."
+            exit 1
+          fi
+
+      - name: Verify fresh backup run
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          RUN_JSON=$(gh api "repos/${{ github.repository }}/actions/runs/${{ inputs.backup_run_id }}") || {
+            echo "::error::No workflow run with id ${{ inputs.backup_run_id }} exists (or it cannot be read). Take a fresh backup first (sortes-backup.yml, workflow_dispatch) and pass its run id."
+            exit 1
+          }
+          NAME=$(echo "$RUN_JSON" | jq -r '.name')
+          STATUS=$(echo "$RUN_JSON" | jq -r '.status')
+          CONCLUSION=$(echo "$RUN_JSON" | jq -r '.conclusion')
+          UPDATED_AT=$(echo "$RUN_JSON" | jq -r '.updated_at')
+          if [ "$NAME" != "Daily production backup (fallback)" ]; then
+            echo "::error::Run ${{ inputs.backup_run_id }} is workflow '$NAME', not the production backup (Daily production backup (fallback)). Pass the run id of a fresh sortes-backup.yml run."
+            exit 1
+          fi
+          if [ "$STATUS" != "completed" ] || [ "$CONCLUSION" != "success" ]; then
+            echo "::error::Backup run ${{ inputs.backup_run_id }} has not completed successfully (status=$STATUS, conclusion=$CONCLUSION). Wait for it to finish, or take a fresh backup."
+            exit 1
+          fi
+          AGE_MINUTES=$(( ( $(date +%s) - $(date -d "$UPDATED_AT" +%s) ) / 60 ))
+          if [ "$AGE_MINUTES" -ge 15 ]; then
+            echo "::error::Backup run ${{ inputs.backup_run_id }} finished $AGE_MINUTES minutes ago — older than the 15-minute freshness window. Take a fresh backup and pass its run id."
+            exit 1
+          fi
+          echo "Backup run ${{ inputs.backup_run_id }} verified: completed successfully $AGE_MINUTES minute(s) ago."
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -38,15 +94,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Confirm
-        run: |
-          if [ "${{ inputs.confirm }}" != "APPLY" ]; then
-            echo "::error::Type APPLY in the confirm input to run a production migration."
-            exit 1
-          fi
-
       - name: Apply pending migrations to production
         env:
           DATABASE_URL: ${{ secrets.SORTES_BACKUP_DATABASE_URL }}
           SORTES_MIGRATE_PRODUCTION: '1'
         run: npm run db:migrate
+
+      - name: Post-apply aggregates (PII-free check)
+        env:
+          DATABASE_URL: ${{ secrets.SORTES_BACKUP_DATABASE_URL }}
+        run: node scripts/post-apply-aggregates.mjs

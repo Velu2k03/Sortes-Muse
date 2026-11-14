@@ -1,0 +1,51 @@
+# PR migration-label check (Notes N2, B1b).
+# The 009 incident: a PR merged code that needed migration 009 while
+# production did not have it, and every DB call 500'd. This check
+# fails a PR that changes migrations/ unless it carries the
+# `migration-applied-to-prod` label — the author's attestation that
+# the migration was applied to production first (back up, apply,
+# then merge; see docs/PRODUCTION-CHANGE-PLAN.md §4/§8). The label
+# is checked, not the database: the runner cannot reach production
+# Postgres, and the label is the auditable gate.
+name: 'Migration label check'
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  migration-label:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for migration changes and the applied-to-prod label
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if ! git diff --name-only "$BASE_SHA" "$HEAD_SHA" | grep -q '^migrations/.*\.sql$'; then
+            echo "No migrations/ changes in this PR — nothing to check."
+            exit 0
+          fi
+          echo "migrations/ changed — checking for the migration-applied-to-prod label."
+          LABELS=$(gh api "repos/$REPO/issues/$PR_NUMBER/labels" --jq '.[].name' 2>&1) || {
+            echo "::error::Could not list this PR's labels via the GitHub API: $LABELS"
+            exit 1
+          }
+          if printf '%s\n' "$LABELS" | grep -qx 'migration-applied-to-prod'; then
+            echo "Label migration-applied-to-prod is present — migration attested as applied to production."
+            exit 0
+          fi
+          echo "::error::This PR changes migrations/ but does not have the 'migration-applied-to-prod' label. Apply the migration to production FIRST (back up, apply, then merge — docs/PRODUCTION-CHANGE-PLAN.md §4/§8), then add the label to this PR. If the label does not exist yet, create it on the PR (Labels → New label: migration-applied-to-prod) and add it."
+          exit 1
