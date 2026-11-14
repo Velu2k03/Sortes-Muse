@@ -12,6 +12,7 @@ import {
   Interpretation,
   FollowUpThread,
   GuestKeepNotice,
+  ThreeCardNudge,
   NewReadingPrompt,
   NextStepPanel,
   NotePanel,
@@ -66,6 +67,7 @@ export default function ReadingDetail({ id }: { id: string }) {
     <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6">
       <ReadingHeader reading={reading} />
       {!user && <GuestKeepNotice />}
+      {reading.free && reading.spreadSlug === "quick-insight" && <ThreeCardNudge />}
       <AtAGlance reading={reading} />
       <CardRow reading={reading} zoomCard={zoomCard} setZoomCard={setZoomCard} />
       {/* Batch 6c: the interpretation first, the card blocks in one
