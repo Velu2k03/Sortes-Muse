@@ -2,9 +2,14 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { useCanHide } from "@/lib/use-mounted";
 import { MAJORS, cardSlug, getCard } from "@/lib/cards";
+import { setHeroQuestion, freeReadingUsed } from "@/lib/storage";
+import { useAuth, deviceHeldSession } from "@/components/AuthProvider";
+import { isFreeAvailableFor } from "@/lib/free-reading";
 import StatsStrip from "@/components/StatsStrip";
 import SampleReading from "@/components/SampleReading";
 import ReturnLoop from "@/components/ReturnLoop";
@@ -46,12 +51,69 @@ const EXPLORE_CARD_IDS = [
   "major-17",
 ];
 
+// Remodel (Velu, 2026-11-14, Fable's review): tappable example
+// questions under the hero input. Tapping one fills the input — it
+// does not submit, so the seeker can edit it first, and the button
+// works with no question typed.
+const EXAMPLE_QUESTIONS = [
+  "What should I focus on today?",
+  "Is this the right move?",
+  "What is blocking me?",
+  "What does the week ahead hold?",
+];
+
 export default function Home() {
   const hide = useCanHide();
   const fadeUp = fadeUpFor(hide);
   const revealKey = hide ? "reveal" : "static";
   const fanCards = MAJORS.slice(0, 5);
   const middle = (fanCards.length - 1) / 2;
+  // Remodel: the hero question box. Submitting starts the reading
+  // on the intake page; a typed question travels in localStorage
+  // (see setHeroQuestion) and prefills there, and an empty submit
+  // goes to the same intake with no question.
+  const router = useRouter();
+  const [question, setQuestion] = useState("");
+  const questionRef = useRef<HTMLInputElement>(null);
+  // Remodel: the "free" wording is gated on the same free-availability
+  // rule the generate route spends from (Batch 6a pattern, copied from
+  // ReturnLoop on this page): signed-in users by the server record,
+  // guests by the device flag, and it fails closed while auth is
+  // loading, so the hero never promises a free reading to someone who
+  // must sign in first. The intake route is prefetched on mount, so
+  // the hero submit lands at once.
+  const { user, freeReadingAvailable, authFailed, loading: authLoading } = useAuth();
+  const [usedFree, setUsedFree] = useState(false);
+  const [hadSession, setHadSession] = useState(false);
+  useEffect(() => {
+    queueMicrotask(() => {
+      setUsedFree(freeReadingUsed());
+      setHadSession(deviceHeldSession());
+    });
+    router.prefetch("/intake/quick-insight");
+  }, [router]);
+  const freeAvailable =
+    !authLoading &&
+    isFreeAvailableFor({
+      slug: "quick-insight",
+      signedIn: !!user,
+      serverFree: freeReadingAvailable,
+      deviceFree: !usedFree,
+      hadSession,
+      authFailed,
+    });
+  const fillExample = (q: string) => {
+    setQuestion(q);
+    questionRef.current?.focus();
+  };
+  const onHeroSubmit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    // Overwritten on every submit, even an empty one: a stale pending
+    // question must not survive an empty submission and prefill later.
+    // The reader treats a blank value as no question.
+    setHeroQuestion(question.trim());
+    router.push("/intake/quick-insight");
+  };
   return (
     <div>
       <AccountDeletedNotice />
@@ -83,48 +145,85 @@ export default function Home() {
           {/* AF-042: the hero motion wrappers were no-ops (initial
               false, animate to the final values), so they are plain
               elements now — one less animation instance each. */}
-          {/* AF-071 (superseded by Batch 11, Velu 2026-11-13): the H1
-              used to be the value proposition with keywords. Velu
-              chose the one-word brand instead, and the subhead now
-              carries the tarot keyword and the promise. The brand
-              still leads the title tag and the footer. */}
-          {/* Batch 11 (Velu, 2026-11-13): the hero is the one-word
-              brand "Sortes". The Batch 6b one-sentence headline is
-              gone. Batch 12 (Velu, 2026-11-13, Option B): the subhead
-              is Claude's line "A question on your mind? Ask the
-              cards. Get a clear answer." The H1 "Sortes" stays, the
-              free reading stays 1-card Quick Insight only, and the
-              3-card spread is PLANNED as the visible next step after
-              the first reading (not built yet; a follow-up feature,
-              not part of this change). Note: this subhead does not
-              say "tarot" (the Batch 11 subhead did); the title tag
-              now carries it (Velu, 2026-11-14, Fable's suggestion:
-              "Sortes | AI Tarot Reading Online"), while the meta
-              description and social metadata already did. text-balance
-              keeps the subhead wrapping clean. */}
-          <h1 className="mt-6 text-balance font-display text-5xl leading-tight text-goldbright sm:text-6xl md:text-7xl">
-            Sortes
+          {/* Remodel (Velu, 2026-11-14, Fable's review): the hero
+              is the product. The one-word brand H1 (Batch 11) and
+              the Batch 12 subhead are superseded: the H1 is now
+              Fable's explanation, "Sortes" lives in the header logo,
+              and the subhead is Fable's fix. The free reading stays
+              1-card Quick Insight only, and the 3-card spread is
+              still PLANNED as the next step after the first reading.
+              The "free" wording is gated on freeAvailable (Batch 6a
+              rule): it never promises a free reading to someone who
+              must sign in first, and it fails closed while auth is
+              loading. No entrance animation on the hero copy: it renders at
+              full opacity on first paint (the old fade left the
+              first frame almost empty behind the moon image), and
+              the example questions stay visible as tappable chips
+              instead of rotating one at a time. */}
+          <h1 className="mt-6 text-balance font-display text-4xl leading-tight text-goldbright sm:text-5xl">
+            Ask a question. Draw a tarot card. Get an AI reading.
           </h1>
           <p className="mt-6 max-w-xl text-base leading-relaxed text-cream/80">
-            A question on your mind? Ask the cards. Get a clear answer.
+            A question on your mind? Ask the cards. Get a clearer way to see it.
           </p>
-          {/* AF-034 homepage diet: the Latin etymology line is gone
-              (it belongs on /about, which needs Velu's identity copy
-              first — AF-036 — so it is dropped, not moved). */}
-          <div className="mt-10 flex w-full max-w-xl flex-col gap-3 sm:flex-row sm:flex-nowrap sm:justify-center">
-            <Link
-              href="/spreads/quick-insight"
+          <p className="mt-4 text-sm text-cream/70">
+            No experience needed. Just a question.
+          </p>
+          <form
+            action="/intake/quick-insight"
+            onSubmit={onHeroSubmit}
+            className="mt-8 flex w-full max-w-xl flex-col gap-3 sm:flex-row"
+          >
+            <label htmlFor="hero-question" className="sr-only">
+              What&apos;s on your mind?
+            </label>
+            <input
+              id="hero-question"
+              ref={questionRef}
+              type="text"
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
+              placeholder="What's on your mind?"
+              autoComplete="off"
+              maxLength={300}
+              enterKeyHint="go"
+              className="w-full flex-1 rounded-2xl border border-gold/30 bg-ink/70 px-5 py-4 text-base text-cream placeholder:text-cream/60 focus:border-gold"
+            />
+            <button
+              type="submit"
               className="btn-gold rounded-2xl px-6 py-4 text-center text-base font-bold leading-snug sm:shrink-0 sm:px-8 sm:text-lg"
             >
-              Ask your question
-            </Link>
-          </div>
-          <p className="mt-5 text-sm text-mist">
-            No credit card, no account.
+              {freeAvailable ? "Draw my card — free" : "Draw my card"}
+            </button>
+          </form>
+          {/* Sonnet review: the chips are a labelled group with 44px
+              touch targets. A fieldset + legend, not role="group":
+              the repo lints role="group" as an error against the
+              jsx-a11y baseline. */}
+          <fieldset className="mt-4 flex flex-wrap justify-center gap-2 border-0 p-0 m-0">
+            <legend className="sr-only">Example questions</legend>
+            {EXAMPLE_QUESTIONS.map((q) => (
+              <button
+                key={q}
+                type="button"
+                onClick={() => fillExample(q)}
+                className="min-h-11 rounded-full border border-gold/30 px-4 py-2 text-sm text-cream/80 transition-colors hover:border-gold/60 hover:text-cream"
+              >
+                {q}
+              </button>
+            ))}
+          </fieldset>
+          {freeAvailable && (
+            <p className="mt-5 text-sm text-mist">
+              Your first reading is free — no sign-up, no payment.
+            </p>
+          )}
+          <p className="mt-2 text-xs text-mist/80">
+            Sent to the AI to write your reading. Saved with it in your journal.
           </p>
-          {/* AF-034: the pricing line and the charts line are gone
-              from the hero. Pricing lives on /oracles; charts have
-              their own nav entry. The hero is one promise + one CTA. */}
+          {/* AF-034: the pricing line and the charts line stay off
+              the hero. Pricing lives on /oracles; charts have their
+              own nav entry. */}
         </div>
       </section>
 

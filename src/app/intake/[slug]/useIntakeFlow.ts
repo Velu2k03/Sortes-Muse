@@ -19,6 +19,8 @@ import {
   getIntakeDraft,
   saveIntakeDraft,
   clearIntakeDraft,
+  takeHeroQuestion,
+  peekHeroQuestion,
 } from "@/lib/storage";
 import { unconfirmedMessage, requireSavedReading } from "@/lib/generate-failure";
 import { intakeGate } from "@/lib/intake-gate";
@@ -142,9 +144,25 @@ export function useIntakeFlow(slug: string) {
   // once on mount, saved as they type, cleared after a successful generation.
   // Birth-sensitive answers are never stored.
   const [draftReady, setDraftReady] = useState(false);
+  // Remodel: whether a hero question was pending at mount. A ref, so
+  // a StrictMode double-run of the mount effect still skips the draft
+  // restore after the question was consumed by the effect below.
+  const heroQuestionSeenRef = useRef(false);
   useEffect(() => {
     queueMicrotask(() => {
-      const d = getIntakeDraft(slug);
+      // Remodel (Velu, 2026-11-14): a question typed in the hero
+      // question box is pending in sessionStorage. It is the freshest
+      // intent, so the old draft is discarded, not merged: a new
+      // question on top of an unrelated old story and category is a
+      // mismatch. Only the Quick Insight intake reads it: the hero
+      // only routes there.
+      if (slug === "quick-insight" && peekHeroQuestion() !== null) {
+        heroQuestionSeenRef.current = true;
+        clearIntakeDraft();
+      }
+      const d = heroQuestionSeenRef.current
+        ? null
+        : getIntakeDraft(slug);
       if (d && d.categoryKey && getCategory(d.categoryKey)) {
         setCategoryKey(d.categoryKey);
         setAnswers(d.answers);
@@ -155,6 +173,34 @@ export function useIntakeFlow(slug: string) {
       setDraftReady(true);
     });
   }, [slug]);
+  // Remodel: consume the hero question only once the intake is usable
+  // (the sign-in gate is null), the device flags are known, AND a
+  // category is selected. The flags (usedFree, hadSession) are read in
+  // mount-effect microtasks, so on the first render a guest who
+  // already used the free reading still looks free and the gate is
+  // null; consuming then would lose the question when the gate flips
+  // to "signin". draftReady is set after those microtasks, so the
+  // gate is correct by the time this runs. If the gate is showing, the
+  // seeker leaves to sign in and comes back; the question waits in
+  // localStorage until then. The category wait matters too: the draft
+  // save skips while categoryKey is null, so a question consumed on
+  // the category step would live only in React state and be lost on a
+  // refresh or a leave before a category is picked. Once a category
+  // is set, the save effect persists the question (question is in its
+  // deps), so a later refresh restores it with the draft.
+  // The read runs in a microtask, like the draft restore above: the
+  // repo lints synchronous setState in an effect body as an error.
+  useEffect(() => {
+    if (authLoading || gate !== null || !draftReady || categoryKey === null) return;
+    queueMicrotask(() => {
+      // Check the slug BEFORE the destructive read: another spread's
+      // intake must not consume (and discard) the Quick Insight
+      // question.
+      if (slug !== "quick-insight") return;
+      const heroQuestion = takeHeroQuestion();
+      if (heroQuestion) setQuestion(heroQuestion);
+    });
+  }, [slug, authLoading, gate, draftReady, categoryKey]);
   useEffect(() => {
     if (!draftReady || !categoryKey) return;
     const safe: Record<string, string> = {};
