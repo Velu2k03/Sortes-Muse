@@ -68,6 +68,37 @@ html[data-theme="light"] {
   --color-violet: #6d28d9;
   --color-danger: #b91c1c;
 }
+/* Pricing page dark islands (contrast fix, 2026-11-14): the Astryx
+   Cards are navy while the page is light, and the Astryx
+   <Theme mode="dark"> only scopes Astryx's own variables — it does
+   not touch the site's Tailwind --color-* tokens, which follow
+   html[data-theme="light"]. So text-cream / text-goldbright inside
+   the cards resolved to dark ink / dark gold on navy (1.06:1 and
+   2.70:1 — invisible). This scope re-declares the tokens the card
+   content uses to their dark stops, so the existing Tailwind
+   classes resolve light inside the cards (cream on navy is about
+   13:1, bright gold about 11:1). Custom properties inherit, so a
+   declaration on this wrapper wins over the inherited light value
+   for everything inside it. Scoped to the pricing cards only — the
+   rest of the page keeps the light tokens.
+   The values reference the Astryx theme tokens (Codex P1, PR #88):
+   the sortes theme is the single source for the pricing page's
+   dark palette, so a palette change there flows here with no
+   second copy to keep in sync. The hex after each var() is only
+   the fallback if the theme variable is ever out of scope — and a
+   fallback would HIDE a broken reference by painting the right
+   colour anyway, so the live contrast measurement (clean-profile
+   Playwright check + PIL pixel sampling) is what catches a dead
+   token, not this stylesheet. */
+.pricing-card-dark {
+  --color-ink: var(--color-background-body, #0a0e1a);
+  --color-navy: var(--color-background-surface, #141b2e);
+  --color-panel: var(--color-background-card, #1a1f2e);
+  --color-gold: var(--color-accent, #d4af37);
+  --color-goldbright: var(--color-text-accent, #f4d03f);
+  --color-cream: var(--color-text-primary, #ede6d6);
+  --color-mist: var(--color-text-secondary, #9ca3af);
+}
 html[data-theme="light"] /* Numbers: genjutsu paint method, distinct readable numerals. Inter
    with tabular figures, so prices, credits, degrees and counts line
    up and never inherit the display serif. Applied via .num and the

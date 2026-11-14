@@ -282,6 +282,76 @@ describe("Pricing honesty: disabled CTAs, packs link, no checkout wiring", () =>
   });
 });
 
+describe("Pricing card contrast: dark islands on the light page", () => {
+  it("scopes the dark token stops to the card content in globals.css", () => {
+    // Contrast fix (2026-11-14): the Astryx Cards are navy while
+    // the page is light, and <Theme mode="dark"> does not touch the
+    // site's Tailwind --color-* tokens, so text-cream resolved to
+    // dark ink #1c1a15 on navy (1.06:1 — invisible) and the gold
+    // price to #7c5e00 (2.70:1, below the 3:1 large-text bar).
+    const css = src("src/app/globals.css");
+    const scope = css.match(/\.pricing-card-dark \{([\s\S]*?)\}/);
+    expect(scope).not.toBeNull();
+    const body = (scope as RegExpMatchArray)[1];
+    // Codex P1 (PR #88): the values reference the Astryx theme
+    // tokens — the sortes theme is the single source for the
+    // pricing page's dark palette, so there is no second copy of
+    // the palette to drift. Assert the token reference, not the
+    // fallback hex: pinning the fallback would make a theme edit
+    // require a test edit as well, the sync cost the P1 was
+    // about (Sonnet nit, PR #88).
+    expect(body).toContain("--color-cream: var(--color-text-primary");
+    expect(body).toContain("--color-goldbright: var(--color-text-accent");
+    expect(body).toContain("--color-gold: var(--color-accent");
+    expect(body).toContain("--color-panel: var(--color-background-card");
+    // No bare hex as the primary value: a duplicate palette.
+    expect(body).not.toContain("--color-cream: #ede6d6;");
+    expect(body).not.toContain("--color-goldbright: #f4d03f;");
+    // The scope must NOT flip the page background itself: the
+    // pricing page background stays the light paper.
+    expect(body).not.toContain("#fdf9ee");
+  });
+
+  it("applies the dark scope inside the tier Cards and the top-up Cards, nowhere else", () => {
+    const c = client();
+    // One occurrence in the tier map, one in the top-up map.
+    expect([...c.matchAll(/pricing-card-dark/g)].length).toBe(2);
+    // The {0} in gap={0} must be escaped: unescaped, {0} is a
+    // regex quantifier (zero of the preceding token), so the
+    // literal "gap=" would never match.
+    const tierStack = c.match(
+      /<VStack gap=\{0\} className="pricing-card-dark h-full text-center">([\s\S]*?)<\/VStack>/
+    );
+    expect(tierStack).not.toBeNull();
+    expect((tierStack as RegExpMatchArray)[1]).toContain("{tier.name}");
+    expect((tierStack as RegExpMatchArray)[1]).toContain("${price.toFixed(2)}");
+    const topupStack = c.match(
+      /<VStack gap=\{0\} className="pricing-card-dark text-center">([\s\S]*?)<\/VStack>/
+    );
+    expect(topupStack).not.toBeNull();
+    expect((topupStack as RegExpMatchArray)[1]).toContain("${topup.price.toFixed(2)}");
+    // The page-level hero VStack (Pricing eyebrow, h1, intro) sits
+    // on the light paper and must NOT carry the dark scope. The
+    // count of 2 above plus the two VStack regexes already pin
+    // placement; no whitespace-fragile negative assertion is
+    // needed (Sonnet nit, PR #88).
+    expect(c).toContain('<VStack gap={0} className="text-center">');
+  });
+
+  it("keeps the card text on the existing Tailwind classes (no new colours invented)", () => {
+    // The fix is a token-scope change only: the card text still
+    // uses text-cream / text-cream/75 / text-cream/85 /
+    // text-goldbright, which now resolve to the dark stops inside
+    // the scope. No hex, no arbitrary var() colour, no new class.
+    const c = client();
+    expect(c).toContain('className="font-display text-xl text-cream"');
+    expect(c).toContain('className="mt-3 font-display text-[40px] font-bold leading-none text-goldbright');
+    expect(c).toContain('className="mt-4 space-y-2 text-left text-sm text-cream/85"');
+    expect(c).not.toContain("text-[var(--color-text-primary)]");
+    expect(c).not.toContain("text-[var(--color-text-accent)]");
+  });
+});
+
 describe("Pricing page: Astryx pilot wiring", () => {
   it("wraps the page in the built Sortes theme, dark mode, pricing route only", () => {
     const p = page();

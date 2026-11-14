@@ -176,7 +176,7 @@ export default function PricingClient() {
               elevation={tier.id === "star" ? "med" : "none"}
               height="100%"
             >
-              <VStack gap={0} className="h-full text-center">
+              <VStack gap={0} className="pricing-card-dark h-full text-center">
                 <h2 className="font-display text-xl text-cream">{tier.name}</h2>
                 <HStack hAlign="center" vAlign="center" gap={0} className="mt-1 h-6">
                   {tier.popular && <Badge label="Most popular" variant="warning" />}
@@ -257,7 +257,7 @@ export default function PricingClient() {
         <Grid columns={{ minWidth: 280, max: 2 }} gap={4} maxWidth="42rem" className="mx-auto mt-6">
           {TOPUPS.map((topup) => (
             <Card key={topup.credits} padding={4}>
-              <VStack gap={0} className="text-center">
+              <VStack gap={0} className="pricing-card-dark text-center">
                 <p className="font-display text-3xl font-bold text-goldbright lining-nums tabular-nums">
                   ${topup.price.toFixed(2)}
                 </p>
