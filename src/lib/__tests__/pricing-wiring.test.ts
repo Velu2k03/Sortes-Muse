@@ -139,20 +139,27 @@ describe("Pricing feature lists: only what exists in code (4/3/3)", () => {
 describe("Pricing video formula: one badge, one lifted tier, one primary button", () => {
   it("has exactly one Most popular badge, on Star only", () => {
     const c = client();
-    expect([...c.matchAll(/<Badge/g)].length).toBe(2);
+    expect([...c.matchAll(/<Badge/g)].length).toBe(3);
     const badges = [...c.matchAll(/<Badge[^>]*\/>/g)].map((m) => m[0]);
-    expect(badges).toHaveLength(2);
+    expect(badges).toHaveLength(3);
     expect(badges.filter((b) => b.includes('label="Most popular"'))).toHaveLength(1);
-    expect(badges.filter((b) => b.includes('label="Coming soon"'))).toHaveLength(1);
+    // Two "Coming soon" badges: one by the h1 (subscriptions are
+    // not open yet) and one on the top-ups section (no variants
+    // exist yet). Both are pinned, so a third badge cannot sneak in.
+    expect(badges.filter((b) => b.includes('label="Coming soon"'))).toHaveLength(2);
     expect(c).toContain("{tier.popular && <Badge");
     expect([...c.matchAll(/popular: true,/g)].length).toBe(1);
   });
 
   it("lifts only the Star tier, with the StarBorder gold border", () => {
     const c = client();
-    expect([...c.matchAll(/sm:-translate-y-4/g)].length).toBe(1);
+    // The lift starts at 960px, where the grid reaches three
+    // columns — at sm (640px) the grid is two columns and a lifted
+    // Star would float alone in row 1 (Sonnet nit, PR #86).
+    expect([...c.matchAll(/min-\[960px\]:-translate-y-4/g)].length).toBe(1);
+    expect(c).not.toContain("sm:-translate-y-4");
     expect(c).toContain(
-      'tier.id === "star"\n                  ? "sm:-translate-y-4 shadow-[0_24px_48px_-24px_rgba(212,175,55,0.55)]"'
+      'tier.id === "star"\n                  ? "min-[960px]:-translate-y-4 shadow-[0_24px_48px_-24px_rgba(212,175,55,0.55)]"'
     );
     expect([...c.matchAll(/<StarBorder/g)].length).toBe(1);
     expect(c).toContain('{tier.id === "star" ? (');
@@ -284,6 +291,9 @@ describe("Pricing page: Astryx pilot wiring", () => {
     expect(p).toContain("<PricingClient />");
     expect(p).toContain('title: "Pricing"');
     expect(p).toContain('canonical: "/pricing"');
+    // Sonnet nit (PR #86): the meta/OG descriptions are search
+    // snippets, so they must not promise subscriptions as live.
+    expect(p).toContain("Sortes subscriptions, coming soon:");
   });
 
   it("renders tiers with Astryx Card / Badge / Button, StarBorder, CountUp", () => {

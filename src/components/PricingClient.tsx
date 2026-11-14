@@ -125,6 +125,9 @@ export default function PricingClient() {
     <Section variant="transparent" maxWidth="64rem" padding={8} paddingInline={4} className="mx-auto">
       <VStack gap={0} className="text-center">
         <p className="text-xs uppercase tracking-[0.35em] text-gold">Pricing</p>
+        <HStack hAlign="center" gap={0} className="mt-3">
+          <Badge label="Coming soon" variant="neutral" />
+        </HStack>
         <h1 className="mt-3 font-display text-5xl text-goldbright sm:text-6xl">
           Choose your plan
         </h1>
@@ -217,7 +220,7 @@ export default function PricingClient() {
               data-tier={tier.id}
               className={`relative h-full rounded-3xl ${
                 tier.id === "star"
-                  ? "sm:-translate-y-4 shadow-[0_24px_48px_-24px_rgba(212,175,55,0.55)]"
+                  ? "min-[960px]:-translate-y-4 shadow-[0_24px_48px_-24px_rgba(212,175,55,0.55)]"
                   : ""
               }`}
             >
