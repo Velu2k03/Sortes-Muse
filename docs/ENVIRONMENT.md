@@ -57,6 +57,7 @@ ZERO. The six names reported missing in Production are resolved below —
 | `SORTES_RECONCILE_PRODUCTION` | `scripts/reconcile.mjs` | Same pattern for the reconcile script. |
 | `SORTES_TEST_DATABASE_URL` / `SORTES_TEST_DATABASE_URL_MIGRATIONS` | `src/lib/__tests__/db-postgres.test.ts`, `migrations-pg.test.ts` | Local test-only. Point at the local staging databases, never production. **Gotcha:** if `SORTES_TEST_DATABASE_URL` is not exported, `npm test` silently SKIPS the Postgres money-path tests (the skip count rises) and still looks green. Export it before running (`postgres://sortes_test:<pw>@127.0.0.1:5432/sortes_pgtest_money`). CI sets it against a Postgres service container. `db-query-timeout.test.ts` has one known-failing case (cancel_timeout, direct) that is skipped when `CI` is set. |
 | `SORTES_TEST_DATABASE_URL_RLS` | `src/lib/__tests__/rls-005.test.ts` | Local test-only. RLS 005 tests against the dedicated `sortes_pgtest_rls` database; requires the one-time `anon` / `authenticated` role setup (see `docs/STAGING.md`). |
+| `SORTES_TEST_DATABASE_URL_RLS2` | `src/lib/__tests__/rls-011.test.ts` | Local test-only. RLS 011 tests against the dedicated `sortes_pgtest_rls2` database (separate from `sortes_pgtest_rls` because both RLS files drop + rebuild in beforeAll; same `anon` / `authenticated` roles). |
 
 ## Production gaps, resolved
 

@@ -564,3 +564,38 @@ not a secret and needs no rotation.
 at build time:** the script exits 1 (fail closed) and the build
 fails. That is the intended behaviour — deploying without checking
 is exactly the failure this guard exists to prevent.
+
+## 14. Migration 011 — RLS on credit_grants + subscriptions (Notes N4, A9)
+
+**Status: APPLIED (see the progress log for the run id).**
+`migrations/011_rls-credit-grants-subscriptions.sql` enables Row
+Level Security with NO policies (deny-by-default) on `credit_grants`
+and `subscriptions`, the two tables created by 008/009 after the
+004/005 RLS batches covered the other seven tables. Both hold
+user_id rows. The app connects as the postgres role (table owner,
+BYPASSRLS), so this changes nothing the app does; it closes the
+PostgREST anon-key read path for user_id rows. The browser client
+never queries these tables directly; all reads go through the
+Next.js API routes as postgres owner.
+
+**Apply order (§8 gate):** 011 must be applied to production BEFORE
+PR #96 merges — fresh backup first, then the migrate workflow on
+the PR branch (ref notes-n4-rls-2026-11-15, confirm=APPLY,
+backup_run_id required), then merge immediately. Once
+`SORTES_CHECK_MIGRATIONS=1` is set in Vercel Production (§13), the
+prebuild guard fails the build if 011 is pending, so the apply
+cannot be skipped.
+
+**Rollback:** `migrations/rollback/011_rls-credit-grants-subscriptions.down.sql`
+(DISABLE RLS on both tables; instant, no data loss; drilled locally
+in Batch N4). Rollback order (§12): run the down file, then delete
+the ledger row (`DELETE FROM schema_migrations WHERE version = '011';`).
+The down file only flips the RLS flag; it does not remove the 011
+row from `schema_migrations` (same convention as the 008/009 down
+files).
+
+**Backup note:** the backup (`pg_dump` via GitHub Actions) connects
+as the postgres role, which owns the tables and has BYPASSRLS, so
+RLS does not block the dump. Verify the next scheduled backup after
+the 011 apply succeeds; if it fails, the backup URL's role is the
+first thing to check.

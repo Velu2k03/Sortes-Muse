@@ -169,6 +169,24 @@ describe.skipIf(SKIP)("011 zero-policy RLS on real Postgres (staging only)", () 
     ).rejects.toThrow(/row-level security/);
   });
 
+  it("anon UPDATE/DELETE affect 0 rows (zero policies, no error)", async () => {
+    // With zero policies, UPDATE/DELETE do not throw; they match 0
+    // rows. Verify by reading the rows back as the owner: the
+    // amount is unchanged and the subscription row is still there.
+    await anon.unsafe(
+      `UPDATE public.credit_grants SET amount = 999 WHERE id = 'cg_rls011'`
+    );
+    await anon.unsafe(`DELETE FROM public.subscriptions WHERE id = 's_rls011'`);
+    const grants = (await raw`SELECT amount FROM credit_grants WHERE id = 'cg_rls011'`) as Array<{
+      amount: number;
+    }>;
+    expect(grants).toEqual([{ amount: 300 }]);
+    const subs = (await raw`SELECT count(*)::int AS n FROM subscriptions WHERE id = 's_rls011'`) as Array<{
+      n: number;
+    }>;
+    expect(subs[0].n).toBe(1);
+  });
+
   it("owner still reads and writes every row (RLS bypass)", async () => {
     const grants = (await raw`SELECT kind, amount FROM credit_grants WHERE id = 'cg_rls011'`) as Array<{
       kind: string;
@@ -187,5 +205,33 @@ describe.skipIf(SKIP)("011 zero-policy RLS on real Postgres (staging only)", () 
       n: number;
     }>;
     expect(count[0].n).toBe(2);
+  });
+
+  it("BEFORE: with RLS disabled, anon sees the victim rows (control)", async () => {
+    // Proves the denial above is RLS doing the work, not an empty
+    // table or a missing grant: disable RLS, anon sees the rows,
+    // then re-enable it so the database is left in the migrated state.
+    await raw.unsafe(
+      `ALTER TABLE public.credit_grants DISABLE ROW LEVEL SECURITY; ALTER TABLE public.subscriptions DISABLE ROW LEVEL SECURITY`
+    );
+    try {
+      const grants = (await anon.unsafe(
+        `SELECT count(*)::int AS n FROM public.credit_grants`
+      )) as Array<{ n: number }>;
+      expect(grants[0].n).toBeGreaterThan(0);
+      const subs = (await anon.unsafe(
+        `SELECT count(*)::int AS n FROM public.subscriptions`
+      )) as Array<{ n: number }>;
+      expect(subs[0].n).toBeGreaterThan(0);
+    } finally {
+      await raw.unsafe(
+        `ALTER TABLE public.credit_grants ENABLE ROW LEVEL SECURITY; ALTER TABLE public.subscriptions ENABLE ROW LEVEL SECURITY`
+      );
+    }
+    // RLS is back on: anon is denied again.
+    const denied = (await anon.unsafe(
+      `SELECT count(*)::int AS n FROM public.credit_grants`
+    )) as Array<{ n: number }>;
+    expect(denied[0].n).toBe(0);
   });
 });
