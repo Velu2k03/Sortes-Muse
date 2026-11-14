@@ -62,7 +62,7 @@ describe.skipIf(SKIP)("money paths on real Postgres (staging only)", () => {
       ["auth_codes", "credit_grants", "free_interpretations", "free_readings", "readings", "reports", "subscriptions", "transactions", "users"]
     );
     const ledger = (await raw`SELECT version FROM schema_migrations ORDER BY version`) as Array<{ version: string }>;
-    expect(ledger.map((r) => r.version)).toEqual(["001", "002", "003", "006", "007", "008", "009"]);
+    expect(ledger.map((r) => r.version)).toEqual(["001", "002", "003", "006", "007", "008", "009", "010"]);
     const indexes = (await raw`
       SELECT indexname FROM pg_indexes WHERE schemaname = 'public'
         AND indexname LIKE 'idx\_%'`) as Array<{ indexname: string }>;
@@ -840,10 +840,14 @@ describe.skipIf(SKIP)("money paths on real Postgres (staging only)", () => {
     // drip cron re-grants year-1 months and never grants year-2
     // months 1-11. Only an invoice (payment_success) supplies a
     // new start; a null start means "keep existing".
-    const user = await db.createUser("upsert-start@example.com");
+    // A per-run suffix: the money DB persists across runs, and
+    // the GREATEST guard keeps the LATEST start, so a stale row
+    // from an earlier run would pin the start at 2028.
+    const run = Math.random().toString(36).slice(2, 8);
+    const user = await db.createUser(`upsert-start-${run}@example.com`);
     const base = {
       userId: user.id,
-      lemonsqueezySubscriptionId: "sub_keep_start",
+      lemonsqueezySubscriptionId: `sub_keep_start-${run}`,
       lemonsqueezyCustomerId: "7",
       tier: "star" as const,
       billingInterval: "annual" as const,

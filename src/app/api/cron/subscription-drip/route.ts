@@ -1,6 +1,10 @@
 import { timingSafeEqual } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
-import { listActiveAnnualSubscriptions, grantMonthlyCredits } from "@/lib/db";
+import {
+  listActiveAnnualSubscriptions,
+  listGrantedSubscriptionPeriods,
+  grantMonthlyCredits,
+} from "@/lib/db";
 
 /**
  * Phase 2 batch 3: the annual subscription drip. An annual plan is
@@ -17,7 +21,11 @@ import { listActiveAnnualSubscriptions, grantMonthlyCredits } from "@/lib/db";
  * - past_due subscriptions get NO new grant (a failed payment
  *   freezes the drip until the payment succeeds).
  * - cancelled (grace-period) subscriptions KEEP dripping until the
- *   period ends (the year was paid for).
+ *   period ends (the year was paid for), unless the user has
+ *   since started a newer live annual plan (then the new plan's
+ *   drip covers them; see listActiveAnnualSubscriptions).
+ * - refunded subscriptions get NO new grant (a full refund
+ *   stamps refunded_at, which excludes the row).
  * - the drip month is the calendar month of the billing
  *   anniversary, never the 1st: granting on the 1st would hand
  *   out the next cycle's first month before its renewal charge.
@@ -25,6 +33,14 @@ import { listActiveAnnualSubscriptions, grantMonthlyCredits } from "@/lib/db";
  * Vercel Cron calls this with `Authorization: Bearer <CRON_SECRET>`.
  * Configure in vercel.json and set CRON_SECRET in env vars.
  */
+
+// The drip is a bounded daily job: one page of subscriptions at a
+// time, and it skips months that already have a grant (one query
+// per subscription) instead of one transaction per month.
+export const maxDuration = 60;
+
+const DRIP_PAGE_SIZE = 200;
+
 export async function GET(req: NextRequest) {
   const secret = process.env.CRON_SECRET;
   if (!secret) {
@@ -39,55 +55,82 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const subs = await listActiveAnnualSubscriptions();
+  // Page through every active annual subscription (the list is
+  // capped at 500 per call; subscription 501+ must still drip).
   const now = new Date();
+  let subscriptions = 0;
   let granted = 0;
   let skippedPastDue = 0;
   const errors: string[] = [];
-  for (const sub of subs) {
-    // Failed payment: no new grant while past_due.
-    if (sub.status === "past_due") {
-      skippedPastDue += 1;
-      continue;
-    }
-    const cycleStartRaw = sub.current_period_start ?? sub.created_at;
-    const cycleStart = new Date(cycleStartRaw);
-    if (Number.isNaN(cycleStart.getTime())) {
-      errors.push(sub.lemonsqueezy_subscription_id);
-      continue;
-    }
-    // Whole months since the cycle started, capped at 11 (month 0
-    // is the signup/renewal month, granted by the webhook).
-    const elapsed = Math.min(11, wholeMonthsBetween(cycleStart, now));
-    for (let m = 0; m <= elapsed; m += 1) {
-      const monthDate = addMonths(cycleStart, m);
-      const periodKey = periodKeyForMonth(monthDate);
-      try {
-        const result = await grantMonthlyCredits({
-          userId: sub.user_id,
-          subscriptionId: sub.lemonsqueezy_subscription_id,
-          tier: sub.tier,
-          periodKey,
-          periodEnd: sub.current_period_end,
-        });
-        if (result.granted) granted += 1;
-      } catch (err) {
+  let offset = 0;
+  for (;;) {
+    const page = await listActiveAnnualSubscriptions(DRIP_PAGE_SIZE, offset);
+    if (page.length === 0) break;
+    offset += page.length;
+    subscriptions += page.length;
+    for (const sub of page) {
+      // Failed payment: no new grant while past_due.
+      if (sub.status === "past_due") {
+        skippedPastDue += 1;
+        continue;
+      }
+      const cycleStartRaw = sub.current_period_start ?? sub.created_at;
+      const cycleStart = new Date(cycleStartRaw);
+      if (Number.isNaN(cycleStart.getTime())) {
         errors.push(sub.lemonsqueezy_subscription_id);
-        console.error(
-          JSON.stringify({
-            source: "sortes-cron",
-            event: "subscription-drip-failed",
+        continue;
+      }
+      // Whole months since the cycle started, capped at 11 (month 0
+      // is the signup/renewal month, granted by the webhook).
+      const elapsed = Math.min(11, wholeMonthsBetween(cycleStart, now));
+      // Skip months that already have a grant (one query, not one
+      // transaction per month): a re-run after a partial failure
+      // only touches the months still missing.
+      const alreadyGranted = new Set(await listGrantedSubscriptionPeriods(sub.lemonsqueezy_subscription_id));
+      for (let m = 0; m <= elapsed; m += 1) {
+        const monthDate = addMonths(cycleStart, m);
+        const periodKey = periodKeyForMonth(monthDate);
+        if (alreadyGranted.has(periodKey)) continue;
+        try {
+          const result = await grantMonthlyCredits({
+            userId: sub.user_id,
             subscriptionId: sub.lemonsqueezy_subscription_id,
+            tier: sub.tier,
             periodKey,
-            error: err instanceof Error ? err.message : String(err),
-          })
-        );
-        break;
+            periodEnd: sub.current_period_end,
+          });
+          if (result.granted) granted += 1;
+        } catch (err) {
+          errors.push(sub.lemonsqueezy_subscription_id);
+          console.error(
+            JSON.stringify({
+              source: "sortes-cron",
+              event: "subscription-drip-failed",
+              subscriptionId: sub.lemonsqueezy_subscription_id,
+              periodKey,
+              error: err instanceof Error ? err.message : String(err),
+            })
+          );
+          break;
+        }
       }
     }
+    if (page.length < DRIP_PAGE_SIZE) break;
   }
+  // One summary line for the run, so an alert can watch for a
+  // rising error count or a stuck grant count.
+  console.log(
+    JSON.stringify({
+      source: "sortes-cron",
+      event: "subscription-drip-run",
+      subscriptions,
+      granted,
+      skippedPastDue,
+      errors: errors.length,
+    })
+  );
   return NextResponse.json({
-    subscriptions: subs.length,
+    subscriptions,
     granted,
     skippedPastDue,
     errors: errors.length,

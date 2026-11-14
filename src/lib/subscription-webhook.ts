@@ -14,7 +14,7 @@ import {
   upsertSubscription,
   getSubscriptionByProviderId,
   expireMonthlyBalance,
-  revokeSubscriptionGrant,
+  revokeAllSubscriptionGrants,
   type DbUser,
 } from "./db";
 
@@ -274,19 +274,21 @@ export async function handleSubscriptionWebhook(
         return { status: 400, body: { error: "Invoice subscription mismatch." } };
       }
       const user = await resolveUser(event, String(invAttrs.user_email ?? ""), subscriptionId);
-      const periodKey = periodKeyForDate(invAttrs.created_at ?? new Date().toISOString());
-      // The period's charge is the invoice total; the refunded
-      // amount comes from the API-verified invoice (never the
-      // unverified payload).
+      // An annual invoice covers 12 dripped months: revoke EVERY
+      // monthly grant for the cycle, not just the invoice's month.
+      // A full refund also stamps refunded_at on the subscription
+      // row, which stops the drip; a partial refund leaves the
+      // subscription (and the drip) running. The period's charge is
+      // the invoice total; the refunded amount comes from the
+      // API-verified invoice (never the unverified payload).
       const totalCents = Number(inv.total ?? invAttrs.total ?? expectedTotal);
-      const result = await revokeSubscriptionGrant({
+      const result = await revokeAllSubscriptionGrants({
         userId: user.id,
         subscriptionId,
-        periodKey,
         totalCents,
         refundedCents: typeof inv.refunded_amount === "number" ? inv.refunded_amount : undefined,
       });
-      log("subscription-refund-revoked", { subscriptionId, userId: user.id, periodKey, revoked: result.revoked, amount: result.amount });
+      log("subscription-refund-revoked", { subscriptionId, userId: user.id, revoked: result.revoked, amount: result.amount, periods: result.periods });
       return { status: 200, body: { ok: true, refunded: result.revoked } };
     }
 

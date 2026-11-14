@@ -51,6 +51,7 @@ function subRow(start: string | null): DbSubscription {
     renews_at: "2027-11-15T00:00:00.000Z",
     ends_at: null,
     cancel_at_period_end: false,
+    refunded_at: null,
     created_at: "2026-11-15T00:00:00.000Z",
     updated_at: "2026-11-15T00:00:00.000Z",
   };

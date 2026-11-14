@@ -48,7 +48,7 @@ export interface DbTransaction {
 export interface CreditGrant {
   id: string;
   user_id: string;
-  kind: "monthly" | "purchased" | "conversion" | "expiry";
+  kind: "monthly" | "purchased" | "conversion" | "expiry" | "refund";
   amount: number;
   subscription_id: string | null;
   period_key: string | null;
@@ -76,6 +76,8 @@ export interface DbSubscription {
   renews_at: string | null;
   ends_at: string | null;
   cancel_at_period_end: boolean;
+  /** Set when a full refund revoked the whole cycle (migration 010); the drip excludes refunded rows. */
+  refunded_at: string | null;
   created_at: string;
   updated_at: string;
 }
