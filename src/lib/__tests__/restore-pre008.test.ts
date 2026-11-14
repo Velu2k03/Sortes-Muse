@@ -176,6 +176,20 @@ describe.skipIf(SKIP)("restore.mjs on pre-008 and post-009 dumps", () => {
     const dir = `/usr/lib/postgresql/${major}/bin`;
     if (existsSync(path.join(dir, "pg_dump"))) {
       pgBinDir = dir;
+    } else {
+      // No matching client tools: the PATH pg_dump may be newer than
+      // the server, and a newer dump carries `SET transaction_timeout`
+      // which the server rejects. Fail loudly here with the fix
+      // instead of a confusing pg_restore error later
+      // (Claude review, PR #93).
+      const m = probe("pg_dump --version").match(/(\d+)\./);
+      const pathMajor = m ? m[1] : "?";
+      if (pathMajor !== String(major)) {
+        throw new Error(
+          `restore-pre008: no pg_dump ${major} tools found (only PATH pg_dump ${pathMajor}); ` +
+            `install postgresql-client-${major} (see the lint-gate workflow PGDG step)`,
+        );
+      }
     }
     console.log(
       `restore-pre008: server PG ${major}, pg tools from ${pgBinDir || "PATH"}; ` +

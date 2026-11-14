@@ -45,7 +45,8 @@ sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
 sudo -u postgres psql -c "CREATE ROLE sortes_test LOGIN CREATEDB PASSWORD '<placeholder>';"
 # (CREATEDB: the restore-pre008 test creates its own scratch
 # databases; in CI sortes_test is the service superuser, so it
-# already has this.)
+# already has this. If the role already exists without CREATEDB:
+#   sudo -u postgres psql -c "ALTER ROLE sortes_test CREATEDB;" — Claude review, PR #93.)
 sudo -u postgres psql -c "CREATE ROLE anon LOGIN PASSWORD 'sortes_test_local';"
 sudo -u postgres psql -c "CREATE ROLE authenticated LOGIN PASSWORD 'sortes_test_local';"
 for db in sortes_pgtest_money sortes_pgtest_migrations sortes_pgtest_rls sortes_pgtest_ledgers sortes_staging; do

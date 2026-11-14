@@ -170,6 +170,7 @@ function tableExists(table) {
 const verifySql = buildVerifySql({
   hasCreditGrants: tableExists("credit_grants"),
   hasSubscriptions: tableExists("subscriptions"),
+  hasSchemaMigrations: tableExists("schema_migrations"),
 });
 console.log("restore: row counts in the restored database:");
 run("psql", [target, "-c", verifySql.trim()], libpqEnv(target));

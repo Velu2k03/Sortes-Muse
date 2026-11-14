@@ -14,9 +14,12 @@
  * Optional tables (absent in older dumps):
  * - credit_grants: added by migration 008.
  * - subscriptions: added by migration 009 (Batch N3, B6).
+ * - schema_migrations: added with the migration system (Phase 6).
+ *   A dump taken before the ledger existed would hit the same
+ *   parse-time failure, so it is probed too (Claude review, PR #93).
  */
 
-export function buildVerifySql({ hasCreditGrants, hasSubscriptions }) {
+export function buildVerifySql({ hasCreditGrants, hasSubscriptions, hasSchemaMigrations = true }) {
   const parts = [
     "SELECT 'users', count(*) FROM users",
     "SELECT 'auth_codes', count(*) FROM auth_codes",
@@ -33,7 +36,9 @@ export function buildVerifySql({ hasCreditGrants, hasSubscriptions }) {
     "SELECT 'reports', count(*) FROM reports",
     "SELECT 'free_readings', count(*) FROM free_readings",
     "SELECT 'free_interpretations', count(*) FROM free_interpretations",
-    "SELECT 'schema_migrations', count(*) FROM schema_migrations",
   );
+  if (hasSchemaMigrations) {
+    parts.push("SELECT 'schema_migrations', count(*) FROM schema_migrations");
+  }
   return parts.join(" UNION ALL\n") + "\nORDER BY 1;";
 }
