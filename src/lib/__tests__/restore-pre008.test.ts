@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { execFileSync, spawnSync } from "child_process";
-import { mkdtempSync, rmSync } from "fs";
+import { existsSync, mkdtempSync, rmSync } from "fs";
 import { tmpdir } from "os";
 import path from "path";
 import postgres from "postgres";
@@ -35,6 +35,37 @@ const SKIP =
 const SRC_DB = "sortes_pgtest_restore_src";
 const TGT_DB = "sortes_pgtest_restore_tgt";
 
+// Client/server major-version match for pg_dump + pg_restore.
+// pg_dump 17 writes `SET transaction_timeout = 0;` into the dump,
+// which a Postgres 16 server rejects as an unrecognized parameter,
+// so pg_restore exits 1 — the exact CI failure on PR #93 (the
+// ubuntu-latest runner's PATH pg_dump is newer than the postgres:16
+// service). Resolve the server major once in beforeAll and prefer
+// that major's Debian bindir (/usr/lib/postgresql/<major>/bin) for
+// every client binary, including the ones restore.mjs spawns (via a
+// PATH prefix on its spawn env). Falls back to PATH when no bindir
+// for the server major exists.
+let pgBinDir = "";
+
+function pgTool(name: string): string {
+  return pgBinDir ? path.join(pgBinDir, name) : name;
+}
+
+function toolEnv(): NodeJS.ProcessEnv {
+  return pgBinDir
+    ? { ...process.env, PATH: `${pgBinDir}:${process.env.PATH ?? ""}` }
+    : process.env;
+}
+
+function serverMajor(): string {
+  const out = execFileSync(
+    "psql",
+    [maintUrl(), "-t", "-A", "-c", "SHOW server_version"],
+    { encoding: "utf8", stdio: ["pipe", "pipe", "pipe"] },
+  ).trim();
+  return out.split(".")[0];
+}
+
 function urlWithDb(base: string, db: string): string {
   const u = new URL(base);
   u.pathname = `/${db}`;
@@ -65,9 +96,11 @@ async function dropDb(db: string): Promise<void> {
 }
 
 function psqlFile(dbUrl: string, file: string): void {
-  execFileSync("psql", [dbUrl, "-v", "ON_ERROR_STOP=1", "-q", "-f", file], {
-    stdio: "pipe",
-  });
+  execFileSync(
+    pgTool("psql"),
+    [dbUrl, "-v", "ON_ERROR_STOP=1", "-q", "-f", file],
+    { stdio: "pipe" },
+  );
 }
 
 const MIGRATIONS_DIR = path.resolve(process.cwd(), "migrations");
@@ -115,6 +148,14 @@ let workDir = "";
 describe.skipIf(SKIP)("restore.mjs on pre-008 and post-009 dumps", () => {
   beforeAll(async () => {
     workDir = mkdtempSync(path.join(tmpdir(), "sortes-restore-pre008-"));
+    const major = serverMajor();
+    const dir = `/usr/lib/postgresql/${major}/bin`;
+    if (existsSync(path.join(dir, "pg_dump"))) {
+      pgBinDir = dir;
+    }
+    console.log(
+      `restore-pre008: server PG ${major}, pg tools from ${pgBinDir || "PATH"}`,
+    );
     await recreateDb(SRC_DB);
     await recreateDb(TGT_DB);
   }, 60_000);
@@ -138,7 +179,7 @@ describe.skipIf(SKIP)("restore.mjs on pre-008 and post-009 dumps", () => {
     await seedUsers(srcUrl, [5, 0]);
     const dump = path.join(workDir, "pre008.dump");
     execFileSync(
-      "pg_dump",
+      pgTool("pg_dump"),
       [srcUrl, "--format=custom", "--no-owner", "--no-acl", "--file", dump],
       { stdio: "pipe" },
     );
@@ -152,8 +193,12 @@ describe.skipIf(SKIP)("restore.mjs on pre-008 and post-009 dumps", () => {
         urlWithDb(TEST_URL, TGT_DB),
         "--create",
       ],
-      { encoding: "utf8" },
+      { encoding: "utf8", env: toolEnv() },
     );
+    if (res.status !== 0) {
+      console.log("restore.mjs stdout:\n" + res.stdout);
+      console.log("restore.mjs stderr:\n" + res.stderr);
+    }
     expect(res.status).toBe(0);
     expect(res.stdout).toContain("restore: OK");
     expect(res.stdout).not.toContain("credit_grants");
@@ -182,7 +227,7 @@ describe.skipIf(SKIP)("restore.mjs on pre-008 and post-009 dumps", () => {
     }
     const dump = path.join(workDir, "post009.dump");
     execFileSync(
-      "pg_dump",
+      pgTool("pg_dump"),
       [srcUrl, "--format=custom", "--no-owner", "--no-acl", "--file", dump],
       { stdio: "pipe" },
     );
@@ -199,8 +244,12 @@ describe.skipIf(SKIP)("restore.mjs on pre-008 and post-009 dumps", () => {
         urlWithDb(TEST_URL, TGT_DB),
         "--create",
       ],
-      { encoding: "utf8" },
+      { encoding: "utf8", env: toolEnv() },
     );
+    if (res.status !== 0) {
+      console.log("restore.mjs stdout:\n" + res.stdout);
+      console.log("restore.mjs stderr:\n" + res.stderr);
+    }
     expect(res.status).toBe(0);
     expect(res.stdout).toContain("restore: OK");
     expect(res.stdout).toMatch(/subscriptions\s*\|\s*1/);
