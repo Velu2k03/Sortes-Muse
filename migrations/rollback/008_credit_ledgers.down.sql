@@ -5,6 +5,11 @@
 -- back first (old code cannot run against the 008 schema, and new
 -- code cannot run against this one), and pg_dump BEFORE running.
 --
+-- Run with: psql -v ON_ERROR_STOP=1 --single-transaction -f <this file>
+-- (CodeRabbit review, PR #93: without ON_ERROR_STOP a failed step
+-- would still run the DROP below it; without a single transaction a
+-- failure part-way leaves a half-rolled-back schema.)
+--
 -- After running, also delete the 008 row from schema_migrations if
 -- 008 is meant to apply again later:
 --   DELETE FROM schema_migrations WHERE version = '008';
@@ -33,14 +38,19 @@ ALTER TABLE users DROP COLUMN IF EXISTS monthly_credits;
 ALTER TABLE users DROP COLUMN IF EXISTS purchased_credits;
 -- Archive the audit/idempotency rows BEFORE dropping the table
 -- (Batch N3, A3): the down file used to lose them. The archive keeps
--- them for the post-rollback audit. Guarded on both tables so a
--- re-run is a no-op: if the archive already exists nothing is
--- re-copied, and if credit_grants is already gone nothing is read.
+-- them for the post-rollback audit. Guarded so a re-run is a no-op,
+-- and append-safe across rollback cycles (CodeRabbit review, PR #93):
+-- a plain CREATE TABLE ... AS snapshot would leave a later cycle's
+-- NEW grant rows unarchived when the archive already exists, and the
+-- DROP below would still delete them. New rows are appended by id.
 DO $$
 BEGIN
-  IF to_regclass('public.credit_grants') IS NOT NULL
-     AND to_regclass('public.credit_grants_archive') IS NULL THEN
-    EXECUTE 'CREATE TABLE credit_grants_archive AS SELECT * FROM credit_grants';
+  IF to_regclass('public.credit_grants') IS NOT NULL THEN
+    IF to_regclass('public.credit_grants_archive') IS NULL THEN
+      EXECUTE 'CREATE TABLE credit_grants_archive AS SELECT * FROM credit_grants';
+    ELSE
+      EXECUTE 'INSERT INTO credit_grants_archive SELECT g.* FROM credit_grants g WHERE NOT EXISTS (SELECT 1 FROM credit_grants_archive a WHERE a.id = g.id)';
+    END IF;
   END IF;
 END
 $$;

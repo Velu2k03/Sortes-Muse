@@ -457,21 +457,33 @@ write a generated `credits` column; new code cannot run against the
 pre-008 plain column). A rollback is therefore a single ordered
 operation, never "roll back the code and see":
 
-1. **Freeze writes.** Stop the money paths first (pause the
-   subscription-drip and winback crons; Lemon Squeezy retries failed
-   webhooks, so a short freeze loses no paid order, but reconcile
-   afterwards).
+1. **Freeze writes.** Stop the money paths first: pause the
+   subscription-drip and winback crons, and block new purchase and
+   spend requests. Make the Lemon Squeezy webhook endpoint return a
+   non-2xx status until the rollback completes, so Lemon Squeezy
+   retries the deliveries. Wait for in-flight writes to finish.
+   (Pausing only the crons is NOT enough: purchase/spend requests
+   and webhook deliveries still reach the app during steps 2-3 and
+   would fail against the mismatched schema. A short freeze loses
+   no paid order — Lemon Squeezy retries the failed deliveries —
+   but reconcile paid orders against `transactions.order_id`
+   afterwards.)
 2. **Roll back the code** (Vercel instant rollback to the previous
    deployment, or redeploy the previous main).
 3. **Run the down file** for the migration being undone
    (`migrations/rollback/008_credit_ledgers.down.sql`,
    `migrations/rollback/009_subscriptions.down.sql`). pg_dump BEFORE
-   running it.
-4. **Delete the migration row** from the ledger so the migration can
-   apply again later:
-   `DELETE FROM schema_migrations WHERE version = '008';`
-   (check the actual version value recorded by
-   `scripts/migrate.mjs` first).
+   running it. Run with `psql -v ON_ERROR_STOP=1
+   --single-transaction -f <down file>` so a failed step stops the
+   run instead of continuing to the DROP below it.
+4. **Delete the migration row(s)** from the ledger so the migration(s)
+   can apply again later — one row per migration rolled back:
+   `DELETE FROM schema_migrations WHERE version = '008';` and/or
+   `DELETE FROM schema_migrations WHERE version = '009';`
+   (check the actual version values recorded by
+   `scripts/migrate.mjs` first). Deleting only '008' after rolling
+   back 009 leaves 009 marked applied while `subscriptions` is
+   gone, so a later deploy would skip recreating the table.
 5. **Verify:** sign-up + login + `/api/auth/me` work, balances match
    the pre-change dump per user, and the Lemon Squeezy delivery log
    shows no failed webhook in the window; reconcile paid orders

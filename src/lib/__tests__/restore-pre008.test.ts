@@ -142,12 +142,29 @@ async function seedUsers(dbUrl: string, credits: number[]): Promise<void> {
   try {
     for (let i = 0; i < credits.length; i++) {
       await sql.unsafe(
-        `INSERT INTO users (id, email, credits) VALUES ('u_restore_${i}', 'restore${i}@example.com', ${credits[i]})`,
+        `INSERT INTO users (id, email, credits) VALUES ('u_restore_${i}', 'restore${i}@example.com', ${credits[i]}) ON CONFLICT (id) DO NOTHING`,
       );
     }
   } finally {
     await sql.end();
   }
+}
+
+// Shared pre-008 fixture (CodeRabbit review, PR #93): both tests
+// build it themselves, so selecting or reordering one test cannot
+// break the other. Everything in it is idempotent (migrations are
+// IF NOT EXISTS, the ledger insert and the seed are ON CONFLICT
+// DO NOTHING), so calling it twice is safe.
+async function buildPre008Fixture(srcUrl: string): Promise<void> {
+  applyMigrations(srcUrl, [
+    "001_baseline.sql",
+    "002_indexes_constraints.sql",
+    "003_drop_checkout_nonces.sql",
+    "006_session_version.sql",
+    "007_order_id_unique.sql",
+  ]);
+  await recordLedger(srcUrl, ["001", "002", "003", "006", "007"]);
+  await seedUsers(srcUrl, [5, 0]);
 }
 
 let workDir = "";
@@ -180,15 +197,7 @@ describe.skipIf(SKIP)("restore.mjs on pre-008 and post-009 dumps", () => {
 
   it("restores and verifies a pre-008 dump (no credit_grants, no subscriptions)", async () => {
     const srcUrl = urlWithDb(TEST_URL, SRC_DB);
-    applyMigrations(srcUrl, [
-      "001_baseline.sql",
-      "002_indexes_constraints.sql",
-      "003_drop_checkout_nonces.sql",
-      "006_session_version.sql",
-      "007_order_id_unique.sql",
-    ]);
-    await recordLedger(srcUrl, ["001", "002", "003", "006", "007"]);
-    await seedUsers(srcUrl, [5, 0]);
+    await buildPre008Fixture(srcUrl);
     const dump = path.join(workDir, "pre008.dump");
     execFileSync(
       pgTool("pg_dump"),
@@ -221,6 +230,7 @@ describe.skipIf(SKIP)("restore.mjs on pre-008 and post-009 dumps", () => {
 
   it("restores and verifies a post-009 dump (subscriptions counted)", async () => {
     const srcUrl = urlWithDb(TEST_URL, SRC_DB);
+    await buildPre008Fixture(srcUrl);
     applyMigrations(srcUrl, [
       "008_credit_ledgers.sql",
       "009_subscriptions.sql",
