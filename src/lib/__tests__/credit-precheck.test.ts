@@ -48,4 +48,18 @@ describe("preCheckOracleBalance (F11)", () => {
       error: "You need 1 Oracle for this report. No Oracle was spent.",
     });
   });
+
+  it("a cost param checks against that cost (flag OFF: Oracle unit)", async () => {
+    // A 3-card reading costs 1 while the flag is OFF. A user with 1
+    // credit passes a cost-1 check but not a cost-2 check; the
+    // denial names the unit the user actually pays in.
+    mockedGetUserById.mockResolvedValue(user(1));
+    const ok = await preCheckOracleBalance("u1", true, "reading", 1);
+    expect(ok.denied).toBeUndefined();
+    const denied = await preCheckOracleBalance("u1", true, "reading", 2);
+    expect(denied.denied?.status).toBe(402);
+    expect(await denied.denied?.json()).toEqual({
+      error: "You need 2 Oracles for this reading. No Oracle was spent.",
+    });
+  });
 });

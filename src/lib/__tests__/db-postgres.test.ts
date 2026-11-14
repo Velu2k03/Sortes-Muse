@@ -52,17 +52,17 @@ describe.skipIf(SKIP)("money paths on real Postgres (staging only)", () => {
     await raw?.end();
   });
 
-  it("migrations applied: 8 tables, ledger rows, indexes, CHECK constraint", async () => {
+  it("migrations applied: 9 tables, ledger rows, indexes, CHECK constraint", async () => {
     const tables = (await raw`
       SELECT table_name FROM information_schema.tables
       WHERE table_schema = 'public' AND table_name IN
-        ('users','auth_codes','transactions','readings','reports','free_interpretations','free_readings','credit_grants')
+        ('users','auth_codes','transactions','readings','reports','free_interpretations','free_readings','credit_grants','subscriptions')
     `) as Array<{ table_name: string }>;
     expect(tables.map((t) => t.table_name).sort()).toEqual(
-      ["auth_codes", "credit_grants", "free_interpretations", "free_readings", "readings", "reports", "transactions", "users"]
+      ["auth_codes", "credit_grants", "free_interpretations", "free_readings", "readings", "reports", "subscriptions", "transactions", "users"]
     );
     const ledger = (await raw`SELECT version FROM schema_migrations ORDER BY version`) as Array<{ version: string }>;
-    expect(ledger.map((r) => r.version)).toEqual(["001", "002", "003", "006", "007", "008"]);
+    expect(ledger.map((r) => r.version)).toEqual(["001", "002", "003", "006", "007", "008", "009"]);
     const indexes = (await raw`
       SELECT indexname FROM pg_indexes WHERE schemaname = 'public'
         AND indexname LIKE 'idx\_%'`) as Array<{ indexname: string }>;
@@ -72,6 +72,7 @@ describe.skipIf(SKIP)("money paths on real Postgres (staging only)", () => {
       "idx_credit_grants_user_created",
       "idx_readings_user_created",
       "idx_reports_user_created",
+      "idx_subscriptions_user_created",
       "idx_transactions_order_id_unique",
       "idx_transactions_pack_type",
       "idx_transactions_user_created",
@@ -831,5 +832,32 @@ describe.skipIf(SKIP)("money paths on real Postgres (staging only)", () => {
     expect(stored.followUps).toHaveLength(1);
     // Another account cannot follow up on it (the route's "not found").
     expect((await db.appendFollowUpWithSpend(other.id, local.id, { question: "x", answer: "y", free: true }, 0, 3, true)).ok).toBe(false);
+  });
+
+  it("Phase 2 batch 3: upsertSubscription keeps the cycle start when passed null (Postgres COALESCE)", async () => {
+    // A subscription_updated on an annual renewal must not reset
+    // current_period_start to the original creation date, or the
+    // drip cron re-grants year-1 months and never grants year-2
+    // months 1-11. Only an invoice (payment_success) supplies a
+    // new start; a null start means "keep existing".
+    const user = await db.createUser("upsert-start@example.com");
+    const base = {
+      userId: user.id,
+      lemonsqueezySubscriptionId: "sub_keep_start",
+      lemonsqueezyCustomerId: "7",
+      tier: "star" as const,
+      billingInterval: "annual" as const,
+      status: "active",
+      currentPeriodEnd: "2028-11-15T00:00:00.000Z",
+      renewsAt: "2028-11-15T00:00:00.000Z",
+      endsAt: null,
+      cancelAtPeriodEnd: false,
+    };
+    const first = await db.upsertSubscription({ ...base, currentPeriodStart: "2027-11-15T00:00:00.000Z" });
+    expect(first.current_period_start).toBe("2027-11-15T00:00:00.000Z");
+    const kept = await db.upsertSubscription({ ...base, currentPeriodStart: null });
+    expect(kept.current_period_start).toBe("2027-11-15T00:00:00.000Z");
+    const moved = await db.upsertSubscription({ ...base, currentPeriodStart: "2028-11-15T00:00:00.000Z" });
+    expect(moved.current_period_start).toBe("2028-11-15T00:00:00.000Z");
   });
 });

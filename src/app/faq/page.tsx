@@ -33,7 +33,7 @@ export const FAQS = [
       "A reading follow-up is free the first time per reading, then 1 Oracle each, up to 3 per reading.",
       "The daily card is always free and never uses an Oracle.",
     ],
-    a: "Oracles never expire, and there is no subscription.",
+    a: "Oracles never expire. Packs are one-time purchases; monthly subscriptions are optional and separate.",
   },
   {
     group: "Readings and Charts",
@@ -73,7 +73,7 @@ export const FAQS = [
   {
     group: "Pricing and Oracles",
     q: "How do I pay for Oracles?",
-    a: "Oracle packs are paid through a secure checkout powered by Lemon Squeezy. You can pay by card, PayPal, Apple Pay, or Google Pay. Checkout shows the full amount, including any applicable taxes or fees, before you pay. Packs are one-time purchases, with no subscription. See \"How much does a reading cost?\" for pack prices.",
+    a: "Oracle packs are paid through a secure checkout powered by Lemon Squeezy. You can pay by card, PayPal, Apple Pay, or Google Pay. Checkout shows the full amount, including any applicable taxes or fees, before you pay. Packs are one-time purchases. See \"How much does a reading cost?\" for pack prices.",
   },
   {
     group: "Pricing and Oracles",
@@ -98,7 +98,7 @@ export const FAQS = [
   {
     group: "Pricing and Oracles",
     q: "How much does a reading cost?",
-    a: "Daily card free. First reading free. After that, a reading costs 1 Oracle. Packs are 5 Oracles for $3.99, 12 for $7.99, and 30 for $14.99, which works out to about $0.80, $0.67, and $0.50 per reading. Prices are in US dollars (USD). Oracles never expire, and there is no subscription.",
+    a: "Daily card free. First reading free. After that, a reading costs 1 Oracle. Packs are 5 Oracles for $3.99, 12 for $7.99, and 30 for $14.99, which works out to about $0.80, $0.67, and $0.50 per reading. Prices are in US dollars (USD). Oracles never expire. Monthly subscriptions are optional; packs are one-time purchases.",
   },
 ];
 

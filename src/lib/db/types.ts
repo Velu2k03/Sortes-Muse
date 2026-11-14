@@ -48,11 +48,34 @@ export interface DbTransaction {
 export interface CreditGrant {
   id: string;
   user_id: string;
-  kind: "monthly" | "purchased" | "conversion";
+  kind: "monthly" | "purchased" | "conversion" | "expiry";
   amount: number;
   subscription_id: string | null;
   period_key: string | null;
   tier: string | null;
   expires_at: string | null;
   granted_at: string;
+}
+
+/**
+ * Phase 2 batch 3: one row per Lemon Squeezy subscription. A
+ * customer can hold several over time (a new checkout after an
+ * expiry creates a new provider subscription), so the provider id
+ * is the unique key, not the user.
+ */
+export interface DbSubscription {
+  id: string;
+  user_id: string;
+  lemonsqueezy_subscription_id: string;
+  lemonsqueezy_customer_id: string | null;
+  tier: "spark" | "star" | "moon";
+  billing_interval: "monthly" | "annual";
+  status: string;
+  current_period_start: string | null;
+  current_period_end: string | null;
+  renews_at: string | null;
+  ends_at: string | null;
+  cancel_at_period_end: boolean;
+  created_at: string;
+  updated_at: string;
 }

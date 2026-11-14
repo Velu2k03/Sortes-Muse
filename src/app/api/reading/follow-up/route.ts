@@ -10,6 +10,7 @@ import { isUuid } from "@/lib/ids";
 import cardsData from "@/data/cards.json";
 import { generateChat } from "@/lib/ai";
 import { preCheckOracleBalance } from "@/lib/credit-precheck";
+import { followUpCost } from "@/lib/subscription-tiers";
 import { validateFollowUpText } from "@/lib/output-validation";
 import { logGuestGeneration } from "@/lib/guestLogging";
 import { drawClarifierCard } from "@/lib/clarifier";
@@ -276,11 +277,12 @@ export async function POST(req: NextRequest) {
   }
 
   // Phase 6 (N5): balance check before the model call (signed-in,
-  // non-free follow-ups cost 1 Oracle). Without it a user with 0
+  // non-free follow-ups cost 1 Oracle while the credit-cost flag is
+  // OFF, 50 credits once it is ON). Without it a user with 0
   // credits got a full generation and only then a 402. The spend
   // after generation stays as the atomic enforcement.
   // F11: shared helper (src/lib/credit-precheck.ts).
-  const preCheck = await preCheckOracleBalance(session?.userId, !!session && !isFree, "follow-up");
+  const preCheck = await preCheckOracleBalance(session?.userId, !!session && !isFree, "follow-up", followUpCost());
   if (preCheck.denied) return preCheck.denied;
 
   // Phase 5 (5.3): draw 1 real clarifier card server-side, from the
@@ -381,7 +383,7 @@ export async function POST(req: NextRequest) {
       session.userId,
       body.readingId!,
       newFollowUp as unknown as Record<string, unknown>,
-      isFree ? 0 : 1,
+      isFree ? 0 : followUpCost(),
       MAX_FOLLOWUPS,
       isFree,
       body.followUpId

@@ -155,6 +155,8 @@ describe("POST /api/webhooks/lemonsqueezy", () => {
       amount: 3.99,
       readings: 5,
       orderId: "ord_1",
+      // Phase 2 batch 3: packs grant Oracles while the flag is OFF.
+      grantUnit: "oracles",
     });
   });
 
@@ -201,6 +203,8 @@ describe("POST /api/webhooks/lemonsqueezy", () => {
       amount: 3.99,
       readings: 5,
       orderId: "ord_1",
+      // Phase 2 batch 3: packs grant Oracles while the flag is OFF.
+      grantUnit: "oracles",
     });
     expect(mockedGetUserByEmail).not.toHaveBeenCalled();
     expect(mockedCreateUser).not.toHaveBeenCalled();

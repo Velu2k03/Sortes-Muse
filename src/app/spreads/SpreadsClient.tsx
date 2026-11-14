@@ -260,7 +260,7 @@ export default function SpreadsPage() {
       <div className="mx-auto mt-12 max-w-2xl rounded-2xl border border-gold/20 bg-panel/50 p-6 text-center">
         <h2 className="font-display text-2xl text-goldbright">Oracles</h2>
         <p className="mt-2 text-sm leading-relaxed text-cream/75">
-          Oracles never expire, no subscription.{" "}
+          Oracles never expire.{" "}
           <Link href="/faq#what-are-the-five-oracle-rules" className="font-semibold text-goldbright underline underline-offset-4">
             See all five Oracle rules
           </Link>

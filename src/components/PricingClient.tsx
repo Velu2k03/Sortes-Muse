@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Card } from "@astryxdesign/core/Card";
 import { Badge } from "@astryxdesign/core/Badge";
@@ -12,10 +13,15 @@ import { Grid } from "@astryxdesign/core/Grid";
 import { StarBorder } from "@/components/ReactBits";
 import CountUp from "@/components/CountUp";
 
-// Astryx scoped pilot (pricing page only, Velu 2026-11-14). UI only:
-// subscription variants do not exist in Lemon Squeezy yet, so the
-// tier buttons are disabled placeholders and nothing here wires to
-// checkout. Packs stay on /oracles, untouched by this page.
+// Astryx scoped pilot (pricing page only, Velu 2026-11-14). UI only
+// until Phase 2 batch 3: the tier buttons were disabled
+// placeholders. Now the buttons wire to checkout when the Lemon
+// Squeezy variants are configured (props from the server page,
+// which reads the env vars): subscriptions via
+// POST /api/checkout/subscription (kind "subscription"), top-ups
+// the same route (kind "topup"). Sign-in is required — a guest
+// gets the account page (the sign-in entry point) instead.
+// Packs stay on /oracles, untouched by this page.
 //
 // Feature lists are written ONLY from features that exist in the
 // code today (verified 2026-11-14):
@@ -111,8 +117,44 @@ const CREDIT_COSTS = [
   { label: "Follow-up question", credits: 50 },
 ];
 
-export default function PricingClient() {
+export default function PricingClient({
+  subscriptionsEnabled = false,
+  topupsEnabled = false,
+}: {
+  subscriptionsEnabled?: boolean;
+  topupsEnabled?: boolean;
+}) {
   const [billing, setBilling] = useState<Billing>("monthly");
+  const [processing, setProcessing] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
+
+  // Phase 2 batch 3: one checkout call for a tier or a top-up.
+  // 401 means the visitor is not signed in — send them to the
+  // account page (the sign-in entry point) instead of failing.
+  const checkout = async (kind: "subscription" | "topup", key: string) => {
+    setError(null);
+    setProcessing(key);
+    try {
+      const res = await fetch("/api/checkout/subscription", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kind, key }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 401) {
+        router.push("/account");
+        return;
+      }
+      if (!res.ok) throw new Error(data.error ?? "Could not start checkout. Please try again.");
+      if (!data.url) throw new Error("Could not start checkout. Please try again.");
+      window.location.assign(data.url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Checkout failed.");
+    } finally {
+      setProcessing(null);
+    }
+  };
 
   return (
     // Page-level layout is Astryx Section / Stack / Grid (repo rule:
@@ -125,9 +167,11 @@ export default function PricingClient() {
     <Section variant="transparent" maxWidth="64rem" padding={8} paddingInline={4} className="mx-auto">
       <VStack gap={0} className="text-center">
         <p className="text-xs uppercase tracking-[0.35em] text-gold">Pricing</p>
-        <HStack hAlign="center" gap={0} className="mt-3">
-          <Badge label="Coming soon" variant="neutral" />
-        </HStack>
+        {!subscriptionsEnabled && (
+          <HStack hAlign="center" gap={0} className="mt-3">
+            <Badge label="Coming soon" variant="neutral" />
+          </HStack>
+        )}
         <h1 className="mt-3 font-display text-5xl text-goldbright sm:text-6xl">
           Choose your plan
         </h1>
@@ -205,10 +249,16 @@ export default function PricingClient() {
                 </ul>
                 <div className="mt-auto pt-6">
                   <Button
-                    label={`Choose ${tier.name}`}
+                    label={
+                      processing === `${tier.id}-${billing}`
+                        ? "Starting checkout…"
+                        : `Choose ${tier.name}`
+                    }
                     variant={tier.id === "star" ? "primary" : "secondary"}
-                    isDisabled
+                    isDisabled={!subscriptionsEnabled}
+                    isLoading={processing === `${tier.id}-${billing}`}
                     width="100%"
+                    onClick={() => void checkout("subscription", `${tier.id}-${billing}`)}
                   />
                 </div>
               </VStack>
@@ -236,8 +286,22 @@ export default function PricingClient() {
         })}
       </Grid>
 
+      {error && (
+        <p className="mt-6 text-center text-sm alert-error-text">{error}</p>
+      )}
+
       <p className="mt-6 text-center text-sm text-cream/75">
-        Subscriptions open soon — Oracle packs available now.{" "}
+        {subscriptionsEnabled ? (
+          <>
+            Manage or cancel anytime from your{" "}
+            <Link href="/account" className="font-semibold text-goldbright underline">
+              account
+            </Link>
+            .{" "}
+          </>
+        ) : (
+          <>Subscriptions open soon — Oracle packs available now.{" "}</>
+        )}
         <Link href="/oracles" className="font-semibold text-goldbright underline">
           See Oracle packs
         </Link>
@@ -247,9 +311,11 @@ export default function PricingClient() {
         <h2 id="topups-heading" className="text-center font-display text-3xl text-goldbright">
           Top up any time
         </h2>
-        <HStack hAlign="center" gap={0} className="mt-3">
-          <Badge label="Coming soon" variant="neutral" />
-        </HStack>
+        {!topupsEnabled && (
+          <HStack hAlign="center" gap={0} className="mt-3">
+            <Badge label="Coming soon" variant="neutral" />
+          </HStack>
+        )}
         <p className="mx-auto mt-2 max-w-xl text-center text-sm text-cream/75">
           Top-ups launch with subscriptions: 1,000 credits for $9.99 and
           3,000 for $24.99. Purchased credits never expire.
@@ -268,6 +334,19 @@ export default function PricingClient() {
                   credits
                 </p>
                 <p className="mt-1 text-sm text-cream/75">Never expires</p>
+                <Button
+                  label={
+                    processing === `topup-${topup.credits}`
+                      ? "Starting checkout…"
+                      : `Top up ${topup.credits.toLocaleString()} credits`
+                  }
+                  variant="secondary"
+                  isDisabled={!topupsEnabled}
+                  isLoading={processing === `topup-${topup.credits}`}
+                  width="100%"
+                  onClick={() => void checkout("topup", `topup-${topup.credits}`)}
+                  className="mt-4"
+                />
               </VStack>
             </Card>
           ))}

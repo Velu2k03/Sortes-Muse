@@ -118,6 +118,81 @@ export function PurchaseHistory({ transactions }: { transactions: ServerTx[] | n
   );
 }
 
+export type SubscriptionStatus = {
+  subscription: {
+    tier: string;
+    billingInterval: string;
+    status: string;
+    currentPeriodEnd: string | null;
+    renewsAt: string | null;
+    endsAt: string | null;
+    cancelAtPeriodEnd: boolean;
+  } | null;
+  portalUrl: string | null;
+  monthlyCredits: number | null;
+  purchasedCredits: number | null;
+} | null;
+
+/**
+ * Phase 2 batch 3: the subscription panel. The pricing page
+ * promises "Manage or cancel anytime from your account" — this
+ * is that path. The portal URL comes from the live Lemon Squeezy
+ * API (the only cancel / payment-method route for PayPal
+ * subscriptions, which the API cannot update).
+ */
+export function SubscriptionPanel({ subscription }: { subscription: SubscriptionStatus }) {
+  const sub = subscription?.subscription ?? null;
+  const tierName = sub ? sub.tier.charAt(0).toUpperCase() + sub.tier.slice(1) : "";
+  const renews = sub?.renewsAt ?? sub?.currentPeriodEnd;
+  return (
+    <div className="mt-6 rounded-3xl border border-gold/20 bg-panel/60 p-6 sm:p-8">
+      <h2 className="font-display text-2xl text-goldbright">Subscription</h2>
+      {subscription === null ? (
+        <p className="mt-2 text-sm text-mist">Loading…</p>
+      ) : !sub ? (
+        <p className="mt-2 text-sm text-mist">
+          No subscription.{" "}
+          <Link href="/pricing" className="text-goldbright underline">
+            See plans
+          </Link>
+        </p>
+      ) : (
+        <>
+          <p className="mt-2 text-sm text-cream">
+            {tierName} · {sub.billingInterval === "annual" ? "Annual" : "Monthly"} · {sub.status}
+          </p>
+          {sub.cancelAtPeriodEnd && sub.endsAt ? (
+            <p className="mt-1 text-sm text-mist">
+              Ends {new Date(sub.endsAt).toLocaleDateString()}. Monthly credits left are removed then.
+            </p>
+          ) : renews ? (
+            <p className="mt-1 text-sm text-mist">Renews {new Date(renews).toLocaleDateString()}.</p>
+          ) : null}
+          {subscription.monthlyCredits !== null ? (
+            <p className="mt-1 text-sm text-mist">
+              Monthly credits: {subscription.monthlyCredits} · Purchased credits: {subscription.purchasedCredits ?? 0}
+            </p>
+          ) : null}
+          {subscription.portalUrl ? (
+            <a
+              href={subscription.portalUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-4 inline-block rounded-lg border border-gold/40 bg-gold/10 px-4 py-3 text-sm font-semibold text-goldbright transition hover:border-goldbright"
+            >
+              Manage subscription
+            </a>
+          ) : (
+            <p className="mt-2 text-sm text-mist">
+              Manage or cancel from the link in your Lemon Squeezy receipt email.
+            </p>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
 export function PasswordPanel({ p }: { p: AccountSettings["password"] }) {
   return (
     <div className="mt-6 rounded-3xl border border-gold/20 bg-panel/60 p-6 sm:p-8">

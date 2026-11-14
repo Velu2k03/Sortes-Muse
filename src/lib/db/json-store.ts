@@ -1,6 +1,6 @@
 import { promises as fs } from "fs";
 import path from "path";
-import type { CreditGrant, DbTransaction, DbUser } from "./types";
+import type { CreditGrant, DbSubscription, DbTransaction, DbUser } from "./types";
 
 /*
  * F9 (2026-11-09): the local-dev JSON file store (data/local-db.json).
@@ -25,6 +25,10 @@ export interface LocalDb {
   // have no creditGrants key; the ledger functions fall back to an
   // empty list.
   creditGrants?: CreditGrant[];
+  // Phase 2 batch 3: optional because local files written before 009
+  // have no subscriptions key; the subscription functions fall back
+  // to an empty list.
+  subscriptions?: DbSubscription[];
 }
 
 export async function readLocal(): Promise<LocalDb> {
