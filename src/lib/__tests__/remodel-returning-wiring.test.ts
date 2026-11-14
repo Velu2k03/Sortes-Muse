@@ -134,6 +134,12 @@ describe("ReturningHome: Your thread and day-1/day-2 states", () => {
     expect(home).toContain('fetch("/api/history")');
     expect(home).toContain("getDailyStreak()");
     expect(home).toContain("× ${r.count}");
+    // Copilot (PR #85): the last-reading preview is one plain-text
+    // sentence via the shared markdown parser, not a naive regex —
+    // a heading line above the prose must not dump the whole
+    // reading with raw markers into the tile.
+    expect(home).toContain("parseReading");
+    expect(home).toContain("previewLine(latest.interpretation)");
   });
 
   it("designs the empty states: no thread, no streak, no journal yet", () => {

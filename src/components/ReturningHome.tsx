@@ -14,6 +14,7 @@ import {
 } from "@/lib/storage";
 import { deviceHeldSession, useAuth } from "@/components/AuthProvider";
 import { isFreeAvailableFor } from "@/lib/free-reading";
+import { parseReading } from "@/lib/readingMarkdown";
 import type { Reading } from "@/lib/types";
 
 // Remodel Phase 1 batch 3 (Velu, 2026-11-14): the returning-user
@@ -57,6 +58,26 @@ function dateLine(d: Date): string {
 function firstSentence(text: string): string {
   const match = text.match(/^.*?[.!?](?=\s|$)/);
   return match ? match[0] : text;
+}
+
+// The thread preview is one plain-text sentence. Saved interpretations
+// are light markdown: a heading line above the prose breaks a naive
+// first-sentence regex (it cannot match across the newline), which
+// falls back to the whole reading with raw markers (Copilot, PR #85).
+// Use the shared parser, take the first non-heading prose block,
+// collapse the whitespace, then take the first sentence, capped so
+// the tile stays a preview even when the first sentence runs long.
+function previewLine(text: string): string {
+  const block = parseReading(text).find(
+    (b) => !b.heading && !b.rule && !b.list
+  );
+  const plain = (
+    block ? block.words.map((w) => w.text).join(" ") : text
+  )
+    .replace(/\s+/g, " ")
+    .trim();
+  const first = firstSentence(plain);
+  return first.length > 160 ? `${first.slice(0, 157).trimEnd()}…` : first;
 }
 
 function dayKey(d: Date): string {
@@ -169,7 +190,7 @@ export default function ReturningHome() {
     daily && card ? firstSentence(orientationMeaning(card, daily.reversed)) : null;
   const threadLine = latest
     ? latest.interpretation
-      ? firstSentence(latest.interpretation)
+      ? previewLine(latest.interpretation)
       : (latest.question ?? null)
     : null;
 
