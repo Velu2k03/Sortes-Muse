@@ -47,6 +47,13 @@ const TGT_DB = "sortes_pgtest_restore_tgt";
 // for the server major exists.
 let pgBinDir = "";
 
+// Environment probe (kept: the runner's pg tools have drifted newer
+// than the postgres:16 service before, and the versions decide
+// whether the fixture dump restores cleanly).
+function probe(cmd: string): string {
+  return spawnSync("sh", ["-c", cmd], { encoding: "utf8" }).stdout.trim();
+}
+
 function pgTool(name: string): string {
   return pgBinDir ? path.join(pgBinDir, name) : name;
 }
@@ -154,7 +161,12 @@ describe.skipIf(SKIP)("restore.mjs on pre-008 and post-009 dumps", () => {
       pgBinDir = dir;
     }
     console.log(
-      `restore-pre008: server PG ${major}, pg tools from ${pgBinDir || "PATH"}`,
+      `restore-pre008: server PG ${major}, pg tools from ${pgBinDir || "PATH"}; ` +
+        `pg_dump=${probe("pg_dump --version")}; ` +
+        `pg_restore=${probe("pg_restore --version")}; ` +
+        `os=${probe("grep -E '^(ID|VERSION_ID)=' /etc/os-release | tr '\\n' ' '")}; ` +
+        `pg bindirs=${probe("ls /usr/lib/postgresql 2>/dev/null || echo none")}; ` +
+        `which pg_dump: ${probe("which -a pg_dump | tr '\\n' ' '")}`,
     );
     await recreateDb(SRC_DB);
     await recreateDb(TGT_DB);
