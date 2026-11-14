@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { useCanHide } from "@/lib/use-mounted";
 import { MAJORS, cardSlug, getCard } from "@/lib/cards";
-import { setHeroQuestion, freeReadingUsed, getDailyCard, getHistory } from "@/lib/storage";
+import { setHeroQuestion, freeReadingUsed } from "@/lib/storage";
 import { useAuth, deviceHeldSession } from "@/components/AuthProvider";
 import { isFreeAvailableFor } from "@/lib/free-reading";
 import ReturningHome from "@/components/ReturningHome";
@@ -87,23 +87,22 @@ export default function Home() {
   const { user, freeReadingAvailable, authFailed, loading: authLoading } = useAuth();
   const [usedFree, setUsedFree] = useState(false);
   const [hadSession, setHadSession] = useState(false);
-  // Remodel Phase 1 batch 3: the returning signals, read in the
-  // same microtask as the device flags above. Signed in, used the
-  // free reading, has journal history, or drew today's card: a
-  // returning visitor, shown the returning home instead of the
-  // cold landing copy below. The server render is always the
-  // landing (auth and device state are client-side), so this flips
-  // after mount.
-  const [hasHistory, setHasHistory] = useState(false);
-  const [drewToday, setDrewToday] = useState(false);
-  const [signalsReady, setSignalsReady] = useState(false);
+  // Velu's Option B (2026-11-14, "Show the hero to all signed-out
+  // guests"): the hero shows to EVERY signed-out guest, regardless
+  // of device flags. The Batch 3 four-signal rule (signed in, used
+  // the free reading, has journal history, or drew today's card) is
+  // superseded — a signed-out guest who used the free reading used
+  // to land on the returning home (balance 0 + a 1-Oracle button
+  // into the sign-in gate) and never see the hero again. Only the
+  // two flags the free-availability gate needs are read here now:
+  // usedFree and hadSession feed isFreeAvailableFor below, so a
+  // used-free guest sees the hero WITHOUT the free promise. History
+  // and the daily card are still read by ReturningHome itself
+  // (signed-in only).
   useEffect(() => {
     queueMicrotask(() => {
       setUsedFree(freeReadingUsed());
       setHadSession(deviceHeldSession());
-      setHasHistory(getHistory().length > 0);
-      setDrewToday(getDailyCard() !== null);
-      setSignalsReady(true);
     });
     router.prefetch("/intake/quick-insight");
   }, [router]);
@@ -129,12 +128,12 @@ export default function Home() {
     setHeroQuestion(question.trim());
     router.push("/intake/quick-insight");
   };
-  // Remodel Phase 1 batch 3: the dynamic homepage. A returning
-  // visitor gets the returning home, not the cold landing copy.
-  // `user` arrives when the auth refresh lands, so a signed-in
-  // visitor flips here too; the local signals cover guests.
-  const isReturning =
-    signalsReady && (!!user || usedFree || hasHistory || drewToday);
+  // Velu's Option B (2026-11-14): ReturningHome only when signed
+  // in. While auth is loading `user` is null, so the hero shows —
+  // no ReturningHome flash for a guest. Once the auth refresh
+  // lands for a signed-in visitor, this flips to ReturningHome
+  // (the same brief-landing-then-swap returning users already had).
+  const isReturning = !!user;
   if (isReturning) {
     return (
       <div>

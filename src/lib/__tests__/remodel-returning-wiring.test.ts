@@ -3,13 +3,15 @@ import { readFileSync, existsSync } from "fs";
 import path from "path";
 
 // Remodel Phase 1 batch 3 (Velu, 2026-11-14): the returning-user
-// home. The homepage is dynamic: a new visitor keeps the Batch 1
-// hero + Batch 2 sample + How it works, a returning visitor gets
-// the returning home instead of the cold landing copy. No separate
-// route. Copy is asserted on the actual JSX elements, not the whole
-// file: the comments above the copy quote it, so a whole-file
-// toContain would pass even if the element were reverted (Sonnet
-// review lesson from Batch 12).
+// home. Velu's Option B (2026-11-14, "Show the hero to all
+// signed-out guests") supersedes the Batch 3 four-signal rule:
+// the hero shows to EVERY signed-out guest, and ReturningHome
+// only when signed in. A signed-in visitor gets the returning
+// home instead of the cold landing copy. No separate route. Copy
+// is asserted on the actual JSX elements, not the whole file: the
+// comments above the copy quote it, so a whole-file toContain
+// would pass even if the element were reverted (Sonnet review
+// lesson from Batch 12).
 //
 // MagicBento (the plan's pick for the "Your thread" cards) is NOT
 // used: Batch 2 already proved its vendored file fails the repo
@@ -23,16 +25,19 @@ const src = (rel: string) =>
   readFileSync(path.resolve(process.cwd(), rel), "utf8");
 
 describe("Remodel returning home: dynamic homepage switch", () => {
-  it("switches to the returning home for a returning visitor, no separate route", () => {
+  it("switches to the returning home only when signed in, no separate route", () => {
     const page = src("src/app/page.tsx");
     expect(page).toContain('import ReturningHome from "@/components/ReturningHome"');
     expect(page).toContain("if (isReturning)");
     expect(page).toContain("<ReturningHome />");
-    // The four returning signals: signed in, used the free reading,
-    // has journal history, or drew today's card.
-    expect(page).toContain("!!user || usedFree || hasHistory || drewToday");
-    expect(page).toContain("setHasHistory(getHistory().length > 0)");
-    expect(page).toContain("setDrewToday(getDailyCard() !== null)");
+    // Velu's Option B (2026-11-14): ReturningHome only when signed
+    // in. The Batch 3 four-signal rule is superseded — the device
+    // flags no longer drive the switch.
+    expect(page).toContain("const isReturning = !!user;");
+    expect(page).not.toContain("usedFree || hasHistory || drewToday");
+    expect(page).not.toContain("signalsReady");
+    expect(page).not.toContain("setHasHistory");
+    expect(page).not.toContain("setDrewToday");
     // The switch is an early return before the hero, not a route.
     expect(page.indexOf("if (isReturning)")).toBeLessThan(
       page.indexOf("Ask a question. Draw a tarot card. Get an AI reading.")
@@ -47,6 +52,62 @@ describe("Remodel returning home: dynamic homepage switch", () => {
     expect(page).toContain("<TodaySample />");
     expect(page).toContain("How it works");
     expect(page).toContain("<ReturnLoop />");
+  });
+});
+
+describe("Hero for all signed-out guests (Velu's Option B, 2026-11-14)", () => {
+  it("a signed-out guest who used the free reading sees the hero without the free promise", () => {
+    const page = src("src/app/page.tsx");
+    // The switch ignores the device flag: usedFree is not part of
+    // isReturning, so the guest gets the hero, not the returning home.
+    expect(page).toContain("const isReturning = !!user;");
+    expect(page).not.toContain("usedFree || hasHistory || drewToday");
+    // But the free promise still respects the flag: freeAvailable
+    // reads deviceFree from !usedFree, so a used-free guest sees
+    // the hero WITHOUT the free wording.
+    expect(page).toContain("isFreeAvailableFor({");
+    expect(page).toContain("deviceFree: !usedFree,");
+    // The free wording is gated on the actual JSX elements: the
+    // button ternary and the friction line's freeAvailable guard.
+    const button = page.match(
+      /<button[^>]*type="submit"[^>]*>([\s\S]*?)<\/button>/
+    );
+    expect(button).not.toBeNull();
+    expect((button as RegExpMatchArray)[1]).toContain(
+      'freeAvailable ? "Draw my card — free" : "Draw my card"'
+    );
+    expect(page).toContain("{freeAvailable && (");
+  });
+
+  it("a signed-out guest with journal history sees the hero", () => {
+    const page = src("src/app/page.tsx");
+    // History is no longer read for the switch at all: no history
+    // signal, no history import on this page (ReturningHome reads
+    // it itself, signed-in only).
+    expect(page).not.toContain("getHistory");
+    expect(page).not.toContain("hasHistory");
+    expect(page).toContain("const isReturning = !!user;");
+  });
+
+  it("a signed-out guest who drew today's card sees the hero", () => {
+    const page = src("src/app/page.tsx");
+    // Same for the daily card: no daily signal on this page (the
+    // sample section and ReturningHome read it themselves).
+    expect(page).not.toContain("getDailyCard");
+    expect(page).not.toContain("drewToday");
+    expect(page).toContain("const isReturning = !!user;");
+  });
+
+  it("auth loading shows the hero: no ReturningHome flash for a guest", () => {
+    const page = src("src/app/page.tsx");
+    // isReturning is exactly !!user: while auth is loading user is
+    // null (AuthProvider starts null with loading true), so the
+    // hero renders. The switch waits on nothing else.
+    expect(page).toContain("const isReturning = !!user;");
+    expect(page).not.toContain("signalsReady");
+    // And the free wording fails closed while loading, so the hero
+    // never promises a free reading before the flags are known.
+    expect(page).toContain("!authLoading &&");
   });
 });
 
@@ -108,11 +169,14 @@ describe("ReturningHome: greeting, today's card, cost-labelled button, balance",
     expect(home).toContain("Top up");
   });
 
-  it("never promises a first free reading (third visitor state)", () => {
+  it("never promises a first free reading", () => {
     const home = src("src/components/ReturningHome.tsx");
-    // A visitor who used the free reading and has no account lands
-    // here too: the button shows the paid cost, and no copy in this
-    // file offers the first reading again.
+    // Velu's Option B (2026-11-14): a signed-out guest who used the
+    // free reading lands on the hero now, not here — ReturningHome
+    // is signed-in only. The guard still holds: no copy in this
+    // file offers the first reading again (the button's free
+    // wording is "Ask today's question — free", gated on the
+    // server record).
     expect(home).not.toContain("first reading is free");
     expect(home).not.toContain("Your first reading is free");
     expect(home).not.toContain("Draw my card — free");
