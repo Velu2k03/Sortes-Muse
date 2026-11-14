@@ -9,8 +9,10 @@ import {
 
 /**
  * Notes N2 (B4c): the daily subscription reconcile. Lists the last
- * 50 subscription invoices for the store from the Lemon Squeezy API
- * and checks each PAID invoice has a monthly grant in the database.
+ * 150 subscription invoices for the store from the Lemon Squeezy API
+ * (paged, 3 pages of 50 — a single page could leave a missed paid
+ * invoice outside its window) and checks each PAID invoice has a
+ * monthly grant in the database.
  * REPORT-ONLY: it never grants or writes credits. A missing grant
  * means a paid month the webhook never granted (missed delivery,
  * a config error that has since been fixed, a verification failure
@@ -27,7 +29,7 @@ import {
 
 export const maxDuration = 60;
 
-const RECONCILE_LIMIT = 50;
+const RECONCILE_LIMIT = 150;
 
 export async function GET(req: NextRequest) {
   const secret = process.env.CRON_SECRET;

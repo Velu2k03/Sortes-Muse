@@ -555,9 +555,19 @@ export async function getSubscriptionInvoice(
  * first (the API orders by created_at descending). Used by the
  * daily subscription reconcile cron, which checks each paid
  * invoice has a monthly grant in the database. Returns the parsed
- * JSON:API payload, or null when it cannot be retrieved (no API
- * key, non-OK status, network failure, bad JSON). Never throws.
- * fetchFn is injectable so tests never call the live API.
+ * JSON:API payload ({ data: [...] }), or null when it cannot be
+ * retrieved (no API key, non-OK status, network failure, bad
+ * JSON). Never throws. fetchFn is injectable so tests never call
+ * the live API.
+ *
+ * Pagination: follows the JSON:API `links.next` cursor until
+ * `limit` invoices are collected or there is no next page, so a
+ * missed paid invoice cannot fall off a single page just because
+ * more than one page of invoices arrived since the last run.
+ * `limit` is the total cap (default 50 = one page of 50); the
+ * page size is min(50, limit). Any page fetch that fails returns
+ * null (fail closed — the cron answers 500 and the run is visible
+ * as failed instead of silently checking a partial list).
  */
 export async function listSubscriptionInvoices(
   storeId: string,
@@ -567,17 +577,29 @@ export async function listSubscriptionInvoices(
 ) {
   const apiKey = process.env.LEMONSQUEEZY_API_KEY?.trim();
   if (!apiKey || !storeId) return null;
+  const pageSize = Math.min(50, Math.max(1, limit));
+  const all: unknown[] = [];
+  let url: string | null =
+    `${API_BASE}/subscription-invoices?filter%5Bstore_id%5D=${encodeURIComponent(storeId)}&page%5Bsize%5D=${pageSize}`;
   try {
-    const url = `${API_BASE}/subscription-invoices?filter%5Bstore_id%5D=${encodeURIComponent(storeId)}&page%5Bsize%5D=${limit}`;
-    const res = await fetchFn(url, {
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        Accept: "application/vnd.api+json",
-      },
-      signal: AbortSignal.timeout(timeoutMs),
-    });
-    if (!res.ok) return null;
-    return await res.json();
+    while (url && all.length < limit) {
+      const res: Response = await fetchFn(url, {
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          Accept: "application/vnd.api+json",
+        },
+        signal: AbortSignal.timeout(timeoutMs),
+      });
+      if (!res.ok) return null;
+      const json: unknown = await res.json();
+      const data = Array.isArray((json as { data?: unknown })?.data)
+        ? (json as { data: unknown[] }).data
+        : [];
+      all.push(...data);
+      const next: unknown = (json as { links?: { next?: unknown } })?.links?.next;
+      url = typeof next === "string" && next.length > 0 ? next : null;
+    }
+    return { data: all.slice(0, limit) };
   } catch {
     return null;
   }
