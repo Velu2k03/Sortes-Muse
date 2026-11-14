@@ -135,10 +135,11 @@ describe("ReturningHome: Your thread and day-1/day-2 states", () => {
     expect(home).toContain("getDailyStreak()");
     expect(home).toContain("× ${r.count}");
     // Copilot (PR #85): the last-reading preview is one plain-text
-    // sentence via the shared markdown parser, not a naive regex —
+    // sentence via the shared preview helper, not a naive regex —
     // a heading line above the prose must not dump the whole
-    // reading with raw markers into the tile.
-    expect(home).toContain("parseReading");
+    // reading with raw markers into the tile. Behaviour is pinned
+    // by the preview-line unit tests.
+    expect(home).toContain('from "@/lib/preview-line"');
     expect(home).toContain("previewLine(latest.interpretation)");
   });
 

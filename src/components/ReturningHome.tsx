@@ -14,7 +14,7 @@ import {
 } from "@/lib/storage";
 import { deviceHeldSession, useAuth } from "@/components/AuthProvider";
 import { isFreeAvailableFor } from "@/lib/free-reading";
-import { parseReading } from "@/lib/readingMarkdown";
+import { firstSentence, previewLine } from "@/lib/preview-line";
 import type { Reading } from "@/lib/types";
 
 // Remodel Phase 1 batch 3 (Velu, 2026-11-14): the returning-user
@@ -52,33 +52,11 @@ function dateLine(d: Date): string {
   });
 }
 
-// A card meaning is a short paragraph; the card shows its first
-// sentence only, so the reading stays one line (same helper as
-// TodaySample).
-function firstSentence(text: string): string {
-  const match = text.match(/^.*?[.!?](?=\s|$)/);
-  return match ? match[0] : text;
-}
+// firstSentence / previewLine live in src/lib/preview-line.ts (shared
+// with the unit tests there): the card line takes the first sentence
+// of a short meaning, the thread preview takes one plain-text
+// sentence from a markdown interpretation.
 
-// The thread preview is one plain-text sentence. Saved interpretations
-// are light markdown: a heading line above the prose breaks a naive
-// first-sentence regex (it cannot match across the newline), which
-// falls back to the whole reading with raw markers (Copilot, PR #85).
-// Use the shared parser, take the first non-heading prose block,
-// collapse the whitespace, then take the first sentence, capped so
-// the tile stays a preview even when the first sentence runs long.
-function previewLine(text: string): string {
-  const block = parseReading(text).find(
-    (b) => !b.heading && !b.rule && !b.list
-  );
-  const plain = (
-    block ? block.words.map((w) => w.text).join(" ") : text
-  )
-    .replace(/\s+/g, " ")
-    .trim();
-  const first = firstSentence(plain);
-  return first.length > 160 ? `${first.slice(0, 157).trimEnd()}…` : first;
-}
 
 function dayKey(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
@@ -190,7 +168,7 @@ export default function ReturningHome() {
     daily && card ? firstSentence(orientationMeaning(card, daily.reversed)) : null;
   const threadLine = latest
     ? latest.interpretation
-      ? previewLine(latest.interpretation)
+      ? previewLine(latest.interpretation) || (latest.question ?? null)
       : (latest.question ?? null)
     : null;
 
