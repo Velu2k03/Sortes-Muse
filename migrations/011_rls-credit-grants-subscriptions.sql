@@ -1,0 +1,48 @@
+-- 011_rls-credit-grants-subscriptions.sql — Notes batch N4 (A9).
+-- Enable Row Level Security on credit_grants and subscriptions, with
+-- NO policies (deny-by-default). These two tables were created by
+-- migrations 008 (credit_grants) and 009 (subscriptions), after the
+-- RLS batches 004/005 covered the other seven tables, so they were
+-- the only public tables without RLS. Both hold user_id rows
+-- (credit_grants: per-user grant/audit rows; subscriptions: per-user
+-- plan rows), so the same exposure applies as for 004/005.
+--
+-- Assessment: the app connects to Postgres as the `postgres` role
+-- (via the Supabase pooler), which owns the tables and has
+-- BYPASSRLS, so enabling RLS does not change anything the app does.
+-- The risk is the PostgREST API: with RLS disabled, any table the
+-- `anon` or `authenticated` roles hold a grant on is readable
+-- through the public REST endpoint with the anon key. Enabling RLS
+-- with NO policies denies all access to anon/authenticated by
+-- default, which is the safe posture for tables the browser client
+-- never queries directly (all reads go through the Next.js API
+-- routes, which use the postgres role).
+--
+-- This file enables RLS on exactly the two tables and creates no
+-- policies. Idempotent: ALTER TABLE ... ENABLE ROW LEVEL SECURITY
+-- is a no-op when already enabled.
+--
+-- TESTED on local Postgres 16 against a database built by
+-- migrations 001-010 with Supabase-default grants (anon/authenticated
+-- hold SELECT/INSERT/UPDATE/DELETE on all public tables): see
+-- src/lib/__tests__/rls-011.test.ts.
+--   BEFORE: anon SELECT returned a victim user's credit_grants and
+--     subscriptions rows.
+--   AFTER:  anon SELECT on both tables returns 0 rows; anon INSERT
+--     fails "new row violates row-level security policy";
+--     authenticated SELECT also returns 0 rows; the table owner
+--     (sortes_test locally; the postgres role in production, table
+--     owner with BYPASSRLS)
+--     still reads every row.
+--
+-- Consequence: this migration is safe ONLY because the app connects
+-- as the postgres role (table owner with BYPASSRLS). If the app ever
+-- connects as a non-owner, non-bypass role, it would see 0 rows and
+-- break — that connection change must be tested against RLS first.
+--
+-- Rollback: ALTER TABLE public.<table> DISABLE ROW LEVEL SECURITY;
+-- for each table below. Instant, no data loss. See
+-- migrations/rollback/011_rls-credit-grants-subscriptions.down.sql.
+
+ALTER TABLE public.credit_grants ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.subscriptions ENABLE ROW LEVEL SECURITY;

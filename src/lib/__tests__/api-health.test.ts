@@ -15,11 +15,11 @@ const mockedSql = vi.mocked(sql);
 // any is missing or the DB cannot be reached.
 describe("migrationHealth", () => {
   it("is ok when every shipped migration is applied", () => {
-    const health = migrationHealth(["001", "002", "003", "006", "007", "008", "009", "010"]);
+    const health = migrationHealth(["001", "002", "003", "006", "007", "008", "009", "010", "011"]);
     expect(health.ok).toBe(true);
-    expect(health.applied).toBe("010");
-    expect(health.expected).toBe(8);
-    expect(health.latest).toBe("010");
+    expect(health.applied).toBe("011");
+    expect(health.expected).toBe(9);
+    expect(health.latest).toBe("011");
     expect(health.missing).toEqual([]);
   });
 
@@ -27,14 +27,14 @@ describe("migrationHealth", () => {
     const health = migrationHealth(["001", "002"]);
     expect(health.ok).toBe(false);
     expect(health.applied).toBe("002");
-    expect(health.missing).toEqual(["003", "006", "007", "008", "009", "010"]);
+    expect(health.missing).toEqual(["003", "006", "007", "008", "009", "010", "011"]);
   });
 
   it("reports null applied on an empty ledger", () => {
     const health = migrationHealth([]);
     expect(health.ok).toBe(false);
     expect(health.applied).toBeNull();
-    expect(health.missing).toHaveLength(8);
+    expect(health.missing).toHaveLength(9);
   });
 });
 
@@ -45,16 +45,16 @@ describe("GET /api/health", () => {
 
   it("returns 200 with applied/expected/latest when all migrations are applied", async () => {
     mockedSql.mockResolvedValue({
-      rows: ["001", "002", "003", "006", "007", "008", "009", "010"].map((version) => ({ version })),
+      rows: ["001", "002", "003", "006", "007", "008", "009", "010", "011"].map((version) => ({ version })),
     } as never);
     const res = await GET();
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body).toEqual({
       ok: true,
-      applied: "010",
-      expected: 8,
-      latest: "010",
+      applied: "011",
+      expected: 9,
+      latest: "011",
       missing: [],
     });
   });
@@ -65,7 +65,7 @@ describe("GET /api/health", () => {
     expect(res.status).toBe(503);
     const body = await res.json();
     expect(body.ok).toBe(false);
-    expect(body.missing).toContain("010");
+    expect(body.missing).toContain("011");
   });
 
   it("returns 503 (not a crash) when the DB is unreachable", async () => {

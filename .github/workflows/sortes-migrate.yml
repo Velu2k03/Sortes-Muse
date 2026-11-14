@@ -78,7 +78,7 @@ jobs:
           if [ "$NAME" != "Daily production backup (fallback)" ] || [ "$WORKFLOW_PATH" != ".github/workflows/sortes-backup.yml" ]; then
             echo "::error::Run $BACKUP_RUN_ID_INPUT is workflow '$NAME' ($WORKFLOW_PATH), not the production backup (Daily production backup (fallback), .github/workflows/sortes-backup.yml). Pass the run id of a fresh sortes-backup.yml run."
             exit 1
-          }
+          fi
           if [ "$STATUS" != "completed" ] || [ "$CONCLUSION" != "success" ]; then
             echo "::error::Backup run $BACKUP_RUN_ID_INPUT has not completed successfully (status=$STATUS, conclusion=$CONCLUSION). Wait for it to finish, or take a fresh backup."
             exit 1
