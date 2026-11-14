@@ -150,6 +150,7 @@ if (process.exitCode) process.exit(process.exitCode);
 const verifySql = `
 SELECT 'users', count(*) FROM users UNION ALL
 SELECT 'auth_codes', count(*) FROM auth_codes UNION ALL
+SELECT 'credit_grants', count(*) FROM credit_grants UNION ALL
 SELECT 'transactions', count(*) FROM transactions UNION ALL
 SELECT 'readings', count(*) FROM readings UNION ALL
 SELECT 'reports', count(*) FROM reports UNION ALL

@@ -198,6 +198,14 @@ describe.skipIf(SKIP)("two-ledger credits on real Postgres (staging only)", () =
     ).rejects.toThrow(/periodKey/);
     await expect(
       db.grantMonthlyCredits({
+        userId: user.id,
+        subscriptionId: `sub_ledger_bad-${RUN}`,
+        tier: "spark",
+        periodKey: "2026-11-01",
+      })
+    ).rejects.toThrow(/YYYY-MM/);
+    await expect(
+      db.grantMonthlyCredits({
         userId: "no-such-user",
         subscriptionId: `sub_ledger_bad-${RUN}`,
         tier: "spark",
@@ -326,5 +334,25 @@ describe.skipIf(SKIP)("two-ledger credits on real Postgres (staging only)", () =
     const revoked = await db.revokeOrder(`order-ledger-1-${RUN}`, user.email);
     expect(revoked).toEqual({ revoked: true, readings: 5 });
     expect(await db.getCreditBalances(user.id)).toEqual({ monthly: 0, purchased: 0, total: 0 });
+  });
+
+  it("revoke spills into monthly when purchased is below the refund", async () => {
+    const user = await db.createUser(`ledger-revoke-spill-${RUN}@example.com`);
+    const fulfilled = await db.fulfillOrder({
+      userId: user.id,
+      email: user.email,
+      packType: `pack5 (lemonsqueezy:order-ledger-spill-${RUN})`,
+      amount: 3.99,
+      readings: 5,
+      orderId: `order-ledger-spill-${RUN}`,
+    });
+    expect(fulfilled.credits).toBe(5);
+    // Seed the spill directly: purchased 3 of the 5-pack refund, monthly
+    // 3 to absorb the remainder. (No spend path takes purchased first —
+    // spend is monthly-first — so a real flow cannot produce this shape.)
+    await raw`UPDATE users SET monthly_credits = 3, purchased_credits = 3 WHERE id = ${user.id}`;
+    const revoked = await db.revokeOrder(`order-ledger-spill-${RUN}`, user.email);
+    expect(revoked).toEqual({ revoked: true, readings: 5 });
+    expect(await db.getCreditBalances(user.id)).toEqual({ monthly: 1, purchased: 0, total: 1 });
   });
 });

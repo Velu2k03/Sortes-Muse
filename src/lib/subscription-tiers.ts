@@ -43,6 +43,9 @@ export function tierForId(tier: SubscriptionTierId): SubscriptionTier {
  * At or above the cap the grant is 0 — the period is still consumed
  * (the grant row is recorded), so an unspent balance can never be
  * topped back up by retrying the same period.
+ * A downgrade leaves an existing monthly balance above the new cap in
+ * place; grants are 0 until it is spent below the cap. The cap is a
+ * grant-time ceiling, not a balance clamp.
  */
 export function grantableMonthly(currentMonthly: number, tier: SubscriptionTier): number {
   return Math.max(0, Math.min(tier.monthlyCredits, tier.rolloverCap - currentMonthly));
