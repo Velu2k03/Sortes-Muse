@@ -312,11 +312,14 @@ export async function handleSubscriptionWebhook(
     }
     const user = await resolveUser(event, String(invAttrs.user_email ?? ""), subscriptionId);
     // The renewal starts a new period; the invoice date is its start.
+    // A missing invoice date passes null (keep the existing start):
+    // falling back to the subscription's created_at would reset an
+    // annual cycle to year 1.
     const row = await upsertFromSubscriptionAttrs(
       user.id,
       subscriptionId,
       apiAttrs,
-      invAttrs.created_at ?? apiAttrs.created_at ?? null
+      invAttrs.created_at ?? null
     );
     // One month, idempotent per (subscription, period). Monthly
     // renewals and the first month of an annual cycle both land
