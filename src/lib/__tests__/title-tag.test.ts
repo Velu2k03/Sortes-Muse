@@ -32,4 +32,21 @@ describe("Title tag carries tarot", () => {
     expect(match).not.toBeNull();
     expect((match as RegExpMatchArray)[1].toLowerCase()).toContain("tarot");
   });
+
+  it("JSON-LD Organization and WebSite both carry the site description", () => {
+    const layout = src("src/app/layout.tsx");
+    // One copy of the wording: metadata, OG, Twitter and JSON-LD
+    // all use SITE_DESCRIPTION, so it cannot drift between them.
+    expect(layout).toContain(
+      'const SITE_DESCRIPTION =\n  "Free tarot reading online, with AI interpretation. Draw a free daily card, explore 78 card meanings, and get a reading for your question. First reading free.";'
+    );
+    // Assert on the actual object literals, not a whole-file
+    // contains: a comment quoting the text would pass that.
+    expect(layout).toMatch(
+      /"@type": "Organization",\s+name: APP_NAME,\s+url: SITE_URL,\s+email: CONTACT_EMAIL,\s+description: SITE_DESCRIPTION,/
+    );
+    expect(layout).toMatch(
+      /"@type": "WebSite",\s+name: APP_NAME,\s+url: SITE_URL,\s+description: SITE_DESCRIPTION,/
+    );
+  });
 });

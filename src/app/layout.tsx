@@ -29,6 +29,12 @@ const body = Inter({
   display: "swap",
 });
 
+// The site description, one copy: metadata, Open Graph, Twitter,
+// and the Organization/WebSite JSON-LD below all use it, so the
+// wording cannot drift between them.
+const SITE_DESCRIPTION =
+  "Free tarot reading online, with AI interpretation. Draw a free daily card, explore 78 card meanings, and get a reading for your question. First reading free.";
+
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
@@ -37,8 +43,7 @@ export const metadata: Metadata = {
   },
   // AF-071: 140-160 characters. AF-081: the obsolete keywords meta
   // tag is deleted (search engines ignore it; it only leaks terms).
-  description:
-    "Free tarot reading online, with AI interpretation. Draw a free daily card, explore 78 card meanings, and get a reading for your question. First reading free.",
+  description: SITE_DESCRIPTION,
   applicationName: APP_SHORT,
   alternates: { canonical: SITE_URL },
   manifest: "/manifest.webmanifest",
@@ -53,15 +58,13 @@ export const metadata: Metadata = {
     url: SITE_URL,
     siteName: APP_NAME,
     title: "Free tarot reading online, with AI interpretation",
-    description:
-      "Free tarot reading online, with AI interpretation. Draw a free daily card, explore 78 card meanings, and get a reading for your question. First reading free.",
+    description: SITE_DESCRIPTION,
     images: [{ url: "/og-image.jpg?v=2", width: 1200, height: 630, alt: APP_NAME }],
   },
   twitter: {
     card: "summary_large_image",
     title: "Free tarot reading online, with AI interpretation",
-    description:
-      "Free tarot reading online, with AI interpretation. Draw a free daily card, explore 78 card meanings, and get a reading for your question. First reading free.",
+    description: SITE_DESCRIPTION,
     images: ["/og-image.jpg?v=2"],
   },
   icons: {
@@ -128,8 +131,14 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
                   name: APP_NAME,
                   url: SITE_URL,
                   email: CONTACT_EMAIL,
+                  description: SITE_DESCRIPTION,
                 },
-                { "@type": "WebSite", name: APP_NAME, url: SITE_URL },
+                {
+                  "@type": "WebSite",
+                  name: APP_NAME,
+                  url: SITE_URL,
+                  description: SITE_DESCRIPTION,
+                },
               ],
             }),
           }}
