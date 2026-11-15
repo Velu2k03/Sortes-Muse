@@ -39,10 +39,15 @@ export default function ReadingDetail({ id }: { id: string }) {
   // reveal, and a second burst would stack on top of it.
   const [justRevealed, setJustRevealed] = useState(false);
   useEffect(() => {
+    let cancelled = false;
     // queueMicrotask, the daily page's pattern: the setState must not
     // run synchronously in the effect body (react-hooks/set-state-
-    // in-effect is an error in this repo).
+    // in-effect is an error in this repo). The cancelled flag drops
+    // a stale callback if the effect is cleaned up (unmount, or the
+    // reading id changes) before the microtask runs, so it never
+    // reads the reveal marker or sets state for a stale setup.
     queueMicrotask(() => {
+      if (cancelled) return;
       let revealed = false;
       try {
         revealed = window.sessionStorage.getItem("sortes-just-revealed") === id;
@@ -52,6 +57,9 @@ export default function ReadingDetail({ id }: { id: string }) {
       }
       setJustRevealed(revealed);
     });
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
   // M1.1: the one next step the seeker chooses after reading. Kept in
   // local state for editing, saved onto the reading on Save.
