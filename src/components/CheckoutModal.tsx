@@ -31,6 +31,14 @@ export default function CheckoutModal({ open, onClose, reason, initialPackId }: 
   const [realCheckout, setRealCheckout] = useState<boolean | null>(null);
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
+  // Batch 4.2 (#81/#51): when a pack was already picked, show only
+  // that pack as an order summary, not all three again. "Change
+  // pack" goes back to the full list.
+  const [showAllPacks, setShowAllPacks] = useState(false);
+  const selectedPack = initialPackId
+    ? CREDIT_PACKS.find((p) => p.id === initialPackId) ?? null
+    : null;
+  const showSummary = selectedPack !== null && !showAllPacks;
   // P0-4: focus moves into the dialog on open, Tab is trapped inside,
   // Escape closes (this modal had no Escape handler before), and focus
   // returns to the trigger on close.
@@ -41,6 +49,9 @@ export default function CheckoutModal({ open, onClose, reason, initialPackId }: 
       queueMicrotask(() => {
         setError(null);
         setEmail(user?.email ?? "");
+        // Batch 4.2: each open starts on the chosen pack's summary,
+        // not the full list.
+        setShowAllPacks(false);
       });
       fetch("/api/checkout/lemonsqueezy")
         .then((r) => r.json())
@@ -50,10 +61,12 @@ export default function CheckoutModal({ open, onClose, reason, initialPackId }: 
   }, [open, user]);
 
   const buyReal = async (packId: string) => {
-    const trimmed = email.trim();
+    // Batch 4.2 (#47): trim AND lowercase the email, so a
+    // mixed-case address lands on the same account.
+    const normalized = email.trim().toLowerCase();
     // Guests must give an email: the webhook delivers credits to that
     // address, and it becomes their account on sign-in.
-    if (!user && !trimmed) {
+    if (!user && !normalized) {
       setError("Please enter your email so your Oracles reach your account.");
       return;
     }
@@ -63,7 +76,7 @@ export default function CheckoutModal({ open, onClose, reason, initialPackId }: 
       const res = await fetch("/api/checkout/lemonsqueezy", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ packId: apiPackId(packId), email: trimmed || undefined }),
+        body: JSON.stringify({ packId: apiPackId(packId), email: normalized || undefined }),
       });
       // Brutal audit F1 (2026-11-08): never surface a raw JSON parse
       // exception. An empty or non-JSON body becomes a readable error.
@@ -75,9 +88,9 @@ export default function CheckoutModal({ open, onClose, reason, initialPackId }: 
       trackPurchaseCompleted(packId, 0);
       // Remember the purchase email so /account can prefill the sign-in
       // form after the payment redirect.
-      if (trimmed) {
+      if (normalized) {
         try {
-          sessionStorage.setItem("sortes-purchase-email", trimmed);
+          sessionStorage.setItem("sortes-purchase-email", normalized);
         } catch {
           /* Storage unavailable; non-fatal, the flow continues without it. */
         }
@@ -129,6 +142,8 @@ export default function CheckoutModal({ open, onClose, reason, initialPackId }: 
                 <input
                   id="checkout-email"
                   type="email"
+                  inputMode="email"
+                  autoComplete="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@example.com"
@@ -137,52 +152,104 @@ export default function CheckoutModal({ open, onClose, reason, initialPackId }: 
               </div>
             )}
 
-            <div className="mt-6 space-y-3">
-              {CREDIT_PACKS.map((p) => (
-                <div
-                  key={p.id}
-                  className={`relative rounded-2xl border p-4 transition ${
-                    p.popular
-                      ? "border-gold/70 bg-gold/10"
-                      : "border-gold/20 bg-panel/60"
-                  }`}
-                >
-                  {p.popular && (
-                    <span className="absolute -top-2.5 left-4 rounded-full bg-gold px-3 py-0.5 text-[11px] font-bold uppercase tracking-wider text-ink">
-                      Most popular
-                    </span>
-                  )}
-                  {initialPackId === p.id && (
-                    <span className="absolute -top-2.5 right-4 rounded-full bg-goldbright px-3 py-0.5 text-[11px] font-bold uppercase tracking-wider text-ink">
-                      Selected
-                    </span>
-                  )}
+            {/* Batch 4.2 (#55/#56): while the enabled probe runs,
+                the buttons are disabled, so say so instead of
+                leaving them silently dead. */}
+            {realCheckout === null && (
+              <output className="mt-6 block text-center text-sm text-mist">
+                Checking checkout…
+              </output>
+            )}
+
+            {showSummary && selectedPack ? (
+              <div className="mt-6">
+                <div className="rounded-2xl border border-gold/70 bg-gold/10 p-4">
                   <div className="flex items-center justify-between gap-3">
                     <div>
                       <p className="font-display text-xl text-cream">
-                        {p.name} · <span className="font-body text-goldbright">{p.readings}</span> Oracles
+                        {selectedPack.name} · <span className="font-body text-goldbright">{selectedPack.readings}</span> Oracles
                       </p>
                       <p className="text-xs text-mist">
-                        ${perReadingPrice(p)} per Oracle
+                        ${perReadingPrice(selectedPack)} per Oracle
                       </p>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <p className="font-display text-2xl text-goldbright lining-nums tabular-nums">
-                        ${p.price.toFixed(2)}
-                      </p>
-                      <button
-                        type="button"
-                        disabled={processing !== null || realCheckout !== true}
-                        onClick={() => void buyReal(p.id)}
-                        className="btn-gold rounded-xl px-5 py-3 text-sm font-bold disabled:opacity-100 disabled:saturate-50"
-                      >
-                        {processing === p.id ? "…" : <>Checkout<span className="sr-only">: {p.name} pack</span></>}
-                      </button>
-                    </div>
+                    <p className="font-display text-2xl text-goldbright lining-nums tabular-nums">
+                      ${selectedPack.price.toFixed(2)}
+                    </p>
+                  </div>
+                  <div className="mt-3 flex items-center justify-between border-t border-gold/20 pt-3">
+                    <span className="text-sm text-cream">Total</span>
+                    <span className="font-display text-xl text-goldbright lining-nums tabular-nums">
+                      ${selectedPack.price.toFixed(2)}
+                    </span>
                   </div>
                 </div>
-              ))}
-            </div>
+                <button
+                  type="button"
+                  disabled={processing !== null || realCheckout !== true}
+                  onClick={() => void buyReal(selectedPack.id)}
+                  className="btn-gold mt-4 w-full rounded-xl px-6 py-3.5 font-bold disabled:opacity-100 disabled:saturate-50"
+                >
+                  {processing === selectedPack.id
+                    ? "Opening checkout…"
+                    : `Continue to payment · $${selectedPack.price.toFixed(2)}`}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowAllPacks(true)}
+                  className="btn-ghost mt-3 w-full rounded-xl px-4 py-3 text-sm font-semibold"
+                >
+                  Change pack
+                </button>
+              </div>
+            ) : (
+              <div className="mt-6 space-y-3">
+                {CREDIT_PACKS.map((p) => (
+                  <div
+                    key={p.id}
+                    className={`relative rounded-2xl border p-4 transition ${
+                      p.popular
+                        ? "border-gold/70 bg-gold/10"
+                        : "border-gold/20 bg-panel/60"
+                    }`}
+                  >
+                    {p.popular && (
+                      <span className="absolute -top-2.5 left-4 rounded-full bg-gold px-3 py-0.5 text-[11px] font-bold uppercase tracking-wider text-ink">
+                        Most popular
+                      </span>
+                    )}
+                    {initialPackId === p.id && (
+                      <span className="absolute -top-2.5 right-4 rounded-full bg-goldbright px-3 py-0.5 text-[11px] font-bold uppercase tracking-wider text-ink">
+                        Selected
+                      </span>
+                    )}
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="font-display text-xl text-cream">
+                          {p.name} · <span className="font-body text-goldbright">{p.readings}</span> Oracles
+                        </p>
+                        <p className="text-xs text-mist">
+                          ${perReadingPrice(p)} per Oracle
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <p className="font-display text-2xl text-goldbright lining-nums tabular-nums">
+                          ${p.price.toFixed(2)}
+                        </p>
+                        <button
+                          type="button"
+                          disabled={processing !== null || realCheckout !== true}
+                          onClick={() => void buyReal(p.id)}
+                          className="btn-gold rounded-xl px-5 py-3 text-sm font-bold disabled:opacity-100 disabled:saturate-50"
+                        >
+                          {processing === p.id ? "…" : <>Checkout<span className="sr-only">: {p.name} pack</span></>}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
 
             {error && (
               <p className="mt-4 rounded-xl border border-red-400/40 bg-red-500/10 p-3 text-sm alert-error-text">
