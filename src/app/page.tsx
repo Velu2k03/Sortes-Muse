@@ -411,11 +411,9 @@ export default function Home() {
       </section>
 
       {/* SAMPLE READING TEASER — AF-034: collapsed on the homepage
-          diet; the full sample is one tap away. Banded navy so the
-          sections alternate cream / navy (Velu's choice 12). */}
-      <section className="border-y border-gold/10 bg-navydeep/40 py-16">
-        <SampleReading collapsed />
-      </section>
+          diet; the full sample is one tap away. The component carries
+          its own navy band, so no wrapper band here. */}
+      <SampleReading collapsed />
 
       {/* Deep UX Batch B: return loop, daily quote, today's card,
           and journal preview, on home itself, before the seek cards. */}

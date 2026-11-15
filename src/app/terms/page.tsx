@@ -51,7 +51,11 @@ export default function TermsPage() {
           <h2 className="font-display text-2xl text-goldbright">3. Oracles and payments</h2>
           <ul className="mt-2 list-disc space-y-2 pl-5">
             <li>1 Oracle pays for 1 full reading of any spread.</li>
-            <li>Oracles never expire and are non-transferable.</li>
+            <li>
+              Purchased Oracles never expire and are non-transferable.
+              Monthly subscription Oracles roll over for up to two months
+              of the plan and are removed when the subscription ends.
+            </li>
             <li>
               Payments are processed securely by Lemon Squeezy. We never see
               or store your card details.
