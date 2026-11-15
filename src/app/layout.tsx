@@ -81,6 +81,12 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: "#0a0e1a",
+  // modern-web-guidance `dark-mode` (MANDATORY): declare support for
+  // both schemes so the browser themes native UI (scrollbars, form
+  // controls, canvas) and avoids a flash of un-themed content. The
+  // inline theme script + html[data-theme] color-scheme already set
+  // the active scheme; this meta tells the browser both are supported.
+  colorScheme: "light dark",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
