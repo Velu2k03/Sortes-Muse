@@ -35,6 +35,12 @@ export default function DailyPage() {
   const [practice, setPractice] = useState({ total: 0, last30: 0 });
   const [zoomOpen, setZoomOpen] = useState(false);
   const drawTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Batch 3.4 (#19): on a same-day return the card is already
+  // there, so focus it so a keyboard or screen-reader user lands
+  // on it straight away. A fresh draw does not focus (the user
+  // just held the button and the card is animating in).
+  const cardButtonRef = useRef<HTMLButtonElement>(null);
+  const isReturnRef = useRef(false);
   const { persistReading, updateReading } = useAuth();
   // Evening return: one line on where the card's quality showed up.
   const [reflection, setReflection] = useState("");
@@ -91,6 +97,9 @@ export default function DailyPage() {
       if (existing) {
         setDaily(existing);
         setPhase("revealed");
+        // Batch 3.4 (#19): a same-day return, so the revealed card
+        // gets focus once it renders (see the focus effect below).
+        isReturnRef.current = true;
         void saveDailyEntry(existing);
       }
       setPractice(getDailyPracticeDays());
@@ -99,6 +108,14 @@ export default function DailyPage() {
       if (drawTimer.current) clearTimeout(drawTimer.current);
     };
   }, [saveDailyEntry]);
+
+  // Batch 3.4 (#19): focus the revealed card on a same-day return.
+  useEffect(() => {
+    if (phase === "revealed" && isReturnRef.current && cardButtonRef.current) {
+      cardButtonRef.current.focus();
+      isReturnRef.current = false;
+    }
+  }, [phase]);
 
   const reduceMotion = useReducedMotion();
 
@@ -231,6 +248,7 @@ export default function DailyPage() {
               >
                 <button
                   type="button"
+                  ref={cardButtonRef}
                   onClick={() => setZoomOpen(true)}
                   aria-label={`Enlarge ${card.name}`}
                   className="block h-full w-full cursor-pointer rounded-[22px] focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
@@ -240,7 +258,11 @@ export default function DailyPage() {
                       image={card.image}
                       alt={card.name}
                       preset="gold"
-                      foilColor="#d4af37"
+                      // Batch 3.4: the foil colour comes from the
+                      // brand token, not the old gold hex. HoloCard
+                      // passes it to a CSS custom property, so a
+                      // var() reference resolves.
+                      foilColor="var(--color-gold)"
                       width={220}
                       radius={22}
                     />
@@ -311,7 +333,10 @@ export default function DailyPage() {
                       }}
                       maxLength={300}
                       placeholder="One line is enough."
-                      className="min-w-0 flex-1 rounded-xl border border-gold/30 bg-navy px-3 py-2 text-sm text-cream placeholder:text-mist"
+                      // Batch 3.4 (#5/#69): 16px text and a 44px
+                      // tall field, so it is readable and tappable
+                      // (was 14px and ~32px).
+                      className="min-w-0 flex-1 rounded-xl border border-gold/30 bg-navy px-3 py-3 text-base text-cream placeholder:text-mist"
                     />
                     <button
                       type="button"
