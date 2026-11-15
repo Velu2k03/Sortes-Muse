@@ -55,50 +55,50 @@ type Tier = {
   features: string[];
 };
 
-// Velu's exact numbers, never change them: Spark $7.99 / 1,000
-// credits, Star $14.99 / 2,500, Moon $29.99 / 6,000. Annual:
-// $79.88 / $149.88 / $299.88. Savings: 7.99 x 12 - 79.88 = $16,
-// 14.99 x 12 - 149.88 = $30, 29.99 x 12 - 299.88 = $60.
+// Velu's exact numbers, never change them: Spark $9.99 / 1,000
+// Oracles, Star $19.99 / 2,500, Moon $39.99 / 6,000. Annual:
+// $103.88 / $209.88 / $419.88. Savings: 9.99 x 12 - 103.88 = $16,
+// 19.99 x 12 - 209.88 = $30, 39.99 x 12 - 419.88 = $60.
 const TIERS: Tier[] = [
   {
     id: "spark",
     name: "Spark",
-    monthly: 7.99,
-    annual: 79.88,
+    monthly: 9.99,
+    annual: 103.88,
     credits: 1000,
     savings: 16,
     popular: false,
     features: [
-      "1-card readings — 100 credits each",
-      "3-card readings — 200 credits each",
-      "Follow-up questions — 50 credits each",
+      "1-card readings — 100 Oracles each",
+      "3-card readings — 200 Oracles each",
+      "Follow-up questions — 50 Oracles each",
       "Daily card free, every day",
     ],
   },
   {
     id: "star",
     name: "Star",
-    monthly: 14.99,
-    annual: 149.88,
+    monthly: 19.99,
+    annual: 209.88,
     credits: 2500,
     savings: 30,
     popular: true,
     features: [
-      "Everything in Spark, plus 1,500 more credits a month",
-      "Chart readings — 300 credits each",
+      "Everything in Spark, plus 1,500 more Oracles a month",
+      "Chart readings — 300 Oracles each",
       "Your journal and reading history",
     ],
   },
   {
     id: "moon",
     name: "Moon",
-    monthly: 29.99,
-    annual: 299.88,
+    monthly: 39.99,
+    annual: 419.88,
     credits: 6000,
     savings: 60,
     popular: false,
     features: [
-      "Everything in Star, plus 3,500 more credits a month",
+      "Everything in Star, plus 3,500 more Oracles a month",
       "Reports: transit, year-ahead, and relationship",
       "60 one-card readings a month",
     ],
@@ -176,8 +176,8 @@ export default function PricingClient({
           Choose your plan
         </h1>
         <p className="mx-auto mt-4 max-w-xl text-sm text-cream/75">
-          Monthly credits for readings, charts, and reports. Top-ups
-          arrive with subscriptions. Purchased credits never expire.
+          Monthly Oracles for readings, charts, and reports. Top-ups
+          arrive with subscriptions. Purchased Oracles never expire.
         </p>
       </VStack>
 
@@ -235,7 +235,7 @@ export default function PricingClient({
                   <span className="font-display text-xl">
                     {tier.credits.toLocaleString()}
                   </span>{" "}
-                  credits a month
+                  Oracles a month
                 </p>
                 {billing === "annual" && (
                   <p className="mt-1 text-sm font-semibold text-goldbright lining-nums tabular-nums">
@@ -270,7 +270,7 @@ export default function PricingClient({
               data-tier={tier.id}
               className={`relative h-full rounded-3xl ${
                 tier.id === "star"
-                  ? "min-[960px]:-translate-y-4 shadow-[0_24px_48px_-24px_rgba(212,175,55,0.55)]"
+                  ? "min-[960px]:-translate-y-4 shadow-[0_24px_48px_-24px_rgba(185,151,91,0.55)]"
                   : ""
               }`}
             >
@@ -317,8 +317,8 @@ export default function PricingClient({
           </HStack>
         )}
         <p className="mx-auto mt-2 max-w-xl text-center text-sm text-cream/75">
-          Top-ups launch with subscriptions: 1,000 credits for $9.99 and
-          3,000 for $24.99. Purchased credits never expire.
+          Top-ups launch with subscriptions: 1,000 Oracles for $9.99 and
+          3,000 for $24.99. Purchased Oracles never expire.
         </p>
         <Grid columns={{ minWidth: 280, max: 2 }} gap={4} maxWidth="42rem" className="mx-auto mt-6">
           {TOPUPS.map((topup) => (
@@ -331,14 +331,14 @@ export default function PricingClient({
                   <span className="font-display text-xl">
                     {topup.credits.toLocaleString()}
                   </span>{" "}
-                  credits
+                  Oracles
                 </p>
                 <p className="mt-1 text-sm text-cream/75">Never expires</p>
                 <Button
                   label={
                     processing === `topup-${topup.credits}`
                       ? "Starting checkout…"
-                      : `Top up ${topup.credits.toLocaleString()} credits`
+                      : `Top up ${topup.credits.toLocaleString()} Oracles`
                   }
                   variant="secondary"
                   isDisabled={!topupsEnabled}
@@ -369,7 +369,7 @@ export default function PricingClient({
             >
               <span>{cost.label}</span>
               <span className="font-semibold text-goldbright lining-nums tabular-nums">
-                {cost.credits} credits
+                {cost.credits} Oracles
               </span>
             </li>
           ))}

@@ -98,7 +98,7 @@ export default function ReturnLoop() {
   const quote = QUOTES[new Date().getDay()];
 
   return (
-    <section className="mx-auto max-w-4xl px-4 py-12 sm:px-6" aria-label="Your return">
+    <section className="mx-auto max-w-6xl px-4 py-12 sm:px-6" aria-label="Your return">
       <div className="rounded-3xl border border-gold/25 bg-panel/60 p-6 sm:p-8">
         <p className="text-center font-display text-2xl italic text-goldbright">&ldquo;{quote}&rdquo;</p>
         <p className="mt-2 text-center text-xs text-mist">A small reminder for today, not a prediction.</p>
@@ -113,7 +113,7 @@ export default function ReturnLoop() {
             ) : (
               <p className="mt-2 text-cream/90">You have not drawn today&apos;s card yet.</p>
             )}
-            <Link href="/daily" className="mt-3 inline-block font-semibold text-goldbright underline underline-offset-4">
+            <Link href="/daily" className="mt-3 inline-flex min-h-11 items-center font-semibold text-goldbright underline underline-offset-4">
               {dailyName ? "See today's card" : "Draw today's card"}
             </Link>
             {streak >= 2 && (
@@ -130,7 +130,7 @@ export default function ReturnLoop() {
                   Last: <span className="font-semibold text-goldbright">{latest.spreadName}</span>
                   {latest.question ? `, "${latest.question}"` : ""}
                 </p>
-                <Link href={`/reading/${latest.id}`} className="mt-3 inline-block font-semibold text-goldbright underline underline-offset-4">
+                <Link href={`/reading/${latest.id}`} className="mt-3 inline-flex min-h-11 items-center font-semibold text-goldbright underline underline-offset-4">
                   Continue it
                 </Link>
               </>
@@ -141,12 +141,12 @@ export default function ReturnLoop() {
                     ? "No readings saved yet. Your first Quick Insight is free."
                     : "No readings saved yet."}
                 </p>
-                <Link href="/spreads/quick-insight" className="mt-3 inline-block font-semibold text-goldbright underline underline-offset-4">
+                <Link href="/spreads/quick-insight" className="mt-3 inline-flex min-h-11 items-center font-semibold text-goldbright underline underline-offset-4">
                   {freeAvailable ? "Start my free reading" : "Start a reading"}
                 </Link>
               </>
             )}
-            <Link href="/journal" className="mt-3 block text-sm text-mist underline underline-offset-4">
+            <Link href="/journal" className="mt-3 inline-flex min-h-11 items-center text-sm text-mist underline underline-offset-4">
               See all past readings
             </Link>
           </div>

@@ -74,7 +74,7 @@ describe("home page: first-visit comprehension", () => {
     // now Ask/Draw/Read. The Read step states the interpretation, and
     // the hero privacy line states the journal save.
     expect(src).toContain("Get a reading written for your question.");
-    expect(src).toContain("Saved with it in your journal.");
+    expect(src).toContain("Your reading is written just for you and saved in your journal.");
     // The sample section is a component on the homepage.
     const sampleSrc = readFileSync(
       path.resolve(process.cwd(), "src/components/SampleReading.tsx"),

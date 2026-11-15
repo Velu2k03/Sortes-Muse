@@ -93,13 +93,13 @@ describe("subscription variant maps", () => {
     expect(subscriptionsConfigured()).toBe(false);
   });
 
-  it("prices are Velu's exact numbers (Spark 799/7988, Star 1499/14988, Moon 2999/29988)", () => {
-    expect(expectedCentsForSubscription("spark", "monthly")).toBe(799);
-    expect(expectedCentsForSubscription("spark", "annual")).toBe(7988);
-    expect(expectedCentsForSubscription("star", "monthly")).toBe(1499);
-    expect(expectedCentsForSubscription("star", "annual")).toBe(14988);
-    expect(expectedCentsForSubscription("moon", "monthly")).toBe(2999);
-    expect(expectedCentsForSubscription("moon", "annual")).toBe(29988);
+  it("prices are Velu's exact numbers (Spark 999/10388, Star 1999/20988, Moon 3999/41988)", () => {
+    expect(expectedCentsForSubscription("spark", "monthly")).toBe(999);
+    expect(expectedCentsForSubscription("spark", "annual")).toBe(10388);
+    expect(expectedCentsForSubscription("star", "monthly")).toBe(1999);
+    expect(expectedCentsForSubscription("star", "annual")).toBe(20988);
+    expect(expectedCentsForSubscription("moon", "monthly")).toBe(3999);
+    expect(expectedCentsForSubscription("moon", "annual")).toBe(41988);
   });
 });
 
@@ -210,17 +210,17 @@ describe("subscription verify rules", () => {
           status: "paid",
           store_id: 42,
           subscription_id: "sub_1",
-          total: 1499,
-          subtotal: 1499,
+          total: 1999,
+          subtotal: 1999,
         },
       },
     };
-    const expected = { invoiceId: "inv_1", storeId: "42", subscriptionId: "sub_1", expectedTotalCents: 1499 };
+    const expected = { invoiceId: "inv_1", storeId: "42", subscriptionId: "sub_1", expectedTotalCents: 1999 };
     expect(verifyApiSubscriptionInvoice(invoice, expected)).toBe(true);
     // Tax on top is accepted when the subtotal matches.
     expect(
       verifyApiSubscriptionInvoice(
-        { ...invoice, data: { ...invoice.data, attributes: { ...invoice.data.attributes, total: 1600 } } },
+        { ...invoice, data: { ...invoice.data, attributes: { ...invoice.data.attributes, total: 2100 } } },
         expected
       )
     ).toBe(true);
@@ -246,8 +246,8 @@ describe("subscription verify rules", () => {
   });
 
   it("verifyApiSubscriptionInvoice: a discounted invoice is accepted when the discount explains the lower total", () => {
-    // Star monthly is 1499; a 500-cent discount code makes the total
-    // 999. The subtotal still matches the tier price, discount_total
+    // Star monthly is 1999; a 500-cent discount code makes the total
+    // 1499. The subtotal still matches the tier price, discount_total
     // is positive, and the total is at least subtotal minus discount.
     const invoice = {
       data: {
@@ -256,18 +256,18 @@ describe("subscription verify rules", () => {
           status: "paid",
           store_id: 42,
           subscription_id: "sub_1",
-          total: 999,
-          subtotal: 1499,
+          total: 1499,
+          subtotal: 1999,
           discount_total: 500,
         },
       },
     };
-    const expected = { invoiceId: "inv_1", storeId: "42", subscriptionId: "sub_1", expectedTotalCents: 1499 };
+    const expected = { invoiceId: "inv_1", storeId: "42", subscriptionId: "sub_1", expectedTotalCents: 1999 };
     expect(verifyApiSubscriptionInvoice(invoice, expected)).toBe(true);
     // A discount plus tax on top is still a discount, not an overcharge.
     expect(
       verifyApiSubscriptionInvoice(
-        { ...invoice, data: { ...invoice.data, attributes: { ...invoice.data.attributes, total: 1050 } } },
+        { ...invoice, data: { ...invoice.data, attributes: { ...invoice.data.attributes, total: 1550 } } },
         expected
       )
     ).toBe(true);
@@ -281,13 +281,13 @@ describe("subscription verify rules", () => {
           status: "paid",
           store_id: 42,
           subscription_id: "sub_1",
-          total: 999,
-          subtotal: 1499,
+          total: 1499,
+          subtotal: 1999,
           discount_total: 0,
         },
       },
     };
-    const expected = { invoiceId: "inv_1", storeId: "42", subscriptionId: "sub_1", expectedTotalCents: 1499 };
+    const expected = { invoiceId: "inv_1", storeId: "42", subscriptionId: "sub_1", expectedTotalCents: 1999 };
     expect(verifyApiSubscriptionInvoice(invoice, expected)).toBe(false);
     // A total below subtotal minus discount cannot be explained by
     // the discount either (the discount is smaller than the gap).
@@ -300,7 +300,7 @@ describe("subscription verify rules", () => {
     // discount_total absent entirely is the same as no discount.
     expect(
       verifyApiSubscriptionInvoice(
-        { ...invoice, data: { ...invoice.data, attributes: { total: 999, subtotal: 1499, discount_total: undefined } } },
+        { ...invoice, data: { ...invoice.data, attributes: { total: 1499, subtotal: 1999, discount_total: undefined } } },
         expected
       )
     ).toBe(false);

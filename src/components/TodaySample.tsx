@@ -49,7 +49,7 @@ export default function TodaySample() {
     : SAMPLE_LINE;
 
   return (
-    <section className="mx-auto max-w-4xl px-4 py-16 text-center sm:px-6" aria-label="Sample reading">
+    <section className="mx-auto max-w-6xl px-4 py-16 text-center sm:px-6" aria-label="Sample reading">
       <p className="text-xs uppercase tracking-[0.35em] text-gold">
         Sample reading
       </p>

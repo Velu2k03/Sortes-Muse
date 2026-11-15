@@ -240,9 +240,9 @@ export default function Header() {
             alt=""
             width={36}
             height={36}
-            className="rounded-lg logo-turn-once"
+            className="rounded-lg"
           />
-          <span className="font-display text-xl tracking-wide text-goldbright sm:text-2xl">
+          <span className="wordmark font-display text-xl tracking-wide sm:text-2xl">
             {APP_SHORT}
           </span>
         </Link>
@@ -361,7 +361,7 @@ export default function Header() {
               goes to the free Quick Insight, not the top-up page. */}
           <Link
             href={showFreePill ? "/spreads/quick-insight" : "/oracles"}
-            className="flex items-center gap-1.5 rounded-full border border-gold/40 bg-gold/10 px-2.5 py-2.5 text-sm font-semibold text-goldbright"
+            className="flex min-h-11 items-center gap-1.5 rounded-full border border-gold/40 bg-gold/10 px-2.5 py-2.5 text-sm font-semibold text-goldbright"
             aria-label={
               credits === null
                 ? "Oracle balance loading. Top up."

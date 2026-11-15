@@ -25,7 +25,7 @@ export default function TermsPage() {
             {APP_SHORT} provides digital tarot readings, card meaning
             reference, and personalized AI-generated interpretations, sold
             pay-per-reading via Oracle packs, with optional monthly
-            subscriptions for credits.
+            subscriptions for Oracles.
           </p>
         </section>
 

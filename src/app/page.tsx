@@ -181,7 +181,7 @@ export default function Home() {
               itself is deleted too (AF-042): it was a third continuous
               homepage animation on top of Orb and the starfield. */}
         </div>
-        <div className="relative mx-auto flex max-w-4xl flex-col items-center px-4 pb-24 pt-24 text-center sm:px-6 sm:pt-32">
+        <div className="relative mx-auto flex max-w-6xl flex-col items-center px-4 pb-24 pt-24 text-center sm:px-6 sm:pt-32">
           {/* Hero text renders at full opacity on first paint: the old
               0.8s fade with up to 0.9s delay left the first frame almost
               empty behind the moon image. Gentle motion stays below the
@@ -205,7 +205,7 @@ export default function Home() {
               behind the moon image), and the example questions stay
               visible as tappable chips instead of rotating one at a
               time. */}
-          <h1 className="mt-6 text-balance font-display text-4xl leading-tight text-goldbright sm:text-5xl">
+          <h1 className="mt-6 max-w-4xl text-balance font-display text-4xl leading-tight text-goldbright sm:text-5xl">
             {variant.h1}
           </h1>
           <p className="mt-6 max-w-xl text-base leading-relaxed text-cream/80">
@@ -273,7 +273,7 @@ export default function Home() {
             </p>
           )}
           <p className="mt-2 text-xs text-mist/80">
-            Sent to the AI to write your reading. Saved with it in your journal.
+            Your reading is written just for you and saved in your journal.
           </p>
           {/* AF-034: the pricing line and the charts line stay off
               the hero. Pricing lives on /oracles; charts have their
@@ -360,7 +360,7 @@ export default function Home() {
       </section>
 
       {/* WHAT IS TAROT */}
-      <section className="mx-auto max-w-4xl px-4 py-16 sm:px-6">
+      <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
         <motion.div key={`${revealKey}-intro`} {...fadeUp}>
           <div className="rule-gold mx-auto w-24" />
           <h2 className="mt-6 text-center font-display text-4xl text-goldbright sm:text-5xl">
@@ -411,15 +411,19 @@ export default function Home() {
       </section>
 
       {/* SAMPLE READING TEASER — AF-034: collapsed on the homepage
-          diet; the full sample is one tap away. */}
-      <SampleReading collapsed />
+          diet; the full sample is one tap away. Banded navy so the
+          sections alternate cream / navy (Velu's choice 12). */}
+      <section className="border-y border-gold/10 bg-navydeep/40 py-16">
+        <SampleReading collapsed />
+      </section>
 
       {/* Deep UX Batch B: return loop, daily quote, today's card,
           and journal preview, on home itself, before the seek cards. */}
       <ReturnLoop />
 
       {/* DAILY CARD TEASER */}
-      <section className="mx-auto max-w-4xl px-4 py-16 text-center sm:px-6">
+      <section className="border-y border-gold/10 bg-navydeep/40 py-16">
+        <div className="mx-auto max-w-6xl px-4 text-center sm:px-6">
         <motion.div key={revealKey} {...fadeUp}>
           <p className="text-xs uppercase tracking-[0.35em] text-gold">
             Daily card
@@ -472,6 +476,7 @@ export default function Home() {
             Draw today&apos;s card
           </Link>
         </motion.div>
+        </div>
       </section>
     </div>
   );
