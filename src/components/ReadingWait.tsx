@@ -9,7 +9,12 @@ import type { DrawnCard } from "@/lib/types";
 
 export const PROCESSING_LINES = [
   "Casting the lots",
-  "Drawing your cards",
+  // Batch 3.2 (Codex P2 on PR #105): the cards were already drawn
+  // before this screen, so "Drawing your cards" reported an action
+  // that is not happening. The model event means the server picked
+  // a model and is now reading the drawn cards, so the stage says
+  // that.
+  "Consulting the cards",
   "Reading your story",
   "Putting it together",
 ];

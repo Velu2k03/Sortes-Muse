@@ -23,6 +23,12 @@ describe("Phase 3 Batch 3.2 reveal control and honest wait", () => {
     expect(flow).toContain('setProcessingLine((line) => Math.max(line, 2));');
     expect(flow).toContain("setProcessingLine(3);");
     expect(flow).toContain("setProcessingLine(1);");
+    // Codex P2: stage 1 is "Consulting the cards", not "Drawing
+    // your cards", because the cards were already drawn. (The
+    // trailing comma matches the array element, not the comment
+    // that explains the rename.)
+    expect(wait).toContain('"Consulting the cards",');
+    expect(wait).not.toContain('"Drawing your cards",');
   });
 
   it("shows one honest indicator, the stage trace, not three", () => {
