@@ -34,7 +34,7 @@ const SUBSCRIPTION_KEYS: SubscriptionVariantKey[] = [
  * ("topup-1000"). 503 when the variants are not configured, and
  * 503 while the credit flag is OFF: a subscription/top-up grants
  * credits, and while the spend path still charges 1 per reading
- * those credits would buy 1,000 readings for $7.99 instead of
+ * those Oracles would buy 1,000 readings for $9.99 instead of
  * the planned 10. The flag flips first in the cutover, so the
  * checkout opens only once spending uses the credit unit.
  */

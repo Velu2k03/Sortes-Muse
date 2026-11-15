@@ -1,8 +1,9 @@
 /*
  * Phase 2 batch 2: subscription tiers, the server-side source of truth
  * for monthly-grant math. Velu's exact numbers from the Phase 2 plan
- * (remodel-subscription-plan-2026-11-14.md): Spark $7.99 / 1,000 credits,
- * Star $14.99 / 2,500, Moon $29.99 / 6,000. Annual is the same monthly
+ * (remodel-subscription-plan-2026-11-14.md), prices updated by his
+ * 2026-11-15 My Choices pick: Spark $9.99 / 1,000 Oracles,
+ * Star $19.99 / 2,500, Moon $39.99 / 6,000. Annual is the same monthly
  * drip — an annual subscription is charged up front but granted one
  * month at a time, never all upfront.
  *
@@ -159,14 +160,14 @@ export function topUpForId(id: TopUp["id"]): TopUp {
 
 /**
  * Expected charge in cents for a subscription variant, derived from
- * Velu's exact tier prices (never change them): Spark $7.99/mo /
- * $79.88/yr, Star $14.99/mo / $149.88/yr, Moon $29.99/mo / $299.88/yr.
+ * Velu's exact tier prices (never change them): Spark $9.99/mo /
+ * $103.88/yr, Star $19.99/mo / $209.88/yr, Moon $39.99/mo / $419.88/yr.
  * The webhook amount check reads this, so a variant whose price was
  * changed in the dashboard is refused instead of granted.
  */
 export function expectedCentsForSubscription(tier: SubscriptionTierId, interval: BillingInterval): number {
-  const monthly: Record<SubscriptionTierId, number> = { spark: 799, star: 1499, moon: 2999 };
-  const annual: Record<SubscriptionTierId, number> = { spark: 7988, star: 14988, moon: 29988 };
+  const monthly: Record<SubscriptionTierId, number> = { spark: 999, star: 1999, moon: 3999 };
+  const annual: Record<SubscriptionTierId, number> = { spark: 10388, star: 20988, moon: 41988 };
   return interval === "annual" ? annual[tier] : monthly[tier];
 }
 

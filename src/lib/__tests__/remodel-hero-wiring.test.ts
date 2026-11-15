@@ -121,7 +121,7 @@ describe("Remodel hero: rotating H1, question box, example questions", () => {
     // but the question is saved with the reading in the journal
     // (local for guests, server history when signed in).
     expect(page).toContain(
-      "Sent to the AI to write your reading. Saved with it in your journal."
+      "Your reading is written just for you and saved in your journal."
     );
   });
 

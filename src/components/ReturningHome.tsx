@@ -172,7 +172,7 @@ export default function ReturningHome() {
     : null;
 
   return (
-    <section className="mx-auto max-w-4xl px-4 py-12 sm:px-6" aria-label="Returning home">
+    <section className="mx-auto max-w-6xl px-4 py-12 sm:px-6" aria-label="Returning home">
       <h1 className="font-display text-4xl leading-tight text-goldbright sm:text-5xl">
         {greeting}
         {name}
@@ -328,7 +328,7 @@ export default function ReturningHome() {
       </p>
       <Link
         href="/journal"
-        className="mt-2 inline-block text-sm text-mist underline underline-offset-4"
+        className="mt-2 inline-flex min-h-11 items-center text-sm text-mist underline underline-offset-4"
       >
         See all past readings
       </Link>

@@ -72,8 +72,8 @@ function invoiceJson(id: string, overrides: Record<string, unknown> = {}) {
         customer_id: 7,
         user_email: "buyer@example.com",
         billing_reason: "initial",
-        total: 1499,
-        subtotal: 1499,
+        total: 1999,
+        subtotal: 1999,
         refunded_amount: 0,
         currency: "USD",
         created_at: "2026-11-15T00:00:00.000Z",
@@ -150,7 +150,7 @@ describe("handleSubscriptionWebhook", () => {
     stubFetch(subscriptionJson("sub_1"), invoiceJson("inv_1"));
     const result = await handleSubscriptionWebhook("subscription_payment_success", {
       meta: { event_name: "subscription_payment_success" },
-      data: { id: "inv_1", attributes: { store_id: 42, subscription_id: "sub_1", billing_reason: "initial", total: 1499, user_email: "buyer@example.com", created_at: "2026-11-15T00:00:00.000Z" } },
+      data: { id: "inv_1", attributes: { store_id: 42, subscription_id: "sub_1", billing_reason: "initial", total: 1999, user_email: "buyer@example.com", created_at: "2026-11-15T00:00:00.000Z" } },
     });
     expect(result.status).toBe(200);
     expect(result.body.granted).toBe(true);
@@ -168,7 +168,7 @@ describe("handleSubscriptionWebhook", () => {
     );
     const pay = await handleSubscriptionWebhook("subscription_payment_success", {
       meta: { event_name: "subscription_payment_success" },
-      data: { id: "inv_2", attributes: { store_id: 42, subscription_id: "sub_1", billing_reason: "renewal", total: 1499, user_email: "buyer@example.com", created_at: "2027-11-15T00:00:00.000Z" } },
+      data: { id: "inv_2", attributes: { store_id: 42, subscription_id: "sub_1", billing_reason: "renewal", total: 1999, user_email: "buyer@example.com", created_at: "2027-11-15T00:00:00.000Z" } },
     });
     expect(pay.status).toBe(200);
     expect(mockedUpsertSubscription).toHaveBeenCalledTimes(1);
@@ -195,7 +195,7 @@ describe("handleSubscriptionWebhook", () => {
     stubFetch(subscriptionJson("sub_1"), invoiceJson("inv_1"));
     const result = await handleSubscriptionWebhook("subscription_payment_recovered", {
       meta: { event_name: "subscription_payment_recovered" },
-      data: { id: "inv_1", attributes: { store_id: 42, subscription_id: "sub_1", billing_reason: "renewal", total: 1499, user_email: "buyer@example.com", created_at: "2026-11-15T00:00:00.000Z" } },
+      data: { id: "inv_1", attributes: { store_id: 42, subscription_id: "sub_1", billing_reason: "renewal", total: 1999, user_email: "buyer@example.com", created_at: "2026-11-15T00:00:00.000Z" } },
     });
     expect(result.status).toBe(200);
     expect(result.body.granted).toBe(true);
@@ -212,7 +212,7 @@ describe("handleSubscriptionWebhook", () => {
     );
     const result = await handleSubscriptionWebhook("subscription_payment_success", {
       meta: { event_name: "subscription_payment_success" },
-      data: { id: "inv_1", attributes: { store_id: 42, subscription_id: "sub_1", billing_reason: "updated", total: 1499, user_email: "buyer@example.com", created_at: "2026-11-15T00:00:00.000Z" } },
+      data: { id: "inv_1", attributes: { store_id: 42, subscription_id: "sub_1", billing_reason: "updated", total: 1999, user_email: "buyer@example.com", created_at: "2026-11-15T00:00:00.000Z" } },
     });
     expect(result.status).toBe(200);
     expect(mockedGrantMonthlyCredits).not.toHaveBeenCalled();
@@ -274,11 +274,11 @@ describe("handleSubscriptionWebhook", () => {
   it("subscription_payment_refunded revokes every monthly grant for the cycle", async () => {
     stubFetch(
       subscriptionJson("sub_1"),
-      invoiceJson("inv_1", { status: "refunded", refunded_amount: 1499 })
+      invoiceJson("inv_1", { status: "refunded", refunded_amount: 1999 })
     );
     const result = await handleSubscriptionWebhook("subscription_payment_refunded", {
       meta: { event_name: "subscription_payment_refunded" },
-      data: { id: "inv_1", attributes: { store_id: 42, subscription_id: "sub_1", total: 1499, user_email: "buyer@example.com", created_at: "2026-11-15T00:00:00.000Z" } },
+      data: { id: "inv_1", attributes: { store_id: 42, subscription_id: "sub_1", total: 1999, user_email: "buyer@example.com", created_at: "2026-11-15T00:00:00.000Z" } },
     });
     expect(result.status).toBe(200);
     expect(mockedRevokeAllSubscriptionGrants).toHaveBeenCalledTimes(1);
@@ -289,7 +289,7 @@ describe("handleSubscriptionWebhook", () => {
     };
     // Star monthly: the cycle is just the invoice's month.
     expect(revokeArgs.periodKeys).toEqual(["2026-11"]);
-    expect(revokeArgs.totalCents).toBe(1499);
-    expect(revokeArgs.refundedCents).toBe(1499);
+    expect(revokeArgs.totalCents).toBe(1999);
+    expect(revokeArgs.refundedCents).toBe(1999);
   });
 });

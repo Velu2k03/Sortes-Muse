@@ -7,24 +7,36 @@ import {
 } from "../hero-variants";
 
 // Hero copy rotation (Velu, 2026-11-15): the hero H1, subhead, and
-// CTA labels rotate randomly among three variants on each page load,
-// not one fixed version. Velu's exact words, used verbatim. The old
-// Fable H1 ("Ask a question. Draw a tarot card. Get an AI reading.")
-// and subhead are retired by his decision. The title tag is metadata,
-// not the H1, and does not change. The "Sortes - Get Answers to the
-// Questions on Your Mind" H1 line he also listed has no H2/CTA of
-// its own, so it is NOT one of the three rotating variants.
+// CTA labels rotate randomly among four variants on each page load,
+// not one fixed version. Velu's exact words, used verbatim. Variant A
+// (first paint) is his headline from his 2026-11-15 landing choices
+// (choice 11): "Ask one honest question. Draw one clear card."
+// The old Fable H1 ("Ask a question. Draw a tarot card. Get an AI
+// reading.") and subhead are retired by his decision. The title tag
+// is metadata, not the H1, and does not change. The "Sortes - Get
+// Answers to the Questions on Your Mind" H1 line he also listed has
+// no H2/CTA of its own, so it is NOT one of the four rotating
+// variants.
 
 const src = (rel: string) =>
   readFileSync(path.resolve(process.cwd(), rel), "utf8");
 
-describe("hero rotation: the three variants (Velu's words, verbatim)", () => {
-  it("has exactly three variants", () => {
-    expect(HERO_VARIANTS).toHaveLength(3);
+describe("hero rotation: the four variants (Velu's words, verbatim)", () => {
+  it("has exactly four variants", () => {
+    expect(HERO_VARIANTS).toHaveLength(4);
   });
 
-  it("variant A is Find New Clarity About Your Life", () => {
+  it("variant A is Velu's headline (Ask one honest question. Draw one clear card.)", () => {
     expect(HERO_VARIANTS[0]).toEqual({
+      h1: "Ask one honest question. Draw one clear card.",
+      h2: "Get a clear, personal reading for the question on your mind.",
+      primaryCta: "Draw Your Card",
+      secondaryCta: "Explore Readings",
+    });
+  });
+
+  it("variant B is Find New Clarity About Your Life", () => {
+    expect(HERO_VARIANTS[1]).toEqual({
       h1: "Sortes – Find New Clarity About Your Life",
       h2: "Get personal insights to help you explore love, relationships, and life's biggest questions.",
       primaryCta: "Find Your Clarity",
@@ -32,8 +44,8 @@ describe("hero rotation: the three variants (Velu's words, verbatim)", () => {
     });
   });
 
-  it("variant B is Find Clarity When Life Feels Uncertain", () => {
-    expect(HERO_VARIANTS[1]).toEqual({
+  it("variant C is Find Clarity When Life Feels Uncertain", () => {
+    expect(HERO_VARIANTS[2]).toEqual({
       h1: "Sortes – Find Clarity When Life Feels Uncertain",
       h2: "Get personal insights into love, life, and the choices ahead.",
       primaryCta: "Begin Your Reading",
@@ -41,8 +53,8 @@ describe("hero rotation: the three variants (Velu's words, verbatim)", () => {
     });
   });
 
-  it("variant C is Discover What Your Future Could Hold", () => {
-    expect(HERO_VARIANTS[2]).toEqual({
+  it("variant D is Discover What Your Future Could Hold", () => {
+    expect(HERO_VARIANTS[3]).toEqual({
       h1: "Sortes – Discover What Your Future Could Hold",
       h2: "Explore personal insights into love, life, relationships, and the choices ahead.",
       primaryCta: "Discover Your Future",

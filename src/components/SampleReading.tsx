@@ -121,7 +121,7 @@ export default function SampleReading({ collapsed = false }: { collapsed?: boole
   );
   return (
     <section className="border-y border-gold/10 bg-navydeep/40 py-16">
-      <div className="mx-auto max-w-4xl px-4 sm:px-6">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <motion.div
           key={`${revealKey}-a`}
           initial={hide ? { opacity: 0, y: 24 } : false}

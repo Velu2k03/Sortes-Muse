@@ -46,22 +46,22 @@ describe("Pricing tiers: Velu's exact numbers", () => {
     const c = client();
     const spark = tierBlock(c, "spark");
     expect(spark).toContain('name: "Spark",');
-    expect(spark).toContain("monthly: 7.99,");
-    expect(spark).toContain("annual: 79.88,");
+    expect(spark).toContain("monthly: 9.99,");
+    expect(spark).toContain("annual: 103.88,");
     expect(spark).toContain("credits: 1000,");
     expect(spark).toContain("savings: 16,");
     expect(spark).toContain("popular: false,");
     const star = tierBlock(c, "star");
     expect(star).toContain('name: "Star",');
-    expect(star).toContain("monthly: 14.99,");
-    expect(star).toContain("annual: 149.88,");
+    expect(star).toContain("monthly: 19.99,");
+    expect(star).toContain("annual: 209.88,");
     expect(star).toContain("credits: 2500,");
     expect(star).toContain("savings: 30,");
     expect(star).toContain("popular: true,");
     const moon = tierBlock(c, "moon");
     expect(moon).toContain('name: "Moon",');
-    expect(moon).toContain("monthly: 29.99,");
-    expect(moon).toContain("annual: 299.88,");
+    expect(moon).toContain("monthly: 39.99,");
+    expect(moon).toContain("annual: 419.88,");
     expect(moon).toContain("credits: 6000,");
     expect(moon).toContain("savings: 60,");
     expect(moon).toContain("popular: false,");
@@ -69,9 +69,9 @@ describe("Pricing tiers: Velu's exact numbers", () => {
     expect([...c.matchAll(/id: "(?:spark|star|moon)",/g)].length).toBe(3);
     expect([...c.matchAll(/popular: true,/g)].length).toBe(1);
     // The savings are the plan arithmetic, not invented discounts.
-    expect(7.99 * 12 - 79.88).toBeCloseTo(16, 2);
-    expect(14.99 * 12 - 149.88).toBeCloseTo(30, 2);
-    expect(29.99 * 12 - 299.88).toBeCloseTo(60, 2);
+    expect(9.99 * 12 - 103.88).toBeCloseTo(16, 2);
+    expect(19.99 * 12 - 209.88).toBeCloseTo(30, 2);
+    expect(39.99 * 12 - 419.88).toBeCloseTo(60, 2);
   });
 
   it("renders the price from the tier data, monthly and annual", () => {
@@ -92,31 +92,31 @@ describe("Pricing tiers: Velu's exact numbers", () => {
     expect((credits as RegExpMatchArray)[1]).toContain(
       "{tier.credits.toLocaleString()}"
     );
-    expect((credits as RegExpMatchArray)[1]).toContain("credits a month");
+    expect((credits as RegExpMatchArray)[1]).toContain("Oracles a month");
   });
 });
 
 describe("Pricing feature lists: only what exists in code (4/3/3)", () => {
   it("Spark lists 4 lines: reading costs, follow-ups, daily card", () => {
     expect(featuresOf(client(), "spark")).toEqual([
-      "1-card readings — 100 credits each",
-      "3-card readings — 200 credits each",
-      "Follow-up questions — 50 credits each",
+      "1-card readings — 100 Oracles each",
+      "3-card readings — 200 Oracles each",
+      "Follow-up questions — 50 Oracles each",
       "Daily card free, every day",
     ]);
   });
 
   it("Star lists 3 lines as a delta on Spark", () => {
     expect(featuresOf(client(), "star")).toEqual([
-      "Everything in Spark, plus 1,500 more credits a month",
-      "Chart readings — 300 credits each",
+      "Everything in Spark, plus 1,500 more Oracles a month",
+      "Chart readings — 300 Oracles each",
       "Your journal and reading history",
     ]);
   });
 
   it("Moon lists 3 lines as a delta on Star", () => {
     expect(featuresOf(client(), "moon")).toEqual([
-      "Everything in Star, plus 3,500 more credits a month",
+      "Everything in Star, plus 3,500 more Oracles a month",
       "Reports: transit, year-ahead, and relationship",
       "60 one-card readings a month",
     ]);
@@ -161,7 +161,7 @@ describe("Pricing video formula: one badge, one lifted tier, one primary button"
     expect([...c.matchAll(/min-\[960px\]:-translate-y-4/g)].length).toBe(1);
     expect(c).not.toContain("sm:-translate-y-4");
     expect(c).toContain(
-      'tier.id === "star"\n                  ? "min-[960px]:-translate-y-4 shadow-[0_24px_48px_-24px_rgba(212,175,55,0.55)]"'
+      'tier.id === "star"\n                  ? "min-[960px]:-translate-y-4 shadow-[0_24px_48px_-24px_rgba(185,151,91,0.55)]"'
     );
     expect([...c.matchAll(/<StarBorder/g)].length).toBe(1);
     expect(c).toContain('{tier.id === "star" ? (');
@@ -387,7 +387,7 @@ describe("Pricing page: Astryx pilot wiring", () => {
     // ALSO need the credit flag ON (Codex P1): a subscription or
     // top-up grants credits, and while the spend path still charges
     // 1 per reading those credits would buy 1,000 readings for
-    // $7.99. The flag flips first in the cutover.
+    // $9.99. The flag flips first in the cutover.
     expect(p).toContain("<PricingClient");
     expect(p).toContain("subscriptionsEnabled={subscriptionsConfigured() && CREDIT_COSTS_ENABLED}");
     expect(p).toContain("topupsEnabled={topUpsConfigured() && CREDIT_COSTS_ENABLED}");
@@ -396,7 +396,7 @@ describe("Pricing page: Astryx pilot wiring", () => {
     // Phase 2 batch 3: the meta/OG descriptions describe the live
     // subscriptions (the checkout is wired); the "Coming soon"
     // state is a client-side badge, gated on the config props.
-    expect(p).toContain("Sortes subscriptions: Spark $7.99");
+    expect(p).toContain("Sortes subscriptions: Spark $9.99");
     expect(p).not.toContain("coming soon");
   });
 
