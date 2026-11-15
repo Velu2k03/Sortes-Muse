@@ -24,10 +24,9 @@ import type { Reading } from "@/lib/types";
 // line, one button with its cost labelled, the balance, "Your
 // thread", and the journal/streak line. No separate route: the
 // switch lives in src/app/page.tsx, driven by the device signals
-// there. The Raven quote from the mockup is held until the art
-// exists (plan), and the mockup's re-draw line is left out on
-// purpose: the daily card is one a day, so nothing here promises
-// a second one. There is no first-free promise anywhere in this
+// there. The mockup's re-draw line is left out on purpose: the
+// daily card is one a day, so nothing here promises a second
+// one. There is no first-free promise anywhere in this
 // file: a visitor who already used the free reading and has no
 // account lands here too, and the button shows the paid cost.
 //

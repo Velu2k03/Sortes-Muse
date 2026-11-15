@@ -6,7 +6,6 @@ import { motion, useReducedMotion } from "motion/react";
 import ReadingWait from "@/components/ReadingWait";
 import ReadingText from "@/components/ReadingText";
 import TarotCard from "@/components/TarotCard";
-import RavenOracle from "@/components/RavenOracle";
 import SlideCommit from "@/components/SlideCommit";
 import SwipeToast from "@/components/SwipeToast";
 import { INTAKE_CATEGORIES, getCategory } from "@/lib/intake";
@@ -206,15 +205,6 @@ export function FormStep({ f, category }: { f: IntakeState; category: IntakeCate
             rows={5}
             className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none"
           />
-        </div>
-
-        {/* Raven Oracle Step 1: the Raven listens while the visitor
-            types the one exact question. */}
-        <div className="flex flex-col items-center">
-          <RavenOracle state="listening" size={96} />
-          <p className="mt-2 text-center text-sm italic text-cream/75">
-            The Raven is listening.
-          </p>
         </div>
 
         <div>

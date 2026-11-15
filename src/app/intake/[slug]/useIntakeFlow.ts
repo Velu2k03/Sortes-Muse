@@ -491,16 +491,6 @@ export function useIntakeFlow(slug: string) {
       trackReadingCompleted(`${spread.slug}-personalized`, true);
       clearInterval(lineTimer);
       setProcessingComplete(true);
-      // Raven Oracle Step 1: mark this reading as just revealed, so
-      // the reading page can celebrate it once with the gold burst.
-      // sessionStorage, not localStorage: a revisit must not re-burst.
-      // The reading page reads and clears it on mount.
-      try {
-        window.sessionStorage.setItem("sortes-just-revealed", reading.id);
-      } catch {
-        // Storage unavailable (private mode, blocked): the reading
-        // still opens, just without the one-time celebration.
-      }
       await new Promise((resolve) => window.setTimeout(resolve, 500));
       router.push(`/reading/${reading.id}`);
     } catch (err) {

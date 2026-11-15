@@ -7,7 +7,6 @@ import ThoughtLine from "@/components/ThoughtLine";
 import StatusMark from "@/components/StatusMark";
 import FoldText from "@/components/FoldText";
 import WaitDeck from "@/components/WaitDeck";
-import RavenOracle from "@/components/RavenOracle";
 import type { DrawnCard } from "@/lib/types";
 
 export const PROCESSING_LINES = [
@@ -48,11 +47,6 @@ export default function ReadingWait({
 
   return (
     <div className="reading-wait" aria-live="polite">
-      {/* Raven Oracle Step 1: the Raven thinks with the visitor while
-          the AI streams, and reveals when the reading lands. */}
-      <div className="mb-6 flex justify-center">
-        <RavenOracle state={complete ? "revealing" : "thinking"} size={120} />
-      </div>
       {drawnCards && drawnCards.length > 0 && (
         <div className="mb-6">
           <WaitDeck drawnCards={drawnCards} />
