@@ -163,6 +163,10 @@ export function CategoryStep({ f }: { f: IntakeState }) {
 export function FormStep({ f, category }: { f: IntakeState; category: IntakeCategory }) {
   const { setStep, story, setStory, question, setQuestion, setOriginalQuestion, setSuggestionDismissed, formValid } = f;
   const headingRef = useStepFocus<HTMLHeadingElement>();
+  // Batch 3.1 (#45/#46): the question error is shown inline under the
+  // field, and the field is focused, instead of disabling the button.
+  const questionRef = useRef<HTMLTextAreaElement>(null);
+  const [questionError, setQuestionError] = useState(false);
   return (
     <>
       <p className="text-center text-xs uppercase tracking-[0.35em] text-gold">
@@ -211,20 +215,35 @@ export function FormStep({ f, category }: { f: IntakeState; category: IntakeCate
           <label htmlFor="intake-question" className="mb-1.5 block text-sm font-medium text-cream">
             The one exact question you want clarity on <span className="text-gold">*</span>
           </label>
-          <input
+          {/* Batch 3.1 (#39): the question is a two-row textarea with
+              maxLength 300, matching the server limit, so a longer
+              question is never silently cut off. */}
+          <textarea
             id="intake-question"
-            type="text"
+            ref={questionRef}
+            rows={2}
+            maxLength={300}
             value={question}
-            onChange={(e) => setQuestion(e.target.value)}
+            onChange={(e) => {
+              setQuestion(e.target.value);
+              setQuestionError(false);
+            }}
             placeholder={`e.g. ${category.examples[0]}`}
+            aria-describedby={questionError ? "intake-question-error" : undefined}
+            aria-invalid={questionError}
             className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none"
           />
+          {questionError && (
+            <p id="intake-question-error" role="alert" className="mt-2 text-sm text-red-300">
+              Please write your question first, then review your reading.
+            </p>
+          )}
           <p className="mt-2 text-xs text-mist">Ask like this, or tap one to start from it:</p>
           <div className="mt-1 flex flex-wrap gap-2">
             {/* AF-046: chips come from this area's own examples,
                 so the Love form never shows a career question. */}
             {category.examples.map((ex) => (
-              <button key={ex} type="button" onClick={() => setQuestion(ex)} className="rounded-full border border-gold/30 px-3 py-2.5 min-h-[44px] text-xs text-cream/90 hover:bg-gold/10">
+              <button key={ex} type="button" onClick={() => { setQuestion(ex); setQuestionError(false); }} className="rounded-full border border-gold/30 px-3 py-2.5 min-h-[44px] text-xs text-cream/90 hover:bg-gold/10">
                 {ex}
               </button>
             ))}
@@ -240,15 +259,23 @@ export function FormStep({ f, category }: { f: IntakeState; category: IntakeCate
         >
           Back
         </button>
+        {/* Batch 3.1 (#45/#46): the button stays enabled. An empty
+            question shows the inline error under the field and focuses
+            it, instead of a disabled control with no explanation. */}
         <button
           type="button"
-          disabled={!formValid()}
           onClick={() => {
+            if (!formValid()) {
+              setQuestionError(true);
+              questionRef.current?.focus();
+              return;
+            }
+            setQuestionError(false);
             setOriginalQuestion(question);
             setSuggestionDismissed(false);
             setStep("confirm");
           }}
-          className="btn-gold flex-1 rounded-xl px-6 py-3.5 font-bold disabled:cursor-not-allowed disabled:opacity-100 disabled:saturate-50"
+          className="btn-gold flex-1 rounded-xl px-6 py-3.5 font-bold"
         >
           Review my reading
         </button>
@@ -283,8 +310,11 @@ export function ConfirmStep({ f, category }: { f: IntakeState; category: IntakeC
           <div>
             <dt className="text-xs uppercase tracking-[0.2em] text-mist">Your question</dt>
             <dd className="mt-1">
-              <input
-                type="text"
+              {/* Batch 3.1 (#39): same two-row textarea as the form step,
+                  so the question is editable here without being cut off. */}
+              <textarea
+                rows={2}
+                maxLength={300}
                 value={question}
                 onChange={(e) => {
                   setQuestion(e.target.value);
@@ -346,6 +376,19 @@ export function ConfirmStep({ f, category }: { f: IntakeState; category: IntakeC
       {error && (
         <p role="alert" className="mt-4 rounded-xl border border-red-400/40 bg-red-500/10 p-3 text-sm alert-error-text">
           {error}
+          {/* Batch 3.1 (dead end): a zero-Oracle user gets a way
+              forward, not just a stop sign. Matches both the
+              client-side message and the server 402 ("You need 1
+              Oracle for this reading..."), which fires when the
+              client balance is stale or unknown. */}
+          {(error.startsWith("You are out of Oracles") || error.startsWith("You need 1 Oracle")) && (
+            <>
+              {" "}
+              <Link href="/oracles" className="font-semibold text-goldbright underline underline-offset-4">
+                Get Oracles
+              </Link>
+            </>
+          )}
         </p>
       )}
 
@@ -442,11 +485,26 @@ export function ImpressionStep({ f, drawnCards }: { f: IntakeState; drawnCards: 
       {error && (
         <p role="alert" className="mx-auto mt-4 max-w-md rounded-xl border border-red-400/40 bg-red-500/10 p-3 text-sm alert-error-text">
           {error}
+          {/* Batch 3.1 (dead end): a zero-Oracle user gets a way
+              forward, not just a stop sign. Matches both the
+              client-side message and the server 402 ("You need 1
+              Oracle for this reading..."), which fires when the
+              client balance is stale or unknown. */}
+          {(error.startsWith("You are out of Oracles") || error.startsWith("You need 1 Oracle")) && (
+            <>
+              {" "}
+              <Link href="/oracles" className="font-semibold text-goldbright underline underline-offset-4">
+                Get Oracles
+              </Link>
+            </>
+          )}
         </p>
       )}
 
       {generationFailed && (
         <div className="mx-auto mt-4 max-w-md space-y-3">
+          {/* Batch 3.1: toast colours come from the brand tokens,
+              not raw hex (the old gold #d4af37 is gone). */}
           <SwipeToast
             open={toastOpen}
             onClose={() => setToastOpen(false)}
@@ -456,9 +514,9 @@ export function ImpressionStep({ f, drawnCards }: { f: IntakeState; drawnCards: 
             inline
             closeButton
             width={320}
-            background="#1a1f2e"
-            color="#ede6d6"
-            fuseColor="#d4af37"
+            background="var(--color-panel)"
+            color="var(--color-cream)"
+            fuseColor="var(--color-gold)"
           />
           <button
             type="button"
@@ -537,7 +595,14 @@ export function StepDots({ step }: { step: Step }) {
   return (
     <ul className="mb-8 flex items-center justify-center gap-2" role="list" aria-label="Reading steps">
       {order.map((s, i) => (
-        <li key={s} aria-current={i === current ? "step" : undefined} className="flex items-center gap-2">
+        /* Batch 3.1 (#85): the step name is announced even on mobile,
+           where the visible label is hidden. */
+        <li
+          key={s}
+          aria-current={i === current ? "step" : undefined}
+          aria-label={`Step ${i + 1}: ${labels[i]}`}
+          className="flex items-center gap-2"
+        >
           <div
             className={`flex h-8 w-8 items-center justify-center rounded-full border text-xs font-bold ${
               i <= current
