@@ -53,7 +53,7 @@ export default function ReadingDetail({ id }: { id: string }) {
           This reading is not in your journal on this device.
         </p>
         <Link href="/spreads" className="btn-gold mt-8 inline-block rounded-xl px-8 py-3 font-bold">
-          Begin a new reading
+          Choose a spread
         </Link>
       </div>
     );
@@ -65,23 +65,20 @@ export default function ReadingDetail({ id }: { id: string }) {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6">
+      {/* Batch 3.3 (#70): the reading first. The guest save prompt
+          and the three-card nudge used to sit above the cards and
+          the interpretation; they now live in the actions below.
+          Order: question, cards, interpretation, at-a-glance, card
+          meanings, then actions. */}
       <ReadingHeader reading={reading} />
-      {!user && <GuestKeepNotice />}
-      {reading.free && reading.spreadSlug === "quick-insight" && <ThreeCardNudge />}
-      <AtAGlance reading={reading} />
       <CardRow reading={reading} zoomCard={zoomCard} setZoomCard={setZoomCard} />
       {/* Batch 6c: the interpretation first, the card blocks in one
           collapsed section below it. */}
       <Interpretation reading={reading} />
+      <AtAGlance reading={reading} />
       <CardMeanings reading={reading} />
 
       <p className="mx-auto mt-10 max-w-3xl text-center text-sm text-mist">
-        Want the astrology side of this question?{" "}
-        <Link href="/charts" className="font-semibold text-goldbright underline underline-offset-4">
-          Cast a birth chart for it
-        </Link>
-      </p>
-      <p className="mx-auto mt-4 max-w-3xl text-center text-sm text-mist">
         Your story is not shown here on purpose: it was used for this reading only and is not saved.
       </p>
 
@@ -89,7 +86,27 @@ export default function ReadingDetail({ id }: { id: string }) {
       <NotePanel reading={reading} field={note} />
       <RevisitPanel reading={reading} field={revisit} />
 
-      <div className="mx-auto mt-10 flex max-w-3xl flex-col items-center gap-4 rounded-3xl border border-gold/25 bg-panel/60 p-6 text-center sm:p-8">
+      {/* Batch 3.3 (#8): the actions are two panels, not one mixed
+          one. "Ask more" is everything that continues the reading;
+          "Keep and share" is everything that saves or sends it. */}
+      <section aria-label="Ask more" className="mx-auto mt-10 flex max-w-3xl flex-col items-center gap-4 rounded-3xl border border-gold/25 bg-panel/60 p-6 text-center sm:p-8">
+        <h2 className="font-display text-2xl text-cream">Ask more</h2>
+        {reading.free && reading.spreadSlug === "quick-insight" && <ThreeCardNudge />}
+        {hasFollowUpThread && (
+          <FollowUpThread reading={reading} isGuest={!user} f={followUp} />
+        )}
+        {!hasFollowUpThread && <NewReadingPrompt />}
+        <p className="text-sm text-mist">
+          Want the astrology side of this question?{" "}
+          <Link href="/charts" className="font-semibold text-goldbright underline underline-offset-4">
+            Cast a birth chart for this question
+          </Link>
+        </p>
+      </section>
+
+      <section aria-label="Keep and share" className="mx-auto mt-6 flex max-w-3xl flex-col items-center gap-4 rounded-3xl border border-gold/25 bg-panel/60 p-6 text-center sm:p-8">
+        <h2 className="font-display text-2xl text-cream">Keep and share</h2>
+        {!user && <GuestKeepNotice />}
         <ShareReading
           spreadName={reading.spreadName}
           drawn={reading.cards}
@@ -97,11 +114,7 @@ export default function ReadingDetail({ id }: { id: string }) {
           interpretation={reading.interpretation}
         />
         <ReadingHeirloom reading={reading} />
-        {hasFollowUpThread && (
-          <FollowUpThread reading={reading} isGuest={!user} f={followUp} />
-        )}
-        {!hasFollowUpThread && <NewReadingPrompt />}
-      </div>
+      </section>
 
       <p className="mx-auto mt-8 max-w-md text-center text-xs italic leading-relaxed text-mist">
         For reflection and perspective, not guaranteed predictions.
