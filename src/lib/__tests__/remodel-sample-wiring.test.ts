@@ -36,8 +36,10 @@ describe("Remodel sample: today's card below the hero", () => {
 
   it("labels the sample clearly and shows one card, one line", () => {
     const sample = src("src/components/TodaySample.tsx");
+    // unslopovich (2026-11-16, Velu approved): eyebrow tracking toned
+    // down from 0.35em to 0.15em.
     const eyebrow = sample.match(
-      /<p className="text-xs uppercase tracking-\[0\.35em\] text-gold">([\s\S]*?)<\/p>/
+      /<p className="text-xs uppercase tracking-\[0\.15em\] text-gold">([\s\S]*?)<\/p>/
     );
     expect(eyebrow).not.toBeNull();
     expect((eyebrow as RegExpMatchArray)[1].trim()).toBe("Sample reading");
@@ -50,11 +52,17 @@ describe("Remodel sample: today's card below the hero", () => {
       "One card, one line — an example of what a reading looks like."
     );
     // One section only; the Daily Card Teaser further down the page
-    // ("One card, every morning") is the draw CTA and stays as-is.
+    // ("One card, every morning") keeps its headline and fan, but
+    // unslopovich (2026-11-16, Velu approved) removed its duplicate
+    // "Draw today's card" CTA: the same CTA already sits in
+    // TodaySample near the top of the page.
     expect(sample.match(/<section/g)?.length).toBe(1);
     const page = src("src/app/page.tsx");
     expect(page).toContain("One card, every morning");
-    expect(page).toContain("Draw today&apos;s card");
+    // Only the teaser's copy line remains ("Draw today's card in
+    // seconds."); the duplicate CTA link is gone.
+    expect(page.match(/Draw today&apos;s card/g)?.length).toBe(1);
+    expect(sample).toContain("Draw today&apos;s card");
   });
 
   it("reuses the daily card and falls back to the plan's Star example", () => {
