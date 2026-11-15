@@ -414,7 +414,7 @@ export function ConfirmStep({ f, category }: { f: IntakeState; category: IntakeC
 
 /** The drawn cards, a one-word impression, then generation. */
 export function ImpressionStep({ f, drawnCards }: { f: IntakeState; drawnCards: DrawnCard[] }) {
-  const { setStep, impression, setImpression, error, busy, generationFailed, toastOpen, setToastOpen, beginGeneration, retryGeneration } = f;
+  const { setStep, impression, setImpression, error, busy, generationFailed, toastOpen, setToastOpen, beginGeneration, retryGeneration, isFreeAvailable } = f;
   const headingRef = useStepFocus<HTMLHeadingElement>();
   // Batch 8 (gist deal-in): the cards are dealt in from above with a
   // random rotation and a scale, one after another (a 100ms stagger),
@@ -538,6 +538,20 @@ export function ImpressionStep({ f, drawnCards }: { f: IntakeState; drawnCards: 
           Back
         </button>
         <div className="flex-1">
+          {/* Batch 3.2 (#6): the cost is shown before the reveal
+              tap, so the slide is never a surprise charge. The
+              ritual itself stays (Velu's decision, 2026-11-16).
+              CodeRabbit: <output> carries implicit status
+              semantics, so a price change (free to paid) is
+              announced without moving focus. */}
+          <output className="mb-2 block text-center text-sm text-cream/85">
+            {isFreeAvailable
+              ? "Free · your first Quick Insight"
+              : "1 Oracle · only charged when your reading is ready"}
+          </output>
+          {/* Batch 3.2: brand hex values, not the old gold.
+              These are real hex, not CSS variables, because
+              SlideCommit computes its on-colours from hex. */}
           <SlideCommit
             label="✦ Reveal my reading"
             doneLabel="Reading ready"
@@ -545,10 +559,10 @@ export function ImpressionStep({ f, drawnCards }: { f: IntakeState; drawnCards: 
             onConfirm={beginGeneration}
             disabled={busy}
             width={250}
-            trackColor="#1a1f2e"
-            handleColor="#d4af37"
-            successColor="#d4af37"
-            dangerColor="#e57373"
+            trackColor="#1a2a44"
+            handleColor="#b9975b"
+            successColor="#b9975b"
+            dangerColor="#f87171"
           />
         </div>
       </div>
