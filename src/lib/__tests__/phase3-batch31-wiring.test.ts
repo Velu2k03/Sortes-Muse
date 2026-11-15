@@ -35,8 +35,12 @@ describe("Phase 3 Batch 3.1 intake form and no dead end", () => {
 
   it("gives a zero-Oracle user a Get Oracles link instead of a dead end", () => {
     expect(flow).toContain('setError("You are out of Oracles. Please top up to continue.")');
-    // Both error alerts offer the link when the error is the out-of-Oracles one.
-    const links = steps.match(/error\.startsWith\("You are out of Oracles"\)[\s\S]*?Get Oracles/g) ?? [];
+    // The server 402 message also gets the link (client balance can be stale).
+    const server = src("src/app/api/reading/generate/route.ts");
+    expect(server).toContain('error: "You need 1 Oracle for this reading. No Oracle was spent."');
+    expect(steps).toContain('error.startsWith("You need 1 Oracle")');
+    // Both error alerts offer the link when the error is an out-of-Oracles one.
+    const links = steps.match(/error\.startsWith\("You need 1 Oracle"\)[\s\S]*?Get Oracles/g) ?? [];
     expect(links.length).toBe(2);
     expect(steps).toContain('href="/oracles"');
   });

@@ -376,8 +376,11 @@ export function ConfirmStep({ f, category }: { f: IntakeState; category: IntakeC
         <p role="alert" className="mt-4 rounded-xl border border-red-400/40 bg-red-500/10 p-3 text-sm alert-error-text">
           {error}
           {/* Batch 3.1 (dead end): a zero-Oracle user gets a way
-              forward, not just a stop sign. */}
-          {error.startsWith("You are out of Oracles") && (
+              forward, not just a stop sign. Matches both the
+              client-side message and the server 402 ("You need 1
+              Oracle for this reading..."), which fires when the
+              client balance is stale or unknown. */}
+          {(error.startsWith("You are out of Oracles") || error.startsWith("You need 1 Oracle")) && (
             <>
               {" "}
               <Link href="/oracles" className="font-semibold text-goldbright underline underline-offset-4">
@@ -482,8 +485,11 @@ export function ImpressionStep({ f, drawnCards }: { f: IntakeState; drawnCards: 
         <p role="alert" className="mx-auto mt-4 max-w-md rounded-xl border border-red-400/40 bg-red-500/10 p-3 text-sm alert-error-text">
           {error}
           {/* Batch 3.1 (dead end): a zero-Oracle user gets a way
-              forward, not just a stop sign. */}
-          {error.startsWith("You are out of Oracles") && (
+              forward, not just a stop sign. Matches both the
+              client-side message and the server 402 ("You need 1
+              Oracle for this reading..."), which fires when the
+              client balance is stale or unknown. */}
+          {(error.startsWith("You are out of Oracles") || error.startsWith("You need 1 Oracle")) && (
             <>
               {" "}
               <Link href="/oracles" className="font-semibold text-goldbright underline underline-offset-4">
