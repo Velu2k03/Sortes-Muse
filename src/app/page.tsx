@@ -423,7 +423,10 @@ export default function Home() {
       <section className="border-y border-gold/10 bg-navydeep/40 py-16">
         <div className="mx-auto max-w-6xl px-4 text-center sm:px-6">
         <motion.div key={revealKey} {...fadeUp}>
-          <p className="text-xs uppercase tracking-[0.35em] text-gold">
+          {/* unslopovich (2026-11-16, Velu approved): eyebrow tracking
+              toned down from 0.35em, the spaced-out small-caps were a
+              generated tell. */}
+          <p className="text-xs uppercase tracking-[0.15em] text-gold">
             Daily card
           </p>
           <h2 className="mt-4 font-display text-4xl text-goldbright sm:text-5xl">
@@ -467,12 +470,10 @@ export default function Home() {
               );
             })}
           </ul>
-          <Link
-            href="/daily"
-            className="btn-ghost mt-8 inline-block rounded-2xl px-8 py-3.5 font-semibold"
-          >
-            Draw today&apos;s card
-          </Link>
+          {/* unslopovich (2026-11-16, Velu approved): the duplicate
+              "Draw today's card" CTA is removed here. The same CTA
+              already sits in TodaySample near the top of the page,
+              and the fan cards above link to /deck. */}
         </motion.div>
         </div>
       </section>

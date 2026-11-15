@@ -104,7 +104,10 @@ export default function ReturnLoop() {
         <p className="mt-2 text-center text-xs text-mist">A small reminder for today, not a prediction.</p>
         <div className="mt-6 grid gap-4 sm:grid-cols-2">
           <div className="rounded-2xl border border-gold/20 bg-ink/40 p-4">
-            <p className="text-xs uppercase tracking-[0.2em] text-gold">Today&apos;s card</p>
+            {/* unslopovich (2026-11-16, Velu approved): eyebrow tracking
+                toned down from 0.2em, the spaced-out small-caps were
+                a generated tell. */}
+            <p className="text-xs uppercase tracking-[0.1em] text-gold">Today&apos;s card</p>
             {dailyName ? (
               <p className="mt-2 text-cream/90">
                 You drew <span className="font-semibold text-goldbright">{dailyName}</span>
@@ -123,7 +126,10 @@ export default function ReturnLoop() {
             )}
           </div>
           <div className="rounded-2xl border border-gold/20 bg-ink/40 p-4">
-            <p className="text-xs uppercase tracking-[0.2em] text-gold">Your journal</p>
+            {/* unslopovich (2026-11-16, Velu approved): eyebrow tracking
+                toned down from 0.2em, the spaced-out small-caps were
+                a generated tell. */}
+            <p className="text-xs uppercase tracking-[0.1em] text-gold">Your journal</p>
             {latest ? (
               <>
                 <p className="mt-2 text-cream/90">
