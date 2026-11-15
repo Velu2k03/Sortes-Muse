@@ -540,12 +540,15 @@ export function ImpressionStep({ f, drawnCards }: { f: IntakeState; drawnCards: 
         <div className="flex-1">
           {/* Batch 3.2 (#6): the cost is shown before the reveal
               tap, so the slide is never a surprise charge. The
-              ritual itself stays (Velu's decision, 2026-11-16). */}
-          <p className="mb-2 text-center text-sm text-cream/85">
+              ritual itself stays (Velu's decision, 2026-11-16).
+              CodeRabbit: <output> carries implicit status
+              semantics, so a price change (free to paid) is
+              announced without moving focus. */}
+          <output className="mb-2 block text-center text-sm text-cream/85">
             {isFreeAvailable
               ? "Free · your first Quick Insight"
               : "1 Oracle · only charged when your reading is ready"}
-          </p>
+          </output>
           {/* Batch 3.2: brand hex values, not the old gold.
               These are real hex, not CSS variables, because
               SlideCommit computes its on-colours from hex. */}

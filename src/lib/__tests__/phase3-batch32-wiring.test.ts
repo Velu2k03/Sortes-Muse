@@ -44,6 +44,11 @@ describe("Phase 3 Batch 3.2 reveal control and honest wait", () => {
     // The elapsed stopwatch and the honest time estimate stay.
     expect(wait).toContain('role="timer"');
     expect(wait).toContain("up to about 3 minutes");
+    // CodeRabbit: the stage is announced to screen readers. The
+    // trace only changes aria-current, which a live region does
+    // not announce, so hidden text carries the stage.
+    expect(wait).toContain('className="sr-only"');
+    expect(wait).toContain("PROCESSING_LINES[Math.min(activeStep");
   });
 
   it("has no dead LatticeLoader styles left in the wait CSS", () => {
@@ -61,10 +66,19 @@ describe("Phase 3 Batch 3.2 reveal control and honest wait", () => {
     // The cost is visible before the reveal tap.
     expect(steps).toContain("Free · your first Quick Insight");
     expect(steps).toContain("1 Oracle · only charged when your reading is ready");
+    // CodeRabbit: the price is a live region, so a change from
+    // free to paid is announced without moving focus. <output>
+    // carries implicit status semantics.
+    expect(steps).toContain("<output");
     // The SlideCommit colours are the brand hex, not the old gold.
     expect(steps).toContain('handleColor="#b9975b"');
     expect(steps).toContain('successColor="#b9975b"');
     expect(steps).toContain('trackColor="#1a2a44"');
     expect(steps).not.toContain('handleColor="#d4af37"');
+    // CodeRabbit: the track label is full-strength gold, not 45%
+    // opacity, so it reads at 5.24:1 on the track (was 2.14:1).
+    const slide = src("src/components/SlideCommit.tsx");
+    expect(slide).toContain("[color:var(--sc-ink)]");
+    expect(slide).not.toContain("var(--sc-ink)_45%");
   });
 });

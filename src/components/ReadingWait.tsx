@@ -60,6 +60,15 @@ export default function ReadingWait({
           className="mb-4"
         />
       )}
+      {/* Batch 3.2 (CodeRabbit): the stage text is announced.
+          The trace only changes aria-current, which a live region
+          does not announce. This hidden text changes with the
+          stage, so the polite container reads it out. */}
+      <span className="sr-only">
+        {complete
+          ? "Your reading is ready"
+          : PROCESSING_LINES[Math.min(activeStep, PROCESSING_LINES.length - 1)]}
+      </span>
       {/* Batch 3.2 (#55-#58, #71): one honest indicator, the stage
           trace, driven by real SSE events. The ThoughtLine and the
           LatticeLoader showed the same current line a second and

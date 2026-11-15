@@ -386,7 +386,7 @@ const SlideCommit: React.FC<SlideCommitProps> = ({
           style={{ opacity: say }}
           aria-hidden="true"
         >
-          <span className="[grid-area:1/1] [transition:opacity_200ms_ease,filter_200ms_ease] [color:color-mix(in_srgb,var(--sc-ink)_45%,transparent)] group-data-[phase=error]:opacity-0 group-data-[phase=error]:blur-[2px]">
+          <span className="[grid-area:1/1] [transition:opacity_200ms_ease,filter_200ms_ease] [color:var(--sc-ink)] group-data-[phase=error]:opacity-0 group-data-[phase=error]:blur-[2px]">
             {label}
           </span>
           <span className="[grid-area:1/1] [transition:opacity_200ms_ease,filter_200ms_ease] [color:var(--sc-no)] opacity-0 blur-[2px] group-data-[phase=error]:opacity-100 group-data-[phase=error]:blur-none">
