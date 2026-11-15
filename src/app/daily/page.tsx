@@ -15,7 +15,6 @@ import { getCard, orientationKeywords, orientationMeaning } from "@/lib/cards";
 import { drawSingle } from "@/lib/tarot";
 import TarotCard from "@/components/TarotCard";
 import CardModal from "@/components/CardModal";
-import RavenOracle from "@/components/RavenOracle";
 import { trackDailyCardDrawn } from "@/components/Analytics";
 import { StarBorder } from "@/components/ReactBits";
 import HoldButton from "@/components/HoldButton";
@@ -30,10 +29,6 @@ type Phase = "idle" | "shuffling" | "revealed";
  */
 export default function DailyPage() {
   const [phase, setPhase] = useState<Phase>("idle");
-  // Raven Oracle Step 1: true only when the card was drawn in this
-  // visit. A revisit the same day shows the saved card, and the Raven
-  // sits gently instead of celebrating again.
-  const [justDrawn, setJustDrawn] = useState(false);
   const [daily, setDaily] = useState<DailyCardState | null>(null);
   // Phase E (item 6): the streak badge is gone. Practice is counted
   // in days practiced, total and in the last 30, and never resets.
@@ -116,7 +111,6 @@ export default function DailyPage() {
       const saved = setDailyCard(d.cardId, d.reversed);
       setDaily(saved);
       setPractice(getDailyPracticeDays());
-      setJustDrawn(true);
       setPhase("revealed");
       trackDailyCardDrawn();
       void saveDailyEntry(saved);
@@ -130,26 +124,6 @@ export default function DailyPage() {
   };
 
   const card = daily ? getCard(daily.cardId) : null;
-
-  // Raven Oracle Step 1: the Raven greets gently, thinks while the
-  // card is drawn, celebrates a fresh draw once, and sits gently on
-  // a revisit. The count never resets (Phase E): practice days only.
-  const ravenState =
-    phase === "shuffling"
-      ? "thinking"
-      : phase === "revealed"
-        ? justDrawn
-          ? "celebrating"
-          : "gentle"
-        : "idle";
-  const ravenGreeting =
-    phase === "shuffling"
-      ? "The Raven is casting the lots…"
-      : phase === "revealed"
-        ? justDrawn
-          ? "Here is your card for today."
-          : "The Raven remembers your card for today."
-        : "The Raven is here. Draw your card when you are ready.";
 
   return (
     <div className="mx-auto flex max-w-2xl flex-col items-center px-4 py-12 sm:px-6">
@@ -172,21 +146,6 @@ export default function DailyPage() {
           {practice.last30 !== practice.total && ` · ${practice.last30} in the last 30 days`}
         </motion.p>
       )}
-
-      {/* Raven Oracle Step 1: a gentle greeting and the daily count
-          line. The count is practice days and never resets, so there
-          is no guilt and no streak to lose. */}
-      <div className="relative mt-8 flex flex-col items-center">
-        <RavenOracle state={ravenState} size={140} />
-        <p className="mt-2 max-w-xs text-center text-sm italic text-cream/75">
-          {ravenGreeting}
-        </p>
-        {practice.total >= 1 && (
-          <p className="mt-1 text-center text-xs text-mist">
-            Day {practice.total} · the Raven remembers.
-          </p>
-        )}
-      </div>
 
       <div className="mt-10 flex min-h-[24rem] w-full flex-col items-center justify-center">
         <AnimatePresence mode="wait">

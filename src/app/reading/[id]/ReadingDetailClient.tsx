@@ -1,10 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import ShareReading from "@/components/ShareReading";
-import RavenOracle from "@/components/RavenOracle";
 import { useFollowUp, useReading, useReadingField } from "./useReadingDetail";
 import {
   AtAGlance,
@@ -31,36 +30,6 @@ export default function ReadingDetail({ id }: { id: string }) {
   const { user } = useAuth();
   const { reading, setReading } = useReading(id, user);
   const [zoomCard, setZoomCard] = useState<string | null>(null);
-  // Raven Oracle Step 1: a reading that just landed (the intake set
-  // the sortes-just-revealed flag in sessionStorage) celebrates once
-  // with a one-shot hop. A revisit shows the Raven gently instead.
-  // The flag is read and cleared on mount, so it fires exactly once.
-  // No raven-owned burst: TarotCard already fires one on every
-  // reveal, and a second burst would stack on top of it.
-  const [justRevealed, setJustRevealed] = useState(false);
-  useEffect(() => {
-    let cancelled = false;
-    // queueMicrotask, the daily page's pattern: the setState must not
-    // run synchronously in the effect body (react-hooks/set-state-
-    // in-effect is an error in this repo). The cancelled flag drops
-    // a stale callback if the effect is cleaned up (unmount, or the
-    // reading id changes) before the microtask runs, so it never
-    // reads the reveal marker or sets state for a stale setup.
-    queueMicrotask(() => {
-      if (cancelled) return;
-      let revealed = false;
-      try {
-        revealed = window.sessionStorage.getItem("sortes-just-revealed") === id;
-        if (revealed) window.sessionStorage.removeItem("sortes-just-revealed");
-      } catch {
-        // Storage unavailable: no celebration, the reading still opens.
-      }
-      setJustRevealed(revealed);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [id]);
   // M1.1: the one next step the seeker chooses after reading. Kept in
   // local state for editing, saved onto the reading on Save.
   const nextStep = useReadingField(reading, setReading, (r) => r.nextStep);
@@ -97,16 +66,6 @@ export default function ReadingDetail({ id }: { id: string }) {
   return (
     <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6">
       <ReadingHeader reading={reading} />
-      {/* Raven Oracle Step 1: celebrates a fresh reveal once with a
-          one-shot hop; sits gently on a revisit. */}
-      <div className="relative mt-8 flex flex-col items-center">
-        <RavenOracle state={justRevealed ? "celebrating" : "gentle"} size={140} />
-        {justRevealed && (
-          <p className="mt-2 text-center text-sm italic text-cream/75">
-            Your reading is ready.
-          </p>
-        )}
-      </div>
       {!user && <GuestKeepNotice />}
       {reading.free && reading.spreadSlug === "quick-insight" && <ThreeCardNudge />}
       <AtAGlance reading={reading} />
