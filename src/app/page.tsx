@@ -18,6 +18,7 @@ import TodaySample from "@/components/TodaySample";
 import ReturnLoop from "@/components/ReturnLoop";
 import AccountDeletedNotice from "@/components/AccountDeletedNotice";
 import { Orb } from "@/components/ReactBitsNew";
+import HeroScene from "@/components/HeroScene";
 
 // AF-042: the audit's "12 simultaneous animations" is stale — Phase
 // 4C had already removed the gimmicks. Counted at fix time, the
@@ -162,7 +163,7 @@ export default function Home() {
     <div>
       <AccountDeletedNotice />
       {/* HERO */}
-      <section className="relative overflow-hidden">
+      <section className="hero-texture relative overflow-hidden">
         <div className="absolute inset-0" aria-hidden="true">
           <Image
             src="/brand/hero-bg.jpg"
@@ -275,6 +276,13 @@ export default function Home() {
           <p className="mt-2 text-xs text-mist/80">
             Your reading is written just for you and saved in your journal.
           </p>
+          {/* Phase 2 3D hero (Velu's choice 5): the fan of 3D tarot
+              cards with the gold moon behind, below the question
+              box. The question box stays first and usable before the
+              3D loads; the scene is the centrepiece, not a splash. */}
+          <div className="mt-10 w-full">
+            <HeroScene />
+          </div>
           {/* AF-034: the pricing line and the charts line stay off
               the hero. Pricing lives on /oracles; charts have their
               own nav entry. */}
@@ -475,6 +483,58 @@ export default function Home() {
               already sits in TodaySample near the top of the page,
               and the fan cards above link to /deck. */}
         </motion.div>
+        </div>
+      </section>
+
+      {/* Phase 2 pricing preview: the three plans as identical cards,
+          same size and padding, Star marked popular by a gold border
+          and badge, never by height (#59, #75). Full pricing lives
+          on /pricing. */}
+      <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6" aria-label="Pricing preview">
+        <p className="text-center text-xs uppercase tracking-[0.15em] text-gold">
+          Pricing
+        </p>
+        <h2 className="mt-4 text-center font-display text-4xl text-goldbright sm:text-5xl">
+          Simple plans, clear prices
+        </h2>
+        <p className="mx-auto mt-4 max-w-lg text-center text-cream/75">
+          Start free with one card a day. Upgrade when you want more readings.
+        </p>
+        <div className="mt-8 grid gap-4 sm:grid-cols-3">
+          {[
+            { name: "Spark", price: "$9.99", oracles: "1,000 Oracles a month", popular: false },
+            { name: "Star", price: "$19.99", oracles: "2,500 Oracles a month", popular: true },
+            { name: "Moon", price: "$39.99", oracles: "6,000 Oracles a month", popular: false },
+          ].map((tier) => (
+            <div
+              key={tier.name}
+              className={`relative rounded-2xl border p-6 text-center ${
+                tier.popular
+                  ? "border-gold bg-gold/10 shadow-[0_0_24px_rgba(185,151,91,0.25)]"
+                  : "border-gold/25 bg-panel/60"
+              }`}
+            >
+              {tier.popular && (
+                <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-gold px-3 py-1 text-xs font-bold uppercase tracking-wide text-ink">
+                  Most popular
+                </span>
+              )}
+              <h3 className="font-display text-2xl text-goldbright">{tier.name}</h3>
+              <p className="mt-2 text-3xl font-bold text-cream">
+                {tier.price}
+                <span className="text-base font-normal text-mist"> / month</span>
+              </p>
+              <p className="mt-2 text-sm text-cream/75">{tier.oracles}</p>
+            </div>
+          ))}
+        </div>
+        <div className="mt-8 text-center">
+          <Link
+            href="/pricing"
+            className="btn-gold inline-block rounded-2xl px-8 py-3.5 font-semibold"
+          >
+            See full pricing
+          </Link>
         </div>
       </section>
     </div>

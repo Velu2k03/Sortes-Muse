@@ -153,13 +153,27 @@ html[data-theme="light"] :focus-visible {
   outline-color: var(--color-goldbright);
 }
 /* Starfield is gold dust on dark; dim it on light so it stays
-   decoration, not noise, over the cream page. */
-html[data-theme="light"] canvas {
+   decoration, not noise, over the cream page. Scoped to the
+   Starfield canvas only (Phase 2): the 3D hero canvas must stay
+   full opacity in light theme. */
+html[data-theme="light"] canvas.starfield-canvas {
   opacity: 0.35;
 }
 html[data-theme="light"] select option {
   background: #ffffff;
   color: #1c1a15;
+}
+
+/* Phase 2 subtle texture: a faint grain over the hero so flat
+   colour does not look cheap (#84). Very low opacity, never
+   behind body text at full strength. */
+.hero-texture::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.04;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
 }
 
 html {
