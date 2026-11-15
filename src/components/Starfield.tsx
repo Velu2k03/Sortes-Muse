@@ -130,7 +130,7 @@ export default function Starfield({ density = 90 }: { density?: number }) {
     <canvas
       ref={ref}
       aria-hidden="true"
-      className="pointer-events-none fixed inset-0 -z-10 h-full w-full"
+      className="starfield-canvas pointer-events-none fixed inset-0 -z-10 h-full w-full"
     />
   );
 }
