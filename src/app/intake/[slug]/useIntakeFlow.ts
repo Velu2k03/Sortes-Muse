@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { PROCESSING_LINES } from "@/components/ReadingWait";
 import { readSse } from "@/lib/sse-client";
 import { getSpread, drawCards } from "@/lib/tarot";
 import { getCard } from "@/lib/cards";
@@ -300,10 +299,11 @@ export function useIntakeFlow(slug: string) {
     setStep("processing");
     setError(null);
 
-    const lineTimer = setInterval(
-      () => setProcessingLine((line) => Math.min(line + 1, PROCESSING_LINES.length - 1)),
-      2600
-    );
+    // Batch 3.2 (#55-#58, #71): the wait stages are driven by real SSE
+    // events, not a timer. There is no interval here anymore. Stage 0
+    // is set above (request sent); the model event moves to 1, the
+    // first text to 2, done to 3. A reset (server retry) goes back to
+    // 1, because a new attempt started.
 
     // "Not spent" is only ever said by the server (its error body). A dropped
     // connection or client-side failure can happen after the server committed.
@@ -400,12 +400,18 @@ export function useIntakeFlow(slug: string) {
             setStreamedText("");
             const m = (event.data as { model?: string } | null)?.model;
             setStreamingModel(typeof m === "string" ? m : null);
+            // Batch 3.2: the server picked a model, so the reading
+            // is being assembled from the drawn cards.
+            setProcessingLine((line) => Math.max(line, 1));
           } else if (event.event === "reset") {
             // N1: the attempt that was streaming failed; clear its
             // text at once instead of showing a discarded reading
             // until the next model starts.
             streamRef.current = "";
             setStreamedText("");
+            // Batch 3.2: a retry started, so the stage goes back to
+            // the model step.
+            setProcessingLine(1);
           } else if (event.event === "text") {
             const delta = (event.data as { delta?: string } | null)?.delta;
             if (typeof delta === "string" && delta.length > 0) {
@@ -415,10 +421,16 @@ export function useIntakeFlow(slug: string) {
                 lastFlushRef.current = now;
                 setStreamedText(streamRef.current);
               }
+              // Batch 3.2: the model is writing the story now.
+              // Math.max keeps it idempotent across many text events.
+              setProcessingLine((line) => Math.max(line, 2));
             }
           } else if (event.event === "done") {
             stream.sawDone = true;
             stream.data = event.data as typeof stream.data;
+            // Batch 3.2: the interpretation arrived; the reading is
+            // being saved.
+            setProcessingLine(3);
           } else if (event.event === "error") {
             stream.error = event.data as { error?: string; status?: number };
           }
@@ -489,12 +501,10 @@ export function useIntakeFlow(slug: string) {
       // after generation); sync it so the header shows the new balance.
       if (signedIn) await refresh();
       trackReadingCompleted(`${spread.slug}-personalized`, true);
-      clearInterval(lineTimer);
       setProcessingComplete(true);
       await new Promise((resolve) => window.setTimeout(resolve, 500));
       router.push(`/reading/${reading.id}`);
     } catch (err) {
-      clearInterval(lineTimer);
       // Back to the impression step: the cards stay drawn, so the
       // seeker can retry without paying again or re-drawing.
       setStep("impression");

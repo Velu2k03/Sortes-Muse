@@ -2,8 +2,6 @@
 
 import { useEffect, useState } from "react";
 import "./ReadingWait.css";
-import LatticeLoader from "@/components/LatticeLoader";
-import ThoughtLine from "@/components/ThoughtLine";
 import StatusMark from "@/components/StatusMark";
 import FoldText from "@/components/FoldText";
 import WaitDeck from "@/components/WaitDeck";
@@ -41,10 +39,6 @@ export default function ReadingWait({
   const minutes = Math.floor(elapsedSeconds / 60).toString().padStart(2, "0");
   const seconds = (elapsedSeconds % 60).toString().padStart(2, "0");
 
-  const currentLine = complete
-    ? PROCESSING_LINES[PROCESSING_LINES.length - 1]
-    : PROCESSING_LINES[Math.min(activeStep, PROCESSING_LINES.length - 1)];
-
   return (
     <div className="reading-wait" aria-live="polite">
       {drawnCards && drawnCards.length > 0 && (
@@ -61,14 +55,13 @@ export default function ReadingWait({
           className="mb-4"
         />
       )}
-      {!complete && (
-        <ThoughtLine
-          label={currentLine}
-          working
-          color="var(--color-gold)"
-          showTimer={false}
-        />
-      )}
+      {/* Batch 3.2 (#55-#58, #71): one honest indicator, the stage
+          trace, driven by real SSE events. The ThoughtLine and the
+          LatticeLoader showed the same current line a second and
+          third time, so they are gone. The trace is the indicator:
+          the running step breathes, done steps are marked, and the
+          elapsed stopwatch plus the honest "up to about 3 minutes"
+          tell the user how long it is taking. */}
       <ol className={`reading-trace${complete ? " reading-trace--complete" : ""}`}>
         {PROCESSING_LINES.map((line, index) => (
           <li
@@ -100,23 +93,13 @@ export default function ReadingWait({
         ))}
       </ol>
 
-      <div className="lattice-loader-row">
-        <LatticeLoader
-          label={currentLine}
-          doneLabel="Done"
-          status={complete ? "done" : "working"}
-          color="var(--color-gold)"
-          doneColor="var(--color-gold)"
-          showTimer={false}
-          elapsed={elapsedSeconds}
-          glow
-        />
-        <div className="reading-stopwatch" role="timer" aria-live="off">
-          <span className="reading-stopwatch__time">
-            {minutes}:{seconds}
-          </span>
-          <span className="reading-stopwatch__label">elapsed</span>
-        </div>
+      {/* Batch 3.2: the elapsed stopwatch stays. The LatticeLoader
+          that used to sit beside it is gone (one indicator now). */}
+      <div className="reading-stopwatch" role="timer" aria-live="off">
+        <span className="reading-stopwatch__time">
+          {minutes}:{seconds}
+        </span>
+        <span className="reading-stopwatch__label">elapsed</span>
       </div>
 
       {/* "About 3 minutes" is the 170 s AI retry budget (AI_RETRY_TOTAL_TIMEOUT_MS,
