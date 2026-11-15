@@ -65,7 +65,10 @@ export default function CardModal({ cardId, onClose }: Props) {
                   image={card.image}
                   alt={card.name}
                   preset="gold"
-                  foilColor="#d4af37"
+                  // Batch 3.4: the foil colour comes from the brand
+                  // token, not the old gold hex (same fix as the
+                  // daily page).
+                  foilColor="var(--color-gold)"
                   width={160}
                   radius={12}
                 />
