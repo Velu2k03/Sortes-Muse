@@ -61,7 +61,7 @@ export default function PackBuyButton({
         onClick={() => void buy()}
         className="btn-gold w-full rounded-xl px-4 py-3 font-bold lining-nums tabular-nums disabled:opacity-100 disabled:saturate-50"
       >
-        {processing ? "…" : label}
+        {processing ? "Opening checkout…" : label}
       </button>
       {error && <p className="mt-2 text-sm alert-error-text">{error}</p>}
       <CheckoutModal open={open} onClose={() => setOpen(false)} initialPackId={packId} />

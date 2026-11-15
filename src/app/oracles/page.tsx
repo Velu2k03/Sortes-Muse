@@ -141,12 +141,12 @@ export default function Credits() {
                     <h2 className="font-display text-xl text-cream">{p.name}</h2>
                     <div className="mt-1 flex h-6 items-center justify-center">
                       {p.popular && (
-                        <span className="inline-block rounded-full bg-[#14100a] px-3 py-1 text-xs font-bold text-[#f4d03f]">
+                        <span className="inline-block rounded-full bg-gold/15 px-3 py-1 text-xs font-bold text-goldbright">
                           Most popular
                         </span>
                       )}
                       {best && (
-                        <span className="inline-block rounded-full bg-[#14100a] px-3 py-1 text-xs font-bold text-[#f4d03f]">
+                        <span className="inline-block rounded-full bg-gold/15 px-3 py-1 text-xs font-bold text-goldbright">
                           Best value
                         </span>
                       )}
