@@ -649,7 +649,9 @@ export function FollowUpThread({
               {f.followUpLoading
                 ? "Writing your follow-up…"
                 : isGuest
-                  ? "Sign in to ask a follow-up"
+                  // Batch 3.3 (#6): the ellipsis says this opens
+                  // sign-in, it does not ask the question itself.
+                  ? "Sign in to ask a follow-up…"
                   : (reading.followUps ?? []).length === 0
                   ? "Ask a follow-up · free"
                   : "Ask a follow-up · 1 Oracle"}

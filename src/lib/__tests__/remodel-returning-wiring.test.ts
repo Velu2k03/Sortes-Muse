@@ -258,15 +258,22 @@ describe("Three-card nudge after the first reading", () => {
     expect(label).toContain("Past · Present · Future");
   });
 
-  it("renders after the save prompt, only on a free Quick Insight reading", () => {
+  it("renders in Ask more, only on a free Quick Insight reading", () => {
     const client = src("src/app/reading/[id]/ReadingDetailClient.tsx");
     expect(client).toContain("ThreeCardNudge");
     expect(client).toContain(
       'reading.free && reading.spreadSlug === "quick-insight" && <ThreeCardNudge />'
     );
-    // Save first, then the nudge: the plan's order.
-    expect(client.indexOf("<GuestKeepNotice />")).toBeLessThan(
-      client.indexOf("<ThreeCardNudge />")
+    // Batch 3.3: the nudge is an "Ask more" action and the save
+    // prompt is a "Keep and share" action, so the nudge comes
+    // first now. The old order (save prompt, then nudge, both at
+    // the top) is gone.
+    const askMore = client.slice(
+      client.indexOf('aria-label="Ask more"'),
+      client.indexOf('aria-label="Keep and share"')
     );
+    expect(askMore).toContain("<ThreeCardNudge />");
+    const keep = client.slice(client.indexOf('aria-label="Keep and share"'));
+    expect(keep).toContain("<GuestKeepNotice />");
   });
 });
