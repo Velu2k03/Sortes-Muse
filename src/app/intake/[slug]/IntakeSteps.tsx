@@ -230,6 +230,7 @@ export function FormStep({ f, category }: { f: IntakeState; category: IntakeCate
             }}
             placeholder={`e.g. ${category.examples[0]}`}
             aria-describedby={questionError ? "intake-question-error" : undefined}
+            aria-invalid={questionError}
             className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none"
           />
           {questionError && (
@@ -242,7 +243,7 @@ export function FormStep({ f, category }: { f: IntakeState; category: IntakeCate
             {/* AF-046: chips come from this area's own examples,
                 so the Love form never shows a career question. */}
             {category.examples.map((ex) => (
-              <button key={ex} type="button" onClick={() => setQuestion(ex)} className="rounded-full border border-gold/30 px-3 py-2.5 min-h-[44px] text-xs text-cream/90 hover:bg-gold/10">
+              <button key={ex} type="button" onClick={() => { setQuestion(ex); setQuestionError(false); }} className="rounded-full border border-gold/30 px-3 py-2.5 min-h-[44px] text-xs text-cream/90 hover:bg-gold/10">
                 {ex}
               </button>
             ))}

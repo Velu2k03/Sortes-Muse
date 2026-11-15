@@ -29,8 +29,11 @@ describe("Phase 3 Batch 3.1 intake form and no dead end", () => {
     // The inline error exists and is tied to the field.
     expect(steps).toContain('id="intake-question-error"');
     expect(steps).toContain('aria-describedby={questionError ? "intake-question-error" : undefined}');
+    expect(steps).toContain("aria-invalid={questionError}");
     expect(steps).toContain("questionRef.current?.focus()");
     expect(steps).toContain("Please write your question first");
+    // The error also clears when an example chip fills the question.
+    expect(steps).toContain("onClick={() => { setQuestion(ex); setQuestionError(false); }}");
   });
 
   it("gives a zero-Oracle user a Get Oracles link instead of a dead end", () => {
