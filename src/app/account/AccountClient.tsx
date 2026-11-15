@@ -116,6 +116,9 @@ function useSignIn(afterSignIn: () => Promise<void>) {
   // (password / email link) sit one level below and apply to both.
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [password, setPassword] = useState("");
+  // Batch 3.5 (#35): a show-password toggle. None existed, so a
+  // typed password could not be checked before submitting.
+  const [showPassword, setShowPassword] = useState(false);
 
   const submitPassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -127,7 +130,10 @@ function useSignIn(afterSignIn: () => Promise<void>) {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password }),
+          // Batch 3.5 (#43): trim and lowercase the email before
+          // every auth call, so "Velu@Example.com" signs in the
+          // same as "velu@example.com".
+          body: JSON.stringify({ email: email.trim().toLowerCase(), password }),
         }
       );
       const data = await parseJson(res);
@@ -199,7 +205,9 @@ function useSignIn(afterSignIn: () => Promise<void>) {
       const res = await fetchWithTimeout("/api/auth/request-code", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        // Batch 3.5 (#43): trim and lowercase, like the Supabase
+        // path above.
+        body: JSON.stringify({ email: email.trim().toLowerCase() }),
       });
       const data = await parseJson(res);
       if (!res.ok) throw new Error(data.error ?? "Something went wrong.");
@@ -222,7 +230,9 @@ function useSignIn(afterSignIn: () => Promise<void>) {
       const res = await fetchWithTimeout("/api/auth/verify-code", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, code }),
+        // Batch 3.5 (#43): trim and lowercase, like the other
+        // auth calls.
+        body: JSON.stringify({ email: email.trim().toLowerCase(), code }),
       });
       const data = await parseJson(res);
       if (!res.ok) throw new Error(data.error ?? "Something went wrong.");
@@ -237,7 +247,7 @@ function useSignIn(afterSignIn: () => Promise<void>) {
   return {
     step, setStep, email, setEmail, code, setCode, pwBusy, linkBusy, codeBusy,
     googleBusy, error, setError, devCode, authTab, setAuthTab, mode, setMode,
-    password, setPassword, submitPassword, signInWithGoogle, requestCode, verifyCode,
+    password, setPassword, showPassword, setShowPassword, submitPassword, signInWithGoogle, requestCode, verifyCode,
   };
 }
 
@@ -305,7 +315,7 @@ function SignInPanel({ s }: { s: ReturnType<typeof useSignIn> }) {
   const {
     step, setStep, email, setEmail, code, setCode, pwBusy, linkBusy, codeBusy,
     googleBusy, error, setError, devCode, authTab, setAuthTab, mode, setMode,
-    password, setPassword, submitPassword, signInWithGoogle, requestCode, verifyCode,
+    password, setPassword, showPassword, setShowPassword, submitPassword, signInWithGoogle, requestCode, verifyCode,
   } = s;
   return (
     <div className="mt-8 rounded-3xl border border-gold/20 bg-panel/60 p-6 sm:p-8">
@@ -407,18 +417,49 @@ function SignInPanel({ s }: { s: ReturnType<typeof useSignIn> }) {
             <label htmlFor="acct-password" className="mb-1.5 block text-sm font-medium text-cream">
               Password
             </label>
-            <input
-              id="acct-password"
-              type="password"
-              required
-              minLength={8}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder={mode === "signup" ? "At least 8 characters" : "Your password"}
-              autoComplete={mode === "signup" ? "new-password" : "current-password"}
-              className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none"
-            />
+            <div className="relative">
+              <input
+                id="acct-password"
+                type={showPassword ? "text" : "password"}
+                required
+                minLength={8}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder={mode === "signup" ? "At least 8 characters" : "Your password"}
+                autoComplete={mode === "signup" ? "new-password" : "current-password"}
+                className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 pr-16 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none"
+              />
+              {/* Batch 3.5 (#35): show or hide the typed password.
+                  A plain button, not an icon, so its purpose is
+                  clear at a glance. */}
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                aria-pressed={showPassword}
+                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg px-2 py-1 text-sm font-semibold text-goldbright hover:bg-gold/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+              >
+                {showPassword ? "Hide" : "Show"}
+              </button>
+            </div>
           </div>
+          {mode === "signin" && (
+            <p className="text-center text-sm">
+              {/* Batch 3.5 (#88): there is no password-reset route,
+                  so a forgotten password signs in with an email
+                  link instead. Switching tabs keeps the email. */}
+              <button
+                type="button"
+                onClick={() => {
+                  setAuthTab("link");
+                  setStep("email");
+                }}
+                className="font-semibold text-goldbright underline underline-offset-4 hover:text-cream focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+              >
+                Forgot your password? Sign in with an email link instead
+              </button>
+            </p>
+          )}
           <button
             type="submit"
             disabled={pwBusy}
