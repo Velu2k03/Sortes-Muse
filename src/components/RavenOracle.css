@@ -1,0 +1,142 @@
+/* Raven Oracle Step 1 (Velu, 2026-11-15; Fable decision 2026-11-15).
+   One transparent WebP; pose and expression come from transform,
+   opacity, and a gold glow only. No new images per state.
+   Motion lives on the WRAPPER (the img carries only the glow and the
+   listening lean, so the two never fight over one transform).
+   Reduced motion is already solved: the global rule at
+   src/app/globals.css:449 kills all CSS animation for users who
+   prefer reduced motion, and MotionProvider covers motion/react.
+   This file adds no reduced-motion check of its own, and the
+   keyframes below are deliberately NOT wrapped in a no-preference
+   media query; the global rule is the single place that decides. */
+
+.raven-oracle {
+  position: relative;
+  display: inline-block;
+  line-height: 0;
+}
+
+.raven-oracle img {
+  position: relative;
+  z-index: 1;
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+/* Dark-on-dark fix (Fable plan change 3): the site ink is #0a0e1a
+   and navy #141b2e, and the raven body is the same navy, so the
+   silhouette vanishes on dark. A cream radial disc at 10-14%
+   opacity sits behind the raven, plus a gold drop-shadow on the
+   image itself. Both are driven by the existing data-theme tokens
+   (color-mix, the repo pattern from HoloCard.css) and only exist in
+   dark theme; in light theme the cream page already gives the dark
+   raven its contrast, so neither is needed. Target 3:1 at the
+   silhouette edge, measured by pixel sampling like the pricing
+   contrast fix. */
+html[data-theme="dark"] .raven-oracle::before {
+  content: "";
+  position: absolute;
+  inset: -6%;
+  z-index: 0;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--color-cream) 14%, transparent) 0%,
+    color-mix(in srgb, var(--color-cream) 5%, transparent) 60%,
+    transparent 75%
+  );
+  pointer-events: none;
+}
+
+html[data-theme="dark"] .raven-oracle img {
+  /* Two shadows: a tight bright rim right at the silhouette edge
+     (this is what carries the 3:1 edge contrast; a soft glow alone
+     spreads too thin to lift a dark-navy body) plus the soft ambient
+     glow around it. */
+  filter: drop-shadow(
+      0 0 2px color-mix(in srgb, var(--color-goldbright) 85%, transparent)
+    )
+    drop-shadow(
+      0 0 12px color-mix(in srgb, var(--color-goldbright) 30%, transparent)
+    );
+}
+
+@keyframes raven-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes raven-sway {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-1.5deg);
+  }
+  50% {
+    transform: translateY(-3px) rotate(1.5deg);
+  }
+}
+
+@keyframes raven-hop {
+  0% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-10px) scale(1.04);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes raven-glow {
+  0%,
+  100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* rest (idle, gentle, listening): slow, calm bob. */
+.raven-oracle--rest {
+  animation: raven-bob 4.5s ease-in-out infinite;
+}
+
+/* listening leans in a little. The lean is on the img so it never
+   fights the wrapper's bob transform. */
+.raven-oracle--lean img {
+  transform: rotate(-2deg);
+}
+
+/* thinking (thinking, revealing): a slower bob with a head tilt,
+   and the gold disc pulses. */
+.raven-oracle--thinking {
+  animation: raven-sway 6s ease-in-out infinite;
+}
+
+html[data-theme="dark"] .raven-oracle--thinking::before {
+  animation: raven-glow 3s ease-in-out infinite;
+}
+
+/* celebrating: a one-shot hop. It fires once when the state becomes
+   celebrating and does not loop. */
+.raven-oracle--celebrating {
+  animation: raven-hop 0.6s ease 1;
+}
+
+html[data-theme="dark"] .raven-oracle--celebrating img {
+  filter: drop-shadow(
+      0 0 3px color-mix(in srgb, var(--color-goldbright) 90%, transparent)
+    )
+    drop-shadow(
+      0 0 22px color-mix(in srgb, var(--color-goldbright) 55%, transparent)
+    );
+  transition: filter 0.6s ease;
+}
