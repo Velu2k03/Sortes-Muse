@@ -78,7 +78,6 @@ function Fan() {
   });
   return (
     <group ref={group}>
-      <Moon />
       {FAN_CARDS.map((card) => (
         <FanCard key={card.src} {...card} />
       ))}
@@ -97,6 +96,10 @@ export default function Hero3D() {
         camera={{ position: [0, 0, 6.5], fov: 42 }}
         gl={{ antialias: true, alpha: true }}
       >
+        {/* The moon renders outside Suspense (it needs no textures),
+            so the hero never shows an empty box while the card
+            textures load (Fable review, PR #103). */}
+        <Moon />
         <Suspense fallback={null}>
           <Fan />
         </Suspense>

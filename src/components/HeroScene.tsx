@@ -17,19 +17,17 @@ const Hero3D = dynamic(() => import("./Hero3D"), {
 });
 
 export default function HeroScene() {
-  // Lazy initializer reads the media query once; the effect below
-  // only subscribes to changes (setState in a callback, not in the
-  // effect body, per react-hooks/set-state-in-effect).
-  const [reducedMotion, setReducedMotion] = useState(
-    () =>
-      typeof window !== "undefined" &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches
-  );
+  // Mount-then-sync (same pattern as DeckClient): the server renders
+  // the dynamic loader's static fallback, and the client syncs the
+  // media query after mount, so there is no hydration mismatch for
+  // reduced-motion visitors (Fable review, PR #103).
+  const [reducedMotion, setReducedMotion] = useState(false);
   useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const onChange = () => setReducedMotion(mq.matches);
-    mq.addEventListener("change", onChange);
-    return () => mq.removeEventListener("change", onChange);
+    const sync = () => setReducedMotion(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
   }, []);
   if (reducedMotion) return <HeroFanStatic />;
   return <Hero3D />;
