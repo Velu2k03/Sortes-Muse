@@ -30,19 +30,6 @@ export default function CreditsPage() {
     mq.addEventListener("change", sync);
     return () => mq.removeEventListener("change", sync);
   }, []);
-  // Counter numbers take a hard colour, not a theme token, so
-  // track the document theme the same way theme.js sets it, and
-  // pass a dark colour in light mode and a light colour in dark
-  // mode. See the light numbers fix, 2026-11-04.
-  const [siteTheme, setSiteTheme] = useState<"dark" | "light">("dark");
-  useEffect(() => {
-    const sync = () =>
-      setSiteTheme(document.documentElement.dataset.theme === "light" ? "light" : "dark");
-    sync();
-    const obs = new MutationObserver(sync);
-    obs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
-    return () => obs.disconnect();
-  }, []);
   const [localHistory, setLocalHistory] = useState<Purchase[]>([]);
   const [serverTx, setServerTx] = useState<ServerTx[] | null>(null);
 
@@ -81,7 +68,7 @@ export default function CreditsPage() {
             // Guests have no balance to show; point to the free reading.
             <p className="font-body text-lg text-cream">
               <Link href="/spreads/quick-insight" className="text-goldbright underline">
-                Ask your question
+                Start your free reading
               </Link>
             </p>
           ) : reducedMotion ? (
@@ -95,7 +82,11 @@ export default function CreditsPage() {
             <div className="flex items-baseline justify-center gap-2 sm:justify-start">
               <Counter
                 value={credits ?? 0}
-                textColor={siteTheme === "light" ? "#1c1a15" : "#ede6d6"}
+                // Batch 4.1: the counter colour comes from the brand
+                // token, not a hard hex. Counter sets it as an inline
+                // style, and var() resolves there, so the old
+                // theme-tracking state is gone too.
+                textColor="var(--color-cream)"
                 fontSize={56}
                 fontWeight="bold"
               />
