@@ -98,19 +98,18 @@ describe("Pricing tiers: Velu's exact numbers", () => {
   });
 });
 
-describe("Pricing feature lists: only what exists in code (4/3/2)", () => {
-  it("Spark lists 4 lines: readings, follow-ups, daily card", () => {
+describe("Pricing feature lists: only what exists in code (3/3/2)", () => {
+  it("Spark lists 3 lines: readings, follow-ups", () => {
     expect(featuresOf(client(), "spark")).toEqual([
       "1-card readings",
       "3-card readings",
       "Follow-up questions",
-      "Daily card free, every day",
     ]);
   });
 
   it("Star lists 3 lines as a delta on Spark", () => {
     expect(featuresOf(client(), "star")).toEqual([
-      "Everything in Spark, plus 1,500 more Oracles a month",
+      "Everything in Spark",
       "Chart readings",
       "Your journal and reading history",
     ]);
@@ -118,7 +117,7 @@ describe("Pricing feature lists: only what exists in code (4/3/2)", () => {
 
   it("Moon lists 2 lines as a delta on Star", () => {
     expect(featuresOf(client(), "moon")).toEqual([
-      "Everything in Star, plus 3,500 more Oracles a month",
+      "Everything in Star",
       "Reports: transit, year-ahead, and relationship",
     ]);
   });

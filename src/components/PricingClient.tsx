@@ -75,7 +75,6 @@ const TIERS: Tier[] = [
       "1-card readings",
       "3-card readings",
       "Follow-up questions",
-      "Daily card free, every day",
     ],
   },
   {
@@ -87,7 +86,7 @@ const TIERS: Tier[] = [
     savings: 30,
     popular: true,
     features: [
-      "Everything in Spark, plus 1,500 more Oracles a month",
+      "Everything in Spark",
       "Chart readings",
       "Your journal and reading history",
     ],
@@ -101,7 +100,7 @@ const TIERS: Tier[] = [
     savings: 60,
     popular: false,
     features: [
-      "Everything in Star, plus 3,500 more Oracles a month",
+      "Everything in Star",
       "Reports: transit, year-ahead, and relationship",
     ],
   },
@@ -167,7 +166,7 @@ export default function PricingClient({
         </h1>
         <p className="mx-auto mt-4 max-w-xl text-sm text-cream/75">
           Monthly Oracles for readings, charts, and reports. Top-ups
-          arrive with subscriptions. Purchased Oracles never expire.
+          are one-time purchases, separate from subscriptions.
         </p>
       </VStack>
 
