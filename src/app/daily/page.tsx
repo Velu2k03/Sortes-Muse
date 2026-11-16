@@ -160,15 +160,17 @@ export default function DailyPage() {
               className="flex flex-col items-center"
             >
               <TarotCard cardId={null} size="lg" disabled />
-              {/* AF-048: the hold gesture is explained BEFORE the first
-                  press, and a tap alternative sits next to it. A tap
-                  on the hold button alone does nothing, so first-time
-                  visitors used to stall here; the Phase 3 single-trigger
-                  rule is superseded by this fix. */}
-              <p className="mt-6 max-w-xs text-center text-sm text-cream/75">
-                Press and hold the button until the gold fills it, or tap
-                Draw now.
-              </p>
+              {/* UX audit Phase 2, F26: this used to have two actions
+                  doing the same thing (HoldButton + a tap alternative)
+                  plus an instruction line explaining the control. One
+                  action now. The hold ritual stays (Velu's standing
+                  decision); the button label says "Hold", and the gold
+                  fill shows progress on any press, so the control
+                  teaches itself. This reverses AF-048, which added
+                  the tap alternative because first-time visitors
+                  stalled on hold-only; flag for Velu's review at the
+                  push gate, and restore the tap alternative if the
+                  stall returns. */}
               <StarBorder radius="1rem" className="mt-4" animated>
                 <HoldButton
                   size="lg"
@@ -183,13 +185,6 @@ export default function DailyPage() {
                   Hold to draw today&apos;s card
                 </HoldButton>
               </StarBorder>
-              <button
-                type="button"
-                onClick={draw}
-                className="btn-ghost mt-4 rounded-xl px-6 py-3 text-sm font-semibold"
-              >
-                Draw now
-              </button>
             </motion.div>
           )}
 
