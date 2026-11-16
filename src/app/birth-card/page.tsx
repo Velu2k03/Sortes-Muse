@@ -61,14 +61,22 @@ export default function BirthCardPage() {
             Please choose a date in the past.
           </p>
         )}
+        {/* UX audit Phase 2, F32: a 60-word arithmetic lesson used
+            to sit here before the user picked a date. The form needs
+            one line; the method lives in a disclosure below it. */}
         <p className="mt-3 text-sm text-cream/75">
-          Method: add the digits of your birth date; if the total is
-          over 22, add the digits of that total, and repeat until it
-          is 22 or less (22 is The Fool). That is your Personality
-          card. Add the digits of the Personality number until a
-          single digit remains: that is your Soul card. Pick a date
-          and your cards appear below, no button needed.
+          Pick your birth date. Your two cards appear below.
         </p>
+        <details className="mt-3 rounded-2xl border border-gold/20 bg-panel/50 p-4 text-left text-sm leading-relaxed text-cream/75">
+          <summary className="cursor-pointer font-semibold text-goldbright">How it is calculated</summary>
+          <p className="mt-2">
+            Add the digits of your birth date; if the total is over 22,
+            add the digits of that total, and repeat until it is 22 or
+            less (22 is The Fool). That is your Personality card. Add
+            the digits of the Personality number until a single digit
+            remains: that is your Soul card.
+          </p>
+        </details>
       </div>
       {pair !== null && personalityCard && soulCard && (
         <div className="mt-6">
