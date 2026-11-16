@@ -683,9 +683,9 @@ export function FollowUpThread({
                 inline
                 closeButton
                 width={320}
-                background="#1a1f2e"
-                color="#ede6d6"
-                fuseColor="#d4af37"
+                background="#1a2a44"
+                color="#faf6ec"
+                fuseColor="#b9975b"
               />
               <button
                 type="button"

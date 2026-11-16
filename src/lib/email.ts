@@ -8,7 +8,11 @@
  *   mis-set NODE_ENV alone can never leak codes into logs or API
  *   responses. The code value itself is never logged anywhere: the
  *   log line records only that a code was issued.
+ *
+ * Email HTML cannot read the CSS variables, so the colours come from
+ * src/lib/brand.ts (Batch 5.1).
  */
+import { BRAND } from "./brand";
 export function localDevCodeEnabled(): boolean {
   return (
     process.env.SORTES_LOCAL_DEV_CODE === "1" &&
@@ -41,10 +45,10 @@ export async function sendSignInCode(
       to: email,
       subject: `Your Sortes sign-in code: ${code}`,
       html: `
-        <div style="font-family: Georgia, serif; background: #0A0E1A; color: #EDE6D6; padding: 32px; border-radius: 12px;">
-          <h1 style="color: #D4AF37;">✦ Sortes</h1>
+        <div style="font-family: Georgia, serif; background: ${BRAND.navyDeep}; color: ${BRAND.cream}; padding: 32px; border-radius: 12px;">
+          <h1 style="color: ${BRAND.gold};">✦ Sortes</h1>
           <p>Your sign-in code is:</p>
-          <p style="font-size: 32px; letter-spacing: 8px; color: #F4D03F;"><strong>${code}</strong></p>
+          <p style="font-size: 32px; letter-spacing: 8px; color: ${BRAND.goldBright};"><strong>${code}</strong></p>
           <p style="color: #9aa3b2; font-size: 14px;">It expires in 10 minutes. If you did not request this, you can ignore this email.</p>
         </div>`,
     }),
@@ -82,13 +86,13 @@ export async function sendWinbackEmail(email: string): Promise<void> {
       to: email,
       subject: "The cards have been waiting for you ✦",
       html: `
-        <div style="font-family: Georgia, serif; background: #0A0E1A; color: #EDE6D6; padding: 40px 32px; border-radius: 12px; max-width: 560px;">
-          <h1 style="color: #D4AF37; font-size: 28px; margin: 0 0 8px;">✦ Sortes</h1>
-          <p style="font-size: 20px; font-style: italic; color: #F4D03F;">The cards have been waiting for you.</p>
+        <div style="font-family: Georgia, serif; background: ${BRAND.navyDeep}; color: ${BRAND.cream}; padding: 40px 32px; border-radius: 12px; max-width: 560px;">
+          <h1 style="color: ${BRAND.gold}; font-size: 28px; margin: 0 0 8px;">✦ Sortes</h1>
+          <p style="font-size: 20px; font-style: italic; color: ${BRAND.goldBright};">The cards have been waiting for you.</p>
           <p style="line-height: 1.7;">It has been a little while since your last visit. Your daily card is ready, free as always, and your journal is keeping every reading you have cast.</p>
           <p style="line-height: 1.7;">Come back for one quiet minute. See what the lots say today.</p>
           <p style="margin: 28px 0;">
-            <a href="${site}/daily" style="display: inline-block; background: linear-gradient(135deg, #e8c55a, #d4af37); color: #14100a; font-weight: bold; text-decoration: none; padding: 14px 32px; border-radius: 12px;">Draw today&apos;s card</a>
+            <a href="${site}/daily" style="display: inline-block; background: linear-gradient(135deg, ${BRAND.goldBright}, ${BRAND.gold}); color: #14100a; font-weight: bold; text-decoration: none; padding: 14px 32px; border-radius: 12px;">Draw today&apos;s card</a>
           </p>
           <p style="color: #9aa3b2; font-size: 13px; line-height: 1.6;">Readings are for reflection and perspective, never guaranteed predictions.<br/>You received this because you created a Sortes account. Reply STOP and we will not write again.</p>
         </div>`,

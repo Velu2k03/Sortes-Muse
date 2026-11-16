@@ -51,7 +51,7 @@ export default function CardBurst({
           style={{
             width: s.size,
             height: s.size,
-            background: s.gold ? "#e8c55a" : "#fff7dd",
+            background: s.gold ? "#d6be8a" : "#fff7dd",
             boxShadow: s.gold
               ? "0 0 8px rgba(232,197,90,0.9)"
               : "0 0 6px rgba(255,247,221,0.8)",

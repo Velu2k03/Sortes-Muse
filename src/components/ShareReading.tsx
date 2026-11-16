@@ -8,6 +8,7 @@ import { computeSpreadFacts } from "@/lib/spread-facts";
 import { firstSentence } from "@/lib/story-card";
 import { readingToPlainText } from "@/lib/readingMarkdown";
 import type { DrawnCard } from "@/lib/types";
+import { BRAND } from "@/lib/brand";
 import { APP_SHORT, TAGLINE } from "@/lib/site";
 
 /**
@@ -38,7 +39,7 @@ export default function ShareReading({
       const dataUrl = await toPng(ref.current, {
         cacheBust: true,
         pixelRatio: 1,
-        backgroundColor: "#0a0e1a",
+        backgroundColor: BRAND.navyDeep,
       });
       const a = document.createElement("a");
       a.download = `sortes-story-${date.slice(0, 10)}.png`;
@@ -116,18 +117,18 @@ export default function ShareReading({
           style={{
             width: 1080,
             height: 1920,
-            background: "#0a0e1a",
-            color: "#ede6d6",
+            background: BRAND.navyDeep,
+            color: BRAND.cream,
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
             padding: "110px 80px 70px",
             fontFamily: "Cormorant Garamond, Georgia, serif",
-            border: "3px solid #d4af37",
+            border: `3px solid ${BRAND.gold}`,
             boxSizing: "border-box",
           }}
         >
-          <div style={{ fontSize: 34, letterSpacing: 12, color: "#d4af37" }}>
+          <div style={{ fontSize: 34, letterSpacing: 12, color: BRAND.gold }}>
             SORTES
           </div>
           <div style={{ fontSize: 64, marginTop: 28, textAlign: "center", lineHeight: 1.15 }}>
@@ -138,8 +139,8 @@ export default function ShareReading({
               style={{
                 marginTop: 30,
                 fontSize: 26,
-                color: "#0a0e1a",
-                background: "#d4af37",
+                color: "#0a1526",
+                background: BRAND.gold,
                 borderRadius: 999,
                 padding: "10px 28px",
                 letterSpacing: 2,
@@ -170,11 +171,11 @@ export default function ShareReading({
                     unoptimized
                     style={{
                       borderRadius: 14,
-                      border: "1px solid #d4af37",
+                      border: `1px solid ${BRAND.gold}`,
                       transform: d.reversed ? "rotate(180deg)" : undefined,
                     }}
                   />
-                  <div style={{ fontSize: 24, marginTop: 12, color: "#f4d03f" }}>
+                  <div style={{ fontSize: 24, marginTop: 12, color: BRAND.goldBright }}>
                     {c.name}
                   </div>
                   <div style={{ fontSize: 19, color: "#9ca3af" }}>
@@ -202,7 +203,7 @@ export default function ShareReading({
           <div style={{ fontSize: 22, fontStyle: "italic", color: "#9ca3af", textAlign: "center" }}>
             {TAGLINE}
           </div>
-          <div style={{ fontSize: 20, letterSpacing: 3, color: "#d4af37", marginTop: 12 }}>
+          <div style={{ fontSize: 20, letterSpacing: 3, color: BRAND.gold, marginTop: 12 }}>
             sortes.resonantatlas.com
           </div>
         </div>
