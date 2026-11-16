@@ -32,6 +32,9 @@ export default function MethodologyPage() {
         </p>
       </div>
 
+      {/* UX audit Phase 2, F40: each section shows a one-line
+          summary under its heading, so the page reads without
+          clicking. The details stay for the full rules. */}
       {/* Batch 6c: the page is 2,001 words; the contents list lets a
           reader jump to the method they need instead of scrolling
           through all seven sections. */}
@@ -53,6 +56,7 @@ export default function MethodologyPage() {
 
       <section id="western-charts" className="mt-10 scroll-mt-24">
         <h2 className="font-display text-3xl text-goldbright">Western charts</h2>
+        <p className="mt-2 text-sm text-cream/75">Tropical zodiac, Placidus houses, computed with circular-natal-horoscope-js.</p>
         <details>
           <summary className="mt-3 cursor-pointer text-sm font-semibold text-goldbright">Show the details<span className="sr-only">: Western charts</span></summary>
         <ul className="mt-3 space-y-2 text-sm leading-relaxed text-cream/85">
@@ -70,6 +74,7 @@ export default function MethodologyPage() {
 
       <section id="vedic-charts" className="mt-10 scroll-mt-24">
         <h2 className="font-display text-3xl text-goldbright">Vedic charts</h2>
+        <p className="mt-2 text-sm text-cream/75">Sidereal zodiac (Lahiri ayanamsa), whole-sign houses, computed with caelus.</p>
         <details>
           <summary className="mt-3 cursor-pointer text-sm font-semibold text-goldbright">Show the details<span className="sr-only">: Vedic charts</span></summary>
         <ul className="mt-3 space-y-2 text-sm leading-relaxed text-cream/85">
@@ -90,6 +95,7 @@ export default function MethodologyPage() {
 
       <section id="ziwei-charts" className="mt-10 scroll-mt-24">
         <h2 className="font-display text-3xl text-goldbright">Ziwei charts</h2>
+        <p className="mt-2 text-sm text-cream/75">Stars placed by rule from birth date, time branch, and gender with iztro, not from astronomical bodies.</p>
         <details>
           <summary className="mt-3 cursor-pointer text-sm font-semibold text-goldbright">Show the details<span className="sr-only">: Ziwei charts</span></summary>
         <ul className="mt-3 space-y-2 text-sm leading-relaxed text-cream/85">
@@ -106,6 +112,7 @@ export default function MethodologyPage() {
 
       <section id="known-limits" className="mt-10 scroll-mt-24">
         <h2 className="font-display text-3xl text-goldbright">Known limits</h2>
+        <p className="mt-2 text-sm text-cream/75">Placidus houses can collapse near the poles, and birth-time precision and the Moon&apos;s daily motion are the main limits.</p>
         <details>
           <summary className="mt-3 cursor-pointer text-sm font-semibold text-goldbright">Show the details<span className="sr-only">: Known limits</span></summary>
         <ul className="mt-3 space-y-2 text-sm leading-relaxed text-cream/85">
@@ -120,6 +127,7 @@ export default function MethodologyPage() {
 
       <section id="ai-role" className="mt-10 scroll-mt-24">
         <h2 className="font-display text-3xl text-goldbright">The AI&apos;s role</h2>
+        <p className="mt-2 text-sm text-cream/75">The AI writes prose from computed positions only; it never calculates or invents a placement.</p>
         <details>
           <summary className="mt-3 cursor-pointer text-sm font-semibold text-goldbright">Show the details<span className="sr-only">: The AI&apos;s role</span></summary>
         <ul className="mt-3 space-y-2 text-sm leading-relaxed text-cream/85">
@@ -133,6 +141,7 @@ export default function MethodologyPage() {
 
       <section id="horoscopes" className="mt-10 scroll-mt-24">
         <h2 className="font-display text-3xl text-goldbright">Horoscopes, honestly labeled</h2>
+        <p className="mt-2 text-sm text-cream/75">General sun-sign copy, labeled as a reflection, not a personal reading or a prediction.</p>
         <details>
           <summary className="mt-3 cursor-pointer text-sm font-semibold text-goldbright">Show the details<span className="sr-only">: Horoscopes, honestly labeled</span></summary>
         <ul className="mt-3 space-y-2 text-sm leading-relaxed text-cream/85">
@@ -145,6 +154,7 @@ export default function MethodologyPage() {
 
       <section id="privacy" className="mt-10 scroll-mt-24">
         <h2 className="font-display text-3xl text-goldbright">Privacy of birth data</h2>
+        <p className="mt-2 text-sm text-cream/75">Birth date, time, and place are used in-memory for a calculation and never stored or sent to any AI prompt.</p>
         <details>
           <summary className="mt-3 cursor-pointer text-sm font-semibold text-goldbright">Show the details<span className="sr-only">: Privacy of birth data</span></summary>
         <p className="mt-3 text-sm leading-relaxed text-cream/85">
