@@ -24,7 +24,11 @@ export default function AboutPage() {
         <section>
           <h2 className="font-display text-3xl text-goldbright">Why I built it</h2>
           <p className="mt-3">
-            My Filipino friend gave me the idea for this. Their tarot business runs an intake flow: the client picks a category, tells their story, and the cards answer. I wanted it personal: the client says their story and the cards speak to it, instead of plain card meanings. The readings are written by free AI models through OpenRouter. Readings are for reflection and perspective only, never guaranteed predictions.
+            My Filipino friend gave me the idea for this. Their tarot
+            business runs an intake flow: the client picks a category,
+            tells their story, and the cards answer. I wanted it
+            personal: the cards speak to your story, not plain card
+            meanings. The readings are written by AI.
           </p>
         </section>
         <section>
@@ -37,15 +41,12 @@ export default function AboutPage() {
             each, topped up through Lemon Squeezy.
           </p>
         </section>
-        <section>
-          <h2 className="font-display text-3xl text-goldbright">Reflection, not prediction</h2>
-          <p className="mt-3">
-            Readings and chart interpretations in Sortes are for reflection and
-            perspective only. They are never guaranteed predictions, and they
-            never replace professional advice about health, money, or legal
-            matters.
-          </p>
-        </section>
+        {/* UX audit Phase 2, F31: a "Reflection, not prediction"
+            section used to sit here, repeating the disclaimer that
+            the footer already carries ("Readings are for reflection
+            and perspective, never guaranteed predictions. Nothing
+            here replaces professional advice."). One disclaimer per
+            page; the footer carries it. */}
         <section>
           <h2 className="font-display text-3xl text-goldbright">How your data is handled</h2>
           <p className="mt-3">
