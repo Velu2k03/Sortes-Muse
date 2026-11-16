@@ -186,7 +186,7 @@ export default function ReturningHome() {
           draw the same day returns the same stored card there. */}
       {daily && card ? (
         <div className="mt-8 flex flex-col gap-6 sm:flex-row sm:items-start">
-          <div className="relative h-48 w-28 shrink-0 overflow-hidden rounded-xl border border-gold/40 shadow-[0_8px_30px_rgba(0,0,0,0.6)] sm:h-56 sm:w-32">
+          <div className="relative h-48 w-28 shrink-0 overflow-hidden rounded-xl border border-gold/40 shadow-card-lg sm:h-56 sm:w-32">
             <Image
               src={card.image}
               alt={card.name}

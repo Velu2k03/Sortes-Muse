@@ -21,7 +21,7 @@ export const SPREADS: Spread[] = [
   },
   {
     slug: "past-present-future",
-    name: "Past · Present · Future",
+    name: "Past, Present, Future",
     cards: 3,
     description:
       "Three cards tracing where you have been, where you stand, and where the path leads.",

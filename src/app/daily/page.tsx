@@ -45,18 +45,6 @@ export default function DailyPage() {
   // Evening return: one line on where the card's quality showed up.
   const [reflection, setReflection] = useState("");
   const [reflectionSaved, setReflectionSaved] = useState(false);
-  // HoldButton colours bypass the theme tokens, so track the
-  // document theme, 2026-11-04, instead of staying dark in light mode.
-  const [siteTheme, setSiteTheme] = useState<"dark" | "light">("dark");
-  useEffect(() => {
-    const sync = () =>
-      setSiteTheme(document.documentElement.dataset.theme === "light" ? "light" : "dark");
-    sync();
-    const obs = new MutationObserver(sync);
-    obs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
-    return () => obs.disconnect();
-  }, []);
-
 
   // Phase E (item 6): the daily card is kept as a lightweight
   // journal entry (date, card, orientation, one-line note) so the
@@ -188,10 +176,10 @@ export default function DailyPage() {
                 <HoldButton
                   size="lg"
                   holdTime={1200}
-                  backgroundColor={siteTheme === "light" ? "#ffffff" : "#1a1f2e"}
-                  fillColor="#d4af37"
-                  textColor={siteTheme === "light" ? "#1c1a15" : "#ede6d6"}
-                  fillTextColor="#0f1424"
+                  backgroundColor="var(--color-panel)"
+                  fillColor="var(--color-gold)"
+                  textColor="var(--color-cream)"
+                  fillTextColor="var(--color-navydeep)"
                   doneLabel="Casting…"
                   onHold={draw}
                 >

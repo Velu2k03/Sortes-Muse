@@ -43,6 +43,15 @@
   --shadow-card-lg: 0 8px 30px rgb(0 0 0 / 0.6);
   --shadow-gold: 0 0 24px rgb(212 175 55 / 0.25);
   --shadow-gold-lg: 0 24px 48px -24px rgb(212 175 55 / 0.55);
+  --shadow-gold-sm: 0 12px 30px rgb(212 175 55 / 0.15);
+  --shadow-gold-ring: 0 0 0 2px rgb(212 175 55 / 0.6);
+  --shadow-card-md: 0 10px 24px -14px rgb(0 0 0 / 0.45);
+  --shadow-card-sm: 0 4px 16px rgb(0 0 0 / 0.5);
+  --shadow-inset-hi: inset 0 1px 0 rgb(255 255 255 / 0.06);
+  --shadow-spiral: 0 14px 38px rgb(8 6 18 / 0.2);
+  --shadow-card-xl: 0 16px 40px rgb(0 0 0 / 0.45);
+  --shadow-card-gold: 0 8px 30px rgb(0 0 0 / 0.6), 0 0 24px rgb(212 175 55 / 0.15);
+  --shadow-toast: 0 1px 2px rgb(0 0 0 / 0.05), 0 4px 12px rgb(0 0 0 / 0.1);
 
   --font-display: "Cormorant Garamond", "Times New Roman", Georgia, serif;
   --font-body: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;

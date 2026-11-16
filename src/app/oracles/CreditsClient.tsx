@@ -61,7 +61,7 @@ export default function CreditsPage() {
               aria-busy="true"
               aria-label="Oracle balance loading"
             >
-              <span className="inline-block h-14 w-20 animate-pulse rounded bg-gold/30" aria-hidden="true" />
+              <span className="inline-block h-14 w-20 animate-pulse rounded bg-gold/30 motion-reduce:animate-none" aria-hidden="true" />
               <span className="font-body text-lg text-mist">Oracles</span>
             </output>
           ) : isGuest ? (

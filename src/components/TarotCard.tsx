@@ -96,7 +96,7 @@ export default function TarotCard({
             className="pointer-events-none absolute -inset-5 rounded-full"
             style={{
               background:
-                "radial-gradient(circle, rgba(212,175,55,0.4) 0%, rgba(212,175,55,0.08) 55%, transparent 72%)",
+                "radial-gradient(circle, color-mix(in srgb, var(--color-gold) 40%, transparent) 0%, color-mix(in srgb, var(--color-gold) 8%, transparent) 55%, transparent 72%)",
             }}
             initial={{ opacity: 0, scale: 0.7 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -128,7 +128,7 @@ export default function TarotCard({
           >
             {/* Back (face down) */}
             <span
-              className="card-back-sheen absolute inset-0 block overflow-hidden rounded-xl border border-gold/40 shadow-[0_8px_30px_rgba(0,0,0,0.6)]"
+              className="card-back-sheen absolute inset-0 block overflow-hidden rounded-xl border border-gold/40 shadow-card-lg"
               style={{ backfaceVisibility: "hidden" }}
             >
               <Image
@@ -142,7 +142,7 @@ export default function TarotCard({
             </span>
             {/* Face */}
             <span
-              className="absolute inset-0 block overflow-hidden rounded-xl border border-gold/50 bg-navydeep shadow-[0_8px_30px_rgba(0,0,0,0.6),0_0_24px_rgba(212,175,55,0.15)]"
+              className="absolute inset-0 block overflow-hidden rounded-xl border border-gold/50 bg-navydeep shadow-card-gold"
               style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}
             >
               {card && (

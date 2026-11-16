@@ -47,7 +47,7 @@ function isTouchPointer(event: React.PointerEvent): boolean {
 export function SpotlightCard({
   children,
   className = "",
-  spotlightColor = "rgba(212, 175, 55, 0.18)",
+  spotlightColor = "color-mix(in srgb, var(--color-gold) 18%, transparent)",
 }: {
   children: ReactNode;
   className?: string;
@@ -193,7 +193,7 @@ export function Orb({
   if (reduce) {
     return (
       <div aria-hidden="true" className={`pointer-events-none absolute inset-0 overflow-hidden ${className}`}>
-        <div className="absolute left-1/4 top-1/4 h-72 w-72 rounded-full opacity-25 blur-3xl" style={{ background: "radial-gradient(circle, rgba(212,175,55,0.5) 0%, transparent 70%)" }} />
+        <div className="absolute left-1/4 top-1/4 h-72 w-72 rounded-full opacity-25 blur-3xl" style={{ background: "radial-gradient(circle, color-mix(in srgb, var(--color-gold) 50%, transparent) 0%, transparent 70%)" }} />
       </div>
     );
   }
@@ -206,7 +206,7 @@ export function Orb({
       <motion.div
         className="absolute left-1/4 top-1/4 h-72 w-72 rounded-full opacity-25 blur-3xl"
         style={{
-          background: "radial-gradient(circle, rgba(212,175,55,0.55) 0%, transparent 70%)",
+          background: "radial-gradient(circle, color-mix(in srgb, var(--color-gold) 55%, transparent) 0%, transparent 70%)",
           x: "var(--orb-x, 0px)",
           y: "var(--orb-y, 0px)",
         }}

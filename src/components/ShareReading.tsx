@@ -139,7 +139,7 @@ export default function ShareReading({
               style={{
                 marginTop: 30,
                 fontSize: 26,
-                color: "#0f1424",
+                color: BRAND.navyDeep,
                 background: BRAND.gold,
                 borderRadius: 999,
                 padding: "10px 28px",
@@ -178,7 +178,7 @@ export default function ShareReading({
                   <div style={{ fontSize: 24, marginTop: 12, color: BRAND.goldBright }}>
                     {c.name}
                   </div>
-                  <div style={{ fontSize: 19, color: "#9ca3af" }}>
+                  <div style={{ fontSize: 19, color: BRAND.mist }}>
                     {d.position}
                   </div>
                 </div>
@@ -200,7 +200,7 @@ export default function ShareReading({
             </div>
           )}
           <div style={{ flex: 1 }} />
-          <div style={{ fontSize: 22, fontStyle: "italic", color: "#9ca3af", textAlign: "center" }}>
+          <div style={{ fontSize: 22, fontStyle: "italic", color: BRAND.mist, textAlign: "center" }}>
             {TAGLINE}
           </div>
           <div style={{ fontSize: 20, letterSpacing: 3, color: BRAND.gold, marginTop: 12 }}>

@@ -70,10 +70,10 @@ describe("Phase 3 Batch 3.2 reveal control and honest wait", () => {
     // free to paid is announced without moving focus. <output>
     // carries implicit status semantics.
     expect(steps).toContain("<output");
-    // The SlideCommit colours are the brand hex, not the old gold.
-    expect(steps).toContain('handleColor="#d4af37"');
-    expect(steps).toContain('successColor="#d4af37"');
-    expect(steps).toContain('trackColor="#1a1f2e"');
+    // The SlideCommit colours are BRAND, not hardcoded hex.
+    expect(steps).toContain("handleColor={BRAND.gold}");
+    expect(steps).toContain("successColor={BRAND.gold}");
+    expect(steps).toContain("trackColor={BRAND.panel}");
     expect(steps).not.toContain('handleColor="#b9975b"');
     // CodeRabbit: the track label is full-strength gold, not 45%
     // opacity, so it reads at 5.24:1 on the track (was 2.14:1).

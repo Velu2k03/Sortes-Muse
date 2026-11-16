@@ -9,6 +9,7 @@ import CountUp from "@/components/CountUp";
 import Icon from "@/components/Icon";
 import BranchedMenu, { type BranchedMenuItem } from "@/components/BranchedMenu";
 import { APP_SHORT } from "@/lib/site";
+import { BRAND } from "@/lib/brand";
 
 // Header grouping, 2026-11-05: the desktop bar shows four groups
 // (Tarot, Astrology, Learn, Journal) instead of nine links plus a
@@ -80,7 +81,7 @@ const MOBILE_TABS: { label: string; href: string; section: readonly string[] }[]
 
 // Theme-color per active theme, kept in step with data-theme by
 // theme.js (before paint) and the Header toggle (on change).
-const THEME_COLORS = { dark: "#0f1424", light: "#ede6d6" } as const;
+const THEME_COLORS = { dark: BRAND.navyDeep, light: BRAND.cream } as const;
 function syncThemeColor(theme: "dark" | "light"): void {
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.setAttribute("content", THEME_COLORS[theme]);
@@ -195,9 +196,9 @@ export default function Header() {
   // theme. The muted branch colour is overridden in globals.css
   // (.sortes-bm), since the component fixes it at 55% internally.
   // Still used by the mobile drawer, the only BranchedMenu left.
-  const bmColor = theme === "dark" ? "#ede6d6" : "#3a3325";
-  const bmAccent = theme === "dark" ? "#d4af37" : "#7c5e00";
-  const bmLine = theme === "dark" ? "rgba(212, 175, 55, 0.45)" : "rgba(124, 94, 0, 0.45)";
+  const bmColor = "var(--color-cream)";
+  const bmAccent = "var(--color-gold)";
+  const bmLine = "color-mix(in srgb, var(--color-gold) 45%, transparent)";
   const go = (value: string) => {
     setOpenGroup(null);
     setMobileOpen(false);
@@ -351,7 +352,7 @@ export default function Header() {
             >
               <Icon name="coin" size={18} />
               {credits === null ? (
-                <span className="inline-block h-4 w-6 animate-pulse rounded bg-gold/30" aria-hidden="true" />
+                <span className="inline-block h-4 w-6 animate-pulse rounded bg-gold/30 motion-reduce:animate-none" aria-hidden="true" />
               ) : (
                 <span className="num">
                   <CountUp value={credits} />

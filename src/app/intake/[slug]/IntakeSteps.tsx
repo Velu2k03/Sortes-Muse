@@ -9,6 +9,7 @@ import TarotCard from "@/components/TarotCard";
 import SlideCommit from "@/components/SlideCommit";
 import SwipeToast from "@/components/SwipeToast";
 import { INTAKE_CATEGORIES, getCategory } from "@/lib/intake";
+import { BRAND } from "@/lib/brand";
 import { peekHeroQuestion } from "@/lib/storage";
 import type { DrawnCard } from "@/lib/types";
 import type { IntakeState, Step } from "./useIntakeFlow";
@@ -559,10 +560,10 @@ export function ImpressionStep({ f, drawnCards }: { f: IntakeState; drawnCards: 
             onConfirm={beginGeneration}
             disabled={busy}
             width={250}
-            trackColor="#1a1f2e"
-            handleColor="#d4af37"
-            successColor="#d4af37"
-            dangerColor="#f87171"
+            trackColor={BRAND.panel}
+            handleColor={BRAND.gold}
+            successColor={BRAND.gold}
+            dangerColor={BRAND.danger}
           />
         </div>
       </div>

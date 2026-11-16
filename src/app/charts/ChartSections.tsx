@@ -312,10 +312,10 @@ export function BirthForm({ prefs, form, s }: { prefs: ChartPrefs; form: ChartFo
             ariaLabel="Birthplace"
             size="lg"
             radius={12}
-            accentColor={siteTheme === "light" ? "#7c5e00" : "#d4af37"}
-            surfaceColor={siteTheme === "light" ? "#ffffff" : "#1a1f2e"}
+            accentColor="var(--color-gold)"
+            surfaceColor="var(--color-panel)"
             highlightColor={siteTheme === "light" ? "#f3ead3" : "#3a3120"}
-            textColor={siteTheme === "light" ? "#1c1a15" : "#ede6d6"}
+            textColor="var(--color-cream)"
             className="w-full [&>button]:w-full [&>button]:justify-between"
           />
         )}
@@ -437,7 +437,7 @@ export function ResultHeader({ prefs, s, result }: { prefs: ChartPrefs; s: Chart
         <div style={{ fontSize: 28, letterSpacing: 8, color: BRAND.gold }}>SORTES</div>
         <div style={{ fontSize: 48, marginTop: 12 }}>{result.system === "ziwei" ? "Ziwei chart" : result.system === "vedic" ? "Vedic chart" : "Western chart"}</div>
         <div style={{ fontSize: 24, marginTop: 24, maxWidth: 900, textAlign: "center" }}>{chartSummaryText(result, ziweiLang)}</div>
-        <div style={{ fontSize: 18, marginTop: 24, color: "#9ca3af" }}>A reflection, not a prediction. sortes.resonantatlas.com</div>
+        <div style={{ fontSize: 18, marginTop: 24, color: BRAND.mist }}>A reflection, not a prediction. sortes.resonantatlas.com</div>
       </div>
     </div>
     {/* The key remounts the reveal for each new result, so a
@@ -786,9 +786,9 @@ export function InterpretationPanel({ prefs, s, result }: { prefs: ChartPrefs; s
           inline
           closeButton
           width={320}
-          background="#1a1f2e"
-          color="#ede6d6"
-          fuseColor="#d4af37"
+          background="var(--color-panel)"
+          color="var(--color-cream)"
+          fuseColor="var(--color-gold)"
         />
         <button
           type="button"

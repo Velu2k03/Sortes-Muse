@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { dailyHoroscope, weeklyHoroscope, SUN_SIGNS, type SunSign } from "@/lib/daily";
+import { BRAND } from "@/lib/brand";
 import Icon from "@/components/Icon";
 import ThemedDatePicker from "@/components/ThemedDatePicker";
 import OptionWheel from "@/components/OptionWheel";
@@ -158,8 +159,8 @@ export default function HoroscopeClient({
                 items={[...SUN_SIGNS]}
                 defaultSelected={SUN_SIGNS.indexOf(sign)}
                 onChange={(index) => { setSign(SUN_SIGNS[index]); resetReveal(); }}
-                textColor={siteTheme === "light" ? "#45423c" : "#9ca3af"}
-                activeColor={siteTheme === "light" ? "#7c5e00" : "#f4d03f"}
+                textColor="var(--color-mist)"
+                activeColor="var(--color-goldbright)"
               />
             </div>
           )}
@@ -180,10 +181,10 @@ export default function HoroscopeClient({
           value={view}
           onChange={(v) => { setView(v as "daily" | "weekly"); resetReveal(); }}
           aria-label="Daily or weekly"
-          trackColor={siteTheme === "light" ? "#ffffff" : "#1a1f2e"}
-          thumbColor="#d4af37"
-          textColor={siteTheme === "light" ? "#45423c" : "#9ca3af"}
-          activeTextColor="#0f1424"
+          trackColor="var(--color-panel)"
+          thumbColor="var(--color-gold)"
+          textColor="var(--color-mist)"
+          activeTextColor={BRAND.navyDeep}
           className={siteTheme === "light" ? "ring-1 ring-gold/25" : ""}
         />
       </div>
@@ -203,7 +204,7 @@ export default function HoroscopeClient({
         )}
       </div>
       {revealing ? (
-        <p className="mt-6 animate-pulse text-center text-sm text-gold">
+        <p className="mt-6 animate-pulse text-center text-sm text-gold motion-reduce:animate-none">
           Loading…
         </p>
       ) : mounted && !revealed ? (

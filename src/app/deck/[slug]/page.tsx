@@ -95,7 +95,7 @@ export default async function CardPage({
 
       <div className="grid gap-10 md:grid-cols-[280px_1fr]">
         <div>
-          <div className="relative mx-auto aspect-[3/5] w-full max-w-70 overflow-hidden rounded-2xl border border-gold/25 shadow-[0_12px_30px_rgba(212,175,55,0.15)]">
+          <div className="relative mx-auto aspect-[3/5] w-full max-w-70 overflow-hidden rounded-2xl border border-gold/25 shadow-gold-sm">
             <Image
               src={card.image}
               alt={`${card.name} tarot card`}
@@ -171,7 +171,7 @@ export default async function CardPage({
                 Quick Insight, free first
               </Link>
               <Link href="/spreads/past-present-future" className="rounded-xl border border-gold/30 px-5 py-2.5 text-sm font-semibold text-goldbright hover:border-gold/60">
-                Past · Present · Future
+                Past, Present, Future
               </Link>
               <Link href="/spreads/celtic-cross" className="rounded-xl border border-gold/30 px-5 py-2.5 text-sm font-semibold text-goldbright hover:border-gold/60">
                 Celtic Cross

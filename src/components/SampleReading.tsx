@@ -60,7 +60,7 @@ export default function SampleReading({ collapsed = false }: { collapsed?: boole
     >
       <div className="flex items-center justify-between border-b border-gold/15 px-6 py-4">
         <p className="text-xs uppercase tracking-[0.25em] text-mist">
-          Past · Present · Future
+          Past, Present, Future
         </p>
         <span className="rounded-full border border-gold/40 bg-gold/10 px-3 py-1 text-xs font-semibold text-goldbright">
           Sample reading

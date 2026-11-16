@@ -76,11 +76,11 @@ export default function CardModal({ cardId, onClose }: Props) {
               <div className="min-w-0 flex-1 text-center sm:text-left">
                 <p className="text-xs uppercase tracking-[0.25em] text-mist">
                   {card.arcana === "major"
-                    ? `Major Arcana · ${card.number}`
+                    ? `Major Arcana, card ${card.number}`
                     : /* The name itself is the title below, so repeating
                        it here showed the name twice. The eyebrow now
                        carries the arcana and suit instead. */
-                      `Minor Arcana · ${card.suit ? suitLabel(card.suit) : ""}`}
+                      `Minor Arcana, ${card.suit ? suitLabel(card.suit) : ""}`}
                 </p>
                 <h2 className="mt-1 font-display text-4xl text-goldbright">
                   {card.name}

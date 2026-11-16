@@ -10,6 +10,7 @@ import InstallBanner from "@/components/InstallBanner";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 import { AuthProvider } from "@/components/AuthProvider";
 import MotionProvider from "@/components/MotionProvider";
+import { BRAND } from "@/lib/brand";
 import { PageTransition } from "@/components/ReactBitsNew";
 import { APP_NAME, APP_SHORT, TITLE_DEFAULT, SITE_URL, CONTACT_EMAIL } from "@/lib/site";
 import { serializeJsonLd } from "@/lib/json-ld";
@@ -80,7 +81,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0f1424",
+  themeColor: BRAND.navyDeep,
   // modern-web-guidance `dark-mode` (MANDATORY): declare support for
   // both schemes so the browser themes native UI (scrollbars, form
   // controls, canvas) and avoids a flash of un-themed content. The

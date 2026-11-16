@@ -8,8 +8,8 @@ export function AccountLoading() {
   // The page shell above (H1 + intro) is already server HTML.
   return (
     <div className="mt-8 space-y-4" role="status" aria-label="Loading your account">
-      <div className="h-40 animate-pulse rounded-3xl border border-gold/20 bg-panel/60" />
-      <div className="h-24 animate-pulse rounded-3xl border border-gold/20 bg-panel/60" />
+      <div className="h-40 animate-pulse rounded-3xl border border-gold/20 bg-panel/60 motion-reduce:animate-none" />
+      <div className="h-24 animate-pulse rounded-3xl border border-gold/20 bg-panel/60 motion-reduce:animate-none" />
     </div>
   );
 }

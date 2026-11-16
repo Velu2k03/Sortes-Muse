@@ -254,7 +254,7 @@ describe("Three-card nudge after the first reading", () => {
     const label = (link as RegExpMatchArray)[1].replace(/\s+/g, " ").trim();
     expect(label).toContain("1 Oracle");
     expect(label).not.toContain("free");
-    expect(label).toContain("Past · Present · Future");
+    expect(label).toContain("Past, Present, Future");
   });
 
   it("renders in Ask more, only on a free Quick Insight reading", () => {

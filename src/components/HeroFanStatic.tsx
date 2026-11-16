@@ -38,7 +38,7 @@ export default function HeroFanStatic() {
             style={{ transform: `rotate(${c.tilt}deg)` }}
             className="-ml-4 first:ml-0 sm:-ml-6 sm:first:ml-0"
           >
-            <div className="relative h-44 w-[7rem] overflow-hidden rounded-lg border-2 border-gold shadow-[0_8px_30px_rgba(0,0,0,0.5)] sm:h-60 sm:w-40">
+            <div className="relative h-44 w-[7rem] overflow-hidden rounded-lg border-2 border-gold shadow-card-lg sm:h-60 sm:w-40">
               <Image
                 src={c.src}
                 alt={c.name}

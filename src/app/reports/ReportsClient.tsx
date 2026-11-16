@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import ReadingText from "@/components/ReadingText";
+import { BRAND } from "@/lib/brand";
 import { useAuth } from "@/components/AuthProvider";
 import RubberSegment from "@/components/RubberSegment";
 import SpecularButton from "@/components/SpecularButton";
@@ -487,10 +488,10 @@ export default function ReportsClient() {
             setError("");
           }}
           aria-label="Report type"
-          trackColor={siteTheme === "light" ? "#ffffff" : "#1a1f2e"}
-          thumbColor="#d4af37"
-          textColor={siteTheme === "light" ? "#45423c" : "#9ca3af"}
-          activeTextColor="#0f1424"
+          trackColor="var(--color-panel)"
+          thumbColor="var(--color-gold)"
+          textColor="var(--color-mist)"
+          activeTextColor={BRAND.navyDeep}
           className={siteTheme === "light" ? "ring-1 ring-gold/25" : ""}
         />
       </div>
@@ -588,9 +589,9 @@ export default function ReportsClient() {
             inline
             closeButton
             width={320}
-            background="#1a1f2e"
-            color="#ede6d6"
-            fuseColor="#d4af37"
+            background="var(--color-panel)"
+            color="var(--color-cream)"
+            fuseColor="var(--color-gold)"
           />
           <button
             type="button"
@@ -616,17 +617,17 @@ export default function ReportsClient() {
         onClick={generate}
         disabled={generating || outOfOracles}
         className="mt-6 w-full"
-        baseColor={siteTheme === "light" ? "#ffffff" : "#1a1f2e"}
-        lineColor={siteTheme === "light" ? "#7c5e00" : "#d4af37"}
-        textColor={siteTheme === "light" ? "#1c1a15" : "#ede6d6"}
-        tint="#d4af37"
+        baseColor="var(--color-panel)"
+        lineColor="var(--color-gold)"
+        textColor="var(--color-cream)"
+        tint="var(--color-gold)"
       >
         {generating ? "Generating…" : "Generate report · 1 Oracle"}
       </SpecularButton>
       )}
       {generating && (
         <p className="mt-3 flex items-center justify-center gap-2 text-sm text-cream/75">
-          <StatusMark status="running" size={20} color="#d4af37" />
+          <StatusMark status="running" size={20} color="var(--color-gold)" />
           Writing your report…
         </p>
       )}
@@ -636,9 +637,9 @@ export default function ReportsClient() {
             name="report"
             argument="generate"
             status={generating ? "running" : failedCall ? "error" : "done"}
-            surfaceColor="#1a1f2e"
-            color="#ede6d6"
-            progressColor="#d4af37"
+            surfaceColor="var(--color-panel)"
+            color="var(--color-cream)"
+            progressColor="var(--color-gold)"
             onRetry={generate}
           />
         </div>

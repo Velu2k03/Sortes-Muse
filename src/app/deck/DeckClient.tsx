@@ -305,7 +305,7 @@ export default function DeckClient({
           <li key={c.id}>
           <Link
             href={`/deck/${cardSlug(c.name)}`}
-            className="group flex min-h-[44px] items-center gap-4 rounded-xl border border-gold/20 bg-panel/50 px-3 py-2.5 transition hover:border-gold/60 hover:shadow-[0_12px_30px_rgba(212,175,55,0.15)]"
+            className="group flex min-h-[44px] items-center gap-4 rounded-xl border border-gold/20 bg-panel/50 px-3 py-2.5 transition hover:border-gold/60 hover:shadow-gold-sm"
           >
             <span className="relative block h-16 w-10 shrink-0 overflow-hidden rounded-md">
               <Image
@@ -322,7 +322,7 @@ export default function DeckClient({
                 {c.name}
               </span>
               <span className="block truncate text-xs text-mist">
-                {c.arcana === "major" ? "Major Arcana" : suitLabel(c.suit ?? "")} · {c.keywords.upright.slice(0, 3).join(", ")}
+                {c.arcana === "major" ? "Major Arcana" : suitLabel(c.suit ?? "")}, {c.keywords.upright.slice(0, 3).join(", ")}
               </span>
             </span>
             <span aria-hidden="true" className="shrink-0 text-lg text-gold">›</span>
@@ -358,7 +358,7 @@ export default function DeckClient({
           >
           <Link
             href={`/deck/${cardSlug(c.name)}`}
-            className="group block overflow-hidden rounded-xl border border-gold/20 bg-panel/50 transition hover:-translate-y-1 hover:border-gold/60 hover:shadow-[0_12px_30px_rgba(212,175,55,0.15)]"
+            className="group block overflow-hidden rounded-xl border border-gold/20 bg-panel/50 transition hover:-translate-y-1 hover:border-gold/60 hover:shadow-gold-sm"
             aria-label={`View meaning of ${c.name}`}
           >
             {/* Validator fix: a link may only contain phrasing

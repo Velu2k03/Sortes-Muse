@@ -78,7 +78,7 @@ export function GuestKeepNotice() {
  * Remodel Phase 1 batch 3: the nudge after the first reading. It
  * sits directly under the save prompt (save first, then the next
  * step) and only on a free Quick Insight reading. It is a link to
- * the Past · Present · Future spread, never a second free reading:
+ * the Past, Present, Future spread, never a second free reading:
  * the cost is labelled 1 Oracle, and the free reading stays 1-card
  * Quick Insight only.
  */
@@ -93,7 +93,7 @@ export function ThreeCardNudge() {
         href="/intake/past-present-future"
         className="mt-4 inline-block rounded-full bg-gold px-5 py-3 text-sm font-semibold text-ink hover:bg-goldbright"
       >
-        Try Past · Present · Future — 1 Oracle
+        Try Past, Present, Future — 1 Oracle
       </Link>
     </section>
   );
@@ -683,9 +683,9 @@ export function FollowUpThread({
                 inline
                 closeButton
                 width={320}
-                background="#1a1f2e"
-                color="#ede6d6"
-                fuseColor="#d4af37"
+                background="var(--color-panel)"
+                color="var(--color-cream)"
+                fuseColor="var(--color-gold)"
               />
               <button
                 type="button"
