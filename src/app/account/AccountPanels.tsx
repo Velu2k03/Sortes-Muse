@@ -193,6 +193,43 @@ export function SubscriptionPanel({ subscription }: { subscription: Subscription
   );
 }
 
+/**
+ * Batch 5.3: the win-back email opt-out. The win-back cron sends a
+ * marketing email, so there must be a working way to stop it. The
+ * toggle writes the same flag the one-click unsubscribe link writes,
+ * and the cron excludes opted-out users. The toggle stays hidden
+ * while the preference is unknown (null), so it never shows the
+ * wrong state.
+ */
+export function NotificationsPanel({ n }: { n: AccountSettings["notifications"] }) {
+  if (n.winbackOptedOut === null) return null;
+  return (
+    <div className="mt-6 rounded-3xl border border-gold/20 bg-panel/60 p-6 sm:p-8">
+      <h2 className="font-display text-xl text-cream">Notifications</h2>
+      <p className="mt-1 text-sm text-cream/75">
+        Sortes sends one gentle email if you have been away for a while.
+        Turn it off any time; your readings, daily card, and account
+        stay exactly as they are.
+      </p>
+      <label className="mt-4 flex min-h-11 cursor-pointer items-center gap-3 text-base text-cream">
+        <input
+          type="checkbox"
+          checked={n.winbackOptedOut}
+          disabled={n.notifBusy}
+          onChange={(e) => void n.setWinbackOptedOut(e.target.checked)}
+          className="h-5 w-5 accent-gold"
+        />
+        Stop win-back emails
+      </label>
+      {n.notifNotice && (
+        <p className="mt-3 rounded-xl border border-gold/40 bg-gold/10 p-3 text-sm text-goldbright">
+          {n.notifNotice}
+        </p>
+      )}
+    </div>
+  );
+}
+
 export function PasswordPanel({ p }: { p: AccountSettings["password"] }) {
   return (
     <div className="mt-6 rounded-3xl border border-gold/20 bg-panel/60 p-6 sm:p-8">

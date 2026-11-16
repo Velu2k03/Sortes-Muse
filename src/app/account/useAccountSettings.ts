@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { getSupabaseBrowser } from "@/lib/supabase-browser";
 import { clearLocalAccountData } from "@/lib/storage";
 import { fetchWithTimeout } from "@/lib/fetch-timeout";
@@ -58,6 +58,54 @@ export function useAccountSettings({
   const [deleteCode, setDeleteCode] = useState("");
   const [deleteCodeSent, setDeleteCodeSent] = useState(false);
   const [deleteCodeBusy, setDeleteCodeBusy] = useState(false);
+  // Batch 5.3: win-back email preference. null while unknown.
+  const [winbackOptedOut, setWinbackOptedOutState] = useState<boolean | null>(null);
+  const [notifBusy, setNotifBusy] = useState(false);
+  const [notifNotice, setNotifNotice] = useState<string | null>(null);
+
+  // Load the current preference. It refetches when the signed-in
+  // user changes: opening the account page signed out gets a 401,
+  // and signing in must load the preference without a reload.
+  // A failure leaves the toggle hidden (null), not wrong.
+  useEffect(() => {
+    if (!userEmail) return;
+    let cancelled = false;
+    fetch("/api/account/notifications")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!cancelled && data && typeof data.winbackOptedOut === "boolean") {
+          setWinbackOptedOutState(data.winbackOptedOut);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [userEmail]);
+
+  const setWinbackOptedOut = async (optedOut: boolean) => {
+    setNotifBusy(true);
+    setNotifNotice(null);
+    try {
+      const res = await fetchWithTimeout("/api/account/notifications", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ winbackOptedOut: optedOut }),
+      });
+      const data = await parseJson(res);
+      if (!res.ok) throw new Error(data.error ?? "Something went wrong.");
+      setWinbackOptedOutState(optedOut);
+      setNotifNotice(
+        optedOut
+          ? "Done. You will not receive win-back emails."
+          : "Done. Win-back emails are on again."
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong.");
+    } finally {
+      setNotifBusy(false);
+    }
+  };
 
   const savePassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -170,6 +218,12 @@ export function useAccountSettings({
   return {
     transactions,
     setTransactions,
+    notifications: {
+      winbackOptedOut,
+      notifBusy,
+      notifNotice,
+      setWinbackOptedOut,
+    },
     password: {
       currentPassword,
       setCurrentPassword,

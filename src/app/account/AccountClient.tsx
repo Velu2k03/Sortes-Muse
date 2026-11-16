@@ -13,6 +13,7 @@ import {
   AccountSummary,
   DataPanel,
   LoadErrorBanner,
+  NotificationsPanel,
   PasswordPanel,
   PurchaseHistory,
   SubscriptionPanel,
@@ -92,6 +93,7 @@ export default function AccountPage() {
           <SubscriptionPanel subscription={subscription} />
           <PurchaseHistory transactions={settings.transactions} />
           <PasswordPanel p={settings.password} />
+          <NotificationsPanel n={settings.notifications} />
           <DataPanel d={settings.data} userEmail={user?.email} />
         </>
       )}

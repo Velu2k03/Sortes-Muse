@@ -16,6 +16,10 @@ export interface DbUser {
   purchased_credits?: number;
   created_at: string;
   winback_sent_at?: string | null;
+  // Phase 5 Batch 5.3: the win-back email opt-out (migration 012).
+  // TRUE means the user asked not to receive win-back emails.
+  // Default FALSE; readers treat a missing value as FALSE.
+  winback_opted_out?: boolean | null;
   password_hash?: string | null;
   // Phase B (R5): session version, carried in the JWT as the `pwdVer`
   // claim and checked in getSession. Bumped on every password set or

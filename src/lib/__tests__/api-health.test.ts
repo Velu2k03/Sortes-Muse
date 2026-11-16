@@ -15,11 +15,11 @@ const mockedSql = vi.mocked(sql);
 // any is missing or the DB cannot be reached.
 describe("migrationHealth", () => {
   it("is ok when every shipped migration is applied", () => {
-    const health = migrationHealth(["001", "002", "003", "006", "007", "008", "009", "010", "011"]);
+    const health = migrationHealth(["001", "002", "003", "006", "007", "008", "009", "010", "011", "012"]);
     expect(health.ok).toBe(true);
-    expect(health.applied).toBe("011");
-    expect(health.expected).toBe(9);
-    expect(health.latest).toBe("011");
+    expect(health.applied).toBe("012");
+    expect(health.expected).toBe(10);
+    expect(health.latest).toBe("012");
     expect(health.missing).toEqual([]);
   });
 
@@ -27,14 +27,14 @@ describe("migrationHealth", () => {
     const health = migrationHealth(["001", "002"]);
     expect(health.ok).toBe(false);
     expect(health.applied).toBe("002");
-    expect(health.missing).toEqual(["003", "006", "007", "008", "009", "010", "011"]);
+    expect(health.missing).toEqual(["003", "006", "007", "008", "009", "010", "011", "012"]);
   });
 
   it("reports null applied on an empty ledger", () => {
     const health = migrationHealth([]);
     expect(health.ok).toBe(false);
     expect(health.applied).toBeNull();
-    expect(health.missing).toHaveLength(9);
+    expect(health.missing).toHaveLength(10);
   });
 });
 
@@ -45,16 +45,16 @@ describe("GET /api/health", () => {
 
   it("returns 200 with applied/expected/latest when all migrations are applied", async () => {
     mockedSql.mockResolvedValue({
-      rows: ["001", "002", "003", "006", "007", "008", "009", "010", "011"].map((version) => ({ version })),
+      rows: ["001", "002", "003", "006", "007", "008", "009", "010", "011", "012"].map((version) => ({ version })),
     } as never);
     const res = await GET();
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body).toEqual({
       ok: true,
-      applied: "011",
-      expected: 9,
-      latest: "011",
+      applied: "012",
+      expected: 10,
+      latest: "012",
       missing: [],
     });
   });
