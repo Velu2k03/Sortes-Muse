@@ -71,10 +71,14 @@ describe("Phase 4 Batch 4.4 money glossary", () => {
     // Batch 4.3 (Velu, 2026-11-16): "Sign up" and "Sign in".
     // The glossary and the account page say "Sign up"; the old
     // "Create account" wording must not appear in the money-flow
-    // UI files or the account client.
+    // UI files or the account client. Pin the heading too: the
+    // signup panel heading is "Sign up to sync everything", not
+    // "Create your account" (Codex P2, PR #116).
     const account = src("src/app/account/AccountClient.tsx");
     expect(account).toContain('"Sign up"');
+    expect(account).toContain("Sign up to sync everything");
     expect(account).not.toContain("Create account");
+    expect(account).not.toContain("Create your account");
     for (const file of UI_FILES) {
       expect(src(file)).not.toContain("Create account");
     }

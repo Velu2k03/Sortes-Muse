@@ -324,7 +324,7 @@ function SignInPanel({ s }: { s: ReturnType<typeof useSignIn> }) {
       <h2 className="font-display text-2xl text-cream">
         {mode === "signin"
           ? "Sign in to sync everything"
-          : "Create your account"}
+          : "Sign up to sync everything"}
       </h2>
       <p className="mt-2 text-sm leading-relaxed text-cream/75">
         {mode === "signin"
