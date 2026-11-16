@@ -4,7 +4,8 @@ import CreditsPage from "./CreditsClient";
 import Icon from "@/components/Icon";
 import TopUpBuyButton from "./TopUpBuyButton";
 import { SITE_URL } from "@/lib/site";
-import { TOPUPS } from "@/lib/subscription-tiers";
+import { topUpsConfigured } from "@/lib/lemonsqueezy";
+import { CREDIT_COSTS_ENABLED, TOPUPS } from "@/lib/subscription-tiers";
 
 // Packs retired (Velu, 2026-11-16, D1): this page sells top-ups
 // only (1,000 Oracles $9.99, 3,000 $24.99, never expire). The
@@ -25,6 +26,13 @@ export const metadata = {
 };
 
 export default function Credits() {
+  // Codex P2 (PR #118): the buttons and the JSON-LD availability
+  // are gated on the same readiness the pricing page uses — the
+  // flag ON and the Lemon Squeezy top-up variants configured.
+  // Until then the buttons read "Not yet open" and the offers
+  // are OutOfStock, so visitors and search engines are not sent
+  // to a checkout that 503s.
+  const topupsEnabled = topUpsConfigured() && CREDIT_COSTS_ENABLED;
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
       {/* AF-070: Product/Offer JSON-LD for the top-ups, priced
@@ -44,7 +52,9 @@ export default function Credits() {
               name: `${t.credits.toLocaleString()} Oracles`,
               price: t.price.toFixed(2),
               priceCurrency: "USD",
-              availability: "https://schema.org/InStock",
+              availability: topupsEnabled
+                ? "https://schema.org/InStock"
+                : "https://schema.org/OutOfStock",
               url: `${SITE_URL}/oracles`,
             })),
           }),
@@ -88,6 +98,7 @@ export default function Credits() {
                 <TopUpBuyButton
                   topUpId={t.id}
                   label={`Buy ${t.credits.toLocaleString()} for $${t.price.toFixed(2)}`}
+                  enabled={topupsEnabled}
                 />
               </div>
             </div>

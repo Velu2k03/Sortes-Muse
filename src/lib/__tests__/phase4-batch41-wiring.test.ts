@@ -25,6 +25,21 @@ describe("Phase 4 Batch 4.1 Oracles page", () => {
     expect(page).not.toContain("Celestial Treasury");
   });
 
+  it("gates the top-up buttons and the JSON-LD availability on cutover readiness (Codex P2, PR #118)", () => {
+    // The checkout route 503s while CREDIT_COSTS_ENABLED is off
+    // or the top-up variants are unconfigured, so the page must
+    // not offer an active Buy button or an InStock offer until
+    // then — same readiness the pricing page uses.
+    expect(page).toContain("topUpsConfigured() && CREDIT_COSTS_ENABLED");
+    expect(page).toContain("enabled={topupsEnabled}");
+    expect(page).toContain("OutOfStock");
+    expect(page).toContain("InStock");
+    const buy = src("src/app/oracles/TopUpBuyButton.tsx");
+    expect(buy).toContain("enabled = false");
+    expect(buy).toContain("disabled={!enabled || processing}");
+    expect(buy).toContain('"Not yet open"');
+  });
+
   it("points guests at the free reading, and takes the counter colour from a token", () => {
     expect(credits).toContain("Start your free reading");
     expect(credits).not.toContain("Ask your question");
