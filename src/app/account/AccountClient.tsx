@@ -113,7 +113,7 @@ function useSignIn(afterSignIn: () => Promise<void>) {
   const [error, setError] = useState<string | null>(null);
   const [devCode, setDevCode] = useState<string | null>(null);
   const [authTab, setAuthTab] = useState<"password" | "link">("password");
-  // Phase 3 (3.6): Create account and Sign in are two equal top-level
+  // Phase 3 (3.6): Sign up and Sign in are two equal top-level
   // paths, not a sub-toggle hidden under one method. The method tabs
   // (password / email link) sit one level below and apply to both.
   const [mode, setMode] = useState<"signin" | "signup">("signin");
@@ -324,7 +324,7 @@ function SignInPanel({ s }: { s: ReturnType<typeof useSignIn> }) {
       <h2 className="font-display text-2xl text-cream">
         {mode === "signin"
           ? "Sign in to sync everything"
-          : "Create your account"}
+          : "Sign up to sync everything"}
       </h2>
       <p className="mt-2 text-sm leading-relaxed text-cream/75">
         {mode === "signin"
@@ -349,7 +349,7 @@ function SignInPanel({ s }: { s: ReturnType<typeof useSignIn> }) {
                 : "text-mist hover:text-cream"
             }`}
           >
-            {m === "signin" ? "Sign in" : "Create account"}
+            {m === "signin" ? "Sign in" : "Sign up"}
           </button>
         ))}
       </div>
@@ -471,7 +471,7 @@ function SignInPanel({ s }: { s: ReturnType<typeof useSignIn> }) {
               ? "Please wait…"
               : mode === "signin"
                 ? "Sign in"
-                : "Create account"}
+                : "Sign up"}
           </button>
           {mode === "signin" && (
             <p className="text-center text-xs text-mist">

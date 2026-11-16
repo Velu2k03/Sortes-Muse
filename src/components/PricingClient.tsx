@@ -12,6 +12,7 @@ import { HStack } from "@astryxdesign/core/HStack";
 import { Grid } from "@astryxdesign/core/Grid";
 import { StarBorder } from "@/components/ReactBits";
 import CountUp from "@/components/CountUp";
+import { CREDIT_PACKS } from "@/lib/site";
 
 // Astryx scoped pilot (pricing page only, Velu 2026-11-14). UI only
 // until Phase 2 batch 3: the tier buttons were disabled
@@ -39,8 +40,10 @@ import CountUp from "@/components/CountUp";
 // monthly product exists), and any tier gating — no code gates a
 // feature by tier, so the lists describe what each tier's credits
 // cover, with the credit volume as the real differentiator.
-// Credit costs (100 / 200 / 300 / 50) are Velu's plan numbers,
-// not live prices: the product still spends 1 Oracle per reading.
+// Batch 4.3: the per-reading costs (100 / 200 / 300 / 50) are
+// gone from the lists and the "What a reading costs" table —
+// they described the cancelled credit cutover. The product spends
+// 1 Oracle per reading, so the lists name the products only.
 
 type Billing = "monthly" | "annual";
 
@@ -69,9 +72,9 @@ const TIERS: Tier[] = [
     savings: 16,
     popular: false,
     features: [
-      "1-card readings — 100 Oracles each",
-      "3-card readings — 200 Oracles each",
-      "Follow-up questions — 50 Oracles each",
+      "1-card readings",
+      "3-card readings",
+      "Follow-up questions",
       "Daily card free, every day",
     ],
   },
@@ -85,7 +88,7 @@ const TIERS: Tier[] = [
     popular: true,
     features: [
       "Everything in Spark, plus 1,500 more Oracles a month",
-      "Chart readings — 300 Oracles each",
+      "Chart readings",
       "Your journal and reading history",
     ],
   },
@@ -100,7 +103,6 @@ const TIERS: Tier[] = [
     features: [
       "Everything in Star, plus 3,500 more Oracles a month",
       "Reports: transit, year-ahead, and relationship",
-      "60 one-card readings a month",
     ],
   },
 ];
@@ -110,19 +112,14 @@ const TOPUPS = [
   { credits: 3000, price: 24.99 },
 ];
 
-const CREDIT_COSTS = [
-  { label: "1-card reading", credits: 100 },
-  { label: "3-card reading", credits: 200 },
-  { label: "Chart reading", credits: 300 },
-  { label: "Follow-up question", credits: 50 },
-];
-
 export default function PricingClient({
   subscriptionsEnabled = false,
   topupsEnabled = false,
+  packsEnabled = true,
 }: {
   subscriptionsEnabled?: boolean;
   topupsEnabled?: boolean;
+  packsEnabled?: boolean;
 }) {
   const [billing, setBilling] = useState<Billing>("monthly");
   const [processing, setProcessing] = useState<string | null>(null);
@@ -167,11 +164,6 @@ export default function PricingClient({
     <Section variant="transparent" maxWidth="64rem" padding={8} paddingInline={4} className="mx-auto">
       <VStack gap={0} className="text-center">
         <p className="text-xs uppercase tracking-[0.35em] text-gold">Pricing</p>
-        {!subscriptionsEnabled && (
-          <HStack hAlign="center" gap={0} className="mt-3">
-            <Badge label="Coming soon" variant="neutral" />
-          </HStack>
-        )}
         <h1 className="mt-3 font-display text-5xl text-goldbright sm:text-6xl">
           Choose your plan
         </h1>
@@ -252,7 +244,9 @@ export default function PricingClient({
                     label={
                       processing === `${tier.id}-${billing}`
                         ? "Starting checkout…"
-                        : `Choose ${tier.name}`
+                        : !subscriptionsEnabled
+                          ? "Not yet open"
+                          : `Choose ${tier.name}`
                     }
                     variant={tier.id === "star" ? "primary" : "secondary"}
                     isDisabled={!subscriptionsEnabled}
@@ -299,26 +293,31 @@ export default function PricingClient({
             </Link>
             .{" "}
           </>
+        ) : packsEnabled ? (
+          <>
+            Oracle packs available now.{" "}
+            <Link href="/oracles" className="font-semibold text-goldbright underline">
+              See Oracle packs
+            </Link>
+          </>
         ) : (
-          <>Subscriptions open soon — Oracle packs available now.{" "}</>
+          // Cutover on and subscriptions not configured: /oracles
+          // sells top-ups, not packs, so the footer points there
+          // instead of claiming packs are available (Codex P2,
+          // PR #116).
+          <Link href="/oracles" className="font-semibold text-goldbright underline">
+            See top-ups
+          </Link>
         )}
-        <Link href="/oracles" className="font-semibold text-goldbright underline">
-          See Oracle packs
-        </Link>
       </p>
 
       <section className="mt-12" aria-labelledby="topups-heading">
         <h2 id="topups-heading" className="text-center font-display text-3xl text-goldbright">
           Top up any time
         </h2>
-        {!topupsEnabled && (
-          <HStack hAlign="center" gap={0} className="mt-3">
-            <Badge label="Coming soon" variant="neutral" />
-          </HStack>
-        )}
         <p className="mx-auto mt-2 max-w-xl text-center text-sm text-cream/75">
-          Top-ups launch with subscriptions: 1,000 Oracles for $9.99 and
-          3,000 for $24.99. Purchased Oracles never expire.
+          1,000 Oracles for $9.99 and 3,000 for $24.99. Purchased Oracles
+          never expire.
         </p>
         <Grid columns={{ minWidth: 280, max: 2 }} gap={4} maxWidth="42rem" className="mx-auto mt-6">
           {TOPUPS.map((topup) => (
@@ -338,7 +337,9 @@ export default function PricingClient({
                   label={
                     processing === `topup-${topup.credits}`
                       ? "Starting checkout…"
-                      : `Top up ${topup.credits.toLocaleString()} Oracles`
+                      : !topupsEnabled
+                        ? "Not yet open"
+                        : `Top up ${topup.credits.toLocaleString()} Oracles`
                   }
                   variant="secondary"
                   isDisabled={!topupsEnabled}
@@ -353,28 +354,40 @@ export default function PricingClient({
         </Grid>
       </section>
 
-      <section className="mt-12" aria-labelledby="costs-heading">
-        <h2 id="costs-heading" className="text-center font-display text-3xl text-goldbright">
-          What a reading costs
-        </h2>
-        <p className="mx-auto mt-2 max-w-xl text-center text-sm text-cream/75">
-          Planned costs for subscriptions — readings cost 1 Oracle each
-          today.
-        </p>
-        <ul className="mx-auto mt-6 max-w-md space-y-2 text-sm text-cream/85">
-          {CREDIT_COSTS.map((cost) => (
-            <li
-              key={cost.label}
-              className="flex items-baseline justify-between border-b border-gold/15 pb-2"
-            >
-              <span>{cost.label}</span>
-              <span className="font-semibold text-goldbright lining-nums tabular-nums">
-                {cost.credits} Oracles
-              </span>
-            </li>
-          ))}
-        </ul>
-      </section>
+      {packsEnabled && (
+        <section className="mt-12" aria-labelledby="packs-heading">
+          <h2 id="packs-heading" className="text-center font-display text-3xl text-goldbright">
+            Oracle packs — available now
+          </h2>
+          <p className="mx-auto mt-2 max-w-xl text-center text-sm text-cream/75">
+            One reading costs 1 Oracle. Buy a pack and read right away —
+            purchased Oracles never expire.
+          </p>
+          <Grid columns={{ minWidth: 280, max: 3 }} gap={4} className="mt-6">
+            {CREDIT_PACKS.map((pack) => (
+              <Card key={pack.id} padding={4}>
+                <VStack gap={0} className="pricing-card-dark text-center">
+                  <h3 className="font-display text-xl text-cream">{pack.name}</h3>
+                  <p className="mt-3 font-display text-3xl font-bold text-goldbright lining-nums tabular-nums">
+                    ${pack.price.toFixed(2)}
+                  </p>
+                  <p className="mt-2 text-base text-cream lining-nums tabular-nums">
+                    <span className="font-display text-xl">{pack.readings}</span>{" "}
+                    Oracles
+                  </p>
+                  <p className="mt-1 text-sm text-cream/75">Never expires</p>
+                  <Link
+                    href="/oracles"
+                    className="btn-ghost mt-4 inline-block rounded-xl px-6 py-3 text-sm font-semibold"
+                  >
+                    Get Oracles
+                  </Link>
+                </VStack>
+              </Card>
+            ))}
+          </Grid>
+        </section>
+      )}
     </Section>
   );
 }

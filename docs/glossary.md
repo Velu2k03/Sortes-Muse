@@ -21,9 +21,9 @@ words below appear in the four money-flow UI files.
   The first follow-up is free, then 1 Oracle each, up to 3.
 - **Sign in**: the action of entering an existing account. Always "Sign
   in", two words, capital S.
-- **Create account**: the action of making a new account. Always "Create
-  account", two words, capital C. (Fable's recommendation; Velu's wording
-  decision is still open. See the Phase 4 notes.)
+- **Sign up**: the action of making a new account. Always "Sign
+  up", two words, capital S. (Velu's wording decision, 2026-11-16:
+  "Sign up" and "Sign in".)
 - **Get Oracles**: the action of buying an Oracle pack. The button that
   opens checkout.
 - **Top up**: the action of adding Oracles to an existing balance. Used in
@@ -45,8 +45,8 @@ variant. The rate is implied by the phrase: one reading, one Oracle.
   not user-facing copy. The test allows those identifiers; it fails on the
   standalone word "credit" in UI strings.
 - **Log in**: always "Sign in".
-- **Register**: always "Create account".
-- **Login / Signup** (one word): always "Sign in" / "Create account".
+- **Register**: always "Sign up".
+- **Login / Signup** (one word): always "Sign in" / "Sign up".
 
 ## Free reading
 

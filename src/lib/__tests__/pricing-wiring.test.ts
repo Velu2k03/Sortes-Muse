@@ -8,7 +8,9 @@ import path from "path";
 // (kind "subscription") and the top-up cards call the same route
 // (kind "topup"), enabled only when the Lemon Squeezy variants
 // are configured (props from the server page). Until then the
-// buttons stay disabled and the page shows "Coming soon".
+// buttons show "Not yet open" (Batch 4.3: no "Coming soon" badge
+// — Velu, 2026-11-16) and the Oracle packs block shows what a
+// visitor can buy today.
 // Copy is asserted on the actual data and JSX elements, not the
 // whole file: the comments above the TIERS array quote the
 // numbers, so a whole-file toContain would pass even if the
@@ -96,12 +98,12 @@ describe("Pricing tiers: Velu's exact numbers", () => {
   });
 });
 
-describe("Pricing feature lists: only what exists in code (4/3/3)", () => {
-  it("Spark lists 4 lines: reading costs, follow-ups, daily card", () => {
+describe("Pricing feature lists: only what exists in code (4/3/2)", () => {
+  it("Spark lists 4 lines: readings, follow-ups, daily card", () => {
     expect(featuresOf(client(), "spark")).toEqual([
-      "1-card readings — 100 Oracles each",
-      "3-card readings — 200 Oracles each",
-      "Follow-up questions — 50 Oracles each",
+      "1-card readings",
+      "3-card readings",
+      "Follow-up questions",
       "Daily card free, every day",
     ]);
   });
@@ -109,16 +111,15 @@ describe("Pricing feature lists: only what exists in code (4/3/3)", () => {
   it("Star lists 3 lines as a delta on Spark", () => {
     expect(featuresOf(client(), "star")).toEqual([
       "Everything in Spark, plus 1,500 more Oracles a month",
-      "Chart readings — 300 Oracles each",
+      "Chart readings",
       "Your journal and reading history",
     ]);
   });
 
-  it("Moon lists 3 lines as a delta on Star", () => {
+  it("Moon lists 2 lines as a delta on Star", () => {
     expect(featuresOf(client(), "moon")).toEqual([
       "Everything in Star, plus 3,500 more Oracles a month",
       "Reports: transit, year-ahead, and relationship",
-      "60 one-card readings a month",
     ]);
   });
 
@@ -141,14 +142,15 @@ describe("Pricing feature lists: only what exists in code (4/3/3)", () => {
 describe("Pricing video formula: one badge, one lifted tier, one primary button", () => {
   it("has exactly one Most popular badge, on Star only", () => {
     const c = client();
-    expect([...c.matchAll(/<Badge/g)].length).toBe(3);
+    expect([...c.matchAll(/<Badge/g)].length).toBe(1);
     const badges = [...c.matchAll(/<Badge[^>]*\/>/g)].map((m) => m[0]);
-    expect(badges).toHaveLength(3);
+    expect(badges).toHaveLength(1);
     expect(badges.filter((b) => b.includes('label="Most popular"'))).toHaveLength(1);
-    // Two "Coming soon" badges: one by the h1 (subscriptions are
-    // not open yet) and one on the top-ups section (no variants
-    // exist yet). Both are pinned, so a third badge cannot sneak in.
-    expect(badges.filter((b) => b.includes('label="Coming soon"'))).toHaveLength(2);
+    // Batch 4.3: no "Coming soon" badges anywhere (Velu, 2026-11-16).
+    // The tier and top-up buttons carry their own state instead
+    // ("Not yet open" while the checkout is gated).
+    expect(badges.filter((b) => b.includes('label="Coming soon"'))).toHaveLength(0);
+    expect(c).not.toContain('label="Coming soon"');
     expect(c).toContain("{tier.popular && <Badge");
     expect([...c.matchAll(/popular: true,/g)].length).toBe(1);
   });
@@ -183,6 +185,10 @@ describe("Pricing video formula: one badge, one lifted tier, one primary button"
     // Gated on the server prop: disabled until the variants are
     // configured, enabled after.
     expect(tierButton).toContain("isDisabled={!subscriptionsEnabled}");
+    // Batch 4.3 (#64): the state sits on the button itself, not in
+    // a single badge above the grid — a disabled tier button reads
+    // "Not yet open", never "Coming soon".
+    expect(tierButton).toContain('"Not yet open"');
     const topUpButton = buttons.find((b) => b.includes("Top up ${topup.credits.toLocaleString()}"));
     expect(topUpButton).toBeDefined();
     expect(topUpButton).toContain('variant="secondary"');
@@ -208,7 +214,7 @@ describe("Pricing toggle, savings, top-ups, credit costs", () => {
     expect(c).toContain('{billing === "annual" && (');
   });
 
-  it("shows both top-ups with exact prices, never expiring, marked coming soon", () => {
+  it("shows both top-ups with exact prices, never expiring, state on the button", () => {
     const c = client();
     const topups = c.match(/const TOPUPS = \[([\s\S]*?)\];/);
     expect(topups).not.toBeNull();
@@ -216,46 +222,65 @@ describe("Pricing toggle, savings, top-ups, credit costs", () => {
     expect((topups as RegExpMatchArray)[1]).toContain("{ credits: 3000, price: 24.99 }");
     expect(c).toContain("Never expires");
     expect(c).toContain("Top up any time");
-    // Codex P2 (PR #86): top-ups have no purchase action yet, so
-    // the page must not present them as buyable now.
-    expect(c).toContain('label="Coming soon"');
-    expect(c).toContain("Top-ups launch with subscriptions");
+    // Batch 4.3: no "Coming soon" badge on the top-ups section.
+    // The state sits on each top-up button ("Not yet open" while
+    // the checkout is gated). The copy states the prices plainly,
+    // with no "launch with subscriptions" promise.
+    expect(c).not.toContain('label="Coming soon"');
+    expect(c).not.toContain("Top-ups launch with subscriptions");
     expect(c).not.toContain("anyone can buy them");
   });
 
-  it("shows the credit costs: 1-card 100, 3-card 200, chart 300, follow-up 50", () => {
+  it("shows the Oracle packs as available now, with a link to /oracles", () => {
+    // Batch 4.3 (#75/#100): the packs are the thing a visitor can
+    // buy today, so the pricing page shows them instead of a
+    // "Coming soon" state. The pack data comes from the same
+    // CREDIT_PACKS the oracles page uses — no second copy.
     const c = client();
-    const costs = c.match(/const CREDIT_COSTS = \[([\s\S]*?)\];/);
-    expect(costs).not.toBeNull();
-    expect((costs as RegExpMatchArray)[1]).toContain(
-      '{ label: "1-card reading", credits: 100 }'
-    );
-    expect((costs as RegExpMatchArray)[1]).toContain(
-      '{ label: "3-card reading", credits: 200 }'
-    );
-    expect((costs as RegExpMatchArray)[1]).toContain(
-      '{ label: "Chart reading", credits: 300 }'
-    );
-    expect((costs as RegExpMatchArray)[1]).toContain(
-      '{ label: "Follow-up question", credits: 50 }'
-    );
-    expect(c).toContain("What a reading costs");
-    // CodeRabbit Minor (PR #86): the 100/200/300/50 schedule is
-    // planned, not live — readings cost 1 Oracle each today.
-    expect(c).toContain("Planned costs for subscriptions");
-    expect(c).toContain("readings cost 1 Oracle each");
+    expect(c).toContain('import { CREDIT_PACKS } from "@/lib/site";');
+    expect(c).toContain("Oracle packs — available now");
+    expect(c).toContain("CREDIT_PACKS.map");
+    expect(c).toContain("One reading costs 1 Oracle.");
+    expect(c).toContain("Get Oracles");
+    expect(c).toContain('href="/oracles"');
+    // Codex P2 (PR #116): the packs stop being sold when the
+    // credit cutover flips on (/oracles renders top-ups instead),
+    // so the section is gated on the packsEnabled prop — it must
+    // not advertise packs that are no longer for sale.
+    expect(c).toContain("packsEnabled");
+    expect(c).toContain("{packsEnabled && (");
+    expect(c).toContain('aria-labelledby="packs-heading"');
+    // The cancelled credit cutover's cost table is gone: no
+    // per-reading credit costs (100/200/300/50) anywhere on the page.
+    // Assert on the JSX, not the whole file: the header comment
+    // above TIERS names the removed table, so a whole-file
+    // not.toContain would fail on the documentation itself.
+    expect(c).not.toContain("CREDIT_COSTS");
+    expect(c).not.toContain('aria-labelledby="costs-heading"');
+    expect(c).not.toContain('id="costs-heading"');
+    expect(c).not.toContain("Planned costs for subscriptions");
   });
 });
 
 describe("Pricing honesty: gated CTAs, packs link, checkout wiring", () => {
-  it("renders tier buttons gated on the config prop, and the subscriptions-open-soon line to /oracles when disabled", () => {
+  it("renders tier buttons gated on the config prop, and the packs line to /oracles when disabled", () => {
     const c = client();
     const button = c.match(/<Button[\s\S]*?\/>/);
     expect(button).not.toBeNull();
     // Phase 2 batch 3: the tier button is disabled only while the
     // variants are unconfigured (the server prop), not forever.
     expect((button as RegExpMatchArray)[0]).toContain("isDisabled={!subscriptionsEnabled}");
-    expect(c).toContain("Subscriptions open soon — Oracle packs available now.");
+    // Batch 4.3: no "open soon" language — the line under the grid
+    // states the packs are available now.
+    expect(c).toContain("Oracle packs available now.");
+    expect(c).not.toContain("Subscriptions open soon");
+    expect(c).not.toContain("Coming soon");
+    // Codex P2 (PR #116): the footer is gated on packsEnabled too,
+    // not just the packs cards. When the cutover is on, /oracles
+    // sells top-ups, so the footer points there instead of claiming
+    // packs are available.
+    expect(c).toContain(") : packsEnabled ? (");
+    expect(c).toContain("See top-ups");
     const link = c.match(
       /<Link href="\/oracles"[^>]*>([\s\S]*?)<\/Link>/
     );
@@ -331,10 +356,11 @@ describe("Pricing card contrast: dark islands on the light page", () => {
     expect(body).not.toContain("#fdf9ee");
   });
 
-  it("applies the dark scope inside the tier Cards and the top-up Cards, nowhere else", () => {
+  it("applies the dark scope inside the tier Cards, the top-up Cards, and the packs Cards, nowhere else", () => {
     const c = client();
-    // One occurrence in the tier map, one in the top-up map.
-    expect([...c.matchAll(/pricing-card-dark/g)].length).toBe(2);
+    // One occurrence in the tier map, one in the top-up map, one
+    // in the packs map (Batch 4.3).
+    expect([...c.matchAll(/pricing-card-dark/g)].length).toBe(3);
     // The {0} in gap={0} must be escaped: unescaped, {0} is a
     // regex quantifier (zero of the preceding token), so the
     // literal "gap=" would never match. The match is anchored to
@@ -354,9 +380,16 @@ describe("Pricing card contrast: dark islands on the light page", () => {
     );
     expect(topupStack).not.toBeNull();
     expect((topupStack as RegExpMatchArray)[1]).toContain("${topup.price.toFixed(2)}");
+    // Batch 4.3: the packs VStack shares the top-up className, so
+    // pin it by its pack content instead of the class alone.
+    const packsStack = c.match(
+      /<VStack gap=\{0\} className="pricing-card-dark text-center">([\s\S]*?)\{pack\.name\}([\s\S]*?)<\/VStack>\s*<\/Card>/
+    );
+    expect(packsStack).not.toBeNull();
+    expect((packsStack as RegExpMatchArray)[0]).toContain("${pack.price.toFixed(2)}");
     // The page-level hero VStack (Pricing eyebrow, h1, intro) sits
     // on the light paper and must NOT carry the dark scope. The
-    // count of 2 above plus the two VStack regexes already pin
+    // count of 3 above plus the three VStack regexes already pin
     // placement; no whitespace-fragile negative assertion is
     // needed (Sonnet nit, PR #88).
     expect(c).toContain('<VStack gap={0} className="text-center">');
@@ -391,11 +424,16 @@ describe("Pricing page: Astryx pilot wiring", () => {
     expect(p).toContain("<PricingClient");
     expect(p).toContain("subscriptionsEnabled={subscriptionsConfigured() && CREDIT_COSTS_ENABLED}");
     expect(p).toContain("topupsEnabled={topUpsConfigured() && CREDIT_COSTS_ENABLED}");
+    // Batch 4.3 (Codex P2, PR #116): the packs section shows only
+    // while the packs are actually sold — /oracles stops selling
+    // them when the credit cutover flips on.
+    expect(p).toContain("packsEnabled={!CREDIT_COSTS_ENABLED}");
     expect(p).toContain('title: "Pricing"');
     expect(p).toContain('canonical: "/pricing"');
     // Phase 2 batch 3: the meta/OG descriptions describe the live
-    // subscriptions (the checkout is wired); the "Coming soon"
-    // state is a client-side badge, gated on the config props.
+    // subscriptions (the checkout is wired). Batch 4.3 removed the
+    // "Coming soon" state: the buttons carry their own "Not yet
+    // open" label, gated on the config props.
     expect(p).toContain("Sortes subscriptions: Spark $9.99");
     expect(p).not.toContain("coming soon");
   });
