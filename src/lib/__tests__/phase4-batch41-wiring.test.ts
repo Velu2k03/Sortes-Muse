@@ -15,8 +15,8 @@ describe("Phase 4 Batch 4.1 Oracles page", () => {
     expect(page).toContain("bg-gold/15");
     expect(page).toContain("text-goldbright");
     expect(page).not.toContain("#14100a");
-    expect(page).not.toContain("#f4d03f");
-    expect(page).not.toContain("#d4af37");
+    expect(page).not.toContain("#d6be8a");
+    expect(page).not.toContain("#b9975b");
   });
 
   it("says what is happening while checkout opens", () => {
@@ -29,7 +29,7 @@ describe("Phase 4 Batch 4.1 Oracles page", () => {
     expect(credits).not.toContain("Ask your question");
     expect(credits).toContain('textColor="var(--color-cream)"');
     expect(credits).not.toContain("#1c1a15");
-    expect(credits).not.toContain("#ede6d6");
+    expect(credits).not.toContain("#faf6ec");
     // The theme-tracking workaround is gone with the hard colour.
     expect(credits).not.toContain("siteTheme");
     expect(credits).not.toContain("MutationObserver");

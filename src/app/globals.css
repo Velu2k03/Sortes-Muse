@@ -20,16 +20,17 @@
    imported by src/astryx-themes.ts, not here. */
 
 @theme {
-  /* Brand lock (Velu, 2026-11-15): Navy #0F1E36, Gold #B9975B,
-     Cream #FAF6EC. The dark stops are his navy/gold family; the
+  /* Brand lock (Velu, 2026-11-16): Navy #141b2e, Gold #d4af37,
+     Cream #ede6d6. Replaces the 2026-11-15 bronze lock. The dark
+     stops are his navy/gold family; the
      light stops are the same brand on cream. */
-  --color-ink: #0b1424;
-  --color-navy: #0f1e36;
-  --color-navydeep: #0a1526;
-  --color-panel: #1a2a44;
-  --color-gold: #b9975b;
-  --color-goldbright: #d6be8a;
-  --color-cream: #faf6ec;
+  --color-ink: #0a0e1a;
+  --color-navy: #141b2e;
+  --color-navydeep: #0f1424;
+  --color-panel: #1a1f2e;
+  --color-gold: #d4af37;
+  --color-goldbright: #f4d03f;
+  --color-cream: #ede6d6;
   --color-mist: #9ca3af;
   --color-violet: #8b5cf6;
   --color-danger: #f87171;
@@ -47,11 +48,12 @@
    layout follows the OS prefers-color-scheme (AF-031); a saved
    choice wins.
    Light tokens, checked for AA on their own backgrounds (normal text
-   needs 4.5:1): cream #faf6ec with navy text #0f1e36 is about 13:1;
-   dark gold #8a6d0a on cream is about 5.6:1; darker goldbright #7c5e00
-   on cream is about 6.6:1; muted #5c5a52 on cream and on white panel
+   needs 4.5:1): cream #ede6d6 with navy text #141b2e is about 13:1;
+   dark gold #7c5e00 on cream is about 4.9:1 (passes AA; the old
+   light gold dropped to about 4.0:1 on the new cream and is retired);
+   muted #5c5a52 on cream and on white panel
    is about 6.5:1; violet #6d28d9 on white is about 6.5:1. His gold
-   #b9975b is NOT used as normal text in light mode, it fails AA on
+   #d4af37 is NOT used as normal text in light mode, it fails AA on
    cream, so it survives only as the btn-gold gradient behind dark
    #14100a text, and as borders and glows.
    Charts: the Ziwei ring is theme-aware in ZiweiChartBoard.tsx
@@ -60,13 +62,13 @@
    island on the light page. The planet table and square list, which
    use Tailwind classes, flip to light text on white. */
 html[data-theme="light"] {
-  --color-ink: #faf6ec;
+  --color-ink: #ede6d6;
   --color-navy: #f1ead8;
   --color-navydeep: #f7f0dc;
   --color-panel: #ffffff;
   --color-gold: #7c5e00;
   --color-goldbright: #7c5e00;
-  --color-cream: #0f1e36;
+  --color-cream: #141b2e;
   --color-mist: #45423c;
   --color-violet: #6d28d9;
   --color-danger: #b91c1c;
@@ -94,12 +96,12 @@ html[data-theme="light"] {
    Playwright check + PIL pixel sampling) is what catches a dead
    token, not this stylesheet. */
 .pricing-card-dark {
-  --color-ink: var(--color-background-body, #0b1424);
-  --color-navy: var(--color-background-surface, #0f1e36);
-  --color-panel: var(--color-background-card, #1a2a44);
-  --color-gold: var(--color-accent, #b9975b);
-  --color-goldbright: var(--color-text-accent, #d6be8a);
-  --color-cream: var(--color-text-primary, #faf6ec);
+  --color-ink: var(--color-background-body, #0a0e1a);
+  --color-navy: var(--color-background-surface, #141b2e);
+  --color-panel: var(--color-background-card, #1a1f2e);
+  --color-gold: var(--color-accent, #d4af37);
+  --color-goldbright: var(--color-text-accent, #f4d03f);
+  --color-cream: var(--color-text-primary, #ede6d6);
   --color-mist: var(--color-text-secondary, #9ca3af);
 }
 /* Numbers: genjutsu paint method, distinct readable numerals. Inter
@@ -115,17 +117,17 @@ html[data-theme="light"] {
    The old logo-turn-once spin is removed. The SORTES wordmark keeps
    the Cormorant Garamond display face with a gold gradient and a
    soft glow, so the word itself carries the brand. Dark theme uses
-   his gold #b9975b to a lighter tint; light theme uses dark gold so
+   his gold #d4af37 to a lighter tint; light theme uses dark gold so
    the word stays readable on cream. */
 .wordmark {
-  background: linear-gradient(180deg, #e8d5a4 0%, #b9975b 55%, #9a7f45 100%);
+  background: linear-gradient(180deg, #f4d03f 0%, #d4af37 55%, #b8962e 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  filter: drop-shadow(0 1px 6px rgba(185, 151, 91, 0.35));
+  filter: drop-shadow(0 1px 6px rgba(212, 175, 55, 0.35));
 }
 html[data-theme="light"] .wordmark {
-  background: linear-gradient(180deg, #8a6d0a 0%, #7c5e00 60%, #6b5200 100%);
+  background: linear-gradient(180deg, #7c5e00 0%, #7c5e00 60%, #6b5200 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -146,7 +148,7 @@ html[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
   background: #bfae6e;
 }
 html[data-theme="light"] ::selection {
-  background: rgba(185, 151, 91, 0.45);
+  background: rgba(212, 175, 55, 0.45);
   color: #1c1a15;
 }
 html[data-theme="light"] :focus-visible {
@@ -230,7 +232,7 @@ body {
 }
 
 ::selection {
-  background: rgba(185, 151, 91, 0.35);
+  background: rgba(212, 175, 55, 0.35);
   color: #fff8e7;
 }
 
@@ -282,10 +284,10 @@ body {
 .btn-gold {
   position: relative;
   overflow: hidden;
-  background: linear-gradient(135deg, #d6be8a 0%, #b9975b 50%, #9a7f45 100%);
+  background: linear-gradient(135deg, #e8c55a 0%, #d4af37 50%, #b8962e 100%);
   color: #14100a;
   box-shadow:
-    0 0 24px rgba(185, 151, 91, 0.25),
+    0 0 24px rgba(212, 175, 55, 0.25),
     inset 0 1px 0 rgba(255, 255, 255, 0.35);
   transition: transform 0.15s ease, box-shadow 0.2s ease;
 }
@@ -318,7 +320,7 @@ body {
 }
 .btn-gold:hover {
   box-shadow:
-    0 0 36px rgba(185, 151, 91, 0.45),
+    0 0 36px rgba(212, 175, 55, 0.45),
     inset 0 1px 0 rgba(255, 255, 255, 0.35);
   transform: translateY(-1px);
 }
@@ -332,7 +334,7 @@ body {
    dark, about 17:1 in light, since panel and cream both flip), so
    it reads as strongly as a solid button in both themes. */
 .btn-secondary {
-  border: 1px solid rgba(185, 151, 91, 0.7);
+  border: 1px solid rgba(212, 175, 55, 0.7);
   background: var(--color-panel);
   color: var(--color-cream);
   transition: background 0.2s ease, transform 0.15s ease;
@@ -366,12 +368,12 @@ html[data-theme="light"] .alert-error-text {
 
 /* Ghost button */
 .btn-ghost {
-  border: 1px solid rgba(185, 151, 91, 0.4);
+  border: 1px solid rgba(212, 175, 55, 0.4);
   color: var(--color-goldbright);
   transition: background 0.2s ease, transform 0.15s ease;
 }
 .btn-ghost:hover {
-  background: rgba(185, 151, 91, 0.12);
+  background: rgba(212, 175, 55, 0.12);
   transform: translateY(-1px);
 }
 
@@ -380,7 +382,7 @@ html[data-theme="light"] .alert-error-text {
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(185, 151, 91, 0.7),
+    rgba(212, 175, 55, 0.7),
     transparent
   );
   height: 1px;
@@ -406,9 +408,9 @@ html[data-theme="light"] .alert-error-text {
 html[data-theme="light"] .hero-scrim {
   background: linear-gradient(
     to bottom,
-    rgb(253 249 238 / 0.25),
-    rgb(253 249 238 / 0.45),
-    rgb(253 249 238)
+    rgb(237 230 214 / 0.25),
+    rgb(237 230 214 / 0.45),
+    rgb(237 230 214)
   );
 }
 html[data-theme="light"] .hero-img {
@@ -453,10 +455,10 @@ html[data-theme="light"] {
   @keyframes magic-glow {
     0%,
     100% {
-      box-shadow: 0 0 18px rgba(185, 151, 91, 0.22);
+      box-shadow: 0 0 18px rgba(212, 175, 55, 0.22);
     }
     50% {
-      box-shadow: 0 0 38px rgba(185, 151, 91, 0.45);
+      box-shadow: 0 0 38px rgba(212, 175, 55, 0.45);
     }
   }
 }
@@ -512,7 +514,7 @@ html[data-theme="light"] {
   .heirloom-brand {
     font-size: 13pt;
     letter-spacing: 0.35em;
-    color: #8a6d0a;
+    color: #7c5e00;
     text-align: center;
     margin: 0;
   }
@@ -538,7 +540,7 @@ html[data-theme="light"] {
   }
   .heirloom-rule {
     border: none;
-    border-top: 1pt solid #b9975b;
+    border-top: 1pt solid #d4af37;
     margin: 14pt 0;
   }
   .heirloom-section {
@@ -547,7 +549,7 @@ html[data-theme="light"] {
   }
   .heirloom-heading {
     font-size: 14pt;
-    color: #8a6d0a;
+    color: #7c5e00;
     margin: 0 0 4pt;
   }
   .heirloom-body {

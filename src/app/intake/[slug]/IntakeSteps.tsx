@@ -559,9 +559,9 @@ export function ImpressionStep({ f, drawnCards }: { f: IntakeState; drawnCards: 
             onConfirm={beginGeneration}
             disabled={busy}
             width={250}
-            trackColor="#1a2a44"
-            handleColor="#b9975b"
-            successColor="#b9975b"
+            trackColor="#1a1f2e"
+            handleColor="#d4af37"
+            successColor="#d4af37"
             dangerColor="#f87171"
           />
         </div>

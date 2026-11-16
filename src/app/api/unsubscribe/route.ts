@@ -6,14 +6,14 @@ export const dynamic = "force-dynamic";
 
 function page(title: string, body: string, status: number) {
   return new NextResponse(
-    `<!doctype html><title>Sortes</title><body style="font-family: Georgia, serif; background: #0a1526; color: #faf6ec; padding: 40px;"><h1>${title}</h1><p>${body}</p></body>`,
+    `<!doctype html><title>Sortes</title><body style="font-family: Georgia, serif; background: #0f1424; color: #ede6d6; padding: 40px;"><h1>${title}</h1><p>${body}</p></body>`,
     { status, headers: { "Content-Type": "text/html" } }
   );
 }
 
 function confirmPage(userId: string, token: string) {
   return new NextResponse(
-    `<!doctype html><title>Sortes</title><body style="font-family: Georgia, serif; background: #0a1526; color: #faf6ec; padding: 40px;"><h1>Stop win-back emails?</h1><p>Sortes sends one gentle email if you have been away for a while. Turning it off changes nothing else: your readings, daily card, and account stay exactly as they are, and you can turn it back on from your account page, under Notifications.</p><form method="post" action="/api/unsubscribe"><input type="hidden" name="u" value="${userId}"><input type="hidden" name="t" value="${token}"><button type="submit" style="background: #b9975b; color: #0a1526; border: 0; border-radius: 12px; padding: 14px 28px; font-size: 16px; font-weight: 700; cursor: pointer;">Yes, stop win-back emails</button></form></body>`,
+    `<!doctype html><title>Sortes</title><body style="font-family: Georgia, serif; background: #0f1424; color: #ede6d6; padding: 40px;"><h1>Stop win-back emails?</h1><p>Sortes sends one gentle email if you have been away for a while. Turning it off changes nothing else: your readings, daily card, and account stay exactly as they are, and you can turn it back on from your account page, under Notifications.</p><form method="post" action="/api/unsubscribe"><input type="hidden" name="u" value="${userId}"><input type="hidden" name="t" value="${token}"><button type="submit" style="background: #d4af37; color: #0f1424; border: 0; border-radius: 12px; padding: 14px 28px; font-size: 16px; font-weight: 700; cursor: pointer;">Yes, stop win-back emails</button></form></body>`,
     { status: 200, headers: { "Content-Type": "text/html" } }
   );
 }

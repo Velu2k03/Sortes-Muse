@@ -511,7 +511,7 @@ export function useChartSession(form: ChartForm, prefs: ChartPrefs) {
       // Phase 4C (4.8a): html-to-image loads only when the seeker
       // actually exports a chart image, not on first paint.
       const { toPng } = await import("html-to-image");
-      const dataUrl = await toPng(shareRef.current, { cacheBust: true, pixelRatio: 2, backgroundColor: "#0a1526" });
+      const dataUrl = await toPng(shareRef.current, { cacheBust: true, pixelRatio: 2, backgroundColor: "#0f1424" });
       const a = document.createElement("a");
       a.download = "sortes-chart.png";
       a.href = dataUrl;

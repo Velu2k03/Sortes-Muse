@@ -139,7 +139,7 @@ export default function ShareReading({
               style={{
                 marginTop: 30,
                 fontSize: 26,
-                color: "#0a1526",
+                color: "#0f1424",
                 background: BRAND.gold,
                 borderRadius: 999,
                 padding: "10px 28px",

@@ -85,13 +85,13 @@
   background:
     radial-gradient(
       120% 90% at var(--hc-lx, 36%) var(--hc-ly, 26%),
-      color-mix(in srgb, var(--hc-foil, #b9975b) 30%, transparent),
-      color-mix(in srgb, var(--hc-foil, #b9975b) 10%, transparent) 45%,
+      color-mix(in srgb, var(--hc-foil, #d4af37) 30%, transparent),
+      color-mix(in srgb, var(--hc-foil, #d4af37) 10%, transparent) 45%,
       transparent 70%
     );
   box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, var(--hc-foil, #b9975b) 55%, transparent),
-    inset 0 0 18px color-mix(in srgb, var(--hc-foil, #b9975b) 25%, transparent);
+    inset 0 0 0 1px color-mix(in srgb, var(--hc-foil, #d4af37) 55%, transparent),
+    inset 0 0 18px color-mix(in srgb, var(--hc-foil, #d4af37) 25%, transparent);
   transition: opacity 0.3s ease;
 }
 

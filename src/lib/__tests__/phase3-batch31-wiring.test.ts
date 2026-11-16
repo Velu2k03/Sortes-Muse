@@ -58,7 +58,7 @@ describe("Phase 3 Batch 3.1 intake form and no dead end", () => {
     expect(steps).toContain('background="var(--color-panel)"');
     expect(steps).toContain('color="var(--color-cream)"');
     expect(steps).toContain('fuseColor="var(--color-gold)"');
-    expect(steps).not.toContain('fuseColor="#d4af37"');
-    expect(steps).not.toContain('background="#1a1f2e"');
+    expect(steps).not.toContain('fuseColor="#b9975b"');
+    expect(steps).not.toContain('background="#1a2a44"');
   });
 });

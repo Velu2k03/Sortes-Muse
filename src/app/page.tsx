@@ -510,7 +510,7 @@ export default function Home() {
               key={tier.name}
               className={`relative rounded-2xl border p-6 text-center ${
                 tier.popular
-                  ? "border-gold bg-gold/10 shadow-[0_0_24px_rgba(185,151,91,0.25)]"
+                  ? "border-gold bg-gold/10 shadow-[0_0_24px_rgba(212,175,55,0.25)]"
                   : "border-gold/25 bg-panel/60"
               }`}
             >

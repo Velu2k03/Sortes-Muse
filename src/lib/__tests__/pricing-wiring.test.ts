@@ -163,7 +163,7 @@ describe("Pricing video formula: one badge, one lifted tier, one primary button"
     expect([...c.matchAll(/min-\[960px\]:-translate-y-4/g)].length).toBe(1);
     expect(c).not.toContain("sm:-translate-y-4");
     expect(c).toContain(
-      'tier.id === "star"\n                  ? "min-[960px]:-translate-y-4 shadow-[0_24px_48px_-24px_rgba(185,151,91,0.55)]"'
+      'tier.id === "star"\n                  ? "min-[960px]:-translate-y-4 shadow-[0_24px_48px_-24px_rgba(212,175,55,0.55)]"'
     );
     expect([...c.matchAll(/<StarBorder/g)].length).toBe(1);
     expect(c).toContain('{tier.id === "star" ? (');
@@ -352,8 +352,10 @@ describe("Pricing card contrast: dark islands on the light page", () => {
     expect(body).not.toContain("--color-cream: #ede6d6;");
     expect(body).not.toContain("--color-goldbright: #f4d03f;");
     // The scope must NOT flip the page background itself: the
-    // pricing page background stays the light paper.
-    expect(body).not.toContain("#fdf9ee");
+    // pricing page background stays the light paper (#ede6d6). That
+    // colour appears in the scope only as the --color-cream var()
+    // fallback, so the check is for a background property, not the hex.
+    expect(body).not.toContain("background:");
   });
 
   it("applies the dark scope inside the tier Cards, the top-up Cards, and the packs Cards, nowhere else", () => {

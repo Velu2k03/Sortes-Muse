@@ -44,13 +44,13 @@ describe("Phase 5 Batch 5.2 favicon and icons", () => {
     expect(layout).toContain("/apple-touch-icon.png");
     expect(layout).toContain("/favicon.ico");
     // Viewport theme colour is the new navydeep.
-    expect(layout).toContain('themeColor: "#0a1526"');
+    expect(layout).toContain('themeColor: "#0f1424"');
   });
 
   it("the manifest aligns to the new theme colours", () => {
     const manifest = src("src/app/manifest.ts");
-    expect(manifest).toContain('background_color: "#0a1526"');
-    expect(manifest).toContain('theme_color: "#0a1526"');
+    expect(manifest).toContain('background_color: "#0f1424"');
+    expect(manifest).toContain('theme_color: "#0f1424"');
     expect(manifest).toContain("/icons/icon-192.png");
     expect(manifest).toContain("/icons/icon-512.png");
   });
