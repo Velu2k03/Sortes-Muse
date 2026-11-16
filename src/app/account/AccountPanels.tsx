@@ -163,14 +163,14 @@ export function SubscriptionPanel({ subscription }: { subscription: Subscription
           </p>
           {sub.cancelAtPeriodEnd && sub.endsAt ? (
             <p className="mt-1 text-sm text-mist">
-              Ends {new Date(sub.endsAt).toLocaleDateString()}. Monthly credits left are removed then.
+              Ends {new Date(sub.endsAt).toLocaleDateString()}. Monthly Oracles left are removed then.
             </p>
           ) : renews ? (
             <p className="mt-1 text-sm text-mist">Renews {new Date(renews).toLocaleDateString()}.</p>
           ) : null}
           {subscription.monthlyCredits !== null ? (
             <p className="mt-1 text-sm text-mist">
-              Monthly credits: {subscription.monthlyCredits} · Purchased credits: {subscription.purchasedCredits ?? 0}
+              Monthly Oracles: {subscription.monthlyCredits} · Purchased Oracles: {subscription.purchasedCredits ?? 0}
             </p>
           ) : null}
           {subscription.portalUrl ? (

@@ -80,7 +80,7 @@ export default function SpreadsPage() {
         <p className="mx-auto mt-4 max-w-xl text-cream/75">
           {!freeAvailable
             ? "Each reading uses 1 Oracle, any spread. Oracles never expire."
-            : "First Quick Insight free. After that, 1 Oracle per reading, any spread."}
+            : "First Quick Insight free. After that, 1 Oracle, any spread."}
         </p>
         {/* Personal Phase 4, Decision 16: reflection disclaimer on
             the spread pages themselves, not only on FAQ. */}

@@ -161,7 +161,7 @@ function GateScreen({
               onClick={onTopUp}
               className="btn-gold w-full rounded-2xl px-8 py-4 text-lg font-bold sm:w-auto"
             >
-              ✦ Get Oracles · 1 Oracle per reading
+              ✦ Get Oracles · 1 Oracle
             </button>
             <p className="mt-3 text-sm text-mist">
               This reading uses 1 Oracle. Packs start at $3.99 for 5 Oracles.
