@@ -24,7 +24,11 @@ describe("F40 methodology reads without clicking", () => {
     expect(m).toContain("not from astronomical bodies");
     expect(m).toContain("never calculates or invents a placement");
     expect(m).toContain("not a personal reading or a prediction");
-    expect(m).toContain("never stored or sent to any AI prompt");
+    // Codex P2 on PR #119: the old wording said "never stored", but
+    // birth details ARE remembered in the browser (localStorage) after
+    // a successful calculation (useChartsClient). The summary now says
+    // so, matching the charts page ("remembered on this device").
+    expect(m).toContain("remembered on this device only, and never sent to any AI prompt");
   });
 
   it("keeps the full details behind the disclosures", () => {

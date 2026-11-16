@@ -154,14 +154,16 @@ export default function MethodologyPage() {
 
       <section id="privacy" className="mt-10 scroll-mt-24">
         <h2 className="font-display text-3xl text-goldbright">Privacy of birth data</h2>
-        <p className="mt-2 text-sm text-cream/75">Birth date, time, and place are used in-memory for a calculation and never stored or sent to any AI prompt.</p>
+        <p className="mt-2 text-sm text-cream/75">Birth date, time, and place are used in-memory for a calculation, remembered on this device only, and never sent to any AI prompt.</p>
         <details>
           <summary className="mt-3 cursor-pointer text-sm font-semibold text-goldbright">Show the details<span className="sr-only">: Privacy of birth data</span></summary>
         <p className="mt-3 text-sm leading-relaxed text-cream/85">
           Birth date, time, and place are used in-memory for a calculation and are never
-          stored in the database and never sent to any AI prompt. What is stored for a
-          saved chart is positions, signs, and palaces only, plus the interpretation text
-          when one is generated.
+          stored in the database and never sent to any AI prompt. After a successful
+          calculation they are remembered in your browser (localStorage) so a return
+          visit does not start from a blank form; you can clear them from the charts
+          page. What is stored for a saved chart is positions, signs, and palaces
+          only, plus the interpretation text when one is generated.
         </p>
         </details>
       </section>
