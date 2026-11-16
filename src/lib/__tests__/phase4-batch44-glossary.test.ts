@@ -11,6 +11,7 @@ const UI_FILES = [
   "src/components/Header.tsx",
   "src/app/account/AccountPanels.tsx",
   "src/components/PurchaseConfirmer.tsx",
+  "src/app/spreads/SpreadsClient.tsx",
 ];
 
 describe("Phase 4 Batch 4.4 money glossary", () => {
@@ -21,6 +22,18 @@ describe("Phase 4 Batch 4.4 money glossary", () => {
       // the code already uses: the `credits` variable, CREDIT_PACKS,
       // sortes:credits-changed, and /api/credits/*.
       expect(text).not.toMatch(/\bcredit\b/i);
+    }
+  });
+
+  it("never says 'credits' in a user-facing label", () => {
+    // The plural "credits" is a code identifier (the `credits` variable,
+    // monthlyCredits, purchasedCredits), so a bare word check would
+    // false-positive. Pin the actual labels instead.
+    for (const file of UI_FILES) {
+      const text = src(file);
+      expect(text).not.toContain("Monthly credits");
+      expect(text).not.toContain("Purchased credits");
+      expect(text).not.toContain("credits left");
     }
   });
 
@@ -39,6 +52,10 @@ describe("Phase 4 Batch 4.4 money glossary", () => {
     expect(flow).toContain("Get Oracles · 1 Oracle");
     expect(flow).not.toContain("1 Oracle per reading");
     expect(flow).toContain("This reading uses 1 Oracle.");
+    // The spreads page is another entry point; it must use the same phrase.
+    const spreads = src("src/app/spreads/SpreadsClient.tsx");
+    expect(spreads).not.toContain("1 Oracle per reading");
+    expect(spreads).toContain("After that, 1 Oracle, any spread.");
   });
 
   it("uses 'Sign in' and 'Create account', not one-word forms", () => {
