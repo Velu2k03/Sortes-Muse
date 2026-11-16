@@ -74,7 +74,8 @@ export default async function GuidePage({
           in the guide itself, not only on the spreads, charts, or
           Oracles pages. Wording matches the confirmed pricing: every
           full reading is 1 Oracle, chart calculation is free and
-          interpretation is 1 Oracle, first per system free. */}
+          your first interpretation in each system is free, then
+          1 Oracle. */}
       {(() => {
         const notices: Record<string, { text: string; href: string; label: string }> = {
           "celtic-cross-explained": {

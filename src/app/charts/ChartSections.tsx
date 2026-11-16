@@ -60,8 +60,8 @@ export function ChartsIntro() {
   <div className="text-center">
     <PageHeader eyebrow="Birth Charts" title="Cast a birth chart" titleClassName="sm:text-6xl" />
     <p className="mx-auto mt-4 max-w-xl text-cream/75">
-      Ziwei, Western, and Vedic charts. Calculation is free.
-      Interpretation is 1 Oracle, first per system free.
+      Ziwei, Western, and Vedic charts. Calculation is free. Your
+      first interpretation in each system is free; after that, 1 Oracle.
     </p>
     <p className="mx-auto mt-2 max-w-xl text-sm text-cream/80">
       Birth data is used for this calculation and, after a
@@ -242,13 +242,13 @@ export function BirthForm({ prefs, form, s }: { prefs: ChartPrefs; form: ChartFo
           onChange={(e) => setTime(e.target.value)}
           className={`${inputClass} mt-2`}
         />
-        <p className="mt-1 text-xs text-cream/80">Type the time as HH:MM, or tap the field to pick it. Clock time at the birthplace.</p>
+        <p className="mt-1 text-xs text-cream/80">Type the time as HH:MM, e.g. 08:00, or tap the field to pick it. Clock time at the birthplace.</p>
       </div>
       {/* AF-060: field order is system, date, time, place search.
           The place search comes before the city list, not after it. */}
       <div className="sm:col-span-2">
         <label htmlFor="chart-place-search" className={labelClass}>
-          Birthplace — search a place name (free, no key)
+          Birthplace — search a place name
         </label>
         <div className="flex gap-2">
           <input
