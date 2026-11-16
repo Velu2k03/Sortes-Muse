@@ -159,8 +159,11 @@ function BirthForm({
         {!value.unknownTime && (
           <div className="grid grid-cols-2 gap-4">
             <div>
+              {/* UX audit Phase 2, F29: the label used to carry the
+                  range in parentheses. That range is technical noise;
+                  the input already enforces 0-23 with min/max. */}
               <label htmlFor={`${prefix}-hour`} className={labelClass}>
-                Hour (0-23)
+                Hour
               </label>
               <input
                 id={`${prefix}-hour`}
@@ -453,7 +456,9 @@ export default function ReportsClient() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
-      <h1 className="mt-2 text-center font-display text-5xl text-goldbright">Reports</h1>
+      {/* UX audit Phase 2, F29: the H1 was one vague word ("Reports").
+          It now says what the reports are. */}
+      <h1 className="mt-2 text-center font-display text-5xl text-goldbright">Your astrology reports</h1>
       <p className="mt-3 text-center text-cream/80">
         1 Oracle per report. Reports never expire.
       </p>
