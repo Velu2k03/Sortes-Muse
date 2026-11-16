@@ -66,19 +66,6 @@ const BAR_GROUPS = [
 
 const ALL_HREFS = ["/", "/daily", "/spreads", "/deck", "/birth-card", "/charts", "/reports", "/horoscope", "/guides", "/faq", "/about", "/methodology", "/journal"];
 
-// unslopovich (2026-11-16, Velu approved): the 4 top destinations are
-// visible tabs on mobile instead of hiding behind the hamburger.
-// Each tab goes to its section's primary page. The hamburger stays:
-// it is the only mobile route to the sub-pages (Spreads, Deck, Birth
-// Card, Reports, Horoscope, Guides, FAQ, About, Methodology) and to
-// Sign in / Account, which are hidden on mobile outside the drawer.
-const MOBILE_TABS: { label: string; href: string; section: readonly string[] }[] = [
-  { label: "Tarot", href: "/daily", section: ["/daily", "/spreads", "/deck", "/birth-card"] },
-  { label: "Astrology", href: "/charts", section: ["/charts", "/reports", "/horoscope"] },
-  { label: "Learn", href: "/guides", section: ["/guides", "/faq", "/about", "/methodology"] },
-  { label: "Journal", href: "/journal", section: ["/journal"] },
-];
-
 // Theme-color per active theme, kept in step with data-theme by
 // theme.js (before paint) and the Header toggle (on change).
 const THEME_COLORS = { dark: BRAND.navyDeep, light: BRAND.cream } as const;
@@ -413,32 +400,14 @@ export default function Header() {
         </div>
       </div>
 
-      {/* unslopovich (2026-11-16, Velu approved): mobile tab bar for
-          the 4 top destinations. Visible below lg only; the desktop
-          bar above already shows them. Active tab follows the
-          section of the current route. */}
-      <nav className="border-t border-gold/10 lg:hidden" aria-label="Sections">
-        <div className="mx-auto flex max-w-6xl px-4 sm:px-6">
-          {MOBILE_TABS.map((tab) => {
-            const isActive = tab.section.includes(activeHref);
-            return (
-              <Link
-                key={tab.label}
-                href={tab.href}
-                aria-current={isActive ? "page" : undefined}
-                className={`min-h-11 flex-1 border-b-2 py-2.5 text-center text-sm font-semibold transition ${
-                  isActive
-                    ? "border-gold text-goldbright"
-                    : "border-transparent text-cream/70 hover:text-goldbright"
-                }`}
-              >
-                {tab.label}
-              </Link>
-            );
-          })}
-        </div>
-      </nav>
-
+      {/* UX audit Phase 2, F39: the mobile tab bar is gone. The
+          header was two rows (logo row + tab bar) and showed both a
+          hamburger AND visible nav links, costing 110px on a 667px
+          phone. One nav pattern on mobile now: the hamburger, which
+          is the only route to the sub-pages and to Sign in /
+          Account. NOTE: the tab bar was a Velu-approved decision
+          (unslopovich, PR #102); removing it reverses that. If he
+          wants the tabs back, restore them from git. */}
       {openGroup !== null && (
         <button
           type="button"
