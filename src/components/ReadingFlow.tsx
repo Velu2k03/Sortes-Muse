@@ -11,7 +11,6 @@ import { freeReadingUsed } from "@/lib/storage";
 import { useAuth, deviceHeldSession } from "@/components/AuthProvider";
 import { isFreeAvailableFor } from "@/lib/free-reading";
 import Breadcrumbs from "@/components/Breadcrumbs";
-import CheckoutModal from "@/components/CheckoutModal";
 import SpreadDiagram from "@/components/SpreadDiagram";
 import Link from "next/link";
 import { ClickSpark } from "@/components/ReactBits";
@@ -27,8 +26,8 @@ import { ClickSpark } from "@/components/ReactBits";
  * question before anything is generated or spent.
  */
 export default function ReadingFlow({ slug }: { slug: string }) {
+  const router = useRouter();
   const spread: Spread = useMemo(() => getSpread(slug), [slug]);
-  const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [usedFree, setUsedFree] = useState(false);
   const { credits, user, freeReadingAvailable, authFailed, loading: authLoading } = useAuth();
 
@@ -76,13 +75,9 @@ export default function ReadingFlow({ slug }: { slug: string }) {
         isFreeAvailable={isFreeAvailable}
         signedIn={!!user}
         credits={credits ?? 0}
-        onTopUp={() => setCheckoutOpen(true)}
-      />
-
-      <CheckoutModal
-        open={checkoutOpen}
-        onClose={() => setCheckoutOpen(false)}
-        reason="This reading uses 1 Oracle. Top up to continue."
+        // Packs retired (Velu, 2026-11-16, D1): out-of-Oracles
+        // goes to /oracles (top-ups) instead of the pack modal.
+        onTopUp={() => router.push("/oracles")}
       />
     </div>
   );
@@ -164,7 +159,7 @@ function GateScreen({
               ✦ Get Oracles · 1 Oracle
             </button>
             <p className="mt-3 text-sm text-mist">
-              This reading uses 1 Oracle. Packs start at $3.99 for 5 Oracles.
+              This reading uses 1 Oracle. Top up to continue.
             </p>
           </>
         )}

@@ -21,7 +21,7 @@ export const FAQS = [
   {
     group: "Pricing and Oracles",
     q: "How do Oracles work?",
-    a: "One Oracle opens one full reading, any spread, or one chart interpretation after the first free one per system. Oracles never expire. Packs are sold on the Oracles page: 5, 12, and 30 Oracles. The daily card never uses an Oracle.",
+    a: "One Oracle opens one full reading, any spread, or one chart interpretation after the first free one per system. Oracles never expire. Top-ups are sold on the Oracles page: 1,000 Oracles for $9.99 or 3,000 for $24.99. The daily card never uses an Oracle.",
   },
   {
     group: "Pricing and Oracles",
@@ -33,7 +33,7 @@ export const FAQS = [
       "A reading follow-up is free the first time per reading, then 1 Oracle each, up to 3 per reading.",
       "The daily card is always free and never uses an Oracle.",
     ],
-    a: "Oracles never expire. Packs are one-time purchases; monthly subscriptions are optional and separate.",
+    a: "Oracles never expire. Top-ups are one-time purchases; monthly subscriptions are optional and separate.",
   },
   {
     group: "Readings and Charts",
@@ -68,12 +68,12 @@ export const FAQS = [
   {
     group: "Pricing and Oracles",
     q: "Can I get a refund?",
-    a: "Unused Oracle packs may be refunded within 14 days of purchase. Readings that have already been delivered or used are non-refundable. See the Terms page for the full wording.",
+    a: "Unused Oracle top-ups may be refunded within 14 days of purchase. Readings that have already been delivered or used are non-refundable. See the Terms page for the full wording.",
   },
   {
     group: "Pricing and Oracles",
     q: "How do I pay for Oracles?",
-    a: "Oracle packs are paid through a secure checkout powered by Lemon Squeezy. You can pay by card, PayPal, Apple Pay, or Google Pay. Checkout shows the full amount, including any applicable taxes or fees, before you pay. Packs are one-time purchases. See \"How much does a reading cost?\" for pack prices.",
+    a: "Oracle top-ups are paid through a secure checkout powered by Lemon Squeezy. You can pay by card, PayPal, Apple Pay, or Google Pay. Checkout shows the full amount, including any applicable taxes or fees, before you pay. Top-ups are one-time purchases. See \"How much does a reading cost?\" for top-up prices.",
   },
   {
     group: "Pricing and Oracles",
@@ -98,7 +98,7 @@ export const FAQS = [
   {
     group: "Pricing and Oracles",
     q: "How much does a reading cost?",
-    a: "Daily card free. First reading free. After that, a reading costs 1 Oracle. Packs are 5 Oracles for $3.99, 12 for $7.99, and 30 for $14.99, which works out to about $0.80, $0.67, and $0.50 per reading. Prices are in US dollars (USD). Oracles never expire. Monthly subscriptions are optional; packs are one-time purchases.",
+    a: "Daily card free. First reading free. After that, a reading costs 1 Oracle. Top-ups are 1,000 Oracles for $9.99 or 3,000 for $24.99. Prices are in US dollars (USD). Oracles never expire. Monthly subscriptions are optional; top-ups are one-time purchases.",
   },
 ];
 

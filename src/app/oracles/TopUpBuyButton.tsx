@@ -12,9 +12,11 @@ import { useAuth } from "@/components/AuthProvider";
 export default function TopUpBuyButton({
   topUpId,
   label,
+  enabled = false,
 }: {
   topUpId: "topup-1000" | "topup-3000";
   label: string;
+  enabled?: boolean;
 }) {
   const { user } = useAuth();
   const router = useRouter();
@@ -54,11 +56,11 @@ export default function TopUpBuyButton({
     <>
       <button
         type="button"
-        disabled={processing}
+        disabled={!enabled || processing}
         onClick={() => void buy()}
         className="btn-gold w-full rounded-xl px-4 py-3 font-bold lining-nums tabular-nums disabled:opacity-100 disabled:saturate-50"
       >
-        {processing ? "…" : label}
+        {!enabled ? "Not yet open" : processing ? "…" : label}
       </button>
       {error && <p className="mt-2 text-sm alert-error-text">{error}</p>}
     </>

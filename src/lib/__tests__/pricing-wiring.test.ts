@@ -231,25 +231,19 @@ describe("Pricing toggle, savings, top-ups, credit costs", () => {
     expect(c).not.toContain("anyone can buy them");
   });
 
-  it("shows the Oracle packs as available now, with a link to /oracles", () => {
-    // Batch 4.3 (#75/#100): the packs are the thing a visitor can
-    // buy today, so the pricing page shows them instead of a
-    // "Coming soon" state. The pack data comes from the same
-    // CREDIT_PACKS the oracles page uses — no second copy.
+  it("shows no Oracle packs: they are retired, with a link to /oracles for top-ups", () => {
+    // Packs retired (Velu, 2026-11-16, D1): the pricing page
+    // shows subscriptions and top-ups only. No pack section, no
+    // pack data, no packsEnabled prop anywhere on the page.
     const c = client();
-    expect(c).toContain('import { CREDIT_PACKS } from "@/lib/site";');
-    expect(c).toContain("Oracle packs — available now");
-    expect(c).toContain("CREDIT_PACKS.map");
-    expect(c).toContain("One reading costs 1 Oracle.");
-    expect(c).toContain("Get Oracles");
-    expect(c).toContain('href="/oracles"');
-    // Codex P2 (PR #116): the packs stop being sold when the
-    // credit cutover flips on (/oracles renders top-ups instead),
-    // so the section is gated on the packsEnabled prop — it must
-    // not advertise packs that are no longer for sale.
-    expect(c).toContain("packsEnabled");
-    expect(c).toContain("{packsEnabled && (");
-    expect(c).toContain('aria-labelledby="packs-heading"');
+    expect(c).not.toContain('import { CREDIT_PACKS } from "@/lib/site";');
+    expect(c).not.toContain("Oracle packs — available now");
+    expect(c).not.toContain("CREDIT_PACKS.map");
+    expect(c).not.toContain("packsEnabled");
+    expect(c).not.toContain('aria-labelledby="packs-heading"');
+    expect(c).not.toContain("First Light");
+    expect(c).not.toContain("Constellation");
+    expect(c).not.toContain("Celestial Treasury");
     // The cancelled credit cutover's cost table is gone: no
     // per-reading credit costs (100/200/300/50) anywhere on the page.
     // Assert on the JSX, not the whole file: the header comment
@@ -263,29 +257,26 @@ describe("Pricing toggle, savings, top-ups, credit costs", () => {
 });
 
 describe("Pricing honesty: gated CTAs, packs link, checkout wiring", () => {
-  it("renders tier buttons gated on the config prop, and the packs line to /oracles when disabled", () => {
+  it("renders tier buttons gated on the config prop, and the footer points to top-ups", () => {
     const c = client();
     const button = c.match(/<Button[\s\S]*?\/>/);
     expect(button).not.toBeNull();
     // Phase 2 batch 3: the tier button is disabled only while the
     // variants are unconfigured (the server prop), not forever.
     expect((button as RegExpMatchArray)[0]).toContain("isDisabled={!subscriptionsEnabled}");
-    // Batch 4.3: no "open soon" language — the line under the grid
-    // states the packs are available now.
-    expect(c).toContain("Oracle packs available now.");
+    // Batch 4.3: no "open soon" language. Packs retired (Velu,
+    // 2026-11-16, D1): the line under the grid points to top-ups,
+    // never to packs.
+    expect(c).not.toContain("Oracle packs available now.");
+    expect(c).not.toContain("See Oracle packs");
     expect(c).not.toContain("Subscriptions open soon");
     expect(c).not.toContain("Coming soon");
-    // Codex P2 (PR #116): the footer is gated on packsEnabled too,
-    // not just the packs cards. When the cutover is on, /oracles
-    // sells top-ups, so the footer points there instead of claiming
-    // packs are available.
-    expect(c).toContain(") : packsEnabled ? (");
     expect(c).toContain("See top-ups");
     const link = c.match(
       /<Link href="\/oracles"[^>]*>([\s\S]*?)<\/Link>/
     );
     expect(link).not.toBeNull();
-    expect((link as RegExpMatchArray)[1]).toContain("See Oracle packs");
+    expect((link as RegExpMatchArray)[1]).toContain("See top-ups");
   });
 
   it("wires checkout to the subscription route only (no invented route)", () => {
@@ -307,13 +298,16 @@ describe("Pricing honesty: gated CTAs, packs link, checkout wiring", () => {
     expect(p).toContain("topupsEnabled={topUpsConfigured() && CREDIT_COSTS_ENABLED}");
   });
 
-  it("leaves /oracles untouched: the packs are still there", () => {
+  it("leaves /oracles selling top-ups only: the packs are retired there too", () => {
     const oracles = src("src/app/oracles/page.tsx");
-    expect(oracles).toContain("Oracle packs");
-    expect(oracles).toContain("CREDIT_PACKS.map");
-    expect(oracles).toContain("PackBuyButton");
-    expect(oracles).toContain("Most popular");
-    expect(existsSync(path.resolve(process.cwd(), "src/app/oracles/PackBuyButton.tsx"))).toBe(true);
+    expect(oracles).toContain("Top up Oracles");
+    expect(oracles).toContain("TOPUPS.map");
+    expect(oracles).toContain("TopUpBuyButton");
+    expect(oracles).not.toContain("Oracle packs");
+    expect(oracles).not.toContain("CREDIT_PACKS.map");
+    expect(oracles).not.toContain("PackBuyButton");
+    expect(oracles).not.toContain("Most popular");
+    expect(existsSync(path.resolve(process.cwd(), "src/app/oracles/PackBuyButton.tsx"))).toBe(false);
   });
 
   it("is not redirected away: the legacy /pricing → /oracles redirect is gone", () => {
@@ -358,11 +352,11 @@ describe("Pricing card contrast: dark islands on the light page", () => {
     expect(body).not.toContain("background:");
   });
 
-  it("applies the dark scope inside the tier Cards, the top-up Cards, and the packs Cards, nowhere else", () => {
+  it("applies the dark scope inside the tier Cards and the top-up Cards, nowhere else", () => {
     const c = client();
-    // One occurrence in the tier map, one in the top-up map, one
-    // in the packs map (Batch 4.3).
-    expect([...c.matchAll(/pricing-card-dark/g)].length).toBe(3);
+    // One occurrence in the tier map, one in the top-up map.
+    // (Packs retired, Velu 2026-11-16 D1: the packs Cards are gone.)
+    expect([...c.matchAll(/pricing-card-dark/g)].length).toBe(2);
     // The {0} in gap={0} must be escaped: unescaped, {0} is a
     // regex quantifier (zero of the preceding token), so the
     // literal "gap=" would never match. The match is anchored to
@@ -382,16 +376,9 @@ describe("Pricing card contrast: dark islands on the light page", () => {
     );
     expect(topupStack).not.toBeNull();
     expect((topupStack as RegExpMatchArray)[1]).toContain("${topup.price.toFixed(2)}");
-    // Batch 4.3: the packs VStack shares the top-up className, so
-    // pin it by its pack content instead of the class alone.
-    const packsStack = c.match(
-      /<VStack gap=\{0\} className="pricing-card-dark text-center">([\s\S]*?)\{pack\.name\}([\s\S]*?)<\/VStack>\s*<\/Card>/
-    );
-    expect(packsStack).not.toBeNull();
-    expect((packsStack as RegExpMatchArray)[0]).toContain("${pack.price.toFixed(2)}");
     // The page-level hero VStack (Pricing eyebrow, h1, intro) sits
     // on the light paper and must NOT carry the dark scope. The
-    // count of 3 above plus the three VStack regexes already pin
+    // count of 2 above plus the two VStack regexes already pin
     // placement; no whitespace-fragile negative assertion is
     // needed (Sonnet nit, PR #88).
     expect(c).toContain('<VStack gap={0} className="text-center">');
@@ -426,10 +413,10 @@ describe("Pricing page: Astryx pilot wiring", () => {
     expect(p).toContain("<PricingClient");
     expect(p).toContain("subscriptionsEnabled={subscriptionsConfigured() && CREDIT_COSTS_ENABLED}");
     expect(p).toContain("topupsEnabled={topUpsConfigured() && CREDIT_COSTS_ENABLED}");
-    // Batch 4.3 (Codex P2, PR #116): the packs section shows only
-    // while the packs are actually sold — /oracles stops selling
-    // them when the credit cutover flips on.
-    expect(p).toContain("packsEnabled={!CREDIT_COSTS_ENABLED}");
+    // Packs retired (Velu, 2026-11-16, D1): the server page no
+    // longer passes a packsEnabled prop — there is no pack section
+    // left to gate.
+    expect(p).not.toContain("packsEnabled");
     expect(p).toContain('title: "Pricing"');
     expect(p).toContain('canonical: "/pricing"');
     // Phase 2 batch 3: the meta/OG descriptions describe the live

@@ -14,9 +14,9 @@ words below appear in the four money-flow UI files.
 - **Spread**: the set of cards a reading uses. The free reading is the
   1-card Quick Insight spread.
 - **Oracle**: the unit a reading costs. One reading costs **1 Oracle**.
-  Oracles are bought in packs (First Light 5, Constellation 12, Celestial
-  Treasury 30). Purchased Oracles never expire. Monthly plan Oracles roll
-  over up to two months of the plan, then stop.
+  Oracles are bought in top-ups (1,000 for $9.99, 3,000 for $24.99) or
+  come with a monthly plan. Purchased Oracles never expire. Monthly plan
+  Oracles roll over up to two months of the plan, then stop.
 - **Follow-up**: a question asked after a reading, in the same thread.
   The first follow-up is free, then 1 Oracle each, up to 3.
 - **Sign in**: the action of entering an existing account. Always "Sign
@@ -24,7 +24,7 @@ words below appear in the four money-flow UI files.
 - **Sign up**: the action of making a new account. Always "Sign
   up", two words, capital S. (Velu's wording decision, 2026-11-16:
   "Sign up" and "Sign in".)
-- **Get Oracles**: the action of buying an Oracle pack. The button that
+- **Get Oracles**: the action of buying Oracles. The button that
   opens checkout.
 - **Top up**: the action of adding Oracles to an existing balance. Used in
   the header pill and the account page.

@@ -45,7 +45,7 @@ export default function ContactPage() {
         <h2 className="font-display text-2xl text-goldbright">Before you write</h2>
         <ul className="mt-3 list-disc space-y-2 pl-5 text-[15px] leading-relaxed text-cream/85">
           <li>
-            Refunds: unused Oracle packs can be refunded within 14 days of
+            Refunds: unused Oracle top-ups can be refunded within 14 days of
             purchase. See the Terms of Service for the full wording.
           </li>
           <li>

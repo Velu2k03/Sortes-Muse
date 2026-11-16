@@ -24,7 +24,7 @@ export default function TermsPage() {
           <p className="mt-2">
             {APP_SHORT} provides digital tarot readings, card meaning
             reference, and personalized AI-generated interpretations, sold
-            pay-per-reading via Oracle packs, with optional monthly
+            pay-per-reading via Oracle top-ups, with optional monthly
             subscriptions for Oracles.
           </p>
         </section>
@@ -61,7 +61,7 @@ export default function TermsPage() {
               or store your card details.
             </li>
             <li>
-              Refunds: unused Oracle packs will be refunded within 14 days of
+              Refunds: unused Oracle top-ups will be refunded within 14 days of
               purchase by emailing {CONTACT_EMAIL}. Oracles already spent on
               readings are non-refundable.
             </li>
