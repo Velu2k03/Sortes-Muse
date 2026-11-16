@@ -5,7 +5,9 @@ import type { AccountSettings, ServerTx } from "./useAccountSettings";
 
 /** AF-012: a skeleton, not a bare "Loading…" line. */
 export function AccountLoading() {
-  // The page shell above (H1 + intro) is already server HTML.
+  // UX audit Phase 2, F36: the H1 is client-rendered now (it differs
+  // by auth state), so during load there is no H1 above this
+  // skeleton; the skeleton itself is the loading state.
   return (
     <div className="mt-8 space-y-4" role="status" aria-label="Loading your account">
       <div className="h-40 animate-pulse rounded-3xl border border-gold/20 bg-panel/60 motion-reduce:animate-none" />
