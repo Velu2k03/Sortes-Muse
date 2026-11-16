@@ -57,7 +57,7 @@ describe("Batch 11: one-word brand hero (superseded by the remodel and the rotat
 
   it("the friction line says the first reading is free, no sign-up, no payment, gated on free", () => {
     const page = src("src/app/page.tsx").replace(/\s+/g, " ");
-    expect(page).toContain("Your first reading is free — no sign-up, no payment.");
+    expect(page).toContain("Your first reading is free, no sign-up, no payment.");
     expect(page).toContain("{freeAvailable && (");
     expect(page).not.toContain("No credit card, no account.");
   });

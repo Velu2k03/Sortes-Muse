@@ -87,13 +87,13 @@ export function ThreeCardNudge() {
     <section className="mx-auto mt-6 max-w-xl rounded-2xl border border-gold/40 bg-panel/70 p-5 text-center">
       <h2 className="font-display text-xl text-goldbright">Go deeper with three cards</h2>
       <p className="mt-2 text-sm text-cream/80">
-        Past, present, and future — three cards tracing where you have been, where you stand, and where the path leads.
+        Past, present, and future: three cards tracing where you have been, where you stand, and where the path leads.
       </p>
       <Link
         href="/intake/past-present-future"
         className="mt-4 inline-block rounded-full bg-gold px-5 py-3 text-sm font-semibold text-ink hover:bg-goldbright"
       >
-        Try Past, Present, Future — 1 Oracle
+        Try Past, Present, Future (1 Oracle)
       </Link>
     </section>
   );
@@ -395,7 +395,7 @@ export function NotePanel({ reading, field }: { reading: Reading; field: Reading
       {/* AF-049: a disabled Save says why, inline. */}
       {!field.input.trim() && (
         <p className="mt-2 text-xs text-mist">
-          Write your note first — the button works once there is text to save.
+          Write your note first. The button works once there is text to save.
         </p>
       )}
       {field.saved && (
@@ -457,7 +457,7 @@ export function RevisitPanel({ reading, field }: { reading: Reading; field: Read
         {/* AF-049: a disabled Save says why, inline. */}
         {!field.input.trim() && (
           <p className="mt-2 text-xs text-mist">
-            Write your revisit note first — the button works once there is text to save.
+            Write your revisit note first. The button works once there is text to save.
           </p>
         )}
         {field.saved && (
@@ -509,7 +509,7 @@ export function RevisitPanel({ reading, field }: { reading: Reading; field: Read
       {/* AF-049: a disabled Save says why, inline. */}
       {!field.input.trim() && (
         <p className="mt-2 text-xs text-mist">
-          Write your revisit note first — the button works once there is text to save.
+          Write your revisit note first. The button works once there is text to save.
         </p>
       )}
       {field.saved && (
@@ -609,7 +609,7 @@ export function FollowUpThread({
                     }
                   })()}{" "}
                   <span className="text-xs text-mist">
-                    — drawn fresh for this follow-up
+                    (drawn fresh for this follow-up)
                   </span>
                 </p>
               )}
@@ -660,7 +660,7 @@ export function FollowUpThread({
           {/* AF-049: a disabled Ask says why, inline. */}
           {!f.followUpQ.trim() && !f.followUpLoading && (
             <p className="text-xs text-mist">
-              Write your question first — the button works once there is a question to ask.
+              Write your question first. The button works once there is a question to ask.
             </p>
           )}
           {f.followUpError && (

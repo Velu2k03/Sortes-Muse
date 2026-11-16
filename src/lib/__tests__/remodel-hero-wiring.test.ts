@@ -110,7 +110,7 @@ describe("Remodel hero: rotating H1, question box, example questions", () => {
 
   it("the friction line promises free with no sign-up and no payment, gated on free", () => {
     const page = src("src/app/page.tsx").replace(/\s+/g, " ");
-    expect(page).toContain("Your first reading is free — no sign-up, no payment.");
+    expect(page).toContain("Your first reading is free, no sign-up, no payment.");
     expect(page).toContain("{freeAvailable && (");
     expect(page).not.toContain("No credit card, no account.");
   });

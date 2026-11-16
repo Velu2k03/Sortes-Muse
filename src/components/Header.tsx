@@ -335,7 +335,7 @@ export default function Header() {
                   ? "Oracle balance loading. Top up."
                   : `Oracle balance: ${credits} Oracles. Top up.`
               }
-              title="Your Oracles — top up"
+              title="Your Oracles: top up"
             >
               <Icon name="coin" size={18} />
               {credits === null ? (
@@ -359,7 +359,7 @@ export default function Header() {
               type="button"
               onClick={() => void refresh()}
               aria-label="Retry loading your account"
-              title="Couldn't load your account — retry"
+              title="Couldn't load your account. Retry"
               className="rounded-full border border-gold/40 bg-gold/10 px-3 py-3 text-sm font-semibold text-goldbright transition hover:border-goldbright"
             >
               Retry

@@ -261,7 +261,7 @@ export default function HistoryPage() {
                 {history.length < PATTERN_MIRROR_MIN_READINGS ||
                 mirror.mostDrawn.length === 0 ? (
                   <p className="mt-2 text-sm text-cream/75">
-                    No patterns yet — your first few readings will appear
+                    No patterns yet. Your first few readings will appear
                     here once a card starts repeating.
                   </p>
                 ) : (
@@ -304,7 +304,7 @@ export default function HistoryPage() {
                           Cards that keep reappearing
                         </p>
                         <p className="mt-1 text-sm text-cream/75">
-                          Drawn 3 or more times across your journal — a
+                          Drawn 3 or more times across your journal, a
                           card that keeps showing up, not a verdict.
                         </p>
                         <ul className="mt-1 space-y-1 text-sm text-cream/85">
@@ -326,7 +326,7 @@ export default function HistoryPage() {
                           {mirror.revisitCandidate.question
                             ? ` · “${mirror.revisitCandidate.question}”`
                             : ""}{" "}
-                          — cast{" "}
+                          , cast{" "}
                           {new Date(
                             mirror.revisitCandidate.createdAt
                           ).toLocaleDateString(undefined, {

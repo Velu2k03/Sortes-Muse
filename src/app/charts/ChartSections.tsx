@@ -248,7 +248,7 @@ export function BirthForm({ prefs, form, s }: { prefs: ChartPrefs; form: ChartFo
           The place search comes before the city list, not after it. */}
       <div className="sm:col-span-2">
         <label htmlFor="chart-place-search" className={labelClass}>
-          Birthplace — search a place name
+          Birthplace: search a place name
         </label>
         <div className="flex gap-2">
           <input

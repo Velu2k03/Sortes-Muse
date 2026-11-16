@@ -161,7 +161,7 @@ describe("ReturningHome: greeting, today's card, cost-labelled button, balance",
     expect(home).toContain("isFreeAvailableFor({");
     expect(home).toContain('slug: "quick-insight"');
     expect(home).toContain(
-      'freeAvailable ? "Ask today\'s question — free" : "Ask today\'s question · 1 Oracle"'
+      'freeAvailable ? "Ask today\'s question, free" : "Ask today\'s question · 1 Oracle"'
     );
     expect(home).toContain('href="/intake/quick-insight"');
   });
@@ -181,7 +181,7 @@ describe("ReturningHome: greeting, today's card, cost-labelled button, balance",
     // free reading lands on the hero now, not here — ReturningHome
     // is signed-in only. The guard still holds: no copy in this
     // file offers the first reading again (the button's free
-    // wording is "Ask today's question — free", gated on the
+    // wording is "Ask today's question, free", gated on the
     // server record).
     expect(home).not.toContain("first reading is free");
     expect(home).not.toContain("Your first reading is free");
@@ -216,7 +216,7 @@ describe("ReturningHome: Your thread and day-1/day-2 states", () => {
   it("designs the empty states: no thread, no streak, no journal yet", () => {
     const home = src("src/components/ReturningHome.tsx");
     expect(home).toContain("Your thread starts with your first reading.");
-    expect(home).toContain("Nothing repeating yet — each reading adds to the pattern.");
+    expect(home).toContain("Nothing repeating yet. Each reading adds to the pattern.");
     expect(home).toContain("Your journal: no readings saved yet");
     expect(home).toContain("Daily card streak: not started yet");
     // Day 2: one reading, a 1-day streak — a plain sentence, not

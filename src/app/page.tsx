@@ -265,7 +265,7 @@ export default function Home() {
           </fieldset>
           {freeAvailable && (
             <p className="mt-5 text-sm text-mist">
-              Your first reading is free — no sign-up, no payment.
+              Your first reading is free, no sign-up, no payment.
             </p>
           )}
           <p className="mt-2 text-xs text-mist/80">

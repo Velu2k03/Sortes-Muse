@@ -157,7 +157,7 @@ describe("hero rotation: the page renders the variant, A first", () => {
 
   it("the free promise is still gated on freeAvailable (Batch 6a rule)", () => {
     const page = src("src/app/page.tsx");
-    expect(page).toContain("Your first reading is free — no sign-up, no payment.");
+    expect(page).toContain("Your first reading is free, no sign-up, no payment.");
     expect(page).toContain("{freeAvailable && (");
     expect(page).toContain("isFreeAvailableFor({");
   });

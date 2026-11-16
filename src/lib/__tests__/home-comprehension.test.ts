@@ -46,7 +46,7 @@ describe("home page: first-visit comprehension", () => {
   it("states what is free", () => {
     // Remodel: the friction line is Fable's "no sign-up, no
     // payment" wording.
-    expect(src).toContain("Your first reading is free — no sign-up, no payment.");
+    expect(src).toContain("Your first reading is free, no sign-up, no payment.");
     // UX audit Phase 2, F10: the fourth card says "First free" and
     // "Then 1 Oracle" in the body.
     expect(src).toContain("First free");

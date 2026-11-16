@@ -237,7 +237,7 @@ export default function ReturningHome() {
         href="/intake/quick-insight"
         className="btn-gold mt-8 inline-block rounded-2xl px-8 py-4 text-base font-bold sm:text-lg"
       >
-        {freeAvailable ? "Ask today's question — free" : "Ask today's question · 1 Oracle"}
+        {freeAvailable ? "Ask today's question, free" : "Ask today's question · 1 Oracle"}
       </Link>
       <p className="mt-3 text-sm text-mist">
         {credits === null ? (
@@ -268,7 +268,7 @@ export default function ReturningHome() {
             <>
               <p className="mt-2 text-cream/90">
                 <span className="font-semibold text-goldbright">{latest.spreadName}</span>
-                {" — "}
+                {" · "}
                 {relativeDay(latest.createdAt)}
               </p>
               {threadLine && (
@@ -307,7 +307,7 @@ export default function ReturningHome() {
             </p>
           ) : (
             <p className="mt-2 text-cream/90">
-              Nothing repeating yet — each reading adds to the pattern.
+              Nothing repeating yet. Each reading adds to the pattern.
             </p>
           )}
         </div>

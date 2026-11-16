@@ -56,7 +56,7 @@ export default function VedicChart({ result }: { result: VedicResult }) {
                 <td className="py-2 pr-4 font-semibold capitalize text-cream">{p.name}{p.retrograde ? " · retrograde" : ""}</td>
                 <td className="py-2 pr-4">{p.sign}</td>
                 <td className="num py-2 pr-4">{p.longitude.toFixed(2)}°</td>
-                <td className="py-2">{p.house ?? "—"}</td>
+                <td className="py-2">{p.house ?? "n/a"}</td>
               </tr>
             ))}
           </tbody>

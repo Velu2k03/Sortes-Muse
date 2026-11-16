@@ -60,7 +60,7 @@ export default function TodaySample() {
         Today&apos;s card
       </h2>
       <p className="mx-auto mt-4 max-w-lg text-cream/75">
-        One card, one line — an example of what a reading looks like.
+        One card, one line: an example of what a reading looks like.
       </p>
       <div className="mt-8 flex flex-col items-center">
         <div className="relative h-48 w-28 overflow-hidden rounded-xl border border-gold/40 shadow-card-lg sm:h-56 sm:w-32">

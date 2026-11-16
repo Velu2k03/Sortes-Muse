@@ -16,7 +16,7 @@ function src(rel: string): string {
 describe("F27 charts speak plainly", () => {
   it("the birthplace label has no developer-speak", () => {
     const charts = src("src/app/charts/ChartSections.tsx");
-    expect(charts).toContain("Birthplace — search a place name");
+    expect(charts).toContain("Birthplace: search a place name");
     expect(charts).not.toContain("(free, no key)");
     expect(charts).not.toContain("no key");
   });

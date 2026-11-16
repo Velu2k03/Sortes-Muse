@@ -49,7 +49,7 @@ describe("Remodel sample: today's card below the hero", () => {
       "Today&apos;s card"
     );
     expect(sample).toContain(
-      "One card, one line — an example of what a reading looks like."
+      "One card, one line: an example of what a reading looks like."
     );
     // One section only; the Daily Card Teaser further down the page
     // ("One card, every morning") keeps its headline and fan, but

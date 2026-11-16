@@ -76,7 +76,7 @@ export default function WesternWheel({ result }: { result: WesternResult }) {
               <td className="py-2 pr-4 font-semibold text-cream">{p.name}{p.retrograde ? " · retrograde" : ""}</td>
               <td className="py-2 pr-4">{p.sign}</td>
               <td className="num py-2 pr-4">{p.longitude.toFixed(2)}°</td>
-              <td className="py-2">{p.house ?? "—"}</td>
+              <td className="py-2">{p.house ?? "n/a"}</td>
             </tr>
           ))}
         </tbody>
@@ -87,7 +87,7 @@ export default function WesternWheel({ result }: { result: WesternResult }) {
         <p className="mt-4 text-sm text-goldbright">
           {(() => {
             const p = result.planets.find((x) => x.name === selectedPlanet);
-            return p ? `${p.name}: ${p.sign}, ${p.longitude.toFixed(2)}°, house ${p.house ?? "—"}` : "";
+            return p ? `${p.name}: ${p.sign}, ${p.longitude.toFixed(2)}°, house ${p.house ?? "n/a"}` : "";
           })()}
         </p>
       )}
@@ -120,7 +120,7 @@ export default function WesternWheel({ result }: { result: WesternResult }) {
               <ul key={gi} className="mt-2 space-y-1 text-sm text-cream/85">
                 {g.map((pl, i) => (
                   <li key={pl.name} style={{ marginLeft: i * 14 }}>
-                    {pl.name}: {pl.sign}, {pl.longitude.toFixed(2)}°, house {pl.house ?? "—"}
+                    {pl.name}: {pl.sign}, {pl.longitude.toFixed(2)}°, house {pl.house ?? "n/a"}
                   </li>
                 ))}
               </ul>

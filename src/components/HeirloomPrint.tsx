@@ -50,7 +50,7 @@ export default function HeirloomPrint({
         Print or save as PDF
       </button>
       <p className="mt-1 text-xs text-mist">
-        Opens your browser&apos;s print dialog — choose &ldquo;Save as PDF&rdquo; to keep a PDF copy.
+        Opens your browser&apos;s print dialog. Choose &ldquo;Save as PDF&rdquo; to keep a PDF copy.
       </p>
 
       {/* Print-only heirloom sheet. Hidden on screen (and from
