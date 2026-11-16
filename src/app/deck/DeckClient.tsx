@@ -168,6 +168,12 @@ export default function DeckClient({
               </button>
             ))}
           </fieldset>
+          {/* UX audit Phase 2, F34: the view buttons used to share
+              the filter pills' solid-gold selected style, so "All 78"
+              and "List" both read as gold-selected at once in
+              different groups. The view's selected state is a gold
+              outline + tint, never a solid fill, so only the filter
+              ever reads as solid gold. */}
           <fieldset className="m-0 min-w-0 flex gap-2 border-0 p-0" aria-label="Deck view">
             <button
               type="button"
@@ -175,7 +181,7 @@ export default function DeckClient({
               onClick={() => setView("list")}
               className={`rounded-full px-4 py-3 text-sm font-semibold transition ${
                 effectiveView === "list"
-                  ? "bg-gold text-ink"
+                  ? "border border-gold bg-gold/10 text-goldbright"
                   : "border border-gold/30 text-cream/80 hover:border-gold/60 hover:text-goldbright"
               }`}
             >
@@ -187,7 +193,7 @@ export default function DeckClient({
               onClick={() => setView("grid")}
               className={`rounded-full px-4 py-3 text-sm font-semibold transition ${
                 effectiveView === "grid"
-                  ? "bg-gold text-ink"
+                  ? "border border-gold bg-gold/10 text-goldbright"
                   : "border border-gold/30 text-cream/80 hover:border-gold/60 hover:text-goldbright"
               }`}
             >
@@ -199,7 +205,7 @@ export default function DeckClient({
               onClick={() => setView("spiral")}
               className={`rounded-full px-4 py-3 text-sm font-semibold transition ${
                 effectiveView === "spiral"
-                  ? "bg-gold text-ink"
+                  ? "border border-gold bg-gold/10 text-goldbright"
                   : "border border-gold/30 text-cream/80 hover:border-gold/60 hover:text-goldbright"
               }`}
             >
