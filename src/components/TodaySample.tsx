@@ -50,20 +50,20 @@ export default function TodaySample() {
 
   return (
     <section className="mx-auto max-w-6xl px-4 py-16 text-center sm:px-6" aria-label="Sample reading">
-      {/* unslopovich (2026-11-16, Velu approved): eyebrow tracking
-          toned down from 0.35em, the spaced-out small-caps were a
-          generated tell. */}
-      <p className="text-xs uppercase tracking-[0.15em] text-gold">
+      {/* unslopovich (2026-11-16, Velu approved): the spaced-out
+          small-caps eyebrow was a generated tell. UX audit Phase 2,
+          F14: sentence case, untracked, one step smaller. */}
+      <p className="text-sm text-gold">
         Sample reading
       </p>
       <h2 className="mt-4 font-display text-4xl text-goldbright sm:text-5xl">
         Today&apos;s card
       </h2>
       <p className="mx-auto mt-4 max-w-lg text-cream/75">
-        One card, one line — an example of what a reading looks like.
+        One card, one line: an example of what a reading looks like.
       </p>
       <div className="mt-8 flex flex-col items-center">
-        <div className="relative h-48 w-28 overflow-hidden rounded-xl border border-gold/40 shadow-[0_8px_30px_rgba(0,0,0,0.6)] sm:h-56 sm:w-32">
+        <div className="relative h-48 w-28 overflow-hidden rounded-xl border border-gold/40 shadow-card-lg sm:h-56 sm:w-32">
           <Image
             src={card.image}
             alt={card.name}

@@ -61,14 +61,22 @@ export default function BirthCardPage() {
             Please choose a date in the past.
           </p>
         )}
+        {/* UX audit Phase 2, F32: a 60-word arithmetic lesson used
+            to sit here before the user picked a date. The form needs
+            one line; the method lives in a disclosure below it. */}
         <p className="mt-3 text-sm text-cream/75">
-          Method: add the digits of your birth date; if the total is
-          over 22, add the digits of that total, and repeat until it
-          is 22 or less (22 is The Fool). That is your Personality
-          card. Add the digits of the Personality number until a
-          single digit remains: that is your Soul card. Pick a date
-          and your cards appear below, no button needed.
+          Pick your birth date. Your two cards appear below.
         </p>
+        <details className="mt-3 rounded-2xl border border-gold/20 bg-panel/50 p-4 text-left text-sm leading-relaxed text-cream/75">
+          <summary className="cursor-pointer font-semibold text-goldbright">How it is calculated</summary>
+          <p className="mt-2">
+            Add the digits of your birth date; if the total is over 22,
+            add the digits of that total, and repeat until it is 22 or
+            less (22 is The Fool). That is your Personality card. Add
+            the digits of the Personality number until a single digit
+            remains: that is your Soul card.
+          </p>
+        </details>
       </div>
       {pair !== null && personalityCard && soulCard && (
         <div className="mt-6">
@@ -77,8 +85,8 @@ export default function BirthCardPage() {
           </p>
           <div className="mt-4 grid gap-6 sm:grid-cols-2">
             <article className="rounded-3xl border border-gold/25 bg-panel/70 p-6">
-              <p className="text-xs uppercase tracking-[0.25em] text-gold">
-                Personality card · {personalityCard.name}
+              <p className="text-sm text-gold">
+                Personality card, {personalityCard.name}
               </p>
               <h2 className="mt-3 font-display text-4xl text-goldbright">{personalityCard.name}</h2>
               <p className="mt-2 text-sm leading-relaxed text-cream/75">
@@ -91,8 +99,8 @@ export default function BirthCardPage() {
               </p>
             </article>
             <article className="rounded-3xl border border-gold/25 bg-panel/70 p-6">
-              <p className="text-xs uppercase tracking-[0.25em] text-gold">
-                Soul card · {soulCard.name}
+              <p className="text-sm text-gold">
+                Soul card, {soulCard.name}
               </p>
               <h2 className="mt-3 font-display text-4xl text-goldbright">{soulCard.name}</h2>
               <p className="mt-2 text-sm leading-relaxed text-cream/75">

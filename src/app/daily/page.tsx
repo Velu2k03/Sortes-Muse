@@ -16,8 +16,7 @@ import { drawSingle } from "@/lib/tarot";
 import TarotCard from "@/components/TarotCard";
 import CardModal from "@/components/CardModal";
 import { trackDailyCardDrawn } from "@/components/Analytics";
-import { StarBorder } from "@/components/ReactBits";
-import HoldButton from "@/components/HoldButton";
+import HoldCard from "@/components/HoldCard";
 import HoloCard from "@/components/HoloCard";
 import Link from "next/link";
 
@@ -45,18 +44,6 @@ export default function DailyPage() {
   // Evening return: one line on where the card's quality showed up.
   const [reflection, setReflection] = useState("");
   const [reflectionSaved, setReflectionSaved] = useState(false);
-  // HoldButton colours bypass the theme tokens, so track the
-  // document theme, 2026-11-04, instead of staying dark in light mode.
-  const [siteTheme, setSiteTheme] = useState<"dark" | "light">("dark");
-  useEffect(() => {
-    const sync = () =>
-      setSiteTheme(document.documentElement.dataset.theme === "light" ? "light" : "dark");
-    sync();
-    const obs = new MutationObserver(sync);
-    obs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
-    return () => obs.disconnect();
-  }, []);
-
 
   // Phase E (item 6): the daily card is kept as a lightweight
   // journal entry (date, card, orientation, one-line note) so the
@@ -144,9 +131,6 @@ export default function DailyPage() {
 
   return (
     <div className="mx-auto flex max-w-2xl flex-col items-center px-4 py-12 sm:px-6">
-      <p className="text-xs uppercase tracking-[0.35em] text-gold">
-        Daily card
-      </p>
       <h1 className="mt-3 text-center font-display text-5xl text-goldbright sm:text-6xl">
         Your Daily Card
       </h1>
@@ -174,37 +158,16 @@ export default function DailyPage() {
               exit={{ opacity: 0 }}
               className="flex flex-col items-center"
             >
-              <TarotCard cardId={null} size="lg" disabled />
-              {/* AF-048: the hold gesture is explained BEFORE the first
-                  press, and a tap alternative sits next to it. A tap
-                  on the hold button alone does nothing, so first-time
-                  visitors used to stall here; the Phase 3 single-trigger
-                  rule is superseded by this fix. */}
-              <p className="mt-6 max-w-xs text-center text-sm text-cream/75">
-                Press and hold the button until the gold fills it, or tap
-                Draw now.
-              </p>
-              <StarBorder radius="1rem" className="mt-4" animated>
-                <HoldButton
-                  size="lg"
-                  holdTime={1200}
-                  backgroundColor={siteTheme === "light" ? "#ffffff" : "#1a1f2e"}
-                  fillColor="#d4af37"
-                  textColor={siteTheme === "light" ? "#1c1a15" : "#ede6d6"}
-                  fillTextColor="#0f1424"
-                  doneLabel="Casting…"
-                  onHold={draw}
-                >
-                  Hold to draw today&apos;s card
-                </HoldButton>
-              </StarBorder>
-              <button
-                type="button"
-                onClick={draw}
-                className="btn-ghost mt-4 rounded-xl px-6 py-3 text-sm font-semibold"
-              >
-                Draw now
-              </button>
+              {/* Velu's 2026-11-16 push-gate decision: keep the "Draw
+                  now" tap alternative gone, and make the card itself
+                  hold-and-press instead of a separate button, showing
+                  a progress bar. The hold ritual stays (his standing
+                  decision); the card is the hold target (HoldCard),
+                  the bar under it fills during the hold, and a tap
+                  never draws. This replaces the audit's F26 fix
+                  (a separate hold button below the card), which kept
+                  a separate button. AF-048's tap alternative stays gone. */}
+              <HoldCard holdTime={1200} onHold={draw} className="mt-4" />
             </motion.div>
           )}
 

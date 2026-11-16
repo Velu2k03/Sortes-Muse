@@ -1,5 +1,4 @@
-import Link from "next/link";
-import { SUN_SIGNS, isSunSign, type SunSign } from "@/lib/daily";
+import { isSunSign, type SunSign } from "@/lib/daily";
 import HoroscopeClient from "./HoroscopeClient";
 
 // AF-088: the page is a server component so the HTML carries the real
@@ -17,25 +16,12 @@ export default async function HoroscopePage({
   const q = Array.isArray(raw) ? raw[0] : raw;
   const sign: SunSign = q && isSunSign(q) ? q : "Aries";
   const today = new Date().toISOString().slice(0, 10);
+  // UX audit Phase 2, F28: a 12-sign link grid used to sit below
+  // the form, doing the same job as the sign picker. The picker is
+  // now a grid of buttons inside the form itself, so the duplicate
+  // grid is gone. ?sign= deep links still work (the searchParams
+  // handling above is unchanged).
   return (
-    <>
-      <HoroscopeClient key={sign} initialSign={sign} initialDate={today} />
-      <nav aria-label="All twelve sun signs" className="mx-auto max-w-2xl px-4 pb-10 sm:px-6">
-        <h2 className="font-display text-2xl text-cream">All twelve signs</h2>
-        <ul className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-          {SUN_SIGNS.map((s) => (
-            <li key={s}>
-              <Link
-                href={`/horoscope?sign=${s}`}
-                aria-current={s === sign ? "page" : undefined}
-                className="block rounded-xl border border-gold/25 px-4 py-3 text-center text-sm font-semibold text-goldbright underline"
-              >
-                {s}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </nav>
-    </>
+    <HoroscopeClient key={sign} initialSign={sign} initialDate={today} />
   );
 }

@@ -21,16 +21,13 @@ export const metadata = {
 
 export default function Account() {
   return (
-    <div className="mx-auto max-w-2xl px-4 py-12 sm:px-6">
-      {/* AF-012: this header is server HTML, so the signed-out state
-          is in the first paint instead of a bare "Loading your
-          account…" from the client component below. */}
-      <p className="text-center text-xs uppercase tracking-[0.35em] text-gold">
-        Account
-      </p>
-      <h1 className="mt-3 text-center font-display text-5xl text-goldbright">
-        Your account
-      </h1>
+    <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6">
+      {/* UX audit Phase 2, F36: the H1 used to be server HTML here
+          ("Your account"), but a signed-out visitor sees a sign-in
+          wall, not their account. The H1 now lives in AccountClient,
+          which knows the auth state: "Sign in" for guests, "Your
+          account" once signed in. The loading skeleton covers the
+          wait, so no wrong H1 ever paints. */}
       <AccountPage />
     </div>
   );

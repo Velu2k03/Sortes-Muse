@@ -109,7 +109,7 @@ export default function DeckClient({
   return (
     <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
       <div className="text-center">
-        <p className="text-xs uppercase tracking-[0.35em] text-gold">The deck</p>
+        <p className="text-sm text-gold">The deck</p>
         <h1 className="mt-2 font-display text-4xl text-goldbright sm:text-5xl">
           {filter === "all" && !query.trim()
             ? "All 78 cards"
@@ -142,7 +142,7 @@ export default function DeckClient({
               if (debounceRef.current) clearTimeout(debounceRef.current);
               debounceRef.current = setTimeout(() => syncUrl({ q: v }), 300);
             }}
-            placeholder="Search cards, e.g. moon, strength…"
+            placeholder="Search cards, e.g. moon"
             className="min-w-52 flex-1 rounded-xl border border-gold/25 bg-panel/70 px-4 py-2.5 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold sm:max-w-xs"
           />
           {/* Validator fix (kept): these are filter toggles, not tabs,
@@ -168,6 +168,12 @@ export default function DeckClient({
               </button>
             ))}
           </fieldset>
+          {/* UX audit Phase 2, F34: the view buttons used to share
+              the filter pills' solid-gold selected style, so "All 78"
+              and "List" both read as gold-selected at once in
+              different groups. The view's selected state is a gold
+              outline + tint, never a solid fill, so only the filter
+              ever reads as solid gold. */}
           <fieldset className="m-0 min-w-0 flex gap-2 border-0 p-0" aria-label="Deck view">
             <button
               type="button"
@@ -175,7 +181,7 @@ export default function DeckClient({
               onClick={() => setView("list")}
               className={`rounded-full px-4 py-3 text-sm font-semibold transition ${
                 effectiveView === "list"
-                  ? "bg-gold text-ink"
+                  ? "border border-gold bg-gold/10 text-goldbright"
                   : "border border-gold/30 text-cream/80 hover:border-gold/60 hover:text-goldbright"
               }`}
             >
@@ -187,7 +193,7 @@ export default function DeckClient({
               onClick={() => setView("grid")}
               className={`rounded-full px-4 py-3 text-sm font-semibold transition ${
                 effectiveView === "grid"
-                  ? "bg-gold text-ink"
+                  ? "border border-gold bg-gold/10 text-goldbright"
                   : "border border-gold/30 text-cream/80 hover:border-gold/60 hover:text-goldbright"
               }`}
             >
@@ -199,7 +205,7 @@ export default function DeckClient({
               onClick={() => setView("spiral")}
               className={`rounded-full px-4 py-3 text-sm font-semibold transition ${
                 effectiveView === "spiral"
-                  ? "bg-gold text-ink"
+                  ? "border border-gold bg-gold/10 text-goldbright"
                   : "border border-gold/30 text-cream/80 hover:border-gold/60 hover:text-goldbright"
               }`}
             >
@@ -305,7 +311,7 @@ export default function DeckClient({
           <li key={c.id}>
           <Link
             href={`/deck/${cardSlug(c.name)}`}
-            className="group flex min-h-[44px] items-center gap-4 rounded-xl border border-gold/20 bg-panel/50 px-3 py-2.5 transition hover:border-gold/60 hover:shadow-[0_12px_30px_rgba(212,175,55,0.15)]"
+            className="group flex min-h-[44px] items-center gap-4 rounded-xl border border-gold/20 bg-panel/50 px-3 py-2.5 transition hover:border-gold/60 hover:shadow-gold-sm"
           >
             <span className="relative block h-16 w-10 shrink-0 overflow-hidden rounded-md">
               <Image
@@ -322,7 +328,7 @@ export default function DeckClient({
                 {c.name}
               </span>
               <span className="block truncate text-xs text-mist">
-                {c.arcana === "major" ? "Major Arcana" : suitLabel(c.suit ?? "")} · {c.keywords.upright.slice(0, 3).join(", ")}
+                {c.arcana === "major" ? "Major Arcana" : suitLabel(c.suit ?? "")}, {c.keywords.upright.slice(0, 3).join(", ")}
               </span>
             </span>
             <span aria-hidden="true" className="shrink-0 text-lg text-gold">›</span>
@@ -358,7 +364,7 @@ export default function DeckClient({
           >
           <Link
             href={`/deck/${cardSlug(c.name)}`}
-            className="group block overflow-hidden rounded-xl border border-gold/20 bg-panel/50 transition hover:-translate-y-1 hover:border-gold/60 hover:shadow-[0_12px_30px_rgba(212,175,55,0.15)]"
+            className="group block overflow-hidden rounded-xl border border-gold/20 bg-panel/50 transition hover:-translate-y-1 hover:border-gold/60 hover:shadow-gold-sm"
             aria-label={`View meaning of ${c.name}`}
           >
             {/* Validator fix: a link may only contain phrasing

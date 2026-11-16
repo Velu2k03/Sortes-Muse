@@ -2,16 +2,16 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "fs";
 import path from "path";
 
-// Hero copy rotation (Velu, 2026-11-15): the hero H1, subhead, and
-// CTA labels rotate randomly among three variants (see
-// src/lib/hero-variants.ts and hero-rotation.test.ts) on each page
-// load. The Fable H1 ("Ask a question. Draw a tarot card. Get an AI
-// reading.") and subhead are retired by his decision. The free
-// reading stays 1-card Quick Insight only, and the 3-card spread is
-// PLANNED as the next step after the first reading — so the hero
-// must NOT promise three cards. Copy is asserted on the actual JSX
-// elements, not the whole file: the comment above the H1 quotes the
-// change, so a whole-file toContain would pass even if the element
+// Hero copy rotation (Velu, 2026-11-15, restored by his 2026-11-16
+// push-gate decision): the H1, subhead, and CTA rotate among four
+// variants (see src/lib/hero-variants.ts and
+// hero-rotation.test.ts). The Fable H1 ("Ask a question. Draw a tarot
+// card. Get an AI reading.") and subhead are retired by his decision.
+// The free reading stays 1-card Quick Insight only, and the 3-card
+// spread is PLANNED as the next step after the first reading — so the
+// hero must NOT promise three cards. Copy is asserted on the actual
+// JSX elements, not the whole file: the comment above the H1 quotes
+// the change, so a whole-file toContain would pass even if the element
 // were reverted (Sonnet review lesson from Batch 12).
 //
 // Sonnet review (NEEDS CHANGES, fixed in this batch) and the PR
@@ -28,7 +28,7 @@ const src = (rel: string) =>
   readFileSync(path.resolve(process.cwd(), rel), "utf8");
 
 describe("Remodel hero: rotating H1, question box, example questions", () => {
-  it("the H1 renders the rotating variant H1, not a fixed string", () => {
+  it("the H1 renders the variant H1, not a fixed string", () => {
     const page = src("src/app/page.tsx");
     const match = page.match(/<h1[^>]*>([\s\S]*?)<\/h1>/);
     expect(match).not.toBeNull();
@@ -41,10 +41,10 @@ describe("Remodel hero: rotating H1, question box, example questions", () => {
     );
   });
 
-  it("the subhead renders the rotating variant H2 and does not promise a clear answer", () => {
+  it("the subhead renders the variant subhead and does not promise a clear answer", () => {
     const page = src("src/app/page.tsx");
     const match = page.match(
-      /<p className="mt-6 max-w-xl text-base[^"]*">([\s\S]*?)<\/p>/
+      /<p className="mt-4 max-w-xl text-base[^"]*">([\s\S]*?)<\/p>/
     );
     expect(match).not.toBeNull();
     const subhead = (match as RegExpMatchArray)[1].replace(/\s+/g, " ").trim();
@@ -54,21 +54,21 @@ describe("Remodel hero: rotating H1, question box, example questions", () => {
     expect(flat).not.toMatch(/(draw|pick)\s+(three|3)\s+cards?/i);
   });
 
-  it("the fear line is short: no experience needed", () => {
+  it("the fear line is gone (F06, it repeated the invitation)", () => {
     const page = src("src/app/page.tsx").replace(/\s+/g, " ");
-    expect(page).toContain("No experience needed. Just a question.");
+    expect(page).not.toContain("No experience needed. Just a question.");
   });
 
-  it("the hero has a question box with a gold submit button (rotating primary CTA)", () => {
+  it("the hero has a question box with a gold submit button (variant primary CTA)", () => {
     const page = src("src/app/page.tsx");
     const flat = page.replace(/\s+/g, " ");
     expect(flat).toContain('placeholder="What\'s on your mind?"');
-    // Hero rotation (Velu, 2026-11-15): the submit button renders
-    // the variant's primary CTA label ("Find Your Clarity" /
-    // "Begin Your Reading" / "Discover Your Future"), not the old
-    // free-gated "Draw my card — free". The "free" wording now
-    // lives only in the friction line below, still gated on
-    // freeAvailable (Batch 6a rule, ReturnLoop pattern).
+    // Velu's 2026-11-16 push-gate decision restored the rotation:
+    // the submit button renders the variant primary CTA label
+    // ("Draw Your Card" on first paint), not the old free-gated
+    // "Draw my card — free". The "free" wording now lives only in
+    // the friction line below, still gated on freeAvailable
+    // (Batch 6a rule, ReturnLoop pattern).
     expect(flat).toContain("{variant.primaryCta}");
     expect(flat).not.toContain('"Draw my card — free"');
     expect(flat).toContain("isFreeAvailableFor");
@@ -110,7 +110,7 @@ describe("Remodel hero: rotating H1, question box, example questions", () => {
 
   it("the friction line promises free with no sign-up and no payment, gated on free", () => {
     const page = src("src/app/page.tsx").replace(/\s+/g, " ");
-    expect(page).toContain("Your first reading is free — no sign-up, no payment.");
+    expect(page).toContain("Your first reading is free, no sign-up, no payment.");
     expect(page).toContain("{freeAvailable && (");
     expect(page).not.toContain("No credit card, no account.");
   });

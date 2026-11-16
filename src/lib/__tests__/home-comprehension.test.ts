@@ -25,35 +25,41 @@ const src = readFileSync(path.resolve(process.cwd(), "src/app/page.tsx"), "utf8"
 
 describe("home page: first-visit comprehension", () => {
   it("states what Sortes does", () => {
-    // Hero rotation (Velu, 2026-11-15): the hero subhead is the
-    // rotating variant H2 (personal insights into love, life, and
-    // the choices ahead), rendered from the variants data. The free
-    // reading stays 1-card Quick Insight only; the 3-card spread is
-    // PLANNED as the next step (not built yet), not the hero promise.
+    // Hero copy rotation (Velu, 2026-11-15, restored by his
+    // 2026-11-16 push-gate decision): the subhead rotates among the
+    // four variants. Variant A (first paint) is the clear personal
+    // reading line; tarot is named on the page by the "78 cards"
+    // line below, not by the subhead.
     const variantsSrc = readFileSync(
       path.resolve(process.cwd(), "src/lib/hero-variants.ts"),
       "utf8"
     ).replace(/\s+/g, " ");
-    expect(variantsSrc).toContain("Get personal insights");
-    expect(variantsSrc).toContain("Explore personal insights");
+    expect(variantsSrc).toContain("Get a clear, personal reading for the question on your mind.");
     expect(src).toContain("{variant.h2}");
     // Batch 6a: the "mirror" line is replaced by the plain version.
-    expect(src).toContain("78 cards. Tarot helps you think. It doesn&apos;t predict.");
+    // F16a: the "It doesn't predict" rebuttal is cut; the footer
+    // carries the one disclaimer per page.
+    expect(src).toContain("78 cards. Tarot helps you think.");
+    expect(src).not.toContain("It doesn&apos;t predict");
   });
 
   it("states what is free", () => {
     // Remodel: the friction line is Fable's "no sign-up, no
     // payment" wording.
-    expect(src).toContain("Your first reading is free — no sign-up, no payment.");
-    expect(src).toContain("First free · then 1 Oracle");
+    expect(src).toContain("Your first reading is free, no sign-up, no payment.");
+    // UX audit Phase 2, F10: the fourth card says "First free" and
+    // "Then 1 Oracle" in the body.
+    expect(src).toContain("First free");
+    expect(src).toContain("Then 1 Oracle.");
   });
 
   it("states what costs credits", () => {
-    expect(src).toContain("First free · then 1 Oracle");
-    // Cash price moved to /oracles by the AF-034 diet (AF-011 SSR):
-    // the pack data is in lib/site and the never-expire line in the
-    // /oracles client copy.
-    expect(src).toContain("First free · then 1 Oracle");
+    // UX audit Phase 2, F10: the fourth card's cost is one line,
+    // "First free", and the price lives in the body ("Then 1
+    // Oracle"). The old two-line label is gone.
+    expect(src).toContain("First free");
+    expect(src).toContain("Then 1 Oracle.");
+    expect(src).not.toContain("First free · then 1 Oracle");
     // Cash price moved to /oracles by the AF-034 diet (AF-011 SSR):
     // the pack data is in lib/site and the never-expire line in the
     // /oracles client copy.
@@ -66,7 +72,11 @@ describe("home page: first-visit comprehension", () => {
       path.resolve(process.cwd(), "src/app/oracles/CreditsClient.tsx"),
       "utf8"
     ).replace(/\s+/g, " ");
-    expect(creditsSrc).toContain("Oracles never expire");
+    // UX audit Phase 2, F37: the balance line states the cost
+    // equivalence only. The "never expire" promise is said once on
+    // the page, on the top-up cards, not repeated here.
+    expect(creditsSrc).toContain("1 Oracle = 1 full reading.");
+    expect(creditsSrc).not.toContain("never expire");
   });
 
   it("states what a paid reading gives", () => {
@@ -84,21 +94,15 @@ describe("home page: first-visit comprehension", () => {
   });
 
   it("has one primary CTA, the free reading (AF-034)", () => {
-    // Hero rotation (Velu, 2026-11-15): the hero CTA is the gold
-    // submit with the variant's primary CTA label ("Find Your
-    // Clarity" / "Begin Your Reading" / "Discover Your Future"),
-    // and it works with no question typed. The "free" wording now
-    // lives only in the friction line below, still gated on
-    // freeAvailable (Batch 6a rule), so a returner who already
-    // used the free reading sees the hero without the free promise.
-    const variantsSrc = readFileSync(
-      path.resolve(process.cwd(), "src/lib/hero-variants.ts"),
-      "utf8"
-    ).replace(/\s+/g, " ");
-    expect(variantsSrc).toContain("Find Your Clarity");
-    expect(variantsSrc).toContain("Begin Your Reading");
-    expect(variantsSrc).toContain("Discover Your Future");
+    // Velu's 2026-11-16 push-gate decision restored the rotation:
+    // one rotating CTA label, the gold submit with "Draw Your Card"
+    // on first paint, and it works with no question typed. The
+    // secondary CTA is gone. The "free" wording now lives only in
+    // the friction line below, still gated on freeAvailable
+    // (Batch 6a rule), so a returner who already used the free
+    // reading sees the hero without the free promise.
     expect(src).toContain("{variant.primaryCta}");
+    expect(src).not.toContain("Explore Readings");
     expect(src).not.toContain("Ask your question");
     expect(src).not.toContain("All spreads, one Oracle each");
     expect(src).not.toContain("Sortes is Latin for lots");

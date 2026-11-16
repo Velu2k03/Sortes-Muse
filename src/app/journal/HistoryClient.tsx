@@ -109,19 +109,13 @@ export default function HistoryPage() {
         <p className="mx-auto mt-4 max-w-xl text-cream/75">
           {user
             ? "Every full reading and saved chart interpretation you complete is kept here and synced to your account, so your journal follows you across devices. Daily cards are saved here as a one-line entry, not a full reading."
-            : "Every full reading and saved chart interpretation you complete is kept here on this device. Sign in to sync your journal across devices. Daily cards are saved here as a one-line entry, not a full reading."}
+            : // UX audit Phase 2, F25: the guest subhead used to be
+              // two paragraphs saying the same thing (guest-only
+              // storage + sign in to sync). One paragraph now, with
+              // the data-loss warning folded in: clearing browser
+              // data deletes guest entries.
+              "Every full reading and saved chart interpretation you complete is kept here on this device. If you clear your browser data, they are gone. Sign in to sync your journal across devices. Daily cards are saved here as a one-line entry, not a full reading."}
         </p>
-        {/* Phase 3 (3.5): plain device-only warning for guests. Guest
-            entries live in this browser's storage; clearing browser
-            data deletes them. Signed-in entries are synced, so the
-            warning is guest-only. */}
-        {!user && (
-          <p className="mx-auto mt-3 max-w-xl text-sm text-goldbright/90">
-            Guest entries live only on this device and browser. If you
-            clear your browser data, they are gone. Sign in to keep
-            them.
-          </p>
-        )}
       </div>
 
       {history === null && hydrated && (
@@ -175,7 +169,7 @@ export default function HistoryPage() {
             });
             return (
               <div className="num mt-10 rounded-3xl border border-gold/20 bg-panel/60 p-5 sm:p-6">
-                <p className="text-xs uppercase tracking-[0.25em] text-gold">
+                <p className="text-sm text-gold">
                   This month in your journal · {monthLabel}
                 </p>
                 {review.count === 0 ? (
@@ -258,7 +252,7 @@ export default function HistoryPage() {
                 aria-label="Pattern Mirror"
                 className="num mt-10 rounded-3xl border border-gold/20 bg-panel/60 p-5 sm:p-6"
               >
-                <p className="text-xs uppercase tracking-[0.25em] text-gold">
+                <p className="text-sm text-gold">
                   Pattern Mirror
                 </p>
                 {/* AF-050: no repeat, no pattern. The section shows
@@ -267,7 +261,7 @@ export default function HistoryPage() {
                 {history.length < PATTERN_MIRROR_MIN_READINGS ||
                 mirror.mostDrawn.length === 0 ? (
                   <p className="mt-2 text-sm text-cream/75">
-                    No patterns yet — your first few readings will appear
+                    No patterns yet. Your first few readings will appear
                     here once a card starts repeating.
                   </p>
                 ) : (
@@ -310,7 +304,7 @@ export default function HistoryPage() {
                           Cards that keep reappearing
                         </p>
                         <p className="mt-1 text-sm text-cream/75">
-                          Drawn 3 or more times across your journal — a
+                          Drawn 3 or more times across your journal, a
                           card that keeps showing up, not a verdict.
                         </p>
                         <ul className="mt-1 space-y-1 text-sm text-cream/85">
@@ -332,7 +326,7 @@ export default function HistoryPage() {
                           {mirror.revisitCandidate.question
                             ? ` · “${mirror.revisitCandidate.question}”`
                             : ""}{" "}
-                          — cast{" "}
+                          , cast{" "}
                           {new Date(
                             mirror.revisitCandidate.createdAt
                           ).toLocaleDateString(undefined, {
@@ -393,7 +387,7 @@ export default function HistoryPage() {
             if (repeated.length === 0) return null;
             return (
               <SpotlightCard className="mt-10 rounded-3xl border border-gold/20 bg-panel/60 p-5 sm:p-6">
-                <p className="text-xs uppercase tracking-[0.25em] text-gold">
+                <p className="text-sm text-gold">
                   Questions you keep returning to
                 </p>
                 <p className="mt-2 text-sm text-cream/75">
@@ -442,7 +436,7 @@ export default function HistoryPage() {
           {/* M2.2: readings old enough to revisit, without a note yet. */}
           {history.filter((r) => isRevisitEligible(r)).length > 0 && (
             <div className="mt-10 rounded-3xl border border-gold/20 bg-panel/60 p-5 sm:p-6">
-              <p className="text-xs uppercase tracking-[0.25em] text-gold">
+              <p className="text-sm text-gold">
                 Ready to revisit
               </p>
               <p className="mt-2 text-sm text-cream/75">
@@ -606,7 +600,7 @@ export default function HistoryPage() {
           <div className="mt-10 space-y-8">
             {groupReadingsByDay(filteredHistory).map((group) => (
               <section key={group.label}>
-                <p className="text-xs uppercase tracking-[0.25em] text-gold">
+                <p className="text-sm text-gold">
                   {group.label}
                 </p>
                 <div className="mt-3 space-y-4">
@@ -643,7 +637,7 @@ export default function HistoryPage() {
                           )}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="text-xs uppercase tracking-[0.2em] text-mist">
+                          <p className="text-sm text-mist">
                             {r.free ? "Free reading" : "1 Oracle"}
                             {r.aiGenerated ? " · Personalized" : ""}
                             {(r.followUps?.length ?? 0) > 0 &&

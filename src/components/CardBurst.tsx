@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { motion } from "motion/react";
+import { BRAND } from "@/lib/brand";
 
 /**
  * A brief shower of golden sparks, shown the instant a card is revealed
@@ -51,7 +52,7 @@ export default function CardBurst({
           style={{
             width: s.size,
             height: s.size,
-            background: s.gold ? "#f4d03f" : "#fff7dd",
+            background: s.gold ? BRAND.goldBright : "#fff7dd",
             boxShadow: s.gold
               ? "0 0 8px rgba(232,197,90,0.9)"
               : "0 0 6px rgba(255,247,221,0.8)",

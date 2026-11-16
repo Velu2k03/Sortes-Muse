@@ -186,7 +186,7 @@ export default function ReturningHome() {
           draw the same day returns the same stored card there. */}
       {daily && card ? (
         <div className="mt-8 flex flex-col gap-6 sm:flex-row sm:items-start">
-          <div className="relative h-48 w-28 shrink-0 overflow-hidden rounded-xl border border-gold/40 shadow-[0_8px_30px_rgba(0,0,0,0.6)] sm:h-56 sm:w-32">
+          <div className="relative h-48 w-28 shrink-0 overflow-hidden rounded-xl border border-gold/40 shadow-card-lg sm:h-56 sm:w-32">
             <Image
               src={card.image}
               alt={card.name}
@@ -196,7 +196,7 @@ export default function ReturningHome() {
             />
           </div>
           <div>
-            <p className="text-xs uppercase tracking-[0.35em] text-gold">
+            <p className="text-sm text-gold">
               Today&apos;s card
             </p>
             <h2 className="mt-2 font-display text-3xl text-goldbright sm:text-4xl">
@@ -218,7 +218,7 @@ export default function ReturningHome() {
         </div>
       ) : (
         <div className="mt-8">
-          <p className="text-xs uppercase tracking-[0.35em] text-gold">
+          <p className="text-sm text-gold">
             Today&apos;s card
           </p>
           <p className="mt-3 text-cream/90">You have not drawn today&apos;s card yet.</p>
@@ -237,7 +237,7 @@ export default function ReturningHome() {
         href="/intake/quick-insight"
         className="btn-gold mt-8 inline-block rounded-2xl px-8 py-4 text-base font-bold sm:text-lg"
       >
-        {freeAvailable ? "Ask today's question — free" : "Ask today's question · 1 Oracle"}
+        {freeAvailable ? "Ask today's question, free" : "Ask today's question · 1 Oracle"}
       </Link>
       <p className="mt-3 text-sm text-mist">
         {credits === null ? (
@@ -263,12 +263,12 @@ export default function ReturningHome() {
       </h2>
       <div className="mt-6 grid gap-4 sm:grid-cols-2">
         <div className="rounded-2xl border border-gold/20 bg-panel/60 p-6">
-          <p className="text-xs uppercase tracking-[0.2em] text-gold">Last reading</p>
+          <p className="text-sm text-gold">Last reading</p>
           {latest ? (
             <>
               <p className="mt-2 text-cream/90">
                 <span className="font-semibold text-goldbright">{latest.spreadName}</span>
-                {" — "}
+                {" · "}
                 {relativeDay(latest.createdAt)}
               </p>
               {threadLine && (
@@ -298,7 +298,7 @@ export default function ReturningHome() {
           )}
         </div>
         <div className="rounded-2xl border border-gold/20 bg-panel/60 p-6">
-          <p className="text-xs uppercase tracking-[0.2em] text-gold">
+          <p className="text-sm text-gold">
             Cards that keep appearing
           </p>
           {repeats.length > 0 ? (
@@ -307,7 +307,7 @@ export default function ReturningHome() {
             </p>
           ) : (
             <p className="mt-2 text-cream/90">
-              Nothing repeating yet — each reading adds to the pattern.
+              Nothing repeating yet. Each reading adds to the pattern.
             </p>
           )}
         </div>

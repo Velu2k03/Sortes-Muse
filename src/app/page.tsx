@@ -90,13 +90,18 @@ export default function Home() {
   const [usedFree, setUsedFree] = useState(false);
   const [hadSession, setHadSession] = useState(false);
   // Hero copy rotation (Velu, 2026-11-15): the H1, subhead, and CTA
-  // labels rotate randomly among three variants on each page load.
+  // labels rotate randomly among four variants on each page load.
   // The page is server-rendered, so the hero renders variant A
   // (index 0) on the server and on first paint, then picks a random
   // variant after mount. A random pick during render would disagree
   // between server and client (hydration mismatch). The setState
   // runs in a microtask, the same pattern as the device flags below
   // (react-hooks/set-state-in-effect is an error in this repo).
+  // Restored 2026-11-16 by Velu's push-gate decision ("Restore the
+  // rotation"): the audit had replaced it with one fixed headline
+  // (F03), and he overruled that. The single-CTA layout from the
+  // audit (F05) stays: only the primary CTA label rotates, the
+  // secondary CTA link is not restored.
   const [variantIndex, setVariantIndex] = useState(0);
   const variant = HERO_VARIANTS[variantIndex];
   useEffect(() => {
@@ -182,7 +187,7 @@ export default function Home() {
               itself is deleted too (AF-042): it was a third continuous
               homepage animation on top of Orb and the starfield. */}
         </div>
-        <div className="relative mx-auto flex max-w-6xl flex-col items-center px-4 pb-24 pt-24 text-center sm:px-6 sm:pt-32">
+        <div className="relative mx-auto flex max-w-6xl flex-col items-center px-4 pb-16 pt-16 text-center sm:px-6 sm:pt-20">
           {/* Hero text renders at full opacity on first paint: the old
               0.8s fade with up to 0.9s delay left the first frame almost
               empty behind the moon image. Gentle motion stays below the
@@ -190,35 +195,34 @@ export default function Home() {
           {/* AF-042: the hero motion wrappers were no-ops (initial
               false, animate to the final values), so they are plain
               elements now — one less animation instance each. */}
-          {/* Hero copy rotation (Velu, 2026-11-15): the H1, subhead,
-              and CTA labels rotate randomly among three variants
-              (src/lib/hero-variants.ts) on each page load. The old
-              Fable H1 ("Ask a question. Draw a tarot card. Get an AI
-              reading.") and subhead are retired by his decision. The
-              free reading stays 1-card Quick Insight only, and the
-              3-card spread is still PLANNED as the next step after
-              the first reading. The "free" wording is gated on
-              freeAvailable (Batch 6a rule): it never promises a free
-              reading to someone who must sign in first, and it fails
-              closed while auth is loading. No entrance animation on
-              the hero copy: it renders at full opacity on first
-              paint (the old fade left the first frame almost empty
-              behind the moon image), and the example questions stay
-              visible as tappable chips instead of rotating one at a
-              time. */}
+          {/* Hero copy rotation (Velu, 2026-11-15, restored by his
+              2026-11-16 push-gate decision): the H1, subhead, and
+              primary CTA label rotate randomly among four variants
+              (src/lib/hero-variants.ts) on each page load. Variant A
+              is his headline, so it renders on the server and on
+              first paint. The audit's one fixed headline (F03) was
+              overruled; the single-CTA layout (F05, one primary
+              action per screen) stays, so the secondary CTA link is
+              not restored, and the "No experience needed" line stays
+              gone (F06). The free reading stays 1-card Quick Insight
+              only. The "free" wording is gated on freeAvailable
+              (Batch 6a rule): it never promises a free reading to
+              someone who must sign in first, and it fails closed
+              while auth is loading. No entrance animation on the hero
+              copy: it renders at full opacity on first paint (the old
+              fade left the first frame almost empty behind the moon
+              image), and the example questions stay visible as
+              tappable chips instead of rotating one at a time. */}
           <h1 className="mt-6 max-w-4xl text-balance font-display text-4xl leading-tight text-goldbright sm:text-5xl">
             {variant.h1}
           </h1>
-          <p className="mt-6 max-w-xl text-base leading-relaxed text-cream/80">
+          <p className="mt-4 max-w-xl text-base leading-relaxed text-cream/80">
             {variant.h2}
-          </p>
-          <p className="mt-4 text-sm text-cream/70">
-            No experience needed. Just a question.
           </p>
           <form
             action="/intake/quick-insight"
             onSubmit={onHeroSubmit}
-            className="mt-8 flex w-full max-w-xl flex-col gap-3 sm:flex-row"
+            className="mt-6 flex w-full max-w-xl flex-col gap-3 sm:flex-row"
           >
             <label htmlFor="hero-question" className="sr-only">
               What&apos;s on your mind?
@@ -242,15 +246,6 @@ export default function Home() {
               {variant.primaryCta}
             </button>
           </form>
-          {/* Hero rotation: the secondary CTA goes to the readings
-              list (/spreads). Its label rotates with the variant;
-              the destination does not change. */}
-          <Link
-            href="/spreads"
-            className="btn-ghost mt-4 inline-block rounded-2xl px-6 py-3 text-sm font-semibold"
-          >
-            {variant.secondaryCta}
-          </Link>
           {/* Sonnet review: the chips are a labelled group with 44px
               touch targets. A fieldset + legend, not role="group":
               the repo lints role="group" as an error against the
@@ -270,7 +265,7 @@ export default function Home() {
           </fieldset>
           {freeAvailable && (
             <p className="mt-5 text-sm text-mist">
-              Your first reading is free — no sign-up, no payment.
+              Your first reading is free, no sign-up, no payment.
             </p>
           )}
           <p className="mt-2 text-xs text-mist/80">
@@ -280,7 +275,7 @@ export default function Home() {
               cards with the gold moon behind, below the question
               box. The question box stays first and usable before the
               3D loads; the scene is the centrepiece, not a splash. */}
-          <div className="mt-10 w-full">
+          <div className="mt-6 w-full">
             <HeroScene />
           </div>
           {/* AF-034: the pricing line and the charts line stay off
@@ -305,7 +300,7 @@ export default function Home() {
             { href: "/spreads/love-insight", label: "Love", text: "You, them, and the connection.", cost: "1 Oracle" },
             { href: "/spreads/career-path", label: "Career", text: "Current, obstacle, and next step.", cost: "1 Oracle" },
             { href: "/spreads/weekly-outlook", label: "The week ahead", text: "Focus, challenge, and opportunity.", cost: "1 Oracle" },
-            { href: "/spreads/quick-insight", label: "A general question", text: "One card for one question.", cost: "First free · then 1 Oracle" },
+            { href: "/spreads/quick-insight", label: "A general question", text: "One card for one question. Then 1 Oracle.", cost: "First free" },
           ].map((s) => (
             <div
               key={s.href}
@@ -314,7 +309,7 @@ export default function Home() {
               <Link href={s.href} className="block p-6">
                 <p className="font-display text-2xl text-goldbright">{s.label}</p>
                 <p className="mt-2 text-sm leading-relaxed text-cream/75">{s.text}</p>
-                <p className="mt-3 text-xs font-semibold uppercase tracking-[0.2em] text-gold">{s.cost}</p>
+                <p className="mt-3 text-sm font-semibold text-gold">{s.cost}</p>
               </Link>
             </div>
           ))}
@@ -326,7 +321,7 @@ export default function Home() {
           cards above stay as the spread entry. */}
 
       {/* EXPLORE THE DECK */}
-      <section className="border-y border-gold/10 bg-navydeep/40 py-16">
+      <section className="border-y border-gold/10 bg-navydeep/40 py-10">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="text-center">
             <h2 className="font-display text-4xl text-goldbright sm:text-5xl">
@@ -348,7 +343,7 @@ export default function Home() {
                   aria-label={`Explore ${card.name} in the deck`}
                   className="block transition-transform duration-300 hover:-translate-y-1 focus-visible:-translate-y-1"
                 >
-                  <span className="relative block aspect-[3/5] w-full overflow-hidden rounded-lg border border-gold/30 shadow-[0_8px_24px_rgba(0,0,0,0.45)]">
+                  <span className="relative block aspect-[3/5] w-full overflow-hidden rounded-lg border border-gold/30 shadow-card">
                     <Image
                       src={card.image}
                       alt=""
@@ -368,14 +363,14 @@ export default function Home() {
       </section>
 
       {/* WHAT IS TAROT */}
-      <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
+      <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
         <motion.div key={`${revealKey}-intro`} {...fadeUp}>
           <div className="rule-gold mx-auto w-24" />
           <h2 className="mt-6 text-center font-display text-4xl text-goldbright sm:text-5xl">
             What is tarot?
           </h2>
           <p className="mt-8 text-center text-base leading-relaxed text-cream/85">
-            78 cards. Tarot helps you think. It doesn&apos;t predict.
+            78 cards. Tarot helps you think.
           </p>
         </motion.div>
 
@@ -428,15 +423,9 @@ export default function Home() {
       <ReturnLoop />
 
       {/* DAILY CARD TEASER */}
-      <section className="border-y border-gold/10 bg-navydeep/40 py-16">
+      <section className="border-y border-gold/10 bg-navydeep/40 py-10">
         <div className="mx-auto max-w-6xl px-4 text-center sm:px-6">
         <motion.div key={revealKey} {...fadeUp}>
-          {/* unslopovich (2026-11-16, Velu approved): eyebrow tracking
-              toned down from 0.35em, the spaced-out small-caps were a
-              generated tell. */}
-          <p className="text-xs uppercase tracking-[0.15em] text-gold">
-            Daily card
-          </p>
           <h2 className="mt-4 font-display text-4xl text-goldbright sm:text-5xl">
             One card, every morning
           </h2>
@@ -464,7 +453,7 @@ export default function Home() {
                     aria-label={`See ${c.name} in the deck`}
                     className="block rounded-lg transition-transform duration-300 hover:-translate-y-3 hover:scale-105 hover:rotate-0 focus-visible:-translate-y-3 focus-visible:scale-105 focus-visible:rotate-0"
                   >
-                    <div className="relative h-28 w-[4.5rem] overflow-hidden rounded-lg border border-gold/30 shadow-[0_8px_24px_rgba(0,0,0,0.45)] sm:h-36 sm:w-24">
+                    <div className="relative h-28 w-[4.5rem] overflow-hidden rounded-lg border border-gold/30 shadow-card sm:h-36 sm:w-24">
                       <Image
                         src={c.image}
                         alt={c.name}
@@ -490,15 +479,12 @@ export default function Home() {
           same size and padding, Star marked popular by a gold border
           and badge, never by height (#59, #75). Full pricing lives
           on /pricing. */}
-      <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6" aria-label="Pricing preview">
-        <p className="text-center text-xs uppercase tracking-[0.15em] text-gold">
-          Pricing
-        </p>
+      <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6" aria-label="Pricing preview">
         <h2 className="mt-4 text-center font-display text-4xl text-goldbright sm:text-5xl">
           Simple plans, clear prices
         </h2>
         <p className="mx-auto mt-4 max-w-lg text-center text-cream/75">
-          Start free with one card a day. Upgrade when you want more readings.
+          Start free with one card a day.
         </p>
         <div className="mt-8 grid gap-4 sm:grid-cols-3">
           {[
@@ -510,7 +496,7 @@ export default function Home() {
               key={tier.name}
               className={`relative rounded-2xl border p-6 text-center ${
                 tier.popular
-                  ? "border-gold bg-gold/10 shadow-[0_0_24px_rgba(212,175,55,0.25)]"
+                  ? "border-gold bg-gold/10 shadow-gold"
                   : "border-gold/25 bg-panel/60"
               }`}
             >

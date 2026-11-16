@@ -158,8 +158,11 @@ function BirthForm({
         {!value.unknownTime && (
           <div className="grid grid-cols-2 gap-4">
             <div>
+              {/* UX audit Phase 2, F29: the label used to carry the
+                  range in parentheses. That range is technical noise;
+                  the input already enforces 0-23 with min/max. */}
               <label htmlFor={`${prefix}-hour`} className={labelClass}>
-                Hour (0-23)
+                Hour
               </label>
               <input
                 id={`${prefix}-hour`}
@@ -452,8 +455,9 @@ export default function ReportsClient() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
-      <p className="text-center text-xs uppercase tracking-[0.35em] text-gold">Reports</p>
-      <h1 className="mt-2 text-center font-display text-5xl text-goldbright">Reports</h1>
+      {/* UX audit Phase 2, F29: the H1 was one vague word ("Reports").
+          It now says what the reports are. */}
+      <h1 className="mt-2 text-center font-display text-5xl text-goldbright">Your astrology reports</h1>
       <p className="mt-3 text-center text-cream/80">
         1 Oracle per report. Reports never expire.
       </p>
@@ -487,10 +491,10 @@ export default function ReportsClient() {
             setError("");
           }}
           aria-label="Report type"
-          trackColor={siteTheme === "light" ? "#ffffff" : "#1a1f2e"}
-          thumbColor="#d4af37"
-          textColor={siteTheme === "light" ? "#45423c" : "#9ca3af"}
-          activeTextColor="#0f1424"
+          trackColor="var(--color-panel)"
+          thumbColor="var(--color-gold)"
+          textColor="var(--color-mist)"
+          activeTextColor="var(--color-ink)"
           className={siteTheme === "light" ? "ring-1 ring-gold/25" : ""}
         />
       </div>
@@ -588,9 +592,9 @@ export default function ReportsClient() {
             inline
             closeButton
             width={320}
-            background="#1a1f2e"
-            color="#ede6d6"
-            fuseColor="#d4af37"
+            background="var(--color-panel)"
+            color="var(--color-cream)"
+            fuseColor="var(--color-gold)"
           />
           <button
             type="button"
@@ -616,17 +620,17 @@ export default function ReportsClient() {
         onClick={generate}
         disabled={generating || outOfOracles}
         className="mt-6 w-full"
-        baseColor={siteTheme === "light" ? "#ffffff" : "#1a1f2e"}
-        lineColor={siteTheme === "light" ? "#7c5e00" : "#d4af37"}
-        textColor={siteTheme === "light" ? "#1c1a15" : "#ede6d6"}
-        tint="#d4af37"
+        baseColor="var(--color-panel)"
+        lineColor="var(--color-gold)"
+        textColor="var(--color-cream)"
+        tint="var(--color-gold)"
       >
         {generating ? "Generating…" : "Generate report · 1 Oracle"}
       </SpecularButton>
       )}
       {generating && (
         <p className="mt-3 flex items-center justify-center gap-2 text-sm text-cream/75">
-          <StatusMark status="running" size={20} color="#d4af37" />
+          <StatusMark status="running" size={20} color="var(--color-gold)" />
           Writing your report…
         </p>
       )}
@@ -636,9 +640,9 @@ export default function ReportsClient() {
             name="report"
             argument="generate"
             status={generating ? "running" : failedCall ? "error" : "done"}
-            surfaceColor="#1a1f2e"
-            color="#ede6d6"
-            progressColor="#d4af37"
+            surfaceColor="var(--color-panel)"
+            color="var(--color-cream)"
+            progressColor="var(--color-gold)"
             onRetry={generate}
           />
         </div>
@@ -647,7 +651,7 @@ export default function ReportsClient() {
       {result && (
         <AnimatedContent trigger="mount" wipe="up" blur={10} distance={60} duration={0.8} scale={0.98} threshold={0.2} stagger={0.08}>
         <div className="mt-8 rounded-3xl border border-gold/25 bg-panel/70 p-6">
-          <p className="text-xs uppercase tracking-[0.35em] text-gold">Your report</p>
+          <p className="text-sm text-gold">Your report</p>
           <h2 className="mt-1 font-display text-3xl text-goldbright">{result.title}</h2>
           <p className="mt-2 text-sm text-mist">
             Saved. Open it any time from your reports below, or{" "}

@@ -35,6 +35,24 @@
   --color-violet: #8b5cf6;
   --color-danger: #f87171;
 
+  /* UX audit Phase 2, F17 (2026-11-16): shadows are tokens, not
+     arbitrary rgba values in class strings. shadow-card is the card
+     lift, shadow-card-lg the larger card lift, shadow-gold the
+     popular-tier glow. */
+  --shadow-card: 0 8px 24px rgb(0 0 0 / 0.45);
+  --shadow-card-lg: 0 8px 30px rgb(0 0 0 / 0.6);
+  --shadow-gold: 0 0 24px rgb(212 175 55 / 0.25);
+  --shadow-gold-lg: 0 24px 48px -24px rgb(212 175 55 / 0.55);
+  --shadow-gold-sm: 0 12px 30px rgb(212 175 55 / 0.15);
+  --shadow-gold-ring: 0 0 0 2px rgb(212 175 55 / 0.6);
+  --shadow-card-md: 0 10px 24px -14px rgb(0 0 0 / 0.45);
+  --shadow-card-sm: 0 4px 16px rgb(0 0 0 / 0.5);
+  --shadow-inset-hi: inset 0 1px 0 rgb(255 255 255 / 0.06);
+  --shadow-spiral: 0 14px 38px rgb(8 6 18 / 0.2);
+  --shadow-card-xl: 0 16px 40px rgb(0 0 0 / 0.45);
+  --shadow-card-gold: 0 8px 30px rgb(0 0 0 / 0.6), 0 0 24px rgb(212 175 55 / 0.15);
+  --shadow-toast: 0 1px 2px rgb(0 0 0 / 0.05), 0 4px 12px rgb(0 0 0 / 0.1);
+
   --font-display: "Cormorant Garamond", "Times New Roman", Georgia, serif;
   --font-body: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-number: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -278,6 +296,27 @@ body {
       transform: translateX(220%) skewX(-12deg);
     }
   }
+}
+
+/* Daily hold progress bar (HoldCard, Velu 2026-11-16): a native
+   <progress> element, so no ARIA role is needed. The fill is the
+   gold token; the track is the Tailwind bg-gold/20 on the element
+   itself. The value is set per frame with no transition, so it is
+   a state indicator under reduced motion, not an animation. */
+.daily-progress {
+  -webkit-appearance: none;
+  appearance: none;
+}
+.daily-progress::-webkit-progress-bar {
+  background: transparent;
+}
+.daily-progress::-webkit-progress-value {
+  background: var(--color-gold);
+  border-radius: 9999px;
+}
+.daily-progress::-moz-progress-bar {
+  background: var(--color-gold);
+  border-radius: 9999px;
 }
 
 /* Soft gold glow for primary CTAs */

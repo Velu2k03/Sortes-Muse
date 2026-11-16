@@ -12,7 +12,6 @@ import { CARD_BACK } from "@/lib/tarot";
 // in the diagram itself is text that can shrink. The container sizes
 // itself from the layout's aspect ratio, so it can never be squeezed
 // flat again: width is capped per shape, height follows.
-const GOLD = "#d4af37";
 
 interface PlacedCard {
   key: string;
@@ -96,7 +95,7 @@ export default function SpreadDiagram({ spread }: { spread: Spread }) {
       {cards.map((c) => (
         <div
           key={c.key}
-          className="absolute overflow-hidden rounded-md border border-gold/40 shadow-[0_4px_16px_rgba(0,0,0,0.5)]"
+          className="absolute overflow-hidden rounded-md border border-gold/40 shadow-card-sm"
           style={{
             left: `${(c.x / width) * 100}%`,
             top: `${(c.y / height) * 100}%`,
@@ -127,10 +126,9 @@ export default function SpreadDiagram({ spread }: { spread: Spread }) {
               (the bar paints over badge 1's lower half without it). */}
           <span
             aria-hidden="true"
-            className={`absolute z-10 flex h-4 w-4 items-center justify-center rounded-full text-[11px] font-bold leading-none ${
+            className={`absolute z-10 flex h-4 w-4 items-center justify-center rounded-full bg-gold text-[11px] font-bold leading-none text-ink ${
               c.h <= 40 ? "right-1 top-1/2 -translate-y-1/2" : "left-1 top-1"
             }`}
-            style={{ backgroundColor: GOLD, color: "#14182a" }}
           >
             {c.index}
           </span>

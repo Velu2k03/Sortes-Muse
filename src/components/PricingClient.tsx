@@ -75,7 +75,6 @@ const TIERS: Tier[] = [
       "1-card readings",
       "3-card readings",
       "Follow-up questions",
-      "Daily card free, every day",
     ],
   },
   {
@@ -87,7 +86,7 @@ const TIERS: Tier[] = [
     savings: 30,
     popular: true,
     features: [
-      "Everything in Spark, plus 1,500 more Oracles a month",
+      "Everything in Spark",
       "Chart readings",
       "Your journal and reading history",
     ],
@@ -101,7 +100,7 @@ const TIERS: Tier[] = [
     savings: 60,
     popular: false,
     features: [
-      "Everything in Star, plus 3,500 more Oracles a month",
+      "Everything in Star",
       "Reports: transit, year-ahead, and relationship",
     ],
   },
@@ -161,13 +160,15 @@ export default function PricingClient({
     // three columns start near 1000px rather than 640px.
     <Section variant="transparent" maxWidth="64rem" padding={8} paddingInline={4} className="mx-auto">
       <VStack gap={0} className="text-center">
-        <p className="text-xs uppercase tracking-[0.35em] text-gold">Pricing</p>
+        {/* UX audit Phase 2, F14 (Hallmark re-run): the "Pricing"
+            eyebrow above the H1 is gone. The H1 already says what
+            the page is, and Hallmark gate 54 is never an eyebrow. */}
         <h1 className="mt-3 font-display text-5xl text-goldbright sm:text-6xl">
           Choose your plan
         </h1>
         <p className="mx-auto mt-4 max-w-xl text-sm text-cream/75">
           Monthly Oracles for readings, charts, and reports. Top-ups
-          arrive with subscriptions. Purchased Oracles never expire.
+          are one-time purchases, separate from subscriptions.
         </p>
       </VStack>
 
@@ -176,7 +177,7 @@ export default function PricingClient({
           type="button"
           aria-pressed={billing === "monthly"}
           onClick={() => setBilling("monthly")}
-          className={`rounded-l-full border px-5 py-2 text-sm font-semibold ${
+          className={`min-h-11 rounded-l-full border px-5 py-2 text-sm font-semibold ${
             billing === "monthly"
               ? "border-gold bg-gold text-ink"
               : "border-gold/40 bg-panel text-cream"
@@ -188,7 +189,7 @@ export default function PricingClient({
           type="button"
           aria-pressed={billing === "annual"}
           onClick={() => setBilling("annual")}
-          className={`rounded-r-full border px-5 py-2 text-sm font-semibold ${
+          className={`min-h-11 rounded-r-full border px-5 py-2 text-sm font-semibold ${
             billing === "annual"
               ? "border-gold bg-gold text-ink"
               : "border-gold/40 bg-panel text-cream"
@@ -250,6 +251,7 @@ export default function PricingClient({
                     isDisabled={!subscriptionsEnabled}
                     isLoading={processing === `${tier.id}-${billing}`}
                     width="100%"
+                    className="min-h-11"
                     onClick={() => void checkout("subscription", `${tier.id}-${billing}`)}
                   />
                 </div>
@@ -261,9 +263,7 @@ export default function PricingClient({
               key={tier.id}
               data-tier={tier.id}
               className={`relative h-full rounded-3xl ${
-                tier.id === "star"
-                  ? "min-[960px]:-translate-y-4 shadow-[0_24px_48px_-24px_rgba(212,175,55,0.55)]"
-                  : ""
+                tier.id === "star" ? "shadow-gold-lg" : ""
               }`}
             >
               {tier.id === "star" ? (
@@ -335,7 +335,7 @@ export default function PricingClient({
                   isLoading={processing === `topup-${topup.credits}`}
                   width="100%"
                   onClick={() => void checkout("topup", `topup-${topup.credits}`)}
-                  className="mt-4"
+                  className="mt-4 min-h-11"
                 />
               </VStack>
             </Card>

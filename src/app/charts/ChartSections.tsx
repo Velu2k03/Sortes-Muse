@@ -60,8 +60,8 @@ export function ChartsIntro() {
   <div className="text-center">
     <PageHeader eyebrow="Birth Charts" title="Cast a birth chart" titleClassName="sm:text-6xl" />
     <p className="mx-auto mt-4 max-w-xl text-cream/75">
-      Ziwei, Western, and Vedic charts. Calculation is free.
-      Interpretation is 1 Oracle, first per system free.
+      Ziwei, Western, and Vedic charts. Calculation is free. Your
+      first interpretation in each system is free; after that, 1 Oracle.
     </p>
     <p className="mx-auto mt-2 max-w-xl text-sm text-cream/80">
       Birth data is used for this calculation and, after a
@@ -242,13 +242,13 @@ export function BirthForm({ prefs, form, s }: { prefs: ChartPrefs; form: ChartFo
           onChange={(e) => setTime(e.target.value)}
           className={`${inputClass} mt-2`}
         />
-        <p className="mt-1 text-xs text-cream/80">Type the time as HH:MM, or tap the field to pick it. Clock time at the birthplace.</p>
+        <p className="mt-1 text-xs text-cream/80">Type the time as HH:MM, e.g. 08:00, or tap the field to pick it. Clock time at the birthplace.</p>
       </div>
       {/* AF-060: field order is system, date, time, place search.
           The place search comes before the city list, not after it. */}
       <div className="sm:col-span-2">
         <label htmlFor="chart-place-search" className={labelClass}>
-          Birthplace — search a place name (free, no key)
+          Birthplace: search a place name
         </label>
         <div className="flex gap-2">
           <input
@@ -312,10 +312,10 @@ export function BirthForm({ prefs, form, s }: { prefs: ChartPrefs; form: ChartFo
             ariaLabel="Birthplace"
             size="lg"
             radius={12}
-            accentColor={siteTheme === "light" ? "#7c5e00" : "#d4af37"}
-            surfaceColor={siteTheme === "light" ? "#ffffff" : "#1a1f2e"}
+            accentColor="var(--color-gold)"
+            surfaceColor="var(--color-panel)"
             highlightColor={siteTheme === "light" ? "#f3ead3" : "#3a3120"}
-            textColor={siteTheme === "light" ? "#1c1a15" : "#ede6d6"}
+            textColor="var(--color-cream)"
             className="w-full [&>button]:w-full [&>button]:justify-between"
           />
         )}
@@ -437,7 +437,7 @@ export function ResultHeader({ prefs, s, result }: { prefs: ChartPrefs; s: Chart
         <div style={{ fontSize: 28, letterSpacing: 8, color: BRAND.gold }}>SORTES</div>
         <div style={{ fontSize: 48, marginTop: 12 }}>{result.system === "ziwei" ? "Ziwei chart" : result.system === "vedic" ? "Vedic chart" : "Western chart"}</div>
         <div style={{ fontSize: 24, marginTop: 24, maxWidth: 900, textAlign: "center" }}>{chartSummaryText(result, ziweiLang)}</div>
-        <div style={{ fontSize: 18, marginTop: 24, color: "#9ca3af" }}>A reflection, not a prediction. sortes.resonantatlas.com</div>
+        <div style={{ fontSize: 18, marginTop: 24, color: BRAND.mist }}>A reflection, not a prediction. sortes.resonantatlas.com</div>
       </div>
     </div>
     {/* The key remounts the reveal for each new result, so a
@@ -786,9 +786,9 @@ export function InterpretationPanel({ prefs, s, result }: { prefs: ChartPrefs; s
           inline
           closeButton
           width={320}
-          background="#1a1f2e"
-          color="#ede6d6"
-          fuseColor="#d4af37"
+          background="var(--color-panel)"
+          color="var(--color-cream)"
+          fuseColor="var(--color-gold)"
         />
         <button
           type="button"
@@ -814,7 +814,7 @@ export function InterpretationPanel({ prefs, s, result }: { prefs: ChartPrefs; s
     )}
     {interpretation && (
       <div className="mt-6">
-        <p className="text-xs uppercase tracking-widest text-gold">
+        <p className="text-sm text-gold">
           {interpFallback
             ? "Standard interpretation · prepared from your chart positions, not AI-generated"
             : `${interpFree ? "Free interpretation" : "1 Oracle interpretation"} · Personalized · AI-generated${interpModel ? ` · Written with ${interpModel}` : ""}`}

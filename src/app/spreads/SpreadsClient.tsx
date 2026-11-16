@@ -147,7 +147,7 @@ export default function SpreadsPage() {
             initial={hide ? { opacity: 0, y: 24 } : false}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.05, duration: 0.4 }}
-            className={`relative flex gap-4 overflow-hidden rounded-3xl border bg-panel/70 p-4 sm:gap-6 sm:p-5 ${pickedSlug === s.slug ? "border-gold shadow-[0_0_0_2px_rgba(212,175,55,0.6)]" : "border-gold/25"}`}
+            className={`relative flex gap-4 overflow-hidden rounded-3xl border bg-panel/70 p-4 sm:gap-6 sm:p-5 ${pickedSlug === s.slug ? "border-gold shadow-gold-ring" : "border-gold/25"}`}
           >
             {/* Batch 6c: the diagram is a thumbnail now (Batch 4a's
                 numbered badges are fixed 16px, so they stay legible
@@ -161,7 +161,7 @@ export default function SpreadsPage() {
             </div>
 
             <div className="min-w-0 flex-1">
-              {/* Phase 4A (4.5): the long "Past · Present · Future"
+              {/* Phase 4A (4.5): the long "Past, Present, Future"
                   title used to collide with the price on one
                   no-wrap row. The row now wraps, and the title may
                   shrink, so the price drops below instead of
@@ -172,12 +172,12 @@ export default function SpreadsPage() {
                   {s.slug === "quick-insight" && freeAvailable ? "Free" : (<><span className="font-body">1</span> Oracle</>)}
                 </p>
               </div>
-              <p className="mt-1 text-xs uppercase tracking-[0.2em] text-mist">
-                {s.cards} {s.cards === 1 ? "card" : "cards"} · personalized AI interpretation
+              <p className="mt-1 text-sm text-mist">
+                {s.cards} {s.cards === 1 ? "card" : "cards"}, personalized AI interpretation
               </p>
               {pending ? (
                 <output
-                  className="mt-4 block h-12 animate-pulse rounded-xl bg-gold/20"
+                  className="mt-4 block h-12 animate-pulse rounded-xl bg-gold/20 motion-reduce:animate-none"
                   aria-busy="true"
                   aria-label="Checking your Oracle balance"
                 />
@@ -207,7 +207,12 @@ export default function SpreadsPage() {
                   href={`/spreads/${s.slug}`}
                   className="btn-ghost mt-4 block rounded-xl border border-gold/30 px-4 py-3 text-center font-semibold"
                 >
-                  {s.slug === "quick-insight" && freeAvailable ? "Start my free reading" : "Begin reading"}
+                  {/* UX audit Phase 2, F23: every card says "Begin
+                      reading". The free CTA appears once per screen,
+                      in the hero banner above; the Quick Insight card
+                      used to repeat it here. The card still shows its
+                      price (Free). */}
+                  Begin reading
                   <span className="sr-only">: {s.name}</span>
                 </Link>
               )}

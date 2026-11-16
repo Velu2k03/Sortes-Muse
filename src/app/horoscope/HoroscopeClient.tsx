@@ -83,8 +83,10 @@ export default function HoroscopeClient({
   const [view, setView] = useState<"daily" | "weekly">("daily");
   // OptionWheel takes hard colours, so it bypasses the theme tokens
   // like the credits Counter and charts dials did. Track the
-  // document theme here. RubberSegment now follows the theme too,
-  // 2026-11-04, instead of keeping its dark track in light mode.
+  // document theme here and pass its text/active colours as hex.
+  // RubberSegment uses CSS tokens now (audit end-of-phase fix), so
+  // it needs no theme tracking; siteTheme still drives its
+  // light-mode ring below.
   const [siteTheme, setSiteTheme] = useState<"dark" | "light">("dark");
   useEffect(() => {
     const sync = () =>
@@ -126,12 +128,18 @@ export default function HoroscopeClient({
   return (
     <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6">
       <div className="text-center">
-        <p className="flex items-center justify-center gap-2 text-xs uppercase tracking-[0.35em] text-gold"><Icon name="iconoirSun" size={18} />Daily Horoscope</p>
+        <p className="flex items-center justify-center gap-2 text-sm text-gold"><Icon name="iconoirSun" size={18} />Daily Horoscope</p>
         <h1 className="mt-3 font-display text-5xl text-goldbright sm:text-6xl">Today&apos;s sun-sign reflection</h1>
         <p className="mx-auto mt-4 max-w-xl text-cream/75">
           A general reflection for your sun sign. Free, unsaved, no birth data needed.
         </p>
       </div>
+      {/* The Sun sign picker is the spinning wheel again, restored
+          by Velu's 2026-11-16 push-gate decision (the audit's F28
+          grid replaced it). Under reduced motion it is a select, the
+          same control for everyone else is the wheel. The duplicate
+          12-sign link grid below the page stays gone (F28): the
+          wheel is the only picker now. */}
       <div className="mx-auto mt-8 grid gap-4 rounded-3xl border border-gold/25 bg-panel/70 p-6 sm:grid-cols-2">
         <div>
           <span className="mb-1.5 block text-sm font-medium text-cream">
@@ -152,7 +160,7 @@ export default function HoroscopeClient({
             </select>
           ) : (
             <div className="h-64 overflow-hidden rounded-xl">
-              <p className="mb-2 text-xs text-mist">Choose your sign from the grid below, or spin the wheel: drag it, or focus it and use arrow keys.</p>
+              <p className="mb-2 text-xs text-mist">Spin the wheel: drag it, or focus it and use arrow keys.</p>
               <OptionWheel
                 ariaLabel="Sun sign"
                 items={[...SUN_SIGNS]}
@@ -180,10 +188,10 @@ export default function HoroscopeClient({
           value={view}
           onChange={(v) => { setView(v as "daily" | "weekly"); resetReveal(); }}
           aria-label="Daily or weekly"
-          trackColor={siteTheme === "light" ? "#ffffff" : "#1a1f2e"}
-          thumbColor="#d4af37"
-          textColor={siteTheme === "light" ? "#45423c" : "#9ca3af"}
-          activeTextColor="#0f1424"
+          trackColor="var(--color-panel)"
+          thumbColor="var(--color-gold)"
+          textColor="var(--color-mist)"
+          activeTextColor="var(--color-ink)"
           className={siteTheme === "light" ? "ring-1 ring-gold/25" : ""}
         />
       </div>
@@ -203,18 +211,18 @@ export default function HoroscopeClient({
         )}
       </div>
       {revealing ? (
-        <p className="mt-6 animate-pulse text-center text-sm text-gold">
+        <p className="mt-6 animate-pulse text-center text-sm text-gold motion-reduce:animate-none">
           Loading…
         </p>
-      ) : mounted && !revealed ? (
-        <p className="mt-6 text-center text-sm text-cream/75">
-          Choose your sign and date, then reveal your reflection.
-        </p>
-      ) : (
+      ) : // UX audit Phase 2, F28: the helper line "Choose your sign
+      // and date, then reveal your reflection" repeated what the
+      // button already says. Nothing renders here before the reveal
+      // now; the button is the action.
+      mounted && !revealed ? null : (
         <article className="mt-6 rounded-3xl border border-gold/25 bg-panel/70 p-6">
           {/* Phase 2, 2.2: the sign line used to type itself out with
               fake typos. It renders in full now, like the body below. */}
-          <p className="text-xs uppercase tracking-[0.25em] text-gold">
+          <p className="text-sm text-gold">
             {signLine}
           </p>
           {reducedMotion || !mounted ? (

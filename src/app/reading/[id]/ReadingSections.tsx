@@ -33,7 +33,7 @@ export function ReadingHeader({ reading }: { reading: Reading }) {
           { label: reading.spreadName },
         ]}
       />
-      <p className="num text-center text-xs uppercase tracking-[0.35em] text-gold">
+      <p className="num text-center text-sm text-gold">
         {reading.spreadName} · {date}
       </p>
       <SplitText tag="h1" text="Your reading" className="mt-3 text-center font-display text-5xl text-goldbright" />
@@ -78,7 +78,7 @@ export function GuestKeepNotice() {
  * Remodel Phase 1 batch 3: the nudge after the first reading. It
  * sits directly under the save prompt (save first, then the next
  * step) and only on a free Quick Insight reading. It is a link to
- * the Past · Present · Future spread, never a second free reading:
+ * the Past, Present, Future spread, never a second free reading:
  * the cost is labelled 1 Oracle, and the free reading stays 1-card
  * Quick Insight only.
  */
@@ -87,13 +87,13 @@ export function ThreeCardNudge() {
     <section className="mx-auto mt-6 max-w-xl rounded-2xl border border-gold/40 bg-panel/70 p-5 text-center">
       <h2 className="font-display text-xl text-goldbright">Go deeper with three cards</h2>
       <p className="mt-2 text-sm text-cream/80">
-        Past, present, and future — three cards tracing where you have been, where you stand, and where the path leads.
+        Past, present, and future: three cards tracing where you have been, where you stand, and where the path leads.
       </p>
       <Link
         href="/intake/past-present-future"
         className="mt-4 inline-block rounded-full bg-gold px-5 py-3 text-sm font-semibold text-ink hover:bg-goldbright"
       >
-        Try Past · Present · Future — 1 Oracle
+        Try Past, Present, Future (1 Oracle)
       </Link>
     </section>
   );
@@ -129,7 +129,7 @@ export function AtAGlance({ reading }: { reading: Reading }) {
   return (
     <AnimatedContent trigger="scroll" wipe="up" blur={10} distance={60} duration={0.8} scale={0.98} threshold={0.2}>
     <section className="mx-auto mt-8 max-w-3xl rounded-3xl border border-gold/25 bg-panel/60 p-6 text-left sm:p-8">
-      <p className="text-xs uppercase tracking-[0.25em] text-gold">
+      <p className="text-sm text-gold">
         About this reading, at a glance
       </p>
       <dl className="mt-3 space-y-2 text-sm leading-relaxed text-cream/85">
@@ -236,7 +236,7 @@ export function Interpretation({ reading }: { reading: Reading }) {
   if (!reading.aiGenerated || !reading.interpretation) return null;
   return (
     <section className="mx-auto mt-10 max-w-3xl rounded-3xl border border-gold/30 bg-navydeep/70 p-6 sm:p-8">
-      <p className="text-xs uppercase tracking-[0.25em] text-gold">
+      <p className="text-sm text-gold">
         Personalized interpretation
       </p>
       <p className="mt-1 text-xs text-mist">
@@ -275,7 +275,7 @@ export function CardMeanings({ reading }: { reading: Reading }) {
         key={d.positionKey}
         className="rounded-3xl border border-gold/20 bg-panel/60 p-6 sm:p-8"
       >
-        <p className="text-xs uppercase tracking-[0.25em] text-gold">
+        <p className="text-sm text-gold">
           {i + 1} · {d.position}
         </p>
         <h2 className="mt-1 font-display text-2xl text-cream">
@@ -328,7 +328,7 @@ export function CardMeanings({ reading }: { reading: Reading }) {
 export function NextStepPanel({ field }: { field: ReadingField }) {
   return (
     <div className="mx-auto mt-10 max-w-3xl rounded-3xl border border-gold/25 bg-panel/60 p-6 text-left sm:p-8">
-      <p className="text-xs uppercase tracking-[0.25em] text-gold">
+      <p className="text-sm text-gold">
         My next step
       </p>
       <p className="mt-2 text-sm leading-relaxed text-cream/85">
@@ -367,7 +367,7 @@ export function NextStepPanel({ field }: { field: ReadingField }) {
 export function NotePanel({ reading, field }: { reading: Reading; field: ReadingField }) {
   return (
     <div className="mx-auto mt-10 max-w-3xl rounded-3xl border border-gold/25 bg-panel/60 p-6 text-left sm:p-8">
-      <p className="text-xs uppercase tracking-[0.25em] text-gold">
+      <p className="text-sm text-gold">
         Your note
       </p>
       <p className="mt-2 text-sm leading-relaxed text-cream/85">
@@ -395,7 +395,7 @@ export function NotePanel({ reading, field }: { reading: Reading; field: Reading
       {/* AF-049: a disabled Save says why, inline. */}
       {!field.input.trim() && (
         <p className="mt-2 text-xs text-mist">
-          Write your note first — the button works once there is text to save.
+          Write your note first. The button works once there is text to save.
         </p>
       )}
       {field.saved && (
@@ -429,7 +429,7 @@ export function RevisitPanel({ reading, field }: { reading: Reading; field: Read
   if (reading.revisitNote) {
     return (
       <div className="mx-auto mt-10 max-w-3xl rounded-3xl border border-gold/25 bg-panel/60 p-6 text-left sm:p-8">
-        <p className="text-xs uppercase tracking-[0.25em] text-gold">
+        <p className="text-sm text-gold">
           What you noted on revisit
         </p>
         {/* Phase E (item 8): the revisit note is editable after
@@ -457,7 +457,7 @@ export function RevisitPanel({ reading, field }: { reading: Reading; field: Read
         {/* AF-049: a disabled Save says why, inline. */}
         {!field.input.trim() && (
           <p className="mt-2 text-xs text-mist">
-            Write your revisit note first — the button works once there is text to save.
+            Write your revisit note first. The button works once there is text to save.
           </p>
         )}
         {field.saved && (
@@ -481,7 +481,7 @@ export function RevisitPanel({ reading, field }: { reading: Reading; field: Read
   if (ageDays < 7) return null;
   return (
     <div className="mx-auto mt-10 max-w-3xl rounded-3xl border border-gold/25 bg-panel/60 p-6 text-left sm:p-8">
-      <p className="text-xs uppercase tracking-[0.25em] text-gold">
+      <p className="text-sm text-gold">
         A week has passed
       </p>
       <p className="mt-2 text-sm leading-relaxed text-cream/85">
@@ -509,7 +509,7 @@ export function RevisitPanel({ reading, field }: { reading: Reading; field: Read
       {/* AF-049: a disabled Save says why, inline. */}
       {!field.input.trim() && (
         <p className="mt-2 text-xs text-mist">
-          Write your revisit note first — the button works once there is text to save.
+          Write your revisit note first. The button works once there is text to save.
         </p>
       )}
       {field.saved && (
@@ -588,7 +588,7 @@ export function FollowUpThread({
               key={i}
               className="rounded-2xl border border-gold/20 bg-panel/50 p-4"
             >
-              <p className="text-xs uppercase tracking-[0.2em] text-gold">
+              <p className="text-sm text-gold">
                 Follow-up {i + 1}{fu.free ? " (free)" : " (1 Oracle)"}
               </p>
               <p className="mt-1 text-sm italic text-cream/80">
@@ -609,7 +609,7 @@ export function FollowUpThread({
                     }
                   })()}{" "}
                   <span className="text-xs text-mist">
-                    — drawn fresh for this follow-up
+                    (drawn fresh for this follow-up)
                   </span>
                 </p>
               )}
@@ -660,7 +660,7 @@ export function FollowUpThread({
           {/* AF-049: a disabled Ask says why, inline. */}
           {!f.followUpQ.trim() && !f.followUpLoading && (
             <p className="text-xs text-mist">
-              Write your question first — the button works once there is a question to ask.
+              Write your question first. The button works once there is a question to ask.
             </p>
           )}
           {f.followUpError && (
@@ -683,9 +683,9 @@ export function FollowUpThread({
                 inline
                 closeButton
                 width={320}
-                background="#1a1f2e"
-                color="#ede6d6"
-                fuseColor="#d4af37"
+                background="var(--color-panel)"
+                color="var(--color-cream)"
+                fuseColor="var(--color-gold)"
               />
               <button
                 type="button"

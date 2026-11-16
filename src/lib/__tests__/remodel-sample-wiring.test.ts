@@ -28,18 +28,18 @@ describe("Remodel sample: today's card below the hero", () => {
     const sampleAt = page.indexOf("<TodaySample />");
     expect(sampleAt).toBeGreaterThan(-1);
     // Below the hero (after its submit button) and above StatsStrip.
-    // Hero rotation (Velu, 2026-11-15): the submit button renders
-    // the variant's primary CTA, not "Draw my card".
+    // Velu 2026-11-16 restored the rotation: the submit button renders the variant
+    // primary CTA, not "Draw my card".
     expect(sampleAt).toBeGreaterThan(page.indexOf("{variant.primaryCta}"));
     expect(sampleAt).toBeLessThan(page.indexOf("<StatsStrip />"));
   });
 
   it("labels the sample clearly and shows one card, one line", () => {
     const sample = src("src/components/TodaySample.tsx");
-    // unslopovich (2026-11-16, Velu approved): eyebrow tracking toned
-    // down from 0.35em to 0.15em.
+    // UX audit Phase 2, F14: the label is sentence case, untracked,
+    // one step smaller than body text — never tracked small caps.
     const eyebrow = sample.match(
-      /<p className="text-xs uppercase tracking-\[0\.15em\] text-gold">([\s\S]*?)<\/p>/
+      /<p className="text-sm text-gold">([\s\S]*?)<\/p>/
     );
     expect(eyebrow).not.toBeNull();
     expect((eyebrow as RegExpMatchArray)[1].trim()).toBe("Sample reading");
@@ -49,7 +49,7 @@ describe("Remodel sample: today's card below the hero", () => {
       "Today&apos;s card"
     );
     expect(sample).toContain(
-      "One card, one line — an example of what a reading looks like."
+      "One card, one line: an example of what a reading looks like."
     );
     // One section only; the Daily Card Teaser further down the page
     // ("One card, every morning") keeps its headline and fan, but
@@ -102,10 +102,11 @@ describe("Remodel How it works: Ask, Draw, Read", () => {
       (m) => m[1].replace(/\s+/g, " ").trim()
     );
     expect(headings).toContain("How it works");
-    // The "What is tarot?" one-liner stays where it is.
-    expect(page).toContain(
-      "78 cards. Tarot helps you think. It doesn&apos;t predict."
-    );
+    // The "What is tarot?" one-liner stays where it is. F16a: the
+    // "It doesn't predict" rebuttal is cut; the footer carries the
+    // one disclaimer per page.
+    expect(page).toContain("78 cards. Tarot helps you think.");
+    expect(page).not.toContain("It doesn&apos;t predict");
   });
 
   it("rewrites the three steps as Ask, Draw, Read", () => {

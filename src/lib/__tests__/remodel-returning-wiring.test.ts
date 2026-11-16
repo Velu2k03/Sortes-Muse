@@ -39,8 +39,8 @@ describe("Remodel returning home: dynamic homepage switch", () => {
     expect(page).not.toContain("setHasHistory");
     expect(page).not.toContain("setDrewToday");
     // The switch is an early return before the hero, not a route.
-    // Hero rotation (Velu, 2026-11-15): the hero H1 renders the
-    // variant H1, so the switch is checked against that element.
+    // Velu 2026-11-16 restored the rotation: the hero H1 renders the variant
+    // headline, so the switch is checked against that element.
     expect(page.indexOf("if (isReturning)")).toBeLessThan(
       page.indexOf("{variant.h1}")
     );
@@ -50,9 +50,8 @@ describe("Remodel returning home: dynamic homepage switch", () => {
 
   it("new visitors still get the cold landing copy", () => {
     const page = src("src/app/page.tsx");
-    // Hero rotation (Velu, 2026-11-15): the hero H1 renders the
-    // variant H1 (variant A on first paint); the cold landing
-    // sections below it are unchanged.
+    // Velu 2026-11-16 restored the rotation: the hero H1 renders the variant
+    // headline; the cold landing sections below it are unchanged.
     expect(page).toContain("{variant.h1}");
     expect(page).toContain("<TodaySample />");
     expect(page).toContain("How it works");
@@ -73,9 +72,9 @@ describe("Hero for all signed-out guests (Velu's Option B, 2026-11-14)", () => {
     expect(page).toContain("isFreeAvailableFor({");
     expect(page).toContain("deviceFree: !usedFree,");
     // The free wording is gated on the actual JSX elements: the
-    // friction line's freeAvailable guard. Hero rotation (Velu,
-    // 2026-11-15): the submit button renders the variant's primary
-    // CTA, not the old free-gated "Draw my card — free".
+    // friction line's freeAvailable guard. Velu 2026-11-16 restored the rotation:
+    // the submit button renders the variant primary CTA, not the old
+    // free-gated "Draw my card — free".
     const button = page.match(
       /<button[^>]*type="submit"[^>]*>([\s\S]*?)<\/button>/
     );
@@ -162,7 +161,7 @@ describe("ReturningHome: greeting, today's card, cost-labelled button, balance",
     expect(home).toContain("isFreeAvailableFor({");
     expect(home).toContain('slug: "quick-insight"');
     expect(home).toContain(
-      'freeAvailable ? "Ask today\'s question — free" : "Ask today\'s question · 1 Oracle"'
+      'freeAvailable ? "Ask today\'s question, free" : "Ask today\'s question · 1 Oracle"'
     );
     expect(home).toContain('href="/intake/quick-insight"');
   });
@@ -182,7 +181,7 @@ describe("ReturningHome: greeting, today's card, cost-labelled button, balance",
     // free reading lands on the hero now, not here — ReturningHome
     // is signed-in only. The guard still holds: no copy in this
     // file offers the first reading again (the button's free
-    // wording is "Ask today's question — free", gated on the
+    // wording is "Ask today's question, free", gated on the
     // server record).
     expect(home).not.toContain("first reading is free");
     expect(home).not.toContain("Your first reading is free");
@@ -217,7 +216,7 @@ describe("ReturningHome: Your thread and day-1/day-2 states", () => {
   it("designs the empty states: no thread, no streak, no journal yet", () => {
     const home = src("src/components/ReturningHome.tsx");
     expect(home).toContain("Your thread starts with your first reading.");
-    expect(home).toContain("Nothing repeating yet — each reading adds to the pattern.");
+    expect(home).toContain("Nothing repeating yet. Each reading adds to the pattern.");
     expect(home).toContain("Your journal: no readings saved yet");
     expect(home).toContain("Daily card streak: not started yet");
     // Day 2: one reading, a 1-day streak — a plain sentence, not
@@ -255,7 +254,7 @@ describe("Three-card nudge after the first reading", () => {
     const label = (link as RegExpMatchArray)[1].replace(/\s+/g, " ").trim();
     expect(label).toContain("1 Oracle");
     expect(label).not.toContain("free");
-    expect(label).toContain("Past · Present · Future");
+    expect(label).toContain("Past, Present, Future");
   });
 
   it("renders in Ask more, only on a free Quick Insight reading", () => {

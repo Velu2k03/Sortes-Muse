@@ -199,7 +199,7 @@ export function buildStaticChartInterpretation(
         ? vedicLines(result)
         : ziweiLines(result);
   const parts = [
-    "Standard interpretation — prepared from your chart positions, not written by AI.",
+    "Standard interpretation. Prepared from your chart positions, not written by AI.",
     `This is a standard reading of your ${systemName} chart for ${focus}, built from the placements above. The personal AI interpretation could not be generated just now; nothing was spent, and your free interpretation for this system is still unused if you had one. You can retry for the personal version above.`,
     ...body,
     focusPrompt(focus),

@@ -50,8 +50,12 @@ export default function GuidesSearch({
           >
             <h2 className="font-display text-3xl text-balance text-goldbright">{g.title}</h2>
             <p className="mt-2 text-sm leading-relaxed text-cream/75">{g.description}</p>
+            {/* UX audit Phase 2, F30: four cards all said "Read the
+                guide", identical link text to four different
+                destinations. Each link now names its guide, so it
+                makes sense out of context. */}
             <span className="mt-3 inline-block text-sm font-semibold text-goldbright underline underline-offset-4">
-              Read the guide<span className="sr-only">: {g.title}</span>
+              Read: {g.title}
             </span>
           </Link>
         ))}

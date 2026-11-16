@@ -116,7 +116,7 @@ describe("hero rotation: the page renders the variant, A first", () => {
   it("the subhead renders the variant H2, not a fixed string", () => {
     const page = src("src/app/page.tsx");
     const match = page.match(
-      /<p className="mt-6 max-w-xl text-base[^"]*">([\s\S]*?)<\/p>/
+      /<p className="mt-4 max-w-xl text-base[^"]*">([\s\S]*?)<\/p>/
     );
     expect(match).not.toBeNull();
     expect((match as RegExpMatchArray)[1].replace(/\s+/g, " ").trim()).toBe(
@@ -143,28 +143,31 @@ describe("hero rotation: the page renders the variant, A first", () => {
     expect(page).toContain("setHeroQuestion(question.trim())");
   });
 
-  it("the secondary CTA links to the readings list and renders the variant label", () => {
+  // Velu's 2026-11-16 push-gate decision restored the rotation, but
+  // the single-CTA layout from the audit (F05, one primary action
+  // per screen) stays: the secondary CTA link is NOT restored, and
+  // the variant secondaryCta labels are data only, not rendered.
+  it("there is no secondary CTA in the hero (F05, one primary action)", () => {
     const page = src("src/app/page.tsx");
-    const link = page.match(
-      /<Link[^>]*href="\/spreads"[^>]*>([\s\S]*?)<\/Link>/
-    );
-    expect(link).not.toBeNull();
-    expect((link as RegExpMatchArray)[1].replace(/\s+/g, " ").trim()).toBe(
-      "{variant.secondaryCta}"
-    );
+    expect(page).not.toContain('href="/spreads"');
+    expect(page).not.toContain("Explore Readings");
+    expect(page).not.toContain("Discover Readings");
+    expect(page).not.toContain("Explore Your Options");
   });
 
   it("the free promise is still gated on freeAvailable (Batch 6a rule)", () => {
     const page = src("src/app/page.tsx");
-    expect(page).toContain("Your first reading is free — no sign-up, no payment.");
+    expect(page).toContain("Your first reading is free, no sign-up, no payment.");
     expect(page).toContain("{freeAvailable && (");
     expect(page).toContain("isFreeAvailableFor({");
   });
 
-  it("the question box, fear line, and example chips are unchanged", () => {
+  // Velu's 2026-11-16 push-gate decision restored the rotation. The
+  // fear line stays gone (audit F06, it repeated the invitation);
+  // only the question box and the example chips are asserted here.
+  it("the question box and example chips are unchanged", () => {
     const page = src("src/app/page.tsx").replace(/\s+/g, " ");
     expect(page).toContain('placeholder="What\'s on your mind?"');
-    expect(page).toContain("No experience needed. Just a question.");
     expect(page).toContain("What should I focus on today?");
     expect(page).toContain("What is blocking me?");
     expect(page).toContain("EXAMPLE_QUESTIONS");

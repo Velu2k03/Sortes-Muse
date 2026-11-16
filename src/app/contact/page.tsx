@@ -29,7 +29,7 @@ export const metadata: Metadata = {
 export default function ContactPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
-      <PageHeader eyebrow="Contact" title="Contact Sortes" />
+      <PageHeader title="Contact Sortes" />
       <p className="mt-4 text-[15px] leading-relaxed text-cream/85">
         Email is the only way to reach us. Write to{" "}
         <a

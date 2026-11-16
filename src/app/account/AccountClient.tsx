@@ -78,10 +78,17 @@ export default function AccountPage() {
     return <AccountLoading />;
   }
 
-  // AF-012: the H1 + intro live in page.tsx as server HTML, so this
-  // client component renders only the form / account panels.
+  // UX audit Phase 2, F36: the H1 lives here, not in page.tsx as
+  // server HTML, because it differs by auth state, which only the
+  // client knows. A guest sees "Sign in" (the wall in front of
+  // them), a signed-in user sees "Your account". The loading
+  // skeleton above covers the wait, so no wrong H1 ever paints.
   return (
-    <div className="mt-8">
+    <>
+      <h1 className="mt-3 text-center font-display text-5xl text-goldbright">
+        {user ? "Your account" : "Sign in"}
+      </h1>
+      <div className="mt-6">
 
       {loadError && <LoadErrorBanner onRetry={() => void refresh()} />}
 
@@ -98,6 +105,7 @@ export default function AccountPage() {
         </>
       )}
     </div>
+    </>
   );
 }
 

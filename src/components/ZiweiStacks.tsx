@@ -169,9 +169,9 @@ export default function ZiweiStacks({
                       {row.decadeActive && <span className="text-goldbright"> · decade palace</span>}
                       {row.annualActive && <span className="text-goldbright"> · annual palace</span>}
                     </td>
-                    <td className="py-2 pr-4">{row.natalMajorStars.join(", ") || "—"}</td>
-                    <td className="py-2 pr-4">{row.decadeStars.join(", ") || "—"}</td>
-                    <td className="py-2 pr-4">{row.annualStars.join(", ") || "—"}</td>
+                    <td className="py-2 pr-4">{row.natalMajorStars.join(", ") || "none"}</td>
+                    <td className="py-2 pr-4">{row.decadeStars.join(", ") || "none"}</td>
+                    <td className="py-2 pr-4">{row.annualStars.join(", ") || "none"}</td>
                   </tr>
                 ))}
               </tbody>

@@ -8,8 +8,11 @@ export const SPREADS: Spread[] = [
     slug: "quick-insight",
     name: "Quick Insight",
     cards: 1,
-    description:
-      "One card for one question. Your first Quick Insight reading is free, no payment card required. Draw a single card for a focused answer to your question.",
+    // UX audit Phase 2, F23/F24: the old description said one idea
+    // three ways in three sentences. One sentence, one idea. The
+    // free-ness is already in the price (Free), the spreads subhead,
+    // and the free CTA button; it does not belong here.
+    description: "One card for one question.",
     positions: [
       {
         key: "insight",
@@ -21,7 +24,7 @@ export const SPREADS: Spread[] = [
   },
   {
     slug: "past-present-future",
-    name: "Past · Present · Future",
+    name: "Past, Present, Future",
     cards: 3,
     description:
       "Three cards tracing where you have been, where you stand, and where the path leads.",

@@ -74,7 +74,8 @@ export default async function GuidePage({
           in the guide itself, not only on the spreads, charts, or
           Oracles pages. Wording matches the confirmed pricing: every
           full reading is 1 Oracle, chart calculation is free and
-          interpretation is 1 Oracle, first per system free. */}
+          your first interpretation in each system is free, then
+          1 Oracle. */}
       {(() => {
         const notices: Record<string, { text: string; href: string; label: string }> = {
           "celtic-cross-explained": {
@@ -109,7 +110,7 @@ export default async function GuidePage({
           sections with no way to jump. This contents list is the
           guide's own headings, linked, nothing added or removed. */}
       <nav aria-label="In this guide" className="mt-8 rounded-3xl border border-gold/20 bg-panel/60 p-5">
-        <p className="text-xs uppercase tracking-[0.25em] text-gold">
+        <p className="text-sm text-gold">
           In this guide
         </p>
         <ul className="mt-3 space-y-1.5">

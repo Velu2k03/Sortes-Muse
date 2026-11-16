@@ -95,7 +95,7 @@ export default async function CardPage({
 
       <div className="grid gap-10 md:grid-cols-[280px_1fr]">
         <div>
-          <div className="relative mx-auto aspect-[3/5] w-full max-w-70 overflow-hidden rounded-2xl border border-gold/25 shadow-[0_12px_30px_rgba(212,175,55,0.15)]">
+          <div className="relative mx-auto aspect-[3/5] w-full max-w-70 overflow-hidden rounded-2xl border border-gold/25 shadow-gold-sm">
             <Image
               src={card.image}
               alt={`${card.name} tarot card`}
@@ -116,7 +116,7 @@ export default async function CardPage({
         </div>
 
         <div>
-          <p className="text-xs uppercase tracking-[0.35em] text-gold">
+          <p className="text-sm text-gold">
             {card.arcana === "major" ? "Major Arcana" : "Minor Arcana"}
           </p>
           <h1 className="mt-3 font-display text-5xl text-goldbright sm:text-6xl">
@@ -167,14 +167,11 @@ export default async function CardPage({
               with one card and one question.
             </p>
             <div className="mt-4 flex flex-wrap gap-3">
+              {/* UX audit Phase 2, F35: four buttons did the same job
+                  here. One primary + one secondary now; the two named
+                  spreads are reachable from the spreads page. */}
               <Link href="/spreads/quick-insight" className="btn-gold rounded-xl px-5 py-2.5 text-sm font-bold">
                 Quick Insight, free first
-              </Link>
-              <Link href="/spreads/past-present-future" className="rounded-xl border border-gold/30 px-5 py-2.5 text-sm font-semibold text-goldbright hover:border-gold/60">
-                Past · Present · Future
-              </Link>
-              <Link href="/spreads/celtic-cross" className="rounded-xl border border-gold/30 px-5 py-2.5 text-sm font-semibold text-goldbright hover:border-gold/60">
-                Celtic Cross
               </Link>
               <Link href="/spreads" className="rounded-xl border border-gold/30 px-5 py-2.5 text-sm font-semibold text-goldbright hover:border-gold/60">
                 All spreads

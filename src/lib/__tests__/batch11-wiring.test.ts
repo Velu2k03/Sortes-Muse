@@ -5,12 +5,12 @@ import path from "path";
 // Batch 11: the hero was the one-word brand (Velu, 2026-11-13).
 // Batch 12 (Velu, 2026-11-13, Option B): the subhead was Claude's
 // line. BOTH are superseded by the remodel (Velu, 2026-11-14,
-// Fable's review) and the hero rotation (Velu, 2026-11-15): the H1,
-// subhead, and CTA labels now rotate randomly among three variants
-// (see src/lib/hero-variants.ts and hero-rotation.test.ts), and
-// "Sortes" lives in the header logo. The free
-// reading stays 1-card Quick Insight only, and the 3-card spread is
-// PLANNED as the visible next step after the first reading (the nudge
+// Fable's review) and the rotation restore (Velu, 2026-11-16
+// push-gate decision): the H1, subhead, and CTA rotate among four
+// variants (see src/lib/hero-variants.ts and
+// hero-rotation.test.ts), and "Sortes" lives in the header logo.
+// The free reading stays 1-card Quick Insight only, and the 3-card
+// spread is PLANNED as the visible next step after the first reading (the nudge
 // link to it is built in remodel batch 3; the spread itself already
 // exists) — so the hero must NOT promise three cards. The TAGLINE constant ("Cast the lots. Read your
 // story.") is the brand line for the footer, share text, and
@@ -20,7 +20,7 @@ const src = (rel: string) =>
   readFileSync(path.resolve(process.cwd(), rel), "utf8");
 
 describe("Batch 11: one-word brand hero (superseded by the remodel and the rotation)", () => {
-  it("the H1 renders the rotating variant H1, not the one-word brand", () => {
+  it("the H1 renders the variant H1, not the one-word brand", () => {
     const page = src("src/app/page.tsx");
     const match = page.match(/<h1[^>]*>([\s\S]*?)<\/h1>/);
     expect(match).not.toBeNull();
@@ -28,13 +28,13 @@ describe("Batch 11: one-word brand hero (superseded by the remodel and the rotat
     expect(h1).toBe("{variant.h1}");
   });
 
-  it("the subhead renders the rotating variant H2 and does not promise three cards", () => {
+  it("the subhead renders the variant subhead and does not promise three cards", () => {
     const page = src("src/app/page.tsx");
     // Assert on the hero <p> itself, not the whole file: the comment
     // above the H1 quotes the change, so a whole-file toContain
     // would pass even if the <p> were reverted (Sonnet review).
     const match = page.match(
-      /<p className="mt-6 max-w-xl text-base[^"]*">([\s\S]*?)<\/p>/
+      /<p className="mt-4 max-w-xl text-base[^"]*">([\s\S]*?)<\/p>/
     );
     expect(match).not.toBeNull();
     const subhead = (match as RegExpMatchArray)[1].replace(/\s+/g, " ").trim();
@@ -43,12 +43,13 @@ describe("Batch 11: one-word brand hero (superseded by the remodel and the rotat
     expect(flat).not.toMatch(/(draw|pick)\s+(three|3)\s+cards?/i);
   });
 
-  it("the button is the gold submit with the rotating primary CTA", () => {
+  it("the button is the gold submit with the variant primary CTA", () => {
     const page = src("src/app/page.tsx").replace(/\s+/g, " ");
-    // Hero rotation (Velu, 2026-11-15): the submit button renders
-    // the variant's primary CTA, not the old free-gated "Draw my
-    // card — free". The "free" wording now lives only in the
-    // friction line below, still gated on freeAvailable.
+    // Velu's 2026-11-16 push-gate decision restored the rotation:
+    // the submit button renders the variant primary CTA, not the old
+    // free-gated "Draw my card — free". The "free" wording now
+    // lives only in the friction line below, still gated on
+    // freeAvailable.
     expect(page).toContain("{variant.primaryCta}");
     expect(page).not.toContain('"Draw my card — free"');
     expect(page).not.toContain("Ask your question");
@@ -56,7 +57,7 @@ describe("Batch 11: one-word brand hero (superseded by the remodel and the rotat
 
   it("the friction line says the first reading is free, no sign-up, no payment, gated on free", () => {
     const page = src("src/app/page.tsx").replace(/\s+/g, " ");
-    expect(page).toContain("Your first reading is free — no sign-up, no payment.");
+    expect(page).toContain("Your first reading is free, no sign-up, no payment.");
     expect(page).toContain("{freeAvailable && (");
     expect(page).not.toContain("No credit card, no account.");
   });

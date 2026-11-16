@@ -72,7 +72,10 @@ describe("Batch 6a wiring", () => {
   it("the replacements are in place", () => {
     expect(src("src/app/page.tsx")).toContain("What&apos;s on your mind?");
     expect(src("src/app/page.tsx")).toContain("One card for one question.");
-    expect(src("src/app/page.tsx")).toContain("Tarot helps you think. It doesn&apos;t predict.");
+    expect(src("src/app/page.tsx")).toContain("Tarot helps you think.");
+    // F16a: the "It doesn't predict" rebuttal is cut; the footer
+    // carries the one disclaimer per page.
+    expect(src("src/app/page.tsx")).not.toContain("It doesn&apos;t predict");
     expect(src("src/app/page.tsx")).toContain("Browse all 78 cards.");
     expect(src("src/lib/tarot.ts")).toContain("One card for one question.");
     expect(src("src/components/ReadingWait.tsx")).toContain("Writing your reading.");

@@ -1,7 +1,6 @@
 import { Suspense } from "react";
 import { pageSocial } from "@/lib/seo";
 import CreditsPage from "./CreditsClient";
-import Icon from "@/components/Icon";
 import TopUpBuyButton from "./TopUpBuyButton";
 import { SITE_URL } from "@/lib/site";
 import { topUpsConfigured } from "@/lib/lemonsqueezy";
@@ -65,7 +64,6 @@ export default function Credits() {
           client component, which suspends on useSearchParams, so
           crawlers saw no H1 at all. */}
       <div className="text-center">
-        <p className="flex items-center justify-center gap-2 text-xs uppercase tracking-[0.35em] text-gold"><Icon name="coin" size={18} />Oracles</p>
         <h1 className="mt-3 font-display text-5xl text-goldbright sm:text-6xl">
           Top up Oracles
         </h1>
@@ -73,7 +71,7 @@ export default function Credits() {
           Top up your Oracles for tarot readings, birth charts, and reports.
         </p>
         <p className="mt-2 text-sm font-semibold text-goldbright">
-          One reading costs 1 Oracle. Purchased Oracles never expire.
+          One reading costs 1 Oracle.
         </p>
       </div>
 
@@ -106,17 +104,18 @@ export default function Credits() {
         ))}
       </div>
 
-      <div className="mx-auto mt-6 max-w-xl space-y-2 text-center text-sm text-cream/75">
+      {/* UX audit Phase 2, F37: three small-print paragraphs used
+          to sit here (payment methods, USD/taxes, 14-day refund).
+          One footnote block now, three sentences, same facts. The
+          "never expire" promise is said once on this page, on the
+          top-up cards above; it is not repeated here. */}
+      <div className="mx-auto mt-6 max-w-xl text-center text-sm text-cream/75">
         <p>
-          Pay with cards, PayPal, Apple Pay, or Google Pay through Lemon
-          Squeezy. Available methods can vary by region and device.
-        </p>
-        <p>
-          Prices are in US dollars (USD). Checkout shows the full amount,
-          including any applicable taxes or fees.
-        </p>
-        <p>
-          Unused Oracle top-ups can be refunded within 14 days of purchase.
+          Pay with cards, PayPal, Apple Pay, or Google Pay through
+          Lemon Squeezy, where available in your region. Prices are in
+          US dollars; checkout shows the full amount, including any
+          applicable taxes or fees. Unused top-ups can be refunded
+          within 14 days of purchase.
         </p>
       </div>
 

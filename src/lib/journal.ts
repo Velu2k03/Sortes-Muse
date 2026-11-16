@@ -169,7 +169,7 @@ export function buildJournalMarkdown(
       month: "long",
       day: "numeric",
     });
-    lines.push(`## ${r.spreadName} — ${date}`, "");
+    lines.push(`## ${r.spreadName} (${date})`, "");
     if (r.question) lines.push(`**Question:** ${r.question}`, "");
     if ((r.cards ?? []).length > 0) {
       lines.push("**Cards:**");

@@ -9,6 +9,7 @@ import TarotCard from "@/components/TarotCard";
 import SlideCommit from "@/components/SlideCommit";
 import SwipeToast from "@/components/SwipeToast";
 import { INTAKE_CATEGORIES, getCategory } from "@/lib/intake";
+import { BRAND } from "@/lib/brand";
 import { peekHeroQuestion } from "@/lib/storage";
 import type { DrawnCard } from "@/lib/types";
 import type { IntakeState, Step } from "./useIntakeFlow";
@@ -56,6 +57,13 @@ export function useStepFocus<T extends HTMLElement>() {
   // which behaves like "not reduced". In this motion version the
   // value is frozen at first render, so reading it through a ref
   // keeps the mount effect from ever re-running.
+  // UX audit Phase 2, F20: every heading this focuses carries
+  // outline-none! (not outline-none). The global :focus-visible rule
+  // in globals.css is unlayered, so it beats Tailwind's layered
+  // outline-none and draws a gold box around the heading, which
+  // reads as a text input. The trailing ! is load-bearing. The ring
+  // is correct on interactive elements; a heading focused only so a
+  // screen reader announces the step must not show one.
   const reduce = useReducedMotion() ?? false;
   const reduceRef = useRef(reduce);
   useEffect(() => {
@@ -76,7 +84,7 @@ export function SignInGate({ f }: { f: IntakeState }) {
   const hasDeviceOracles = (credits ?? 0) > 0;
   return (
     <section aria-label="Sign in required" className="mt-8 rounded-3xl border border-gold/25 bg-panel/70 p-6 text-center">
-      <p className="text-xs uppercase tracking-[0.35em] text-gold">Sign in to continue</p>
+      <p className="text-sm text-gold">Sign in to continue</p>
       <h1 className="mt-3 font-display text-3xl text-goldbright sm:text-4xl">
         {spread.name} needs an account
       </h1>
@@ -121,10 +129,10 @@ export function CategoryStep({ f }: { f: IntakeState }) {
   }, [f.spread.slug]);
   return (
     <>
-      <p className="text-xs uppercase tracking-[0.35em] text-gold">
+      <p className="text-sm text-gold">
         Step 1 of 4
       </p>
-      <h1 ref={headingRef} tabIndex={-1} className="mt-3 scroll-mt-32 font-display text-4xl text-goldbright outline-none sm:text-5xl">
+      <h1 ref={headingRef} tabIndex={-1} className="mt-3 scroll-mt-32 font-display text-4xl text-goldbright outline-none! sm:text-5xl">
         What is on your mind?
       </h1>
       <p className="mx-auto mt-3 max-w-md text-cream/75">
@@ -148,7 +156,16 @@ export function CategoryStep({ f }: { f: IntakeState }) {
               setAnswers({});
               setStep("form");
             }}
-            className="rounded-2xl border border-gold/25 bg-panel/60 p-5 text-left transition hover:-translate-y-0.5 hover:border-gold/60"
+            className={`rounded-2xl border border-gold/25 bg-panel/60 p-5 text-left transition hover:-translate-y-0.5 hover:border-gold/60${
+              // UX audit Phase 2, F21: 5 cards in a 2-column grid
+              // orphaned the last one alone on row 3. The last card
+              // spans both columns and centers at half width, so the
+              // grid reads 2 + 2 + 1 centered instead of 2 + 2 + 1
+              // stranded left. Single column below sm is unaffected.
+              i === INTAKE_CATEGORIES.length - 1
+                ? " sm:col-span-2 sm:mx-auto sm:w-1/2"
+                : ""
+            }`}
           >
             <p className="font-display text-xl text-cream">{c.name}</p>
             <p className="mt-1 text-sm italic text-mist">{c.tagline}</p>
@@ -169,10 +186,10 @@ export function FormStep({ f, category }: { f: IntakeState; category: IntakeCate
   const [questionError, setQuestionError] = useState(false);
   return (
     <>
-      <p className="text-center text-xs uppercase tracking-[0.35em] text-gold">
+      <p className="text-center text-sm text-gold">
         Step 2 of 4
       </p>
-      <h1 ref={headingRef} tabIndex={-1} className="mt-3 scroll-mt-32 text-center font-display text-4xl text-goldbright outline-none">
+      <h1 ref={headingRef} tabIndex={-1} className="mt-3 scroll-mt-32 text-center font-display text-4xl text-goldbright outline-none!">
         {category.name}
       </h1>
       <p className="mx-auto mt-3 max-w-md text-center text-sm text-cream/75">
@@ -290,25 +307,25 @@ export function ConfirmStep({ f, category }: { f: IntakeState; category: IntakeC
   const headingRef = useStepFocus<HTMLHeadingElement>();
   return (
     <>
-      <p className="text-xs uppercase tracking-[0.35em] text-gold">
+      <p className="text-sm text-gold">
         Step 3 of 4
       </p>
-      <h1 ref={headingRef} tabIndex={-1} className="mt-3 scroll-mt-32 font-display text-4xl text-goldbright outline-none sm:text-5xl">
+      <h1 ref={headingRef} tabIndex={-1} className="mt-3 scroll-mt-32 font-display text-4xl text-goldbright outline-none! sm:text-5xl">
         Check and draw
       </h1>
 
       <div className="mt-8 rounded-3xl border border-gold/25 bg-panel/60 p-6 text-left sm:p-8">
         <dl className="space-y-4 text-sm">
           <div>
-            <dt className="text-xs uppercase tracking-[0.2em] text-mist">Spread</dt>
+            <dt className="text-sm text-mist">Spread</dt>
             <dd className="mt-1 font-display text-xl text-cream">{spread.name} · <span className="font-body text-goldbright">{spread.cards}</span> {spread.cards === 1 ? "card" : "cards"}</dd>
           </div>
           <div>
-            <dt className="text-xs uppercase tracking-[0.2em] text-mist">Area</dt>
+            <dt className="text-sm text-mist">Area</dt>
             <dd className="mt-1 text-cream">{category.name}</dd>
           </div>
           <div>
-            <dt className="text-xs uppercase tracking-[0.2em] text-mist">Your question</dt>
+            <dt className="text-sm text-mist">Your question</dt>
             <dd className="mt-1">
               {/* Batch 3.1 (#39): same two-row textarea as the form step,
                   so the question is editable here without being cut off. */}
@@ -326,7 +343,7 @@ export function ConfirmStep({ f, category }: { f: IntakeState; category: IntakeC
             </dd>
           </div>
           <div>
-            <dt className="text-xs uppercase tracking-[0.2em] text-mist">Cost</dt>
+            <dt className="text-sm text-mist">Cost</dt>
             <dd className="mt-1 text-cream">
               {isFreeAvailable
                 ? "Free · your first Quick Insight, no Oracle needed"
@@ -348,7 +365,7 @@ export function ConfirmStep({ f, category }: { f: IntakeState; category: IntakeC
 
       {questionSuggestion && !suggestionDismissed && (
         <div className="mt-6 rounded-2xl border border-gold/25 bg-panel/60 p-4 text-left">
-          <p className="text-xs uppercase tracking-[0.2em] text-mist">
+          <p className="text-sm text-mist">
             Suggested stronger version
           </p>
           <p className="mt-2 text-sm italic text-cream">
@@ -424,10 +441,10 @@ export function ImpressionStep({ f, drawnCards }: { f: IntakeState; drawnCards: 
   const reduceMotion = useReducedMotion() ?? false;
   return (
     <>
-      <p className="text-xs uppercase tracking-[0.35em] text-gold">
+      <p className="text-sm text-gold">
         Your cards are drawn
       </p>
-      <h1 ref={headingRef} tabIndex={-1} className="mt-3 scroll-mt-32 font-display text-4xl text-goldbright outline-none sm:text-5xl">
+      <h1 ref={headingRef} tabIndex={-1} className="mt-3 scroll-mt-32 font-display text-4xl text-goldbright outline-none! sm:text-5xl">
         First, what do you see?
       </h1>
       <p className="mx-auto mt-3 max-w-md text-sm text-cream/75">
@@ -559,10 +576,10 @@ export function ImpressionStep({ f, drawnCards }: { f: IntakeState; drawnCards: 
             onConfirm={beginGeneration}
             disabled={busy}
             width={250}
-            trackColor="#1a1f2e"
-            handleColor="#d4af37"
-            successColor="#d4af37"
-            dangerColor="#f87171"
+            trackColor={BRAND.panel}
+            handleColor={BRAND.gold}
+            successColor={BRAND.gold}
+            dangerColor={BRAND.danger}
           />
         </div>
       </div>
@@ -588,11 +605,11 @@ export function ImpressionStep({ f, drawnCards }: { f: IntakeState; drawnCards: 
 export function ProcessingStage({ activeStep, complete, streamedText, drawnCards }: { activeStep: number; complete: boolean; streamedText: string; drawnCards?: DrawnCard[] | null }) {
   const ref = useStepFocus<HTMLDivElement>();
   return (
-    <div ref={ref} tabIndex={-1} aria-label="Creating your reading" className="flex min-h-[55vh] scroll-mt-32 flex-col items-center justify-center text-center outline-none">
+    <div ref={ref} tabIndex={-1} aria-label="Creating your reading" className="flex min-h-[55vh] scroll-mt-32 flex-col items-center justify-center text-center outline-none!">
       <ReadingWait activeStep={activeStep} complete={complete} drawnCards={drawnCards} />
       {streamedText.length > 0 && (
         <div className="mt-8 w-full text-left">
-          <p className="text-xs uppercase tracking-[0.25em] text-gold">Writing your reading</p>
+          <p className="text-sm text-gold">Writing your reading</p>
           <div className="mt-3">
             <ReadingText text={streamedText} />
           </div>

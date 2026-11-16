@@ -5,11 +5,13 @@ import type { AccountSettings, ServerTx } from "./useAccountSettings";
 
 /** AF-012: a skeleton, not a bare "Loading…" line. */
 export function AccountLoading() {
-  // The page shell above (H1 + intro) is already server HTML.
+  // UX audit Phase 2, F36: the H1 is client-rendered now (it differs
+  // by auth state), so during load there is no H1 above this
+  // skeleton; the skeleton itself is the loading state.
   return (
     <div className="mt-8 space-y-4" role="status" aria-label="Loading your account">
-      <div className="h-40 animate-pulse rounded-3xl border border-gold/20 bg-panel/60" />
-      <div className="h-24 animate-pulse rounded-3xl border border-gold/20 bg-panel/60" />
+      <div className="h-40 animate-pulse rounded-3xl border border-gold/20 bg-panel/60 motion-reduce:animate-none" />
+      <div className="h-24 animate-pulse rounded-3xl border border-gold/20 bg-panel/60 motion-reduce:animate-none" />
     </div>
   );
 }
@@ -51,13 +53,13 @@ export function AccountSummary({
     <div className="mt-8 rounded-3xl border border-gold/20 bg-panel/60 p-6 sm:p-8">
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0">
-          <p className="text-xs uppercase tracking-[0.2em] text-mist">
+          <p className="text-sm text-mist">
             Signed in as
           </p>
           <p className="mt-1 truncate text-lg text-cream">{email}</p>
         </div>
         <div className="text-right">
-          <p className="text-xs uppercase tracking-[0.2em] text-mist">
+          <p className="text-sm text-mist">
             Oracle balance
           </p>
           <p className="mt-1 font-display text-3xl text-goldbright">

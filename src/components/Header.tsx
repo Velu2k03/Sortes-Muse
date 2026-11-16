@@ -4,13 +4,12 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { useAuth, deviceHeldSession } from "@/components/AuthProvider";
-import { freeReadingUsed } from "@/lib/storage";
-import { isFreeAvailableFor } from "@/lib/free-reading";
+import { useAuth } from "@/components/AuthProvider";
 import CountUp from "@/components/CountUp";
 import Icon from "@/components/Icon";
 import BranchedMenu, { type BranchedMenuItem } from "@/components/BranchedMenu";
 import { APP_SHORT } from "@/lib/site";
+import { BRAND } from "@/lib/brand";
 
 // Header grouping, 2026-11-05: the desktop bar shows four groups
 // (Tarot, Astrology, Learn, Journal) instead of nine links plus a
@@ -67,29 +66,16 @@ const BAR_GROUPS = [
 
 const ALL_HREFS = ["/", "/daily", "/spreads", "/deck", "/birth-card", "/charts", "/reports", "/horoscope", "/guides", "/faq", "/about", "/methodology", "/journal"];
 
-// unslopovich (2026-11-16, Velu approved): the 4 top destinations are
-// visible tabs on mobile instead of hiding behind the hamburger.
-// Each tab goes to its section's primary page. The hamburger stays:
-// it is the only mobile route to the sub-pages (Spreads, Deck, Birth
-// Card, Reports, Horoscope, Guides, FAQ, About, Methodology) and to
-// Sign in / Account, which are hidden on mobile outside the drawer.
-const MOBILE_TABS: { label: string; href: string; section: readonly string[] }[] = [
-  { label: "Tarot", href: "/daily", section: ["/daily", "/spreads", "/deck", "/birth-card"] },
-  { label: "Astrology", href: "/charts", section: ["/charts", "/reports", "/horoscope"] },
-  { label: "Learn", href: "/guides", section: ["/guides", "/faq", "/about", "/methodology"] },
-  { label: "Journal", href: "/journal", section: ["/journal"] },
-];
-
 // Theme-color per active theme, kept in step with data-theme by
 // theme.js (before paint) and the Header toggle (on change).
-const THEME_COLORS = { dark: "#0f1424", light: "#ede6d6" } as const;
+const THEME_COLORS = { dark: BRAND.navyDeep, light: BRAND.cream } as const;
 function syncThemeColor(theme: "dark" | "light"): void {
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.setAttribute("content", THEME_COLORS[theme]);
 }
 
 export default function Header() {
-  const { credits, user, loadError, refresh, freeReadingAvailable, authFailed } = useAuth();
+  const { credits, user, loadError, refresh } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
   // Deep pages highlight their parent section: a reading detail
@@ -106,42 +92,6 @@ export default function Header() {
   // Index into GROUPS of the open desktop popover, or null.
   const [openGroup, setOpenGroup] = useState<number | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
-  // AF-014: a guest with 0 Oracles and an unused free reading sees
-  // "1 free reading" in the pill instead of "0 Oracles". The device
-  // flags are read on mount and whenever the tab regains focus or the
-  // wallet changes, so using the free reading elsewhere updates the
-  // pill. Batch 1 (C1): the pill goes through isFreeAvailableFor,
-  // never the raw device flag, so a signed-in user whose /me failed
-  // (user null, credits 0 after migration) does not see "Free" from
-  // a device flag that was never used on this device.
-  const [deviceFree, setDeviceFree] = useState(false);
-  const [hadSession, setHadSession] = useState(false);
-  useEffect(() => {
-    const syncFree = () => {
-      try {
-        setDeviceFree(!freeReadingUsed());
-        setHadSession(deviceHeldSession());
-      } catch {
-        setDeviceFree(false);
-        setHadSession(false);
-      }
-    };
-    syncFree();
-    window.addEventListener("focus", syncFree);
-    window.addEventListener("sortes:credits-changed", syncFree);
-    return () => {
-      window.removeEventListener("focus", syncFree);
-      window.removeEventListener("sortes:credits-changed", syncFree);
-    };
-  }, []);
-  const freeAvailable = isFreeAvailableFor({
-    slug: "quick-insight",
-    signedIn: !!user,
-    serverFree: freeReadingAvailable,
-    deviceFree,
-    hadSession,
-    authFailed,
-  });
   // AF-038: an open desktop dropdown closes on scroll, so it never
   // covers the page while the visitor reads on.
   useEffect(() => {
@@ -227,17 +177,15 @@ export default function Header() {
     window.dispatchEvent(new Event("sortes-theme-change"));
   };
   const initial = user?.email ? user.email.charAt(0).toUpperCase() : "?";
-  // AF-014: signed-out, 0 Oracles, free reading still unused.
-  const showFreePill = !user && credits === 0 && freeAvailable;
   // BranchedMenu colours are theme-aware: the panel background is
   // bg-navydeep, which is dark navy in dark theme and light cream in
   // light theme, so hardcoded dark-theme ink fails axe in light
   // theme. The muted branch colour is overridden in globals.css
   // (.sortes-bm), since the component fixes it at 55% internally.
   // Still used by the mobile drawer, the only BranchedMenu left.
-  const bmColor = theme === "dark" ? "#ede6d6" : "#3a3325";
-  const bmAccent = theme === "dark" ? "#d4af37" : "#7c5e00";
-  const bmLine = theme === "dark" ? "rgba(212, 175, 55, 0.45)" : "rgba(124, 94, 0, 0.45)";
+  const bmColor = "var(--color-cream)";
+  const bmAccent = "var(--color-gold)";
+  const bmLine = "color-mix(in srgb, var(--color-gold) 45%, transparent)";
   const go = (value: string) => {
     setOpenGroup(null);
     setMobileOpen(false);
@@ -288,7 +236,11 @@ export default function Header() {
                   aria-expanded={isOpen}
                   aria-haspopup="menu"
                   aria-controls={`nav-menu-${g.label.toLowerCase()}`}
-                  className={isOpen || isActive ? "text-sm font-semibold text-goldbright" : "text-sm text-cream/80 transition hover:text-goldbright"}
+                  className={
+                    isOpen || isActive
+                      ? "inline-flex min-h-11 items-center px-2 text-sm font-semibold text-goldbright"
+                      : "inline-flex min-h-11 items-center px-2 text-sm text-cream/80 transition hover:text-goldbright"
+                  }
                 >
                   {g.label}
                 </button>
@@ -347,7 +299,11 @@ export default function Header() {
           <Link
             href="/journal"
             aria-current={activeHref === "/journal" ? "page" : undefined}
-            className={activeHref === "/journal" ? "text-sm font-semibold text-goldbright" : "text-sm text-cream/80 transition hover:text-goldbright"}
+            className={
+              activeHref === "/journal"
+                ? "inline-flex min-h-11 items-center px-2 text-sm font-semibold text-goldbright"
+                : "inline-flex min-h-11 items-center px-2 text-sm text-cream/80 transition hover:text-goldbright"
+            }
           >
             Journal
           </Link>
@@ -368,50 +324,42 @@ export default function Header() {
               /oracles; the separate Top up button is gone.
               P0-1: while credits is null the balance is unknown, so
               the pill shows a skeleton, never 0, and the aria-label
-              says loading instead of "0 Oracles".
-              AF-014: a signed-out visitor with 0 Oracles and an
-              unused free reading sees "1 free reading" and the pill
-              goes to the free Quick Insight, not the top-up page. */}
-          <Link
-            href={showFreePill ? "/spreads/quick-insight" : "/oracles"}
-            className="flex min-h-11 items-center gap-1.5 rounded-full border border-gold/40 bg-gold/10 px-2.5 py-2.5 text-sm font-semibold text-goldbright"
-            aria-label={
-              credits === null
-                ? "Oracle balance loading. Top up."
-                : showFreePill
-                  ? "1 free reading available. Start your free Quick Insight reading."
+              says loading instead of "0 Oracles". */}
+          {/* UX audit Phase 2, F05 (2026-11-16): the Oracle pill is a balance display for signed-in users. Guests do not see it: for them it was a second free-reading action competing with the hero gold button. The header keeps Sign in only for guests. */}
+          {user && (
+            <Link
+              href="/oracles"
+              className="flex min-h-11 items-center gap-1.5 rounded-full border border-gold/40 bg-gold/10 px-2.5 py-2.5 text-sm font-semibold text-goldbright"
+              aria-label={
+                credits === null
+                  ? "Oracle balance loading. Top up."
                   : `Oracle balance: ${credits} Oracles. Top up.`
-            }
-            title={showFreePill ? "Your first Quick Insight reading is free" : "Your Oracles — top up"}
-          >
-            <Icon name="coin" size={18} />
-            {credits === null ? (
-              <span className="inline-block h-4 w-6 animate-pulse rounded bg-gold/30" aria-hidden="true" />
-            ) : showFreePill ? (
-              <span>1 free reading</span>
-            ) : (
-              <span className="num">
-                <CountUp value={credits} />
-              </span>
-            )}
-            {/* Phase 6 (D3): the word "Oracles" hides below 420px so the
-                header row fits at 390px. The coin + count stay, and the
-                aria-label still reads the full balance. The buttons
-                keep p-3 (44px touch targets, asserted by charts-check)
-                — the pill is the flexible part, not the buttons. */}
-            {!showFreePill && (
-              <>
-                <span className="hidden min-[420px]:inline">Oracles</span>
-                <span className="hidden border-l border-gold/40 pl-1.5 sm:inline">Get Oracles</span>
-              </>
-            )}
-          </Link>
+              }
+              title="Your Oracles: top up"
+            >
+              <Icon name="coin" size={18} />
+              {credits === null ? (
+                <span className="inline-block h-4 w-6 animate-pulse rounded bg-gold/30 motion-reduce:animate-none" aria-hidden="true" />
+              ) : (
+                <span className="num">
+                  <CountUp value={credits} />
+                </span>
+              )}
+              {/* Phase 6 (D3): the word "Oracles" hides below 420px so the
+                  header row fits at 390px. The coin + count stay, and the
+                  aria-label still reads the full balance. The buttons
+                  keep p-3 (44px touch targets, asserted by charts-check)
+                  — the pill is the flexible part, not the buttons. */}
+              <span className="hidden min-[420px]:inline">Oracles</span>
+              <span className="hidden border-l border-gold/40 pl-1.5 sm:inline">Get Oracles</span>
+            </Link>
+          )}
           {loadError && (
             <button
               type="button"
               onClick={() => void refresh()}
               aria-label="Retry loading your account"
-              title="Couldn't load your account — retry"
+              title="Couldn't load your account. Retry"
               className="rounded-full border border-gold/40 bg-gold/10 px-3 py-3 text-sm font-semibold text-goldbright transition hover:border-goldbright"
             >
               Retry
@@ -434,7 +382,7 @@ export default function Header() {
           ) : (
             <Link
               href="/account"
-              className="hidden rounded-full px-4 py-1.5 text-sm font-semibold text-cream/80 transition hover:text-goldbright lg:inline-block"
+              className="hidden min-h-11 items-center rounded-full px-4 py-1.5 text-sm font-semibold text-cream/80 transition hover:text-goldbright lg:inline-flex"
             >
               Sign in
             </Link>
@@ -452,32 +400,14 @@ export default function Header() {
         </div>
       </div>
 
-      {/* unslopovich (2026-11-16, Velu approved): mobile tab bar for
-          the 4 top destinations. Visible below lg only; the desktop
-          bar above already shows them. Active tab follows the
-          section of the current route. */}
-      <nav className="border-t border-gold/10 lg:hidden" aria-label="Sections">
-        <div className="mx-auto flex max-w-6xl px-4 sm:px-6">
-          {MOBILE_TABS.map((tab) => {
-            const isActive = tab.section.includes(activeHref);
-            return (
-              <Link
-                key={tab.label}
-                href={tab.href}
-                aria-current={isActive ? "page" : undefined}
-                className={`min-h-11 flex-1 border-b-2 py-2.5 text-center text-sm font-semibold transition ${
-                  isActive
-                    ? "border-gold text-goldbright"
-                    : "border-transparent text-cream/70 hover:text-goldbright"
-                }`}
-              >
-                {tab.label}
-              </Link>
-            );
-          })}
-        </div>
-      </nav>
-
+      {/* UX audit Phase 2, F39: the mobile tab bar is gone. The
+          header was two rows (logo row + tab bar) and showed both a
+          hamburger AND visible nav links, costing 110px on a 667px
+          phone. One nav pattern on mobile now: the hamburger, which
+          is the only route to the sub-pages and to Sign in /
+          Account. NOTE: the tab bar was a Velu-approved decision
+          (unslopovich, PR #102); removing it reverses that. If he
+          wants the tabs back, restore them from git. */}
       {openGroup !== null && (
         <button
           type="button"
@@ -491,7 +421,7 @@ export default function Header() {
       {mobileOpen && (
         <nav
           id="mobile-nav"
-          className="max-h-[calc(100dvh-4rem)] overflow-y-auto border-t border-gold/15 bg-ink/95 px-4 py-3 lg:hidden"
+          className="max-h-[calc(100dvh-4rem)] overflow-y-auto overscroll-contain border-t border-gold/15 bg-ink/95 px-4 py-3 lg:hidden"
           aria-label="Mobile"
         >
           <BranchedMenu

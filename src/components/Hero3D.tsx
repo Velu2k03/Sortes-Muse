@@ -4,6 +4,7 @@ import { Suspense, useRef } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { useTexture } from "@react-three/drei";
 import type { Group, Mesh, MeshBasicMaterial } from "three";
+import { BRAND } from "@/lib/brand";
 
 /**
  * Phase 2 3D hero (Velu's choice 5): a fan of three real tarot
@@ -34,7 +35,7 @@ function FanCard({ src, x, y, z, rz }: (typeof FAN_CARDS)[number]) {
       {/* Polished gold border: a slightly larger gold plane behind the card. */}
       <mesh position={[0, 0, -0.01]}>
         <planeGeometry args={[CARD_W + 0.08, CARD_H + 0.08]} />
-        <meshBasicMaterial color="#d4af37" />
+        <meshBasicMaterial color={BRAND.gold} />
       </mesh>
       <mesh>
         <planeGeometry args={[CARD_W, CARD_H]} />
@@ -56,12 +57,12 @@ function Moon() {
       {/* Soft glow halo behind the disc. */}
       <mesh ref={glowRef} position={[0, 0, -0.1]}>
         <circleGeometry args={[2.1, 64]} />
-        <meshBasicMaterial color="#d4af37" transparent opacity={0.18} depthWrite={false} />
+        <meshBasicMaterial color={BRAND.gold} transparent opacity={0.18} depthWrite={false} />
       </mesh>
       {/* The gold moon disc. */}
       <mesh>
         <circleGeometry args={[1.5, 64]} />
-        <meshBasicMaterial color="#d4af37" />
+        <meshBasicMaterial color={BRAND.gold} />
       </mesh>
     </group>
   );

@@ -98,19 +98,18 @@ describe("Pricing tiers: Velu's exact numbers", () => {
   });
 });
 
-describe("Pricing feature lists: only what exists in code (4/3/2)", () => {
-  it("Spark lists 4 lines: readings, follow-ups, daily card", () => {
+describe("Pricing feature lists: only what exists in code (3/3/2)", () => {
+  it("Spark lists 3 lines: readings, follow-ups", () => {
     expect(featuresOf(client(), "spark")).toEqual([
       "1-card readings",
       "3-card readings",
       "Follow-up questions",
-      "Daily card free, every day",
     ]);
   });
 
   it("Star lists 3 lines as a delta on Spark", () => {
     expect(featuresOf(client(), "star")).toEqual([
-      "Everything in Spark, plus 1,500 more Oracles a month",
+      "Everything in Spark",
       "Chart readings",
       "Your journal and reading history",
     ]);
@@ -118,7 +117,7 @@ describe("Pricing feature lists: only what exists in code (4/3/2)", () => {
 
   it("Moon lists 2 lines as a delta on Star", () => {
     expect(featuresOf(client(), "moon")).toEqual([
-      "Everything in Star, plus 3,500 more Oracles a month",
+      "Everything in Star",
       "Reports: transit, year-ahead, and relationship",
     ]);
   });
@@ -139,7 +138,7 @@ describe("Pricing feature lists: only what exists in code (4/3/2)", () => {
   });
 });
 
-describe("Pricing video formula: one badge, one lifted tier, one primary button", () => {
+describe("Pricing video formula: one badge, one highlighted tier, one primary button", () => {
   it("has exactly one Most popular badge, on Star only", () => {
     const c = client();
     expect([...c.matchAll(/<Badge/g)].length).toBe(1);
@@ -155,16 +154,15 @@ describe("Pricing video formula: one badge, one lifted tier, one primary button"
     expect([...c.matchAll(/popular: true,/g)].length).toBe(1);
   });
 
-  it("lifts only the Star tier, with the StarBorder gold border", () => {
+  it("marks Star by badge, border, and glow, never by a lift (F08)", () => {
     const c = client();
-    // The lift starts at 960px, where the grid reaches three
-    // columns — at sm (640px) the grid is two columns and a lifted
-    // Star would float alone in row 1 (Sonnet nit, PR #86).
-    expect([...c.matchAll(/min-\[960px\]:-translate-y-4/g)].length).toBe(1);
-    expect(c).not.toContain("sm:-translate-y-4");
-    expect(c).toContain(
-      'tier.id === "star"\n                  ? "min-[960px]:-translate-y-4 shadow-[0_24px_48px_-24px_rgba(212,175,55,0.55)]"'
-    );
+    // UX audit Phase 2, F08: the popular tier is marked by colour,
+    // border, and badge, not height. The -translate-y-4 lift is
+    // gone: it made Star's card and button sit 16px higher than
+    // the others. The glow is the shadow-gold-lg token (F17).
+    expect(c).not.toContain("-translate-y-4");
+    expect(c).not.toContain("translate-y");
+    expect(c).toContain('tier.id === "star" ? "shadow-gold-lg" : ""');
     expect([...c.matchAll(/<StarBorder/g)].length).toBe(1);
     expect(c).toContain('{tier.id === "star" ? (');
     expect(c).toContain("<StarBorder");

@@ -61,7 +61,7 @@ export default function CreditsPage() {
               aria-busy="true"
               aria-label="Oracle balance loading"
             >
-              <span className="inline-block h-14 w-20 animate-pulse rounded bg-gold/30" aria-hidden="true" />
+              <span className="inline-block h-14 w-20 animate-pulse rounded bg-gold/30 motion-reduce:animate-none" aria-hidden="true" />
               <span className="font-body text-lg text-mist">Oracles</span>
             </output>
           ) : isGuest ? (
@@ -98,7 +98,7 @@ export default function CreditsPage() {
           {user && <p className="mt-1 text-sm text-mist">Signed in as {user.email}</p>}
         </div>
         <p className="max-w-md text-sm text-cream/75">
-          1 Oracle = 1 full reading. Oracles never expire.
+          1 Oracle = 1 full reading.
           An Oracle opens a reading, not a prediction or promise.{" "}
           <Link href="/faq#what-are-the-five-oracle-rules" className="text-goldbright underline">
             See all five Oracle rules
@@ -164,9 +164,9 @@ export default function CreditsPage() {
       </p>
 
       {/* Phase E (item 9): the same full sample reading as the home
-          page, so visitors weighing a pack see exactly what a reading
+          page, so visitors weighing a top-up see exactly what a reading
           reads like before they spend anything. Batch 6c: collapsed
-          behind one tap, so the packs (the page's purpose) come
+          behind one tap, so the top-ups (the page's purpose) come
           first instead of 600 words of sample. */}
       <SampleReading collapsed />
     </div>

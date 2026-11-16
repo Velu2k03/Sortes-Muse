@@ -22,36 +22,36 @@ export default function Footer() {
           </p>
         </div>
         <div>
-          <h2 className="text-xs uppercase tracking-[0.2em] text-gold">Explore</h2>
+          <h2 className="text-sm text-gold">Explore</h2>
           {/* Two columns on phone widths, so the footer does not
               run to eleven single-column rows; single column again
               at md, where the footer itself is three columns. */}
           <ul className="mt-3 grid grid-cols-2 gap-x-6 gap-y-2 text-sm md:block md:space-y-2">
-            <li><Link href="/daily" prefetch={false} className="inline-block py-2 text-cream/80 hover:text-goldbright">Daily Card</Link></li>
-            <li><Link href="/spreads" prefetch={false} className="inline-block py-2 text-cream/80 hover:text-goldbright">Spreads</Link></li>
-            <li><Link href="/deck" prefetch={false} className="inline-block py-2 text-cream/80 hover:text-goldbright">Deck</Link></li>
-            <li><Link href="/charts" prefetch={false} className="inline-block py-2 text-cream/80 hover:text-goldbright">Charts</Link></li>
-            <li><Link href="/reports" prefetch={false} className="inline-block py-2 text-cream/80 hover:text-goldbright">Reports</Link></li>
-            <li><Link href="/horoscope" prefetch={false} className="inline-block py-2 text-cream/80 hover:text-goldbright">Horoscope</Link></li>
-            <li><Link href="/oracles" prefetch={false} className="inline-block py-2 text-cream/80 hover:text-goldbright">Oracles</Link></li>
-            <li><Link href="/journal" prefetch={false} className="inline-block py-2 text-cream/80 hover:text-goldbright">Journal</Link></li>
-            <li><Link href="/account" prefetch={false} className="inline-block py-2 text-cream/80 hover:text-goldbright">Sign in</Link></li>
-            <li><Link href="/guides" prefetch={false} className="inline-block py-2 text-cream/80 hover:text-goldbright">Guides</Link></li>
-            <li><Link href="/faq" prefetch={false} className="inline-block py-2 text-cream/80 hover:text-goldbright">FAQ</Link></li>
-            <li><Link href="/birth-card" prefetch={false} className="inline-block py-2 text-cream/80 hover:text-goldbright">Birth Card</Link></li>
+            <li><Link href="/daily" prefetch={false} className="inline-flex min-h-11 items-center py-2 text-cream/80 hover:text-goldbright">Daily Card</Link></li>
+            <li><Link href="/spreads" prefetch={false} className="inline-flex min-h-11 items-center py-2 text-cream/80 hover:text-goldbright">Spreads</Link></li>
+            <li><Link href="/deck" prefetch={false} className="inline-flex min-h-11 items-center py-2 text-cream/80 hover:text-goldbright">Deck</Link></li>
+            <li><Link href="/charts" prefetch={false} className="inline-flex min-h-11 items-center py-2 text-cream/80 hover:text-goldbright">Charts</Link></li>
+            <li><Link href="/reports" prefetch={false} className="inline-flex min-h-11 items-center py-2 text-cream/80 hover:text-goldbright">Reports</Link></li>
+            <li><Link href="/horoscope" prefetch={false} className="inline-flex min-h-11 items-center py-2 text-cream/80 hover:text-goldbright">Horoscope</Link></li>
+            <li><Link href="/oracles" prefetch={false} className="inline-flex min-h-11 items-center py-2 text-cream/80 hover:text-goldbright">Oracles</Link></li>
+            <li><Link href="/journal" prefetch={false} className="inline-flex min-h-11 items-center py-2 text-cream/80 hover:text-goldbright">Journal</Link></li>
+            <li><Link href="/account" prefetch={false} className="inline-flex min-h-11 items-center py-2 text-cream/80 hover:text-goldbright">Sign in</Link></li>
+            <li><Link href="/guides" prefetch={false} className="inline-flex min-h-11 items-center py-2 text-cream/80 hover:text-goldbright">Guides</Link></li>
+            <li><Link href="/faq" prefetch={false} className="inline-flex min-h-11 items-center py-2 text-cream/80 hover:text-goldbright">FAQ</Link></li>
+            <li><Link href="/birth-card" prefetch={false} className="inline-flex min-h-11 items-center py-2 text-cream/80 hover:text-goldbright">Birth Card</Link></li>
           </ul>
         </div>
         <div>
-          <h2 className="text-xs uppercase tracking-[0.2em] text-gold">About &amp; legal</h2>
+          <h2 className="text-sm text-gold">About &amp; legal</h2>
           <ul className="mt-3 grid grid-cols-2 gap-x-6 gap-y-2 text-sm md:block md:space-y-2">
-            <li><Link href="/about" prefetch={false} className="inline-block py-2 text-cream/80 hover:text-goldbright">About Sortes</Link></li>
-            <li><Link href="/methodology" prefetch={false} className="inline-block py-2 text-cream/80 hover:text-goldbright">Methodology</Link></li>
-            <li><Link href="/privacy" prefetch={false} className="inline-block py-2 text-cream/80 hover:text-goldbright">Privacy Policy</Link></li>
-            <li><Link href="/terms" prefetch={false} className="inline-block py-2 text-cream/80 hover:text-goldbright">Terms of Service</Link></li>
-            <li><Link href="/terms" prefetch={false} className="inline-block py-2 text-cream/80 hover:text-goldbright">Refunds</Link></li>
-            <li><Link href="/contact" prefetch={false} className="inline-block py-2 text-cream/80 hover:text-goldbright">Contact</Link></li>
+            <li><Link href="/about" prefetch={false} className="inline-flex min-h-11 items-center py-2 text-cream/80 hover:text-goldbright">About Sortes</Link></li>
+            <li><Link href="/methodology" prefetch={false} className="inline-flex min-h-11 items-center py-2 text-cream/80 hover:text-goldbright">Methodology</Link></li>
+            <li><Link href="/privacy" prefetch={false} className="inline-flex min-h-11 items-center py-2 text-cream/80 hover:text-goldbright">Privacy Policy</Link></li>
+            <li><Link href="/terms" prefetch={false} className="inline-flex min-h-11 items-center py-2 text-cream/80 hover:text-goldbright">Terms of Service</Link></li>
+            <li><Link href="/terms" prefetch={false} className="inline-flex min-h-11 items-center py-2 text-cream/80 hover:text-goldbright">Refunds</Link></li>
+            <li><Link href="/contact" prefetch={false} className="inline-flex min-h-11 items-center py-2 text-cream/80 hover:text-goldbright">Contact</Link></li>
             <li>
-              <a href={`mailto:${CONTACT_EMAIL}`} className="inline-block py-2 text-cream/80 hover:text-goldbright">
+              <a href={`mailto:${CONTACT_EMAIL}`} className="inline-flex min-h-11 items-center py-2 text-cream/80 hover:text-goldbright">
                 {CONTACT_EMAIL}
               </a>
             </li>

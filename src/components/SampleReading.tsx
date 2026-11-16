@@ -59,8 +59,8 @@ export default function SampleReading({ collapsed = false }: { collapsed?: boole
       }
     >
       <div className="flex items-center justify-between border-b border-gold/15 px-6 py-4">
-        <p className="text-xs uppercase tracking-[0.25em] text-mist">
-          Past · Present · Future
+        <p className="text-sm text-mist">
+          Past, Present, Future
         </p>
         <span className="rounded-full border border-gold/40 bg-gold/10 px-3 py-1 text-xs font-semibold text-goldbright">
           Sample reading
@@ -72,7 +72,7 @@ export default function SampleReading({ collapsed = false }: { collapsed?: boole
           const card = getCard(s.id);
           return (
             <div key={s.id} className="flex flex-col items-center gap-2">
-              <div className="relative h-40 w-24 overflow-hidden rounded-xl border border-gold/40 shadow-[0_8px_30px_rgba(0,0,0,0.6)] sm:h-48 sm:w-28">
+              <div className="relative h-40 w-24 overflow-hidden rounded-xl border border-gold/40 shadow-card-lg sm:h-48 sm:w-28">
                 <Image
                   src={card.image}
                   alt={card.name}
@@ -81,7 +81,7 @@ export default function SampleReading({ collapsed = false }: { collapsed?: boole
                   className="object-cover"
                 />
               </div>
-              <p className="text-xs uppercase tracking-[0.2em] text-gold">
+              <p className="text-sm text-gold">
                 {s.position}
               </p>
               <p className="font-display text-sm text-cream">{card.name}</p>
@@ -114,7 +114,7 @@ export default function SampleReading({ collapsed = false }: { collapsed?: boole
         </p>
         <p className="mt-1 text-xs text-mist">
           Real readings are written by AI from your cards, question, and
-          story — 300-600 words, on screen in up to about 3 minutes.
+          story: 300-600 words, on screen in up to about 3 minutes.
         </p>
       </div>
     </motion.div>
@@ -130,7 +130,7 @@ export default function SampleReading({ collapsed = false }: { collapsed?: boole
           transition={{ duration: 0.6, ease: "easeOut" }}
           className="text-center"
         >
-          <p className="text-xs uppercase tracking-[0.35em] text-gold">
+          <p className="text-sm text-gold">
             Sample reading
           </p>
           <h2 className="mt-4 font-display text-4xl text-goldbright sm:text-5xl">
