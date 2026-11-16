@@ -58,12 +58,27 @@ describe("Phase 4 Batch 4.4 money glossary", () => {
     expect(spreads).toContain("After that, 1 Oracle, any spread.");
   });
 
-  it("uses 'Sign in' and 'Create account', not one-word forms", () => {
+  it("uses 'Sign in' and 'Sign up', not one-word forms", () => {
     for (const file of UI_FILES) {
       const text = src(file);
       // The one-word forms must not appear as UI copy.
       expect(text).not.toMatch(/"Login"/);
       expect(text).not.toMatch(/"Signup"/);
     }
+  });
+
+  it("uses 'Sign up' for making a new account, never 'Create account'", () => {
+    // Batch 4.3 (Velu, 2026-11-16): "Sign up" and "Sign in".
+    // The glossary and the account page say "Sign up"; the old
+    // "Create account" wording must not appear in the money-flow
+    // UI files or the account client.
+    const account = src("src/app/account/AccountClient.tsx");
+    expect(account).toContain('"Sign up"');
+    expect(account).not.toContain("Create account");
+    for (const file of UI_FILES) {
+      expect(src(file)).not.toContain("Create account");
+    }
+    expect(src("docs/glossary.md")).toContain('"Sign up"');
+    expect(src("docs/glossary.md")).not.toContain("Create account");
   });
 });

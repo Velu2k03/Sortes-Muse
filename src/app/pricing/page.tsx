@@ -13,11 +13,12 @@ import PricingClient from "@/components/PricingClient";
 // Phase 2 batch 3: the page reads the Lemon Squeezy variant config
 // at request time, so the tier / top-up buttons enable as soon as
 // the variant ids land in env (no rebuild needed). Until then the
-// client shows the "Coming soon" state. The buttons ALSO need the
-// credit flag ON: a subscription/top-up grants credits, and while
-// the spend path still charges 1 per reading those credits would
-// buy 1,000 readings for $9.99. The flag flips first in the
-// cutover, so the checkout opens only once spending uses credits.
+// buttons show "Not yet open" (Batch 4.3: no "Coming soon" badge —
+// Velu, 2026-11-16). The buttons ALSO need the credit flag ON: a
+// subscription/top-up grants credits, and while the spend path
+// still charges 1 per reading those credits would buy 1,000
+// readings for $9.99. The flag flips first in the cutover, so the
+// checkout opens only once spending uses credits.
 export const dynamic = "force-dynamic";
 
 export const metadata = {
