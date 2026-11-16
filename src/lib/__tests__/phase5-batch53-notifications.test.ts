@@ -38,7 +38,7 @@ describe("Phase 5 Batch 5.3 notifications honesty", () => {
     expect(email).toContain("unsubscribeUrl");
   });
 
-  it("the unsubscribe link is signed and verified", () => {
+  it("the unsubscribe link is signed and verified, GET confirms, POST opts out", () => {
     const unsub = src("src/lib/unsubscribe.ts");
     expect(unsub).toContain("createHmac");
     expect(unsub).toContain("winback-unsubscribe:");
@@ -47,6 +47,12 @@ describe("Phase 5 Batch 5.3 notifications honesty", () => {
     const route = src("src/app/api/unsubscribe/route.ts");
     expect(route).toContain("verifyUnsubscribeToken");
     expect(route).toContain("setWinbackOptedOut");
+    // GET must not mutate: it shows a confirmation form, and only the
+    // POST handler changes the preference (link scanners fetching the
+    // URL cannot unsubscribe anyone; mail clients POST one-click).
+    expect(route).toContain("export async function POST");
+    expect(route).toContain('method="post"');
+    expect(route).toContain("Stop win-back emails?");
   });
 
   it("the account page has a notifications toggle wired to its API", () => {

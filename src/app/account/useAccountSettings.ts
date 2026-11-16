@@ -63,9 +63,12 @@ export function useAccountSettings({
   const [notifBusy, setNotifBusy] = useState(false);
   const [notifNotice, setNotifNotice] = useState<string | null>(null);
 
-  // Load the current preference once the settings hook runs.
+  // Load the current preference. It refetches when the signed-in
+  // user changes: opening the account page signed out gets a 401,
+  // and signing in must load the preference without a reload.
   // A failure leaves the toggle hidden (null), not wrong.
   useEffect(() => {
+    if (!userEmail) return;
     let cancelled = false;
     fetch("/api/account/notifications")
       .then((res) => (res.ok ? res.json() : null))
@@ -78,7 +81,7 @@ export function useAccountSettings({
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [userEmail]);
 
   const setWinbackOptedOut = async (optedOut: boolean) => {
     setNotifBusy(true);

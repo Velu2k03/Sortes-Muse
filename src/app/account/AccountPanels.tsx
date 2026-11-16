@@ -217,7 +217,7 @@ export function NotificationsPanel({ n }: { n: AccountSettings["notifications"] 
           checked={n.winbackOptedOut}
           disabled={n.notifBusy}
           onChange={(e) => void n.setWinbackOptedOut(e.target.checked)}
-          className="h-5 w-5 accent-[#b9975b]"
+          className="h-5 w-5 accent-gold"
         />
         Stop win-back emails
       </label>
