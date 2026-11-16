@@ -175,7 +175,7 @@ export default function HistoryPage() {
             });
             return (
               <div className="num mt-10 rounded-3xl border border-gold/20 bg-panel/60 p-5 sm:p-6">
-                <p className="text-xs uppercase tracking-[0.25em] text-gold">
+                <p className="text-sm text-gold">
                   This month in your journal · {monthLabel}
                 </p>
                 {review.count === 0 ? (
@@ -258,7 +258,7 @@ export default function HistoryPage() {
                 aria-label="Pattern Mirror"
                 className="num mt-10 rounded-3xl border border-gold/20 bg-panel/60 p-5 sm:p-6"
               >
-                <p className="text-xs uppercase tracking-[0.25em] text-gold">
+                <p className="text-sm text-gold">
                   Pattern Mirror
                 </p>
                 {/* AF-050: no repeat, no pattern. The section shows
@@ -393,7 +393,7 @@ export default function HistoryPage() {
             if (repeated.length === 0) return null;
             return (
               <SpotlightCard className="mt-10 rounded-3xl border border-gold/20 bg-panel/60 p-5 sm:p-6">
-                <p className="text-xs uppercase tracking-[0.25em] text-gold">
+                <p className="text-sm text-gold">
                   Questions you keep returning to
                 </p>
                 <p className="mt-2 text-sm text-cream/75">
@@ -442,7 +442,7 @@ export default function HistoryPage() {
           {/* M2.2: readings old enough to revisit, without a note yet. */}
           {history.filter((r) => isRevisitEligible(r)).length > 0 && (
             <div className="mt-10 rounded-3xl border border-gold/20 bg-panel/60 p-5 sm:p-6">
-              <p className="text-xs uppercase tracking-[0.25em] text-gold">
+              <p className="text-sm text-gold">
                 Ready to revisit
               </p>
               <p className="mt-2 text-sm text-cream/75">
@@ -606,7 +606,7 @@ export default function HistoryPage() {
           <div className="mt-10 space-y-8">
             {groupReadingsByDay(filteredHistory).map((group) => (
               <section key={group.label}>
-                <p className="text-xs uppercase tracking-[0.25em] text-gold">
+                <p className="text-sm text-gold">
                   {group.label}
                 </p>
                 <div className="mt-3 space-y-4">
@@ -643,7 +643,7 @@ export default function HistoryPage() {
                           )}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="text-xs uppercase tracking-[0.2em] text-mist">
+                          <p className="text-sm text-mist">
                             {r.free ? "Free reading" : "1 Oracle"}
                             {r.aiGenerated ? " · Personalized" : ""}
                             {(r.followUps?.length ?? 0) > 0 &&

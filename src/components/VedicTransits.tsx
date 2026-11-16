@@ -117,7 +117,7 @@ export default function VedicTransits({
       {data && (
         <div className="mt-6">
           <div className="rounded-2xl border border-gold/15 bg-panel/50 p-4">
-            <p className="text-xs uppercase tracking-[0.25em] text-gold">
+            <p className="text-sm text-gold">
               Panchanga · {data.date} · {data.panchanga.vara}
             </p>
             <p className="mt-2 text-sm text-cream/85">

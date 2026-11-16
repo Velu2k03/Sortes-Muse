@@ -814,7 +814,7 @@ export function InterpretationPanel({ prefs, s, result }: { prefs: ChartPrefs; s
     )}
     {interpretation && (
       <div className="mt-6">
-        <p className="text-xs uppercase tracking-widest text-gold">
+        <p className="text-sm text-gold">
           {interpFallback
             ? "Standard interpretation · prepared from your chart positions, not AI-generated"
             : `${interpFree ? "Free interpretation" : "1 Oracle interpretation"} · Personalized · AI-generated${interpModel ? ` · Written with ${interpModel}` : ""}`}

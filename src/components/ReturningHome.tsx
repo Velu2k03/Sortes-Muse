@@ -196,7 +196,7 @@ export default function ReturningHome() {
             />
           </div>
           <div>
-            <p className="text-xs uppercase tracking-[0.35em] text-gold">
+            <p className="text-sm text-gold">
               Today&apos;s card
             </p>
             <h2 className="mt-2 font-display text-3xl text-goldbright sm:text-4xl">
@@ -218,7 +218,7 @@ export default function ReturningHome() {
         </div>
       ) : (
         <div className="mt-8">
-          <p className="text-xs uppercase tracking-[0.35em] text-gold">
+          <p className="text-sm text-gold">
             Today&apos;s card
           </p>
           <p className="mt-3 text-cream/90">You have not drawn today&apos;s card yet.</p>
@@ -263,7 +263,7 @@ export default function ReturningHome() {
       </h2>
       <div className="mt-6 grid gap-4 sm:grid-cols-2">
         <div className="rounded-2xl border border-gold/20 bg-panel/60 p-6">
-          <p className="text-xs uppercase tracking-[0.2em] text-gold">Last reading</p>
+          <p className="text-sm text-gold">Last reading</p>
           {latest ? (
             <>
               <p className="mt-2 text-cream/90">
@@ -298,7 +298,7 @@ export default function ReturningHome() {
           )}
         </div>
         <div className="rounded-2xl border border-gold/20 bg-panel/60 p-6">
-          <p className="text-xs uppercase tracking-[0.2em] text-gold">
+          <p className="text-sm text-gold">
             Cards that keep appearing
           </p>
           {repeats.length > 0 ? (

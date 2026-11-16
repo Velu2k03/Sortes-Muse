@@ -127,7 +127,7 @@ export default function HoroscopeClient({
   return (
     <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6">
       <div className="text-center">
-        <p className="flex items-center justify-center gap-2 text-xs uppercase tracking-[0.35em] text-gold"><Icon name="iconoirSun" size={18} />Daily Horoscope</p>
+        <p className="flex items-center justify-center gap-2 text-sm text-gold"><Icon name="iconoirSun" size={18} />Daily Horoscope</p>
         <h1 className="mt-3 font-display text-5xl text-goldbright sm:text-6xl">Today&apos;s sun-sign reflection</h1>
         <p className="mx-auto mt-4 max-w-xl text-cream/75">
           A general reflection for your sun sign. Free, unsaved, no birth data needed.
@@ -215,7 +215,7 @@ export default function HoroscopeClient({
         <article className="mt-6 rounded-3xl border border-gold/25 bg-panel/70 p-6">
           {/* Phase 2, 2.2: the sign line used to type itself out with
               fake typos. It renders in full now, like the body below. */}
-          <p className="text-xs uppercase tracking-[0.25em] text-gold">
+          <p className="text-sm text-gold">
             {signLine}
           </p>
           {reducedMotion || !mounted ? (

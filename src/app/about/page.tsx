@@ -13,7 +13,7 @@ export const metadata = {
 export default function AboutPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
-      <PageHeader eyebrow="About" title="About Sortes" />
+      <PageHeader title="About Sortes" />
       <div className="mt-8 space-y-8 text-[15px] leading-relaxed text-cream/85">
         <section>
           <h2 className="font-display text-3xl text-goldbright">Who runs Sortes</h2>

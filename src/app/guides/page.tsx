@@ -15,7 +15,7 @@ export const metadata = {
 export default function GuidesPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
-      <PageHeader eyebrow="Guides" title="Guides to tarot and charts" />
+      <PageHeader title="Guides to tarot and charts" />
       <p className="mt-4 max-w-xl text-cream/75">
         The deck, how to ask a question, the Celtic Cross, topic spreads, and how tarot differs from a birth chart. Free, no account needed.
       </p>

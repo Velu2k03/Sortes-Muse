@@ -109,7 +109,7 @@ export default async function GuidePage({
           sections with no way to jump. This contents list is the
           guide's own headings, linked, nothing added or removed. */}
       <nav aria-label="In this guide" className="mt-8 rounded-3xl border border-gold/20 bg-panel/60 p-5">
-        <p className="text-xs uppercase tracking-[0.25em] text-gold">
+        <p className="text-sm text-gold">
           In this guide
         </p>
         <ul className="mt-3 space-y-1.5">

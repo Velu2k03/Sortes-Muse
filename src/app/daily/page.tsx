@@ -132,9 +132,6 @@ export default function DailyPage() {
 
   return (
     <div className="mx-auto flex max-w-2xl flex-col items-center px-4 py-12 sm:px-6">
-      <p className="text-xs uppercase tracking-[0.35em] text-gold">
-        Daily card
-      </p>
       <h1 className="mt-3 text-center font-display text-5xl text-goldbright sm:text-6xl">
         Your Daily Card
       </h1>

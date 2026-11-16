@@ -172,7 +172,7 @@ export default function SpreadsPage() {
                   {s.slug === "quick-insight" && freeAvailable ? "Free" : (<><span className="font-body">1</span> Oracle</>)}
                 </p>
               </div>
-              <p className="mt-1 text-xs uppercase tracking-[0.2em] text-mist">
+              <p className="mt-1 text-sm text-mist">
                 {s.cards} {s.cards === 1 ? "card" : "cards"}, personalized AI interpretation
               </p>
               {pending ? (

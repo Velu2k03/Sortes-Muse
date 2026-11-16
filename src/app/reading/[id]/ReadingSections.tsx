@@ -33,7 +33,7 @@ export function ReadingHeader({ reading }: { reading: Reading }) {
           { label: reading.spreadName },
         ]}
       />
-      <p className="num text-center text-xs uppercase tracking-[0.35em] text-gold">
+      <p className="num text-center text-sm text-gold">
         {reading.spreadName} · {date}
       </p>
       <SplitText tag="h1" text="Your reading" className="mt-3 text-center font-display text-5xl text-goldbright" />
@@ -129,7 +129,7 @@ export function AtAGlance({ reading }: { reading: Reading }) {
   return (
     <AnimatedContent trigger="scroll" wipe="up" blur={10} distance={60} duration={0.8} scale={0.98} threshold={0.2}>
     <section className="mx-auto mt-8 max-w-3xl rounded-3xl border border-gold/25 bg-panel/60 p-6 text-left sm:p-8">
-      <p className="text-xs uppercase tracking-[0.25em] text-gold">
+      <p className="text-sm text-gold">
         About this reading, at a glance
       </p>
       <dl className="mt-3 space-y-2 text-sm leading-relaxed text-cream/85">
@@ -236,7 +236,7 @@ export function Interpretation({ reading }: { reading: Reading }) {
   if (!reading.aiGenerated || !reading.interpretation) return null;
   return (
     <section className="mx-auto mt-10 max-w-3xl rounded-3xl border border-gold/30 bg-navydeep/70 p-6 sm:p-8">
-      <p className="text-xs uppercase tracking-[0.25em] text-gold">
+      <p className="text-sm text-gold">
         Personalized interpretation
       </p>
       <p className="mt-1 text-xs text-mist">
@@ -275,7 +275,7 @@ export function CardMeanings({ reading }: { reading: Reading }) {
         key={d.positionKey}
         className="rounded-3xl border border-gold/20 bg-panel/60 p-6 sm:p-8"
       >
-        <p className="text-xs uppercase tracking-[0.25em] text-gold">
+        <p className="text-sm text-gold">
           {i + 1} · {d.position}
         </p>
         <h2 className="mt-1 font-display text-2xl text-cream">
@@ -328,7 +328,7 @@ export function CardMeanings({ reading }: { reading: Reading }) {
 export function NextStepPanel({ field }: { field: ReadingField }) {
   return (
     <div className="mx-auto mt-10 max-w-3xl rounded-3xl border border-gold/25 bg-panel/60 p-6 text-left sm:p-8">
-      <p className="text-xs uppercase tracking-[0.25em] text-gold">
+      <p className="text-sm text-gold">
         My next step
       </p>
       <p className="mt-2 text-sm leading-relaxed text-cream/85">
@@ -367,7 +367,7 @@ export function NextStepPanel({ field }: { field: ReadingField }) {
 export function NotePanel({ reading, field }: { reading: Reading; field: ReadingField }) {
   return (
     <div className="mx-auto mt-10 max-w-3xl rounded-3xl border border-gold/25 bg-panel/60 p-6 text-left sm:p-8">
-      <p className="text-xs uppercase tracking-[0.25em] text-gold">
+      <p className="text-sm text-gold">
         Your note
       </p>
       <p className="mt-2 text-sm leading-relaxed text-cream/85">
@@ -429,7 +429,7 @@ export function RevisitPanel({ reading, field }: { reading: Reading; field: Read
   if (reading.revisitNote) {
     return (
       <div className="mx-auto mt-10 max-w-3xl rounded-3xl border border-gold/25 bg-panel/60 p-6 text-left sm:p-8">
-        <p className="text-xs uppercase tracking-[0.25em] text-gold">
+        <p className="text-sm text-gold">
           What you noted on revisit
         </p>
         {/* Phase E (item 8): the revisit note is editable after
@@ -481,7 +481,7 @@ export function RevisitPanel({ reading, field }: { reading: Reading; field: Read
   if (ageDays < 7) return null;
   return (
     <div className="mx-auto mt-10 max-w-3xl rounded-3xl border border-gold/25 bg-panel/60 p-6 text-left sm:p-8">
-      <p className="text-xs uppercase tracking-[0.25em] text-gold">
+      <p className="text-sm text-gold">
         A week has passed
       </p>
       <p className="mt-2 text-sm leading-relaxed text-cream/85">
@@ -588,7 +588,7 @@ export function FollowUpThread({
               key={i}
               className="rounded-2xl border border-gold/20 bg-panel/50 p-4"
             >
-              <p className="text-xs uppercase tracking-[0.2em] text-gold">
+              <p className="text-sm text-gold">
                 Follow-up {i + 1}{fu.free ? " (free)" : " (1 Oracle)"}
               </p>
               <p className="mt-1 text-sm italic text-cream/80">

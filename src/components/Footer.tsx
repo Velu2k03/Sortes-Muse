@@ -22,7 +22,7 @@ export default function Footer() {
           </p>
         </div>
         <div>
-          <h2 className="text-xs uppercase tracking-[0.2em] text-gold">Explore</h2>
+          <h2 className="text-sm text-gold">Explore</h2>
           {/* Two columns on phone widths, so the footer does not
               run to eleven single-column rows; single column again
               at md, where the footer itself is three columns. */}
@@ -42,7 +42,7 @@ export default function Footer() {
           </ul>
         </div>
         <div>
-          <h2 className="text-xs uppercase tracking-[0.2em] text-gold">About &amp; legal</h2>
+          <h2 className="text-sm text-gold">About &amp; legal</h2>
           <ul className="mt-3 grid grid-cols-2 gap-x-6 gap-y-2 text-sm md:block md:space-y-2">
             <li><Link href="/about" prefetch={false} className="inline-flex min-h-11 items-center py-2 text-cream/80 hover:text-goldbright">About Sortes</Link></li>
             <li><Link href="/methodology" prefetch={false} className="inline-flex min-h-11 items-center py-2 text-cream/80 hover:text-goldbright">Methodology</Link></li>

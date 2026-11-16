@@ -59,7 +59,7 @@ export default function SampleReading({ collapsed = false }: { collapsed?: boole
       }
     >
       <div className="flex items-center justify-between border-b border-gold/15 px-6 py-4">
-        <p className="text-xs uppercase tracking-[0.25em] text-mist">
+        <p className="text-sm text-mist">
           Past, Present, Future
         </p>
         <span className="rounded-full border border-gold/40 bg-gold/10 px-3 py-1 text-xs font-semibold text-goldbright">
@@ -81,7 +81,7 @@ export default function SampleReading({ collapsed = false }: { collapsed?: boole
                   className="object-cover"
                 />
               </div>
-              <p className="text-xs uppercase tracking-[0.2em] text-gold">
+              <p className="text-sm text-gold">
                 {s.position}
               </p>
               <p className="font-display text-sm text-cream">{card.name}</p>
@@ -130,7 +130,7 @@ export default function SampleReading({ collapsed = false }: { collapsed?: boole
           transition={{ duration: 0.6, ease: "easeOut" }}
           className="text-center"
         >
-          <p className="text-xs uppercase tracking-[0.35em] text-gold">
+          <p className="text-sm text-gold">
             Sample reading
           </p>
           <h2 className="mt-4 font-display text-4xl text-goldbright sm:text-5xl">

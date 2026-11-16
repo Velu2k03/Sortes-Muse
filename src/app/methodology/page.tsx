@@ -37,7 +37,7 @@ export default function MethodologyPage() {
           through all seven sections. */}
       <MethodologyHashOpener />
       <nav aria-label="On this page" className="mx-auto mt-8 max-w-xl rounded-3xl border border-gold/20 bg-panel/60 p-5 text-left">
-        <p className="text-xs uppercase tracking-[0.25em] text-gold">
+        <p className="text-sm text-gold">
           On this page
         </p>
         <ul className="mt-3 space-y-1.5">

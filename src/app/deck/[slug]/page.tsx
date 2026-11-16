@@ -116,7 +116,7 @@ export default async function CardPage({
         </div>
 
         <div>
-          <p className="text-xs uppercase tracking-[0.35em] text-gold">
+          <p className="text-sm text-gold">
             {card.arcana === "major" ? "Major Arcana" : "Minor Arcana"}
           </p>
           <h1 className="mt-3 font-display text-5xl text-goldbright sm:text-6xl">

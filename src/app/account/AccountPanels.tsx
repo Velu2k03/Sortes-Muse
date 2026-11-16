@@ -51,13 +51,13 @@ export function AccountSummary({
     <div className="mt-8 rounded-3xl border border-gold/20 bg-panel/60 p-6 sm:p-8">
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0">
-          <p className="text-xs uppercase tracking-[0.2em] text-mist">
+          <p className="text-sm text-mist">
             Signed in as
           </p>
           <p className="mt-1 truncate text-lg text-cream">{email}</p>
         </div>
         <div className="text-right">
-          <p className="text-xs uppercase tracking-[0.2em] text-mist">
+          <p className="text-sm text-mist">
             Oracle balance
           </p>
           <p className="mt-1 font-display text-3xl text-goldbright">

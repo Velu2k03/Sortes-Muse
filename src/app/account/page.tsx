@@ -25,9 +25,6 @@ export default function Account() {
       {/* AF-012: this header is server HTML, so the signed-out state
           is in the first paint instead of a bare "Loading your
           account…" from the client component below. */}
-      <p className="text-center text-xs uppercase tracking-[0.35em] text-gold">
-        Account
-      </p>
       <h1 className="mt-3 text-center font-display text-5xl text-goldbright">
         Your account
       </h1>

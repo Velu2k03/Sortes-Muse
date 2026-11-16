@@ -92,12 +92,12 @@ export default function FaqList({ faqs }: { faqs: FaqItem[] }) {
         </button>
       </div>
       <nav aria-label="Questions" className="mt-6 rounded-3xl border border-gold/20 bg-panel/60 p-5">
-        <p className="text-xs uppercase tracking-[0.25em] text-gold">
+        <p className="text-sm text-gold">
           Jump to a question
         </p>
         {grouped.map((g) => (
           <div key={g.name} className="mt-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-mist">
+            <p className="text-sm font-semibold text-mist">
               {g.name}
             </p>
             <ul className="mt-2 space-y-1.5">

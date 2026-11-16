@@ -453,7 +453,6 @@ export default function ReportsClient() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
-      <p className="text-center text-xs uppercase tracking-[0.35em] text-gold">Reports</p>
       <h1 className="mt-2 text-center font-display text-5xl text-goldbright">Reports</h1>
       <p className="mt-3 text-center text-cream/80">
         1 Oracle per report. Reports never expire.
@@ -648,7 +647,7 @@ export default function ReportsClient() {
       {result && (
         <AnimatedContent trigger="mount" wipe="up" blur={10} distance={60} duration={0.8} scale={0.98} threshold={0.2} stagger={0.08}>
         <div className="mt-8 rounded-3xl border border-gold/25 bg-panel/70 p-6">
-          <p className="text-xs uppercase tracking-[0.35em] text-gold">Your report</p>
+          <p className="text-sm text-gold">Your report</p>
           <h2 className="mt-1 font-display text-3xl text-goldbright">{result.title}</h2>
           <p className="mt-2 text-sm text-mist">
             Saved. Open it any time from your reports below, or{" "}

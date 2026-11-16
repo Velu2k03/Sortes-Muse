@@ -77,8 +77,8 @@ export default function BirthCardPage() {
           </p>
           <div className="mt-4 grid gap-6 sm:grid-cols-2">
             <article className="rounded-3xl border border-gold/25 bg-panel/70 p-6">
-              <p className="text-xs uppercase tracking-[0.25em] text-gold">
-                Personality card · {personalityCard.name}
+              <p className="text-sm text-gold">
+                Personality card, {personalityCard.name}
               </p>
               <h2 className="mt-3 font-display text-4xl text-goldbright">{personalityCard.name}</h2>
               <p className="mt-2 text-sm leading-relaxed text-cream/75">
@@ -91,8 +91,8 @@ export default function BirthCardPage() {
               </p>
             </article>
             <article className="rounded-3xl border border-gold/25 bg-panel/70 p-6">
-              <p className="text-xs uppercase tracking-[0.25em] text-gold">
-                Soul card · {soulCard.name}
+              <p className="text-sm text-gold">
+                Soul card, {soulCard.name}
               </p>
               <h2 className="mt-3 font-display text-4xl text-goldbright">{soulCard.name}</h2>
               <p className="mt-2 text-sm leading-relaxed text-cream/75">

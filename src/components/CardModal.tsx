@@ -74,7 +74,7 @@ export default function CardModal({ cardId, onClose }: Props) {
                 />
               </div>
               <div className="min-w-0 flex-1 text-center sm:text-left">
-                <p className="text-xs uppercase tracking-[0.25em] text-mist">
+                <p className="text-sm text-mist">
                   {card.arcana === "major"
                     ? `Major Arcana, card ${card.number}`
                     : /* The name itself is the title below, so repeating
@@ -88,7 +88,7 @@ export default function CardModal({ cardId, onClose }: Props) {
 
                 <div className="mt-4 space-y-3">
                   <div>
-                    <p className="text-xs uppercase tracking-widest text-gold">
+                    <p className="text-sm text-gold">
                       Upright
                     </p>
                     <div className="mt-1 flex flex-wrap justify-center gap-1.5 sm:justify-start">
@@ -106,7 +106,7 @@ export default function CardModal({ cardId, onClose }: Props) {
                     {/* Was text-violet: 4.33:1 on navydeep, below WCAG AA 4.5:1.
                         Cream is 14.74:1 on the same background. The reversed
                         chips below keep their violet border and tint. */}
-                    <p className="text-xs uppercase tracking-widest text-cream">
+                    <p className="text-sm text-cream">
                       Reversed
                     </p>
                     <div className="mt-1 flex flex-wrap justify-center gap-1.5 sm:justify-start">

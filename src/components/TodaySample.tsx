@@ -50,10 +50,10 @@ export default function TodaySample() {
 
   return (
     <section className="mx-auto max-w-6xl px-4 py-16 text-center sm:px-6" aria-label="Sample reading">
-      {/* unslopovich (2026-11-16, Velu approved): eyebrow tracking
-          toned down from 0.35em, the spaced-out small-caps were a
-          generated tell. */}
-      <p className="text-xs uppercase tracking-[0.15em] text-gold">
+      {/* unslopovich (2026-11-16, Velu approved): the spaced-out
+          small-caps eyebrow was a generated tell. UX audit Phase 2,
+          F14: sentence case, untracked, one step smaller. */}
+      <p className="text-sm text-gold">
         Sample reading
       </p>
       <h2 className="mt-4 font-display text-4xl text-goldbright sm:text-5xl">

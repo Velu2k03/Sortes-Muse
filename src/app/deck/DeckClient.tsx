@@ -109,7 +109,7 @@ export default function DeckClient({
   return (
     <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
       <div className="text-center">
-        <p className="text-xs uppercase tracking-[0.35em] text-gold">The deck</p>
+        <p className="text-sm text-gold">The deck</p>
         <h1 className="mt-2 font-display text-4xl text-goldbright sm:text-5xl">
           {filter === "all" && !query.trim()
             ? "All 78 cards"

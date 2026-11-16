@@ -99,7 +99,7 @@ export default function ReportDetailClient() {
       <Link href="/reports" className="text-sm font-semibold text-goldbright underline">
         Back to reports
       </Link>
-      <p className="mt-6 text-xs uppercase tracking-[0.35em] text-gold">
+      <p className="mt-6 text-sm text-gold">
         {report.type === "transit" ? "Transit report" : report.type === "year-ahead" ? "Year-ahead reading" : "Relationship comparison"}
       </p>
       <SplitText tag="h1" text={report.title} className="mt-2 font-display text-5xl text-goldbright" />

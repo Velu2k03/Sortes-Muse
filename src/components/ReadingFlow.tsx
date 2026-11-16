@@ -108,7 +108,7 @@ function GateScreen({
       exit={{ opacity: 0 }}
       className="mx-auto max-w-2xl text-center"
     >
-      <p className="text-xs uppercase tracking-[0.35em] text-gold">
+      <p className="text-sm text-gold">
         {spread.cards} {spread.cards === 1 ? "card" : "cards"}
       </p>
       <h1 className="mt-3 font-display text-5xl text-goldbright sm:text-6xl">
@@ -174,7 +174,7 @@ function GateScreen({
           so a 1-card spread page is not a short list over a long
           empty page, and the layout itself teaches the spread. */}
       <div className="mt-8 rounded-3xl border border-gold/20 bg-panel/60 p-6 text-left">
-        <p className="text-xs uppercase tracking-[0.25em] text-gold">
+        <p className="text-sm text-gold">
           The positions
         </p>
         <div className="mt-4 flex flex-col items-center gap-6 sm:flex-row sm:items-start">
@@ -250,7 +250,7 @@ function GateScreen({
           space. A row of the other spreads fills it with the next
           step instead of a void. */}
       <div className="mx-auto mt-12 max-w-2xl">
-        <p className="text-xs uppercase tracking-[0.25em] text-gold">
+        <p className="text-sm text-gold">
           More spreads
         </p>
         <div className="mt-3 flex flex-wrap justify-center gap-2">

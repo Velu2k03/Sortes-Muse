@@ -77,7 +77,7 @@ export function SignInGate({ f }: { f: IntakeState }) {
   const hasDeviceOracles = (credits ?? 0) > 0;
   return (
     <section aria-label="Sign in required" className="mt-8 rounded-3xl border border-gold/25 bg-panel/70 p-6 text-center">
-      <p className="text-xs uppercase tracking-[0.35em] text-gold">Sign in to continue</p>
+      <p className="text-sm text-gold">Sign in to continue</p>
       <h1 className="mt-3 font-display text-3xl text-goldbright sm:text-4xl">
         {spread.name} needs an account
       </h1>
@@ -122,7 +122,7 @@ export function CategoryStep({ f }: { f: IntakeState }) {
   }, [f.spread.slug]);
   return (
     <>
-      <p className="text-xs uppercase tracking-[0.35em] text-gold">
+      <p className="text-sm text-gold">
         Step 1 of 4
       </p>
       <h1 ref={headingRef} tabIndex={-1} className="mt-3 scroll-mt-32 font-display text-4xl text-goldbright outline-none sm:text-5xl">
@@ -170,7 +170,7 @@ export function FormStep({ f, category }: { f: IntakeState; category: IntakeCate
   const [questionError, setQuestionError] = useState(false);
   return (
     <>
-      <p className="text-center text-xs uppercase tracking-[0.35em] text-gold">
+      <p className="text-center text-sm text-gold">
         Step 2 of 4
       </p>
       <h1 ref={headingRef} tabIndex={-1} className="mt-3 scroll-mt-32 text-center font-display text-4xl text-goldbright outline-none">
@@ -291,7 +291,7 @@ export function ConfirmStep({ f, category }: { f: IntakeState; category: IntakeC
   const headingRef = useStepFocus<HTMLHeadingElement>();
   return (
     <>
-      <p className="text-xs uppercase tracking-[0.35em] text-gold">
+      <p className="text-sm text-gold">
         Step 3 of 4
       </p>
       <h1 ref={headingRef} tabIndex={-1} className="mt-3 scroll-mt-32 font-display text-4xl text-goldbright outline-none sm:text-5xl">
@@ -301,15 +301,15 @@ export function ConfirmStep({ f, category }: { f: IntakeState; category: IntakeC
       <div className="mt-8 rounded-3xl border border-gold/25 bg-panel/60 p-6 text-left sm:p-8">
         <dl className="space-y-4 text-sm">
           <div>
-            <dt className="text-xs uppercase tracking-[0.2em] text-mist">Spread</dt>
+            <dt className="text-sm text-mist">Spread</dt>
             <dd className="mt-1 font-display text-xl text-cream">{spread.name} · <span className="font-body text-goldbright">{spread.cards}</span> {spread.cards === 1 ? "card" : "cards"}</dd>
           </div>
           <div>
-            <dt className="text-xs uppercase tracking-[0.2em] text-mist">Area</dt>
+            <dt className="text-sm text-mist">Area</dt>
             <dd className="mt-1 text-cream">{category.name}</dd>
           </div>
           <div>
-            <dt className="text-xs uppercase tracking-[0.2em] text-mist">Your question</dt>
+            <dt className="text-sm text-mist">Your question</dt>
             <dd className="mt-1">
               {/* Batch 3.1 (#39): same two-row textarea as the form step,
                   so the question is editable here without being cut off. */}
@@ -327,7 +327,7 @@ export function ConfirmStep({ f, category }: { f: IntakeState; category: IntakeC
             </dd>
           </div>
           <div>
-            <dt className="text-xs uppercase tracking-[0.2em] text-mist">Cost</dt>
+            <dt className="text-sm text-mist">Cost</dt>
             <dd className="mt-1 text-cream">
               {isFreeAvailable
                 ? "Free · your first Quick Insight, no Oracle needed"
@@ -349,7 +349,7 @@ export function ConfirmStep({ f, category }: { f: IntakeState; category: IntakeC
 
       {questionSuggestion && !suggestionDismissed && (
         <div className="mt-6 rounded-2xl border border-gold/25 bg-panel/60 p-4 text-left">
-          <p className="text-xs uppercase tracking-[0.2em] text-mist">
+          <p className="text-sm text-mist">
             Suggested stronger version
           </p>
           <p className="mt-2 text-sm italic text-cream">
@@ -425,7 +425,7 @@ export function ImpressionStep({ f, drawnCards }: { f: IntakeState; drawnCards: 
   const reduceMotion = useReducedMotion() ?? false;
   return (
     <>
-      <p className="text-xs uppercase tracking-[0.35em] text-gold">
+      <p className="text-sm text-gold">
         Your cards are drawn
       </p>
       <h1 ref={headingRef} tabIndex={-1} className="mt-3 scroll-mt-32 font-display text-4xl text-goldbright outline-none sm:text-5xl">
@@ -593,7 +593,7 @@ export function ProcessingStage({ activeStep, complete, streamedText, drawnCards
       <ReadingWait activeStep={activeStep} complete={complete} drawnCards={drawnCards} />
       {streamedText.length > 0 && (
         <div className="mt-8 w-full text-left">
-          <p className="text-xs uppercase tracking-[0.25em] text-gold">Writing your reading</p>
+          <p className="text-sm text-gold">Writing your reading</p>
           <div className="mt-3">
             <ReadingText text={streamedText} />
           </div>

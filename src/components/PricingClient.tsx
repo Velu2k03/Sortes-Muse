@@ -161,7 +161,7 @@ export default function PricingClient({
     // three columns start near 1000px rather than 640px.
     <Section variant="transparent" maxWidth="64rem" padding={8} paddingInline={4} className="mx-auto">
       <VStack gap={0} className="text-center">
-        <p className="text-xs uppercase tracking-[0.35em] text-gold">Pricing</p>
+        <p className="text-sm text-gold">Pricing</p>
         <h1 className="mt-3 font-display text-5xl text-goldbright sm:text-6xl">
           Choose your plan
         </h1>

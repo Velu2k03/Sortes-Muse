@@ -286,7 +286,7 @@ export default function Home() {
               <Link href={s.href} className="block p-6">
                 <p className="font-display text-2xl text-goldbright">{s.label}</p>
                 <p className="mt-2 text-sm leading-relaxed text-cream/75">{s.text}</p>
-                <p className="mt-3 text-xs font-semibold uppercase tracking-[0.2em] text-gold">{s.cost}</p>
+                <p className="mt-3 text-sm font-semibold text-gold">{s.cost}</p>
               </Link>
             </div>
           ))}
