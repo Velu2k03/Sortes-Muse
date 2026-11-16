@@ -54,7 +54,7 @@ describe("Phase 3 Batch 3.2 reveal control and honest wait", () => {
   it("has no dead LatticeLoader styles left in the wait CSS", () => {
     expect(waitCss).not.toContain("lattice-loader");
     expect(waitCss).not.toContain("lattice-wave");
-    expect(waitCss).not.toContain("#d4af37");
+    expect(waitCss).not.toContain("#b9975b");
     expect(waitCss).toContain(".reading-stopwatch");
   });
 
@@ -71,10 +71,10 @@ describe("Phase 3 Batch 3.2 reveal control and honest wait", () => {
     // carries implicit status semantics.
     expect(steps).toContain("<output");
     // The SlideCommit colours are the brand hex, not the old gold.
-    expect(steps).toContain('handleColor="#b9975b"');
-    expect(steps).toContain('successColor="#b9975b"');
-    expect(steps).toContain('trackColor="#1a2a44"');
-    expect(steps).not.toContain('handleColor="#d4af37"');
+    expect(steps).toContain('handleColor="#d4af37"');
+    expect(steps).toContain('successColor="#d4af37"');
+    expect(steps).toContain('trackColor="#1a1f2e"');
+    expect(steps).not.toContain('handleColor="#b9975b"');
     // CodeRabbit: the track label is full-strength gold, not 45%
     // opacity, so it reads at 5.24:1 on the track (was 2.14:1).
     const slide = src("src/components/SlideCommit.tsx");

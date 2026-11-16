@@ -128,10 +128,17 @@ export function SystemPicker({ prefs, s }: { prefs: ChartPrefs; s: ChartSession 
             ariaLabel="Chart system"
             size="lg"
             radius={12}
-            accentColor={siteTheme === "light" ? "#8a6d0a" : "#b9975b"}
-            surfaceColor={siteTheme === "light" ? "#ffffff" : "#1a2a44"}
+            // Codex P1, PR #117: token-backed colours, not duplicated
+            // palette hex, so the next palette change flows through
+            // with no second copy to update. --color-gold is
+            // #d4af37 dark / #7c5e00 light, --color-panel is
+            // #1a1f2e / #ffffff, --color-cream is #ede6d6 /
+            // #141b2e — all exact matches for the old ternaries.
+            // highlightColor stays a bespoke tint (no token).
+            accentColor="var(--color-gold)"
+            surfaceColor="var(--color-panel)"
             highlightColor={siteTheme === "light" ? "#f3ead3" : "#3a3120"}
-            textColor={siteTheme === "light" ? "#1c1a15" : "#faf6ec"}
+            textColor="var(--color-cream)"
             className="w-full [&>button]:w-full [&>button]:justify-between"
           />
         </div>
@@ -305,10 +312,10 @@ export function BirthForm({ prefs, form, s }: { prefs: ChartPrefs; form: ChartFo
             ariaLabel="Birthplace"
             size="lg"
             radius={12}
-            accentColor={siteTheme === "light" ? "#8a6d0a" : "#b9975b"}
-            surfaceColor={siteTheme === "light" ? "#ffffff" : "#1a2a44"}
+            accentColor={siteTheme === "light" ? "#7c5e00" : "#d4af37"}
+            surfaceColor={siteTheme === "light" ? "#ffffff" : "#1a1f2e"}
             highlightColor={siteTheme === "light" ? "#f3ead3" : "#3a3120"}
-            textColor={siteTheme === "light" ? "#1c1a15" : "#faf6ec"}
+            textColor={siteTheme === "light" ? "#1c1a15" : "#ede6d6"}
             className="w-full [&>button]:w-full [&>button]:justify-between"
           />
         )}
@@ -779,9 +786,9 @@ export function InterpretationPanel({ prefs, s, result }: { prefs: ChartPrefs; s
           inline
           closeButton
           width={320}
-          background="#1a2a44"
-          color="#faf6ec"
-          fuseColor="#b9975b"
+          background="#1a1f2e"
+          color="#ede6d6"
+          fuseColor="#d4af37"
         />
         <button
           type="button"

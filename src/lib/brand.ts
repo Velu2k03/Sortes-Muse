@@ -8,19 +8,19 @@
 
 export const BRAND = {
   /** Navy, the main dark background. */
-  navy: "#0f1e36",
+  navy: "#141b2e",
   /** Deep navy, the browser chrome / theme colour. */
-  navyDeep: "#0a1526",
+  navyDeep: "#0f1424",
   /** Panel, the dark surface colour. */
-  panel: "#1a2a44",
+  panel: "#1a1f2e",
   /** Ink, the darkest text colour. */
-  ink: "#0b1424",
+  ink: "#0a0e1a",
   /** Gold, the brand accent. */
-  gold: "#b9975b",
+  gold: "#d4af37",
   /** Bright gold, the lighter gold for highlights. */
-  goldBright: "#d6be8a",
+  goldBright: "#f4d03f",
   /** Cream, the main light text colour. */
-  cream: "#faf6ec",
+  cream: "#ede6d6",
   /** Mist, the muted text colour. */
   mist: "#9ca3af",
   /** Danger, the error colour. */

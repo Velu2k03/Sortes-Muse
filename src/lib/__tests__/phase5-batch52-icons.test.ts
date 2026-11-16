@@ -30,27 +30,30 @@ describe("Phase 5 Batch 5.2 favicon and icons", () => {
 
   it("the icon SVG uses the new brand colours, not the old gold", () => {
     const svg = src("public/icon.svg");
-    expect(svg).toContain("#b9975b");
-    expect(svg).toContain("#0a1526");
-    expect(svg).not.toContain("#d4af37");
+    expect(svg).toContain("#d4af37");
+    expect(svg).toContain("#f4d03f");
+    expect(svg).toContain("#0f1424");
+    expect(svg).not.toContain("#b9975b");
+    expect(svg).not.toContain("#d6be8a");
+    expect(svg).not.toContain("#0a1526");
     expect(svg).not.toContain("#0a0e1a");
   });
 
   it("layout references the new og-image and the icon files", () => {
     const layout = src("src/app/layout.tsx");
-    expect(layout).toContain("/og-image.jpg?v=3");
+    expect(layout).toContain("/og-image.jpg?v=4");
     expect(layout).toContain("/favicon-16x16.png");
     expect(layout).toContain("/favicon-32x32.png");
     expect(layout).toContain("/apple-touch-icon.png");
     expect(layout).toContain("/favicon.ico");
     // Viewport theme colour is the new navydeep.
-    expect(layout).toContain('themeColor: "#0a1526"');
+    expect(layout).toContain('themeColor: "#0f1424"');
   });
 
   it("the manifest aligns to the new theme colours", () => {
     const manifest = src("src/app/manifest.ts");
-    expect(manifest).toContain('background_color: "#0a1526"');
-    expect(manifest).toContain('theme_color: "#0a1526"');
+    expect(manifest).toContain('background_color: "#0f1424"');
+    expect(manifest).toContain('theme_color: "#0f1424"');
     expect(manifest).toContain("/icons/icon-192.png");
     expect(manifest).toContain("/icons/icon-512.png");
   });

@@ -74,7 +74,7 @@
   width: 4px;
   height: 9px;
   border-radius: 999px;
-  background: #d6be8a;
+  background: #f4d03f;
   box-shadow: 0 0 6px rgba(244, 208, 63, 0.9);
   transform: rotate(var(--spark-angle)) translateY(-4px);
   transform-origin: 50% 4px;

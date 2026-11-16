@@ -5,13 +5,14 @@ import { neutralTheme } from "@astryxdesign/theme-neutral";
 // only, Velu 2026-11-14). Extends the neutral theme and overrides
 // only the semantic tokens that carry the brand: navy surfaces,
 // cream text, gold accent, Cormorant Garamond display, Manrope body.
-// Brand lock (Velu, 2026-11-15): Navy #0F1E36, Gold #B9975B,
-// Cream #FAF6EC. The fonts are already loaded by next/font in the
+// Brand lock (Velu, 2026-11-16): Navy #141b2e, Gold #d4af37,
+// Cream #ede6d6. Replaces the 2026-11-15 bronze lock. The fonts are
+// already loaded by next/font in the
 // root layout, so naming the families here resolves to the loaded
 // files. Token values are [light, dark] tuples; the pricing page
 // forces dark mode, so the dark stop is the one visitors see. Light
-// stops follow the app's light theme (cream #faf6ec, navy text
-// #0f1e36, dark gold #8a6d0a, about 5.6:1 on cream).
+// stops follow the app's light theme (cream #ede6d6, navy text
+// #141b2e, dark gold #7c5e00, about 4.9:1 on cream).
 // Built with `npx astryx theme build` (see sortesTheme.css/js
 // beside this file); never hand-edit the built artifacts.
 export const sortesTheme = defineTheme({
@@ -31,20 +32,29 @@ export const sortesTheme = defineTheme({
     },
   },
   tokens: {
-    "--color-accent": ["#8a6d0a", "#b9975b"],
-    "--color-accent-muted": ["#b9975b33", "#b9975b33"],
+    "--color-accent": ["#7c5e00", "#d4af37"],
+    "--color-accent-muted": ["#d4af3733", "#d4af3733"],
     "--color-on-accent": ["#ffffff", "#14100a"],
-    "--color-text-accent": ["#8a6d0a", "#d6be8a"],
-    "--color-icon-accent": ["#8a6d0a", "#d6be8a"],
-    "--color-background-body": ["#faf6ec", "#0b1424"],
-    "--color-background-surface": ["#ffffff", "#0f1e36"],
-    "--color-background-card": ["#ffffff", "#1a2a44"],
-    "--color-background-muted": ["#f1ead8", "#1a2a44"],
-    "--color-background-popover": ["#ffffff", "#1a2a44"],
-    "--color-text-primary": ["#0f1e36", "#faf6ec"],
+    "--color-text-accent": ["#7c5e00", "#f4d03f"],
+    "--color-icon-accent": ["#7c5e00", "#f4d03f"],
+    "--color-background-body": ["#ede6d6", "#0a0e1a"],
+    "--color-background-surface": ["#ffffff", "#141b2e"],
+    "--color-background-card": ["#ffffff", "#1a1f2e"],
+    "--color-background-muted": ["#f1ead8", "#1a1f2e"],
+    "--color-background-popover": ["#ffffff", "#1a1f2e"],
+    "--color-text-primary": ["#141b2e", "#ede6d6"],
     "--color-text-secondary": ["#5c5a52", "#9ca3af"],
-    "--color-border": ["#d8c98f", "rgba(185, 151, 91, 0.35)"],
-    "--color-border-emphasized": ["#8a6d0a", "#b9975b"],
-    "--color-background-inverted": ["#0f1e36", "#faf6ec"],
+    "--color-border": ["#d8c98f", "rgba(212, 175, 55, 0.35)"],
+    "--color-border-emphasized": ["#7c5e00", "#d4af37"],
+    "--color-background-inverted": ["#141b2e", "#ede6d6"],
+    // CodeRabbit, PR #117: the Astryx base light values for these
+    // three text tokens fall below AA 4.5:1 on the new cream body
+    // (#ede6d6). Darkened just enough to pass, hue kept, dark
+    // values unchanged. Success #2f7d33 (4.12) -> #2c7630 (4.51);
+    // warning #836700 (4.33) -> #7f6400 (4.53); info #0067ce
+    // (4.41) -> #0065ca (4.55).
+    "--color-text-success": ["#2c7630", "#90ca90"],
+    "--color-text-warning": ["#7f6400", "#eec448"],
+    "--color-text-info": ["#0065ca", "#a1caff"],
   },
 });

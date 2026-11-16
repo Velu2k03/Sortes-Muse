@@ -42,10 +42,10 @@ describe("Batch 4a wiring", () => {
   });
 
   it("the shared OG image URL is versioned so scrapers re-fetch it", () => {
-    // Batch 4c: the old og-image.jpg was an empty frame cached by
-    // scrapers; ?v=2 forces a re-scrape of the new image.
-    expect(src("src/lib/seo.ts")).toContain('"/og-image.jpg?v=3"');
-    expect(src("src/app/layout.tsx")).toContain('"/og-image.jpg?v=3"');
+    // Batch 6.2: the og-image was recoloured to the 2026-11-16
+    // palette; ?v=4 forces a re-scrape of the new image.
+    expect(src("src/lib/seo.ts")).toContain('"/og-image.jpg?v=4"');
+    expect(src("src/app/layout.tsx")).toContain('"/og-image.jpg?v=4"');
   });
 });
 

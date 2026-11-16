@@ -64,8 +64,8 @@ describe("Batch 3b: the light theme fix", () => {
 
   it("the wait screen uses theme gold, never hardcoded bright gold", () => {
     const wait = src("src/components/ReadingWait.tsx");
-    expect(wait).not.toContain("#f4d03f");
-    expect(wait).not.toContain("#d4af37");
+    expect(wait).not.toContain("#d6be8a");
+    expect(wait).not.toContain("#b9975b");
     expect(wait).toContain("var(--color-goldbright)");
     expect(wait).toContain("var(--color-gold)");
   });

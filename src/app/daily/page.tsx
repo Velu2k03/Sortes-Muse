@@ -188,10 +188,10 @@ export default function DailyPage() {
                 <HoldButton
                   size="lg"
                   holdTime={1200}
-                  backgroundColor={siteTheme === "light" ? "#ffffff" : "#1a2a44"}
-                  fillColor="#b9975b"
-                  textColor={siteTheme === "light" ? "#1c1a15" : "#faf6ec"}
-                  fillTextColor="#0a1526"
+                  backgroundColor={siteTheme === "light" ? "#ffffff" : "#1a1f2e"}
+                  fillColor="#d4af37"
+                  textColor={siteTheme === "light" ? "#1c1a15" : "#ede6d6"}
+                  fillTextColor="#0f1424"
                   doneLabel="Casting…"
                   onHold={draw}
                 >

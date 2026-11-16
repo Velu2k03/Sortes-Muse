@@ -54,7 +54,10 @@
   flex-direction: column;
   align-items: center;
   margin-top: 2rem;
-  color: #d6be8a;
+  /* CodeRabbit, PR #117: the hardcoded goldbright was 1.21:1 on the
+     light cream body. The global --color-gold token is gold in dark
+     and dark gold in light (4.88:1), so it reads in both themes. */
+  color: var(--color-gold);
   font-variant-numeric: tabular-nums;
 }
 
@@ -64,7 +67,9 @@
 }
 
 .reading-stopwatch__label {
-  color: #d7c58c;
+  /* Same fix as the stopwatch time: the old muted gold was 1.38:1
+     on the light cream body. */
+  color: var(--color-gold);
   font-size: 0.65rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;

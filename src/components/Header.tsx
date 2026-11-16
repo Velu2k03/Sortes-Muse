@@ -82,7 +82,7 @@ const MOBILE_TABS: { label: string; href: string; section: readonly string[] }[]
 
 // Theme-color per active theme, kept in step with data-theme by
 // theme.js (before paint) and the Header toggle (on change).
-const THEME_COLORS = { dark: "#0a1526", light: "#fdf9ee" } as const;
+const THEME_COLORS = { dark: "#0f1424", light: "#ede6d6" } as const;
 function syncThemeColor(theme: "dark" | "light"): void {
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.setAttribute("content", THEME_COLORS[theme]);
@@ -182,7 +182,7 @@ export default function Header() {
   // attribute, and tells the theme-aware Western wheel to re-render
   // via a window event.
   // Phase 2, 2.5: the toggle also keeps the meta theme-color in step
-  // with the active theme (dark #0a1526, light #fdf9ee), so the
+  // with the active theme (dark #0f1424, light #ede6d6), so the
   // browser chrome matches the page; theme.js does the same before
   // paint for first load.
   const [theme, setTheme] = useState<"dark" | "light">("dark");
@@ -235,8 +235,8 @@ export default function Header() {
   // theme. The muted branch colour is overridden in globals.css
   // (.sortes-bm), since the component fixes it at 55% internally.
   // Still used by the mobile drawer, the only BranchedMenu left.
-  const bmColor = theme === "dark" ? "#faf6ec" : "#3a3325";
-  const bmAccent = theme === "dark" ? "#b9975b" : "#7c5e00";
+  const bmColor = theme === "dark" ? "#ede6d6" : "#3a3325";
+  const bmAccent = theme === "dark" ? "#d4af37" : "#7c5e00";
   const bmLine = theme === "dark" ? "rgba(212, 175, 55, 0.45)" : "rgba(124, 94, 0, 0.45)";
   const go = (value: string) => {
     setOpenGroup(null);

@@ -22,7 +22,7 @@ describe("Phase 2 3D hero and pricing preview", () => {
     expect(hero).toContain("/cards/major-01-magician.jpg");
     expect(hero).toContain("/cards/major-02-high-priestess.jpg");
     // Gold moon disc behind the cards.
-    expect(hero).toContain('color="#b9975b"');
+    expect(hero).toContain('color="#d4af37"');
     // Calm and slow: a gentle sway, never a spin.
     expect(hero).toContain("Math.sin(t * 0.22)");
     expect(hero).not.toContain("Math.PI * 2");

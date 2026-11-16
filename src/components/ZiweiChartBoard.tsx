@@ -87,8 +87,8 @@ function primaryStar(star: string, lang: ZiweiLanguage): string {
 // Glosses: in English mode Chinese characters are hidden by default
 // (showGlosses=false); in Chinese mode they are shown by default.
 // ChartsClient owns the toggle and resets it on language change.
-const RING_DARK = { bg: "#1a2a44", centre: "#0f1e36", sel: "#2e2410", hover: "#221d12", text: "#faf6ec", mist: "#9ca3af", gold: "#d6be8a", stroke: "#b9975b" };
-const RING_LIGHT = { bg: "#fffdf5", centre: "#fdf9ee", sel: "#f3ead3", hover: "#f7f0dc", text: "#1c1a15", mist: "#5c5a52", gold: "#7c5e00", stroke: "#8a6d0a" };
+const RING_DARK = { bg: "#1a1f2e", centre: "#141b2e", sel: "#2e2410", hover: "#221d12", text: "#ede6d6", mist: "#9ca3af", gold: "#f4d03f", stroke: "#d4af37" };
+const RING_LIGHT = { bg: "#fffdf5", centre: "#ede6d6", sel: "#f3ead3", hover: "#f7f0dc", text: "#1c1a15", mist: "#5c5a52", gold: "#7c5e00", stroke: "#7c5e00" };
 
 export default function ZiweiChartBoard({ result, lang = "en", view = "ring", showGlosses }: { result: ZiweiResult; lang?: ZiweiLanguage; view?: ZiweiView; showGlosses?: boolean }) {
   const t = LABELS[lang];

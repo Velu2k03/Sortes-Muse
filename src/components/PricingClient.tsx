@@ -264,7 +264,7 @@ export default function PricingClient({
               data-tier={tier.id}
               className={`relative h-full rounded-3xl ${
                 tier.id === "star"
-                  ? "min-[960px]:-translate-y-4 shadow-[0_24px_48px_-24px_rgba(185,151,91,0.55)]"
+                  ? "min-[960px]:-translate-y-4 shadow-[0_24px_48px_-24px_rgba(212,175,55,0.55)]"
                   : ""
               }`}
             >

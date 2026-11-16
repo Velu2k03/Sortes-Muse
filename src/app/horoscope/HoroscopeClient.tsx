@@ -159,7 +159,7 @@ export default function HoroscopeClient({
                 defaultSelected={SUN_SIGNS.indexOf(sign)}
                 onChange={(index) => { setSign(SUN_SIGNS[index]); resetReveal(); }}
                 textColor={siteTheme === "light" ? "#45423c" : "#9ca3af"}
-                activeColor={siteTheme === "light" ? "#7c5e00" : "#d6be8a"}
+                activeColor={siteTheme === "light" ? "#7c5e00" : "#f4d03f"}
               />
             </div>
           )}
@@ -180,10 +180,10 @@ export default function HoroscopeClient({
           value={view}
           onChange={(v) => { setView(v as "daily" | "weekly"); resetReveal(); }}
           aria-label="Daily or weekly"
-          trackColor={siteTheme === "light" ? "#ffffff" : "#1a2a44"}
-          thumbColor="#b9975b"
+          trackColor={siteTheme === "light" ? "#ffffff" : "#1a1f2e"}
+          thumbColor="#d4af37"
           textColor={siteTheme === "light" ? "#45423c" : "#9ca3af"}
-          activeTextColor="#0a1526"
+          activeTextColor="#0f1424"
           className={siteTheme === "light" ? "ring-1 ring-gold/25" : ""}
         />
       </div>

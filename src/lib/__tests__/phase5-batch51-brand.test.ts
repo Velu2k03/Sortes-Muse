@@ -4,17 +4,21 @@ import { describe, expect, it } from "vitest";
 
 const src = (rel: string) => readFileSync(path.resolve(process.cwd(), rel), "utf8");
 
-// The old brand palette. None of these hex values may appear anywhere in
-// src (outside tests). The new palette lives in src/lib/brand.ts and in
-// globals.css @theme.
+// The bronze brand palette (Phase 1, 2026-11-15), retired by Velu's
+// 2026-11-16 palette change. None of these hex values may appear
+// anywhere in src (outside tests). The new palette lives in
+// src/lib/brand.ts and in globals.css @theme.
 const OLD_HEX = [
-  "#d4af37", // old gold
-  "#f4d03f", // old bright gold
-  "#e8c55a", // old light gold
-  "#1a1f2e", // old panel navy
-  "#0f1424", // old navy
-  "#0a0e1a", // old deep navy
-  "#ede6d6", // old cream
+  "#b9975b", // old gold (bronze)
+  "#d6be8a", // old bright gold
+  "#0f1e36", // old navy
+  "#0a1526", // old navydeep
+  "#1a2a44", // old panel navy
+  "#0b1424", // old ink
+  "#faf6ec", // old cream
+  "#e8d5a4", // old wordmark top stop
+  "#9a7f45", // old wordmark / button bottom stop
+  "#8a6d0a", // old light gold
 ];
 
 function walk(dir: string, out: string[] = []): string[] {
@@ -47,12 +51,12 @@ describe("Phase 5 Batch 5.1 old-brand hex sweep", () => {
 
   it("brand.ts holds the new palette and the share/email code uses it", () => {
     const brand = src("src/lib/brand.ts");
-    expect(brand).toContain('navy: "#0f1e36"');
-    expect(brand).toContain('gold: "#b9975b"');
-    expect(brand).toContain('goldBright: "#d6be8a"');
-    expect(brand).toContain('cream: "#faf6ec"');
-    expect(brand).toContain('panel: "#1a2a44"');
-    expect(brand).toContain('navyDeep: "#0a1526"');
+    expect(brand).toContain('navy: "#141b2e"');
+    expect(brand).toContain('gold: "#d4af37"');
+    expect(brand).toContain('goldBright: "#f4d03f"');
+    expect(brand).toContain('cream: "#ede6d6"');
+    expect(brand).toContain('panel: "#1a1f2e"');
+    expect(brand).toContain('navyDeep: "#0f1424"');
     // The share story PNG and the win-back email read the palette from
     // brand.ts instead of hardcoding hex.
     expect(src("src/components/ShareReading.tsx")).toContain("BRAND");

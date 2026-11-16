@@ -39,9 +39,9 @@ describe("Phase 3 Batch 3.4 daily card", () => {
 
   it("takes the foil colour from the brand token, not the old gold", () => {
     expect(daily).toContain('foilColor="var(--color-gold)"');
-    expect(daily).not.toContain('foilColor="#d4af37"');
+    expect(daily).not.toContain('foilColor="#b9975b"');
     // The enlarged card in the modal is the same card, same fix.
     expect(modal).toContain('foilColor="var(--color-gold)"');
-    expect(modal).not.toContain('foilColor="#d4af37"');
+    expect(modal).not.toContain('foilColor="#b9975b"');
   });
 });

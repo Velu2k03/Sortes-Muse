@@ -12,7 +12,7 @@ import { CARD_BACK } from "@/lib/tarot";
 // in the diagram itself is text that can shrink. The container sizes
 // itself from the layout's aspect ratio, so it can never be squeezed
 // flat again: width is capped per shape, height follows.
-const GOLD = "#b9975b";
+const GOLD = "#d4af37";
 
 interface PlacedCard {
   key: string;
