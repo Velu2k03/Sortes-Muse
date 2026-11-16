@@ -25,14 +25,14 @@ export const metadata: Metadata = {
     title: "Page not found",
     description:
       "That Sortes page does not exist. Try a daily card, a reading, the deck, a birth chart, or a guide instead.",
-    images: [{ url: "/og-image.jpg?v=2", width: 1200, height: 630, alt: "Sortes" }],
+    images: [{ url: "/og-image.jpg?v=4", width: 1200, height: 630, alt: "Sortes" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "Page not found",
     description:
       "That Sortes page does not exist. Try a daily card, a reading, the deck, a birth chart, or a guide instead.",
-    images: ["/og-image.jpg?v=2"],
+    images: ["/og-image.jpg?v=4"],
   },
 };
 

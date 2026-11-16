@@ -20,7 +20,7 @@ export function pageSocial({
   // Batch 4c: ?v=3 cache-buster. The old og-image.jpg was an empty
   // frame live for ~6 weeks; scrapers that cached it by URL would
   // keep showing the blank frame. A new URL forces a re-scrape.
-  const img = image ?? "/og-image.jpg?v=3";
+  const img = image ?? "/og-image.jpg?v=4";
   return {
     openGraph: {
       type: "website",

@@ -59,13 +59,13 @@ export const metadata: Metadata = {
     siteName: APP_NAME,
     title: "Free tarot reading online, with AI interpretation",
     description: SITE_DESCRIPTION,
-    images: [{ url: "/og-image.jpg?v=3", width: 1200, height: 630, alt: APP_NAME }],
+    images: [{ url: "/og-image.jpg?v=4", width: 1200, height: 630, alt: APP_NAME }],
   },
   twitter: {
     card: "summary_large_image",
     title: "Free tarot reading online, with AI interpretation",
     description: SITE_DESCRIPTION,
-    images: ["/og-image.jpg?v=3"],
+    images: ["/og-image.jpg?v=4"],
   },
   icons: {
     icon: [

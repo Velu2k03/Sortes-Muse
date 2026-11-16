@@ -30,15 +30,18 @@ describe("Phase 5 Batch 5.2 favicon and icons", () => {
 
   it("the icon SVG uses the new brand colours, not the old gold", () => {
     const svg = src("public/icon.svg");
-    expect(svg).toContain("#b9975b");
-    expect(svg).toContain("#0a1526");
-    expect(svg).not.toContain("#d4af37");
+    expect(svg).toContain("#d4af37");
+    expect(svg).toContain("#f4d03f");
+    expect(svg).toContain("#0f1424");
+    expect(svg).not.toContain("#b9975b");
+    expect(svg).not.toContain("#d6be8a");
+    expect(svg).not.toContain("#0a1526");
     expect(svg).not.toContain("#0a0e1a");
   });
 
   it("layout references the new og-image and the icon files", () => {
     const layout = src("src/app/layout.tsx");
-    expect(layout).toContain("/og-image.jpg?v=3");
+    expect(layout).toContain("/og-image.jpg?v=4");
     expect(layout).toContain("/favicon-16x16.png");
     expect(layout).toContain("/favicon-32x32.png");
     expect(layout).toContain("/apple-touch-icon.png");
