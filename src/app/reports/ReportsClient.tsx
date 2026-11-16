@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import ReadingText from "@/components/ReadingText";
-import { BRAND } from "@/lib/brand";
 import { useAuth } from "@/components/AuthProvider";
 import RubberSegment from "@/components/RubberSegment";
 import SpecularButton from "@/components/SpecularButton";
@@ -495,7 +494,7 @@ export default function ReportsClient() {
           trackColor="var(--color-panel)"
           thumbColor="var(--color-gold)"
           textColor="var(--color-mist)"
-          activeTextColor={BRAND.navyDeep}
+          activeTextColor="var(--color-ink)"
           className={siteTheme === "light" ? "ring-1 ring-gold/25" : ""}
         />
       </div>

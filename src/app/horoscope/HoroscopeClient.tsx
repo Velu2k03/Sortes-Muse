@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { dailyHoroscope, weeklyHoroscope, SUN_SIGNS, type SunSign } from "@/lib/daily";
-import { BRAND } from "@/lib/brand";
 import Icon from "@/components/Icon";
 import ThemedDatePicker from "@/components/ThemedDatePicker";
 import AnimatedContent from "@/components/AnimatedContent";
@@ -176,7 +175,7 @@ export default function HoroscopeClient({
           trackColor="var(--color-panel)"
           thumbColor="var(--color-gold)"
           textColor="var(--color-mist)"
-          activeTextColor={BRAND.navyDeep}
+          activeTextColor="var(--color-ink)"
           className={siteTheme === "light" ? "ring-1 ring-gold/25" : ""}
         />
       </div>

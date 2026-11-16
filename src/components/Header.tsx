@@ -421,7 +421,7 @@ export default function Header() {
       {mobileOpen && (
         <nav
           id="mobile-nav"
-          className="max-h-[calc(100dvh-4rem)] overflow-y-auto border-t border-gold/15 bg-ink/95 px-4 py-3 lg:hidden"
+          className="max-h-[calc(100dvh-4rem)] overflow-y-auto overscroll-contain border-t border-gold/15 bg-ink/95 px-4 py-3 lg:hidden"
           aria-label="Mobile"
         >
           <BranchedMenu

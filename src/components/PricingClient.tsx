@@ -160,7 +160,9 @@ export default function PricingClient({
     // three columns start near 1000px rather than 640px.
     <Section variant="transparent" maxWidth="64rem" padding={8} paddingInline={4} className="mx-auto">
       <VStack gap={0} className="text-center">
-        <p className="text-sm text-gold">Pricing</p>
+        {/* UX audit Phase 2, F14 (Hallmark re-run): the "Pricing"
+            eyebrow above the H1 is gone. The H1 already says what
+            the page is, and Hallmark gate 54 is never an eyebrow. */}
         <h1 className="mt-3 font-display text-5xl text-goldbright sm:text-6xl">
           Choose your plan
         </h1>

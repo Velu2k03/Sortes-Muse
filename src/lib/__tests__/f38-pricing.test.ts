@@ -31,4 +31,9 @@ describe("F38 pricing says each thing once", () => {
     expect(c).toContain('"Everything in Spark"');
     expect(c).toContain('"Everything in Star"');
   });
+
+  it("has no Pricing eyebrow above the H1 (F14, Hallmark gate 54)", () => {
+    const c = src("src/components/PricingClient.tsx");
+    expect(c).not.toContain('<p className="text-sm text-gold">Pricing</p>');
+  });
 });
