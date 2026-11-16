@@ -114,10 +114,12 @@ describe("POST /api/reading/generate — first free Quick Insight", () => {
     vi.clearAllMocks();
     resetRateLimits();
     process.env.OPENROUTER_API_KEY = "test-key";
+    // D5 REHEARSAL BRANCH ONLY: flag ON prices a 1-card reading at
+    // 100 credits, so the shared mock balance is 1000 (was 5 Oracles).
     mockedGetUserById.mockResolvedValue({
       id: "u1",
       email: "a@b.co",
-      credits: 5,
+      credits: 1000,
       created_at: "2026-11-05T00:00:00Z",
     });
     mockedHasUsedFree.mockResolvedValue(false);
@@ -145,7 +147,8 @@ describe("POST /api/reading/generate — first free Quick Insight", () => {
     const { done: data } = await readRouteSse(res);
     expect(data?.free).toBe(true);
     expect(data?.interpretation).toContain("The Fool");
-    expect(mockedSave).toHaveBeenCalledWith("u1", expect.objectContaining({ interpretation: expect.stringContaining("The Fool") }), true, undefined, 1);
+    // D5 REHEARSAL BRANCH ONLY: flag ON, a Quick Insight costs 100 credits (was 1 Oracle).
+    expect(mockedSave).toHaveBeenCalledWith("u1", expect.objectContaining({ interpretation: expect.stringContaining("The Fool") }), true, undefined, 100);
   });
 
   it("charges a signed-in user on the second Quick Insight", async () => {
@@ -154,7 +157,7 @@ describe("POST /api/reading/generate — first free Quick Insight", () => {
     const res = await POST(req(body("quick-insight"), "10.0.0.2"));
     expect(res.status).toBe(200);
     expect((await readRouteSse(res)).done?.free).toBe(false);
-    expect(mockedSave).toHaveBeenCalledWith("u1", expect.objectContaining({ interpretation: expect.stringContaining("The Fool") }), false, undefined, 1);
+    expect(mockedSave).toHaveBeenCalledWith("u1", expect.objectContaining({ interpretation: expect.stringContaining("The Fool") }), false, undefined, 100);
   });
 
   // Phase B (R7): the free claim is atomic. When a concurrent
@@ -169,7 +172,8 @@ describe("POST /api/reading/generate — first free Quick Insight", () => {
     const { done: data } = await readRouteSse(res);
     expect(data?.free).toBe(false);
     expect(data?.interpretation).toContain("The Fool");
-    expect(mockedSave).toHaveBeenCalledWith("u1", expect.objectContaining({ interpretation: expect.stringContaining("The Fool") }), true, undefined, 1);
+    // D5 REHEARSAL BRANCH ONLY: flag ON, a Quick Insight costs 100 credits (was 1 Oracle).
+    expect(mockedSave).toHaveBeenCalledWith("u1", expect.objectContaining({ interpretation: expect.stringContaining("The Fool") }), true, undefined, 100);
   });
 
   it("returns 402 when the lost-race spend cannot be covered", async () => {
@@ -194,18 +198,20 @@ describe("POST /api/reading/generate — first free Quick Insight", () => {
       .mockResolvedValueOnce({
         id: "u1",
         email: "a@b.co",
-        credits: 5,
+        // D5 REHEARSAL BRANCH ONLY: flag ON, the pre-check balance is
+        // 1000 credits and the post-spend balance is 900 (was 5 and 4 Oracles).
+        credits: 1000,
         created_at: "2026-11-05T00:00:00Z",
       })
       .mockResolvedValueOnce({
         id: "u1",
         email: "a@b.co",
-        credits: 4,
+        credits: 900,
         created_at: "2026-11-05T00:00:00Z",
       });
     const res = await POST(req(body("quick-insight"), "10.0.0.4"));
     expect(res.status).toBe(200);
-    expect((await readRouteSse(res)).done?.credits).toBe(4);
+    expect((await readRouteSse(res)).done?.credits).toBe(900);
   });
 
   it("blocks the second Quick Insight with 402 when the balance cannot cover it", async () => {
@@ -233,7 +239,9 @@ describe("POST /api/reading/generate — first free Quick Insight", () => {
     });
     const res = await POST(req(body("quick-insight"), "10.0.0.7"));
     expect(res.status).toBe(402);
-    expect((await res.json()).error).toContain("No Oracle was spent");
+    // D5 REHEARSAL BRANCH ONLY: the flag-ON pre-check denial reads
+    // "You need 100 credits for this reading. No credits were spent."
+    expect((await res.json()).error).toContain("No credits were spent");
     expect(globalThis.fetch).not.toHaveBeenCalled();
     expect(mockedSave).not.toHaveBeenCalled();
   });
@@ -243,7 +251,8 @@ describe("POST /api/reading/generate — first free Quick Insight", () => {
     const res = await POST(req(body("past-present-future"), "10.0.0.4"));
     expect(res.status).toBe(200);
     expect((await readRouteSse(res)).done?.free).toBe(false);
-    expect(mockedSave).toHaveBeenCalledWith("u1", expect.objectContaining({ interpretation: expect.stringContaining("The Fool") }), false, undefined, 1);
+    // D5 REHEARSAL BRANCH ONLY: flag ON, a 3-card spread costs 200 credits (was 1 Oracle).
+    expect(mockedSave).toHaveBeenCalledWith("u1", expect.objectContaining({ interpretation: expect.stringContaining("The Fool") }), false, undefined, 200);
   });
 
   // Batch 2b: the route streams, so it cannot set the guest-free
@@ -340,7 +349,9 @@ describe("POST /api/reading/generate — first free Quick Insight", () => {
   // signed-in user's first-ever Celtic Cross is NOT free. serverFree
   // requires isQuickInsight, so the route asks for a spend (tryFree=false)
   // and never touches the free grant.
-  it("signed-in first-ever Celtic Cross spends 1: route calls save with tryFree=false", async () => {
+  // D5 REHEARSAL BRANCH ONLY: a Celtic Cross (10 cards) costs 300 credits
+  // with the flag ON (was 1 Oracle).
+  it("signed-in first-ever Celtic Cross spends 300 credits: route calls save with tryFree=false", async () => {
     mockedGetSession.mockResolvedValue({ userId: "u1", email: "a@b.co" });
     mockedHasUsedFree.mockResolvedValue(false);
     const res = await POST(req(body("celtic-cross"), "10.0.0.13"));

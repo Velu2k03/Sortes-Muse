@@ -135,7 +135,9 @@ describe("POST /api/reading/follow-up", () => {
         { question: "First?", answer: "First answer.", createdAt: "2026-11-05T00:00:00.000Z", free: true },
       ],
     });
-    mockedGetUserById.mockResolvedValue({ id: "u-1", email: "a@example.com", credits: 5, created_at: "" });
+    // D5 REHEARSAL BRANCH ONLY: flag ON, a follow-up costs 50 credits,
+    // so the mock balance is 1000 (was 5 Oracles).
+    mockedGetUserById.mockResolvedValue({ id: "u-1", email: "a@example.com", credits: 1000, created_at: "" });
     mockedAppend.mockResolvedValue({
       ok: true,
       followUps: [
@@ -150,11 +152,12 @@ describe("POST /api/reading/follow-up", () => {
     const data = await res.json();
     expect(data.free).toBe(false);
     expect(data.followUps).toHaveLength(2);
+    // D5 REHEARSAL BRANCH ONLY: flag ON, the append cost is 50 credits (was 1 Oracle).
     expect(mockedAppend).toHaveBeenCalledWith(
       "u-1",
       "r-1",
       expect.objectContaining({ question: "And now?" }),
-      1,
+      50,
       3,
       false,
       undefined
@@ -217,7 +220,10 @@ describe("POST /api/reading/follow-up", () => {
         { question: "First?", answer: "First answer.", createdAt: "2026-11-05T00:00:00.000Z", free: true },
       ],
     });
-    mockedGetUserById.mockResolvedValue({ id: "u-1", email: "a@example.com", credits: 5, created_at: "" });
+    // D5 REHEARSAL BRANCH ONLY: flag ON, a follow-up costs 50 credits,
+    // so the mock balance is 1000 (was 5 Oracles) or the pre-check 402s
+    // before generation and the append never runs.
+    mockedGetUserById.mockResolvedValue({ id: "u-1", email: "a@example.com", credits: 1000, created_at: "" });
     mockedAppend.mockResolvedValue({ ok: false, reason: "limit" });
     const res = await POST(
       req({ question: "And now?", readingId: "r-1" }, "10.0.4.3")

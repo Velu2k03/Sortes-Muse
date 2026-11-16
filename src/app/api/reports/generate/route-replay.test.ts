@@ -28,7 +28,9 @@ describe("POST /api/reports/generate — idempotent reportId", () => {
     vi.clearAllMocks();
     process.env.OPENROUTER_API_KEY = "test-key";
     vi.mocked(getSession).mockResolvedValue({ userId: "u1", email: "a@b.co" });
-    vi.mocked(getUserById).mockResolvedValue({ id: "u1", email: "a@b.co", credits: 2, created_at: "x" });
+    // D5 REHEARSAL BRANCH ONLY: flag ON prices a report at 300 credits,
+    // so the mock balance is 1000 (was 2 Oracles).
+    vi.mocked(getUserById).mockResolvedValue({ id: "u1", email: "a@b.co", credits: 1000, created_at: "x" });
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ choices: [{ message: { content: "A report body." } }], model: "t/m:free" }),
@@ -51,7 +53,8 @@ describe("POST /api/reports/generate — idempotent reportId", () => {
     expect(res.status).toBe(200);
     const data = await res.json();
     expect(data.report).toEqual(prior);
-    expect(data.credits).toBe(2);
+    // D5 REHEARSAL BRANCH ONLY: the replay echoes the mock balance, 1000 credits (was 2 Oracles).
+    expect(data.credits).toBe(1000);
     expect(globalThis.fetch).not.toHaveBeenCalled();
     expect(saveReportWithSpend).not.toHaveBeenCalled();
   });

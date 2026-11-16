@@ -39,7 +39,9 @@ describe("POST /api/reading/generate — idempotent readingId", () => {
     process.env.OPENROUTER_API_KEY = "test-key";
     vi.mocked(getSession).mockResolvedValue({ userId: "u1", email: "a@b.co" });
     vi.mocked(hasUsedFreeReading).mockResolvedValue(true);
-    vi.mocked(getUserById).mockResolvedValue({ id: "u1", email: "a@b.co", credits: 3, created_at: "x" });
+    // D5 REHEARSAL BRANCH ONLY: flag ON prices a Celtic Cross at
+    // 300 credits, so the mock balance is 1000 (was 3 Oracles).
+    vi.mocked(getUserById).mockResolvedValue({ id: "u1", email: "a@b.co", credits: 1000, created_at: "x" });
     vi.stubGlobal("fetch", vi.fn());
   });
   afterEach(() => {
@@ -61,7 +63,8 @@ describe("POST /api/reading/generate — idempotent readingId", () => {
     const { done: data } = await readRouteSse(res);
     expect(data?.reading).toEqual(prior);
     expect(data?.interpretation).toBe("saved text");
-    expect(data?.credits).toBe(3);
+    // D5 REHEARSAL BRANCH ONLY: the replay echoes the mock balance, 1000 credits (was 3 Oracles).
+    expect(data?.credits).toBe(1000);
     expect(getReadingForUser).toHaveBeenCalledWith("u1", ID);
     expect(globalThis.fetch).not.toHaveBeenCalled();
     expect(saveReadingWithSpend).not.toHaveBeenCalled();

@@ -212,7 +212,10 @@ describe("trust: no charge for failed results", () => {
     resetRateLimits();
     process.env.OPENROUTER_API_KEY = "test-key";
     mockedGetSession.mockResolvedValue({ userId: "u-1", email: "a@example.com" });
-    mockedGetUserById.mockResolvedValue({ id: "u-1", email: "a@example.com", credits: 5, created_at: "" });
+    // D5 REHEARSAL BRANCH ONLY: flag ON prices the four routes at
+    // 200/50/300/300 credits, so the mock balance is 1000 (was 5 Oracles)
+    // or the pre-check 402s before any generation runs.
+    mockedGetUserById.mockResolvedValue({ id: "u-1", email: "a@example.com", credits: 1000, created_at: "" });
     mockedSpend.mockResolvedValue(true);
     mockedHasUsedFree.mockResolvedValue(false);
     mockedHasUsedFreeInterp.mockResolvedValue(true);

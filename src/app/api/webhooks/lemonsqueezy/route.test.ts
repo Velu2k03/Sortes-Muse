@@ -155,8 +155,8 @@ describe("POST /api/webhooks/lemonsqueezy", () => {
       amount: 3.99,
       readings: 5,
       orderId: "ord_1",
-      // Phase 2 batch 3: packs grant Oracles while the flag is OFF.
-      grantUnit: "oracles",
+      // D5 REHEARSAL BRANCH ONLY: flag ON, packs grant credits (was Oracles while the flag was OFF).
+      grantUnit: "credits",
     });
   });
 
@@ -203,8 +203,8 @@ describe("POST /api/webhooks/lemonsqueezy", () => {
       amount: 3.99,
       readings: 5,
       orderId: "ord_1",
-      // Phase 2 batch 3: packs grant Oracles while the flag is OFF.
-      grantUnit: "oracles",
+      // D5 REHEARSAL BRANCH ONLY: flag ON, packs grant credits (was Oracles while the flag was OFF).
+      grantUnit: "credits",
     });
     expect(mockedGetUserByEmail).not.toHaveBeenCalled();
     expect(mockedCreateUser).not.toHaveBeenCalled();

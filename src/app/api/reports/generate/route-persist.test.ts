@@ -31,7 +31,9 @@ describe("POST /api/reports/generate — persists with the spend", () => {
     vi.clearAllMocks();
     process.env.OPENROUTER_API_KEY = "test-key";
     vi.mocked(getSession).mockResolvedValue({ userId: "u1", email: "a@b.co" });
-    vi.mocked(getUserById).mockResolvedValue({ id: "u1", email: "a@b.co", credits: 2, created_at: "2026-11-05T00:00:00Z" });
+    // D5 REHEARSAL BRANCH ONLY: flag ON prices a report at 300 credits,
+    // so the mock balance is 1000 (was 2 Oracles).
+    vi.mocked(getUserById).mockResolvedValue({ id: "u1", email: "a@b.co", credits: 1000, created_at: "2026-11-05T00:00:00Z" });
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue({
