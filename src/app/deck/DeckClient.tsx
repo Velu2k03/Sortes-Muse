@@ -142,7 +142,7 @@ export default function DeckClient({
               if (debounceRef.current) clearTimeout(debounceRef.current);
               debounceRef.current = setTimeout(() => syncUrl({ q: v }), 300);
             }}
-            placeholder="Search cards, e.g. moon, strength…"
+            placeholder="Search cards, e.g. moon"
             className="min-w-52 flex-1 rounded-xl border border-gold/25 bg-panel/70 px-4 py-2.5 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold sm:max-w-xs"
           />
           {/* Validator fix (kept): these are filter toggles, not tabs,

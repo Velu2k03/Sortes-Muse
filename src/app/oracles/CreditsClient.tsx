@@ -164,9 +164,9 @@ export default function CreditsPage() {
       </p>
 
       {/* Phase E (item 9): the same full sample reading as the home
-          page, so visitors weighing a pack see exactly what a reading
+          page, so visitors weighing a top-up see exactly what a reading
           reads like before they spend anything. Batch 6c: collapsed
-          behind one tap, so the packs (the page's purpose) come
+          behind one tap, so the top-ups (the page's purpose) come
           first instead of 600 words of sample. */}
       <SampleReading collapsed />
     </div>

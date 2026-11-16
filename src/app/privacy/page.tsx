@@ -46,7 +46,7 @@ export default function PrivacyPage() {
             </li>
             <li>
               <strong>Purchase data:</strong> for every transaction we store
-              your email, the pack type, the amount, and the date.
+              your email, the top-up or subscription type, the amount, and the date.
             </li>
             <li>
               <strong>Reading intake:</strong> for personalized readings you
@@ -175,7 +175,7 @@ export default function PrivacyPage() {
                 </tr>
                 <tr className="border-b border-gold/10">
                   <td className="py-2 pr-4">Lemon Squeezy</td>
-                  <td className="py-2">Payments for Oracle packs</td>
+                  <td className="py-2">Payments for Oracle top-ups and subscriptions</td>
                 </tr>
                 <tr className="border-b border-gold/10">
                   <td className="py-2 pr-4">Google</td>

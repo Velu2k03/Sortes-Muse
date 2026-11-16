@@ -42,6 +42,7 @@
   --shadow-card: 0 8px 24px rgb(0 0 0 / 0.45);
   --shadow-card-lg: 0 8px 30px rgb(0 0 0 / 0.6);
   --shadow-gold: 0 0 24px rgb(212 175 55 / 0.25);
+  --shadow-gold-lg: 0 24px 48px -24px rgb(212 175 55 / 0.55);
 
   --font-display: "Cormorant Garamond", "Times New Roman", Georgia, serif;
   --font-body: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;

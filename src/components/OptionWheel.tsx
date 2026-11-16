@@ -328,7 +328,7 @@ const OptionWheel = ({
 
   const step = (delta: number) => applyTarget(Math.round(targetRef.current) + delta, true);
   const stepBtn =
-    'absolute right-2 z-10 h-9 w-9 rounded-full border border-gold/30 bg-panel/80 text-cream hover:border-gold/60 focus-visible:outline-2 focus-visible:outline-gold';
+    'absolute right-2 z-10 h-11 w-11 rounded-full border border-gold/30 bg-panel/80 text-cream hover:border-gold/60 focus-visible:outline-2 focus-visible:outline-gold';
 
   return (
     <div className="relative h-full w-full overflow-hidden">

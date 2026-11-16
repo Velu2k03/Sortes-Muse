@@ -176,7 +176,7 @@ export default function PricingClient({
           type="button"
           aria-pressed={billing === "monthly"}
           onClick={() => setBilling("monthly")}
-          className={`rounded-l-full border px-5 py-2 text-sm font-semibold ${
+          className={`min-h-11 rounded-l-full border px-5 py-2 text-sm font-semibold ${
             billing === "monthly"
               ? "border-gold bg-gold text-ink"
               : "border-gold/40 bg-panel text-cream"
@@ -188,7 +188,7 @@ export default function PricingClient({
           type="button"
           aria-pressed={billing === "annual"}
           onClick={() => setBilling("annual")}
-          className={`rounded-r-full border px-5 py-2 text-sm font-semibold ${
+          className={`min-h-11 rounded-r-full border px-5 py-2 text-sm font-semibold ${
             billing === "annual"
               ? "border-gold bg-gold text-ink"
               : "border-gold/40 bg-panel text-cream"
@@ -250,6 +250,7 @@ export default function PricingClient({
                     isDisabled={!subscriptionsEnabled}
                     isLoading={processing === `${tier.id}-${billing}`}
                     width="100%"
+                    className="min-h-11"
                     onClick={() => void checkout("subscription", `${tier.id}-${billing}`)}
                   />
                 </div>
@@ -261,9 +262,7 @@ export default function PricingClient({
               key={tier.id}
               data-tier={tier.id}
               className={`relative h-full rounded-3xl ${
-                tier.id === "star"
-                  ? "min-[960px]:-translate-y-4 shadow-[0_24px_48px_-24px_rgba(212,175,55,0.55)]"
-                  : ""
+                tier.id === "star" ? "shadow-gold-lg" : ""
               }`}
             >
               {tier.id === "star" ? (
@@ -335,7 +334,7 @@ export default function PricingClient({
                   isLoading={processing === `topup-${topup.credits}`}
                   width="100%"
                   onClick={() => void checkout("topup", `topup-${topup.credits}`)}
-                  className="mt-4"
+                  className="mt-4 min-h-11"
                 />
               </VStack>
             </Card>

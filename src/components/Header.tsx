@@ -248,7 +248,11 @@ export default function Header() {
                   aria-expanded={isOpen}
                   aria-haspopup="menu"
                   aria-controls={`nav-menu-${g.label.toLowerCase()}`}
-                  className={isOpen || isActive ? "text-sm font-semibold text-goldbright" : "text-sm text-cream/80 transition hover:text-goldbright"}
+                  className={
+                    isOpen || isActive
+                      ? "inline-flex min-h-11 items-center px-2 text-sm font-semibold text-goldbright"
+                      : "inline-flex min-h-11 items-center px-2 text-sm text-cream/80 transition hover:text-goldbright"
+                  }
                 >
                   {g.label}
                 </button>
@@ -307,7 +311,11 @@ export default function Header() {
           <Link
             href="/journal"
             aria-current={activeHref === "/journal" ? "page" : undefined}
-            className={activeHref === "/journal" ? "text-sm font-semibold text-goldbright" : "text-sm text-cream/80 transition hover:text-goldbright"}
+            className={
+              activeHref === "/journal"
+                ? "inline-flex min-h-11 items-center px-2 text-sm font-semibold text-goldbright"
+                : "inline-flex min-h-11 items-center px-2 text-sm text-cream/80 transition hover:text-goldbright"
+            }
           >
             Journal
           </Link>
@@ -386,7 +394,7 @@ export default function Header() {
           ) : (
             <Link
               href="/account"
-              className="hidden rounded-full px-4 py-1.5 text-sm font-semibold text-cream/80 transition hover:text-goldbright lg:inline-block"
+              className="hidden min-h-11 items-center rounded-full px-4 py-1.5 text-sm font-semibold text-cream/80 transition hover:text-goldbright lg:inline-flex"
             >
               Sign in
             </Link>

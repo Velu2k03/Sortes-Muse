@@ -34,7 +34,7 @@ export default function AboutPage() {
             a daily sun-sign reflection, and three birth chart systems
             (Ziwei, Western, Vedic). First Quick Insight and first chart
             interpretation per system are free; later readings cost 1 Oracle
-            each, in packs sold through Lemon Squeezy.
+            each, topped up through Lemon Squeezy.
           </p>
         </section>
         <section>
