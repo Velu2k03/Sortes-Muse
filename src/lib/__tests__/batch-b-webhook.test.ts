@@ -146,6 +146,39 @@ describe("handleSubscriptionWebhook", () => {
     expect(mockedGrantMonthlyCredits).not.toHaveBeenCalled();
   });
 
+  it("subscription_created accepts the real Lemon Squeezy shape (top-level variant_id, price_id only in the item)", async () => {
+    // D5 REHEARSAL BRANCH ONLY. The real API puts the variant at
+    // data.attributes.variant_id; first_subscription_item carries
+    // only id/price_id/quantity, no variant_id. The old code read
+    // the variant from the item and rejected every real event
+    // with "Subscription could not be verified." (6.5 Part B,
+    // 2026-11-16). This test pins the real shape.
+    const realShape = {
+      data: {
+        id: "sub_1",
+        attributes: {
+          status: "active",
+          store_id: 42,
+          customer_id: 7,
+          variant_id: "s3",
+          first_subscription_item: { id: 10822345, price_id: 4017276, quantity: 1, is_usage_based: false, subscription_id: "sub_1" },
+          renews_at: "2026-12-15T00:00:00.000Z",
+          ends_at: null,
+          created_at: "2026-11-15T00:00:00.000Z",
+          urls: { customer_portal: "https://example.com/portal" },
+        },
+      },
+    };
+    stubFetch(realShape, null);
+    const result = await handleSubscriptionWebhook("subscription_created", {
+      meta: { event_name: "subscription_created", custom_data: { user_id: "u1" } },
+      data: { id: "sub_1", attributes: { store_id: 42 } },
+    });
+    expect(result.status).toBe(200);
+    expect(mockedUpsertSubscription).toHaveBeenCalledTimes(1);
+    expect(mockedGrantMonthlyCredits).not.toHaveBeenCalled();
+  });
+
   it("subscription_payment_success (initial) grants the first month", async () => {
     stubFetch(subscriptionJson("sub_1"), invoiceJson("inv_1"));
     const result = await handleSubscriptionWebhook("subscription_payment_success", {

@@ -2,6 +2,7 @@ import {
   getSubscription,
   getSubscriptionInvoice,
   subscriptionVariantForId,
+  subscriptionVariantId,
   verifyApiSubscription,
   verifyApiSubscriptionInvoice,
 } from "./lemonsqueezy";
@@ -81,6 +82,7 @@ interface SubscriptionAttrs {
   status?: string;
   store_id?: number | string;
   customer_id?: number | string;
+  variant_id?: number | string;
   first_subscription_item?: { variant_id?: number | string };
   renews_at?: string | null;
   ends_at?: string | null;
@@ -144,7 +146,7 @@ async function upsertFromSubscriptionAttrs(
   attrs: SubscriptionAttrs,
   periodStart?: string | null
 ) {
-  const variant = subscriptionVariantForId(String(attrs.first_subscription_item?.variant_id ?? ""));
+  const variant = subscriptionVariantForId(subscriptionVariantId(attrs));
   if (!variant) throw new Error("Unrecognized subscription variant.");
   return upsertSubscription({
     userId,
@@ -230,7 +232,7 @@ export async function handleSubscriptionWebhook(
       return { status: 500, body: { error: "Subscription could not be verified." } };
     }
     const apiAttrs = (apiSub as { data: { attributes: SubscriptionAttrs } }).data.attributes;
-    const variant = subscriptionVariantForId(String(apiAttrs.first_subscription_item?.variant_id ?? ""));
+    const variant = subscriptionVariantForId(subscriptionVariantId(apiAttrs));
     if (!variant) return { status: 500, body: { error: "Unrecognized subscription variant." } };
     // The user email is not on the Subscription object; the
     // subscription row (from an earlier event) or custom_data
@@ -269,7 +271,7 @@ export async function handleSubscriptionWebhook(
       return { status: 500, body: { error: "Subscription could not be verified." } };
     }
     const apiAttrs = (apiSub as { data: { attributes: SubscriptionAttrs } }).data.attributes;
-    const variant = subscriptionVariantForId(String(apiAttrs.first_subscription_item?.variant_id ?? ""));
+    const variant = subscriptionVariantForId(subscriptionVariantId(apiAttrs));
     if (!variant) return { status: 500, body: { error: "Unrecognized subscription variant." } };
     const expectedTotal = expectedCentsForSubscription(variant.tier, variant.interval);
 

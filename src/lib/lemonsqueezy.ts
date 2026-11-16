@@ -502,6 +502,23 @@ export async function getSubscription(
 }
 
 /**
+ * Variant id for a subscription attributes object. Lemon Squeezy
+ * puts the variant at the top level (data.attributes.variant_id);
+ * the item inside first_subscription_item carries only a price_id,
+ * no variant_id. Older payloads carried the variant inside the
+ * item, so fall back to it. D5 REHEARSAL BRANCH ONLY: this fix is
+ * owed to the cutover, the D5 branch never merges.
+ */
+export function subscriptionVariantId(attrs: {
+  variant_id?: unknown;
+  first_subscription_item?: { variant_id?: unknown };
+}): string {
+  const top = attrs.variant_id;
+  const nested = attrs.first_subscription_item?.variant_id;
+  return String(top ?? nested ?? "");
+}
+
+/**
  * Does the subscription the API returned match the one the webhook
  * claims? Same id, same store, and a variant we sell. The status is
  * NOT required to be active here — cancelled/past_due/expired
@@ -520,10 +537,11 @@ export function verifyApiSubscription(
   if (!attributes || typeof attributes !== "object") return false;
   const attrs = attributes as {
     store_id?: unknown;
+    variant_id?: unknown;
     first_subscription_item?: { variant_id?: unknown };
   };
   if (String(attrs.store_id ?? "") !== expected.storeId) return false;
-  const variantId = String(attrs.first_subscription_item?.variant_id ?? "");
+  const variantId = subscriptionVariantId(attrs);
   return subscriptionVariantForId(variantId) !== null;
 }
 
