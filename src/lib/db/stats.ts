@@ -21,6 +21,7 @@ export async function countRecentReadings(days: number): Promise<number> {
 }
 
 // Win-back: users quiet for 7+ days who have not been nudged recently
+// and have not opted out (Batch 5.3, migration 012).
 export async function getWinbackCandidates(limit = 50): Promise<DbUser[]> {
   await ensureSchema();
   if (usePostgres) {
@@ -32,6 +33,7 @@ export async function getWinbackCandidates(limit = 50): Promise<DbUser[]> {
       WHERE (u.winback_sent_at IS NULL OR u.winback_sent_at < NOW() - INTERVAL '60 days')
         AND (r.created_at IS NULL OR r.created_at < NOW() - INTERVAL '7 days')
         AND u.created_at < NOW() - INTERVAL '7 days'
+        AND NOT COALESCE(u.winback_opted_out, FALSE)
       LIMIT ${limit}`;
     return rows as DbUser[];
   }
@@ -41,6 +43,7 @@ export async function getWinbackCandidates(limit = 50): Promise<DbUser[]> {
   const sixtyDays = now - 60 * 86400000;
   return db.users
     .filter((u) => {
+      if (u.winback_opted_out) return false;
       const sentAt = u.winback_sent_at ? new Date(u.winback_sent_at).getTime() : 0;
       if (sentAt > sixtyDays) return false;
       if (new Date(u.created_at).getTime() > sevenDays) return false;
@@ -51,6 +54,22 @@ export async function getWinbackCandidates(limit = 50): Promise<DbUser[]> {
       return !lastReading || lastReading < sevenDays;
     })
     .slice(0, limit);
+}
+
+// Batch 5.3: set the win-back opt-out flag. Used by the account toggle
+// and the one-click unsubscribe link.
+export async function setWinbackOptedOut(userId: string, optedOut: boolean): Promise<void> {
+  await ensureSchema();
+  if (usePostgres) {
+    await sql`UPDATE users SET winback_opted_out = ${optedOut} WHERE id = ${userId}`;
+    return;
+  }
+  const db = await readLocal();
+  const u = db.users.find((x) => x.id === userId);
+  if (u) {
+    u.winback_opted_out = optedOut;
+    await writeLocal(db);
+  }
 }
 
 export async function markWinbackSent(userId: string): Promise<void> {

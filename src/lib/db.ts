@@ -101,4 +101,5 @@ export {
   countRecentReadings,
   getWinbackCandidates,
   markWinbackSent,
+  setWinbackOptedOut,
 } from "./db/stats";

@@ -1,0 +1,13 @@
+-- 012_winback_opt_out.sql — Phase 5 Batch 5.3 (notifications honesty).
+--
+-- The win-back cron sends a marketing email with a "Reply STOP" line to
+-- a noreply sender, so there was no working opt-out. This adds the
+-- opt-out flag the account toggle and the one-click unsubscribe link
+-- write to. Default FALSE: existing users keep receiving the win-back
+-- until they opt out.
+--
+-- Rollback: migrations/rollback/012_winback_opt_out.sql
+-- (DROP COLUMN winback_opted_out). The column carries no data worth
+-- preserving: it is a preference, and dropping it resets everyone to
+-- receiving the win-back.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS winback_opted_out BOOLEAN NOT NULL DEFAULT FALSE;

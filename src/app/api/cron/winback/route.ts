@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
   const failed: string[] = [];
   for (const u of candidates) {
     try {
-      await sendWinbackEmail(u.email);
+      await sendWinbackEmail(u.email, u.id);
       await markWinbackSent(u.id);
       sent++;
     } catch (e) {

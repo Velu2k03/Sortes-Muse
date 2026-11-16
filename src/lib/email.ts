@@ -13,6 +13,7 @@
  * src/lib/brand.ts (Batch 5.1).
  */
 import { BRAND } from "./brand";
+import { unsubscribeUrl } from "./unsubscribe";
 export function localDevCodeEnabled(): boolean {
   return (
     process.env.SORTES_LOCAL_DEV_CODE === "1" &&
@@ -60,8 +61,14 @@ export async function sendSignInCode(
 /**
  * Win-back email: one gentle nudge to users quiet for 7+ days.
  * Sent by the daily /api/cron/winback job. Dev without a key: logs only.
+ *
+ * Batch 5.3: the email now carries a working opt-out. The footer links
+ * to a signed one-click unsubscribe URL (see src/lib/unsubscribe.ts),
+ * and the same URL is sent as the List-Unsubscribe header (RFC 8058)
+ * so mail clients can offer a one-click unsubscribe. The old "Reply
+ * STOP" line is gone: the sender is noreply, so a reply never arrived.
  */
-export async function sendWinbackEmail(email: string): Promise<void> {
+export async function sendWinbackEmail(email: string, userId?: string): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY;
   const site =
     process.env.NEXT_PUBLIC_SITE_URL ?? "https://sortes.resonantatlas.com";
@@ -75,6 +82,10 @@ export async function sendWinbackEmail(email: string): Promise<void> {
 
   const from =
     process.env.EMAIL_FROM ?? "Sortes <noreply@sortes.resonantatlas.com>";
+  // The unsubscribe link only exists when the caller knows the user id.
+  // The cron always passes it; a direct call without one sends the
+  // email with no unsubscribe link (the account toggle still works).
+  const unsub = userId ? unsubscribeUrl(userId) : null;
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
@@ -85,6 +96,14 @@ export async function sendWinbackEmail(email: string): Promise<void> {
       from,
       to: email,
       subject: "The cards have been waiting for you ✦",
+      ...(unsub
+        ? {
+            headers: {
+              "List-Unsubscribe": `<${unsub}>`,
+              "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+            },
+          }
+        : {}),
       html: `
         <div style="font-family: Georgia, serif; background: ${BRAND.navyDeep}; color: ${BRAND.cream}; padding: 40px 32px; border-radius: 12px; max-width: 560px;">
           <h1 style="color: ${BRAND.gold}; font-size: 28px; margin: 0 0 8px;">✦ Sortes</h1>
@@ -94,7 +113,7 @@ export async function sendWinbackEmail(email: string): Promise<void> {
           <p style="margin: 28px 0;">
             <a href="${site}/daily" style="display: inline-block; background: linear-gradient(135deg, ${BRAND.goldBright}, ${BRAND.gold}); color: #14100a; font-weight: bold; text-decoration: none; padding: 14px 32px; border-radius: 12px;">Draw today&apos;s card</a>
           </p>
-          <p style="color: #9aa3b2; font-size: 13px; line-height: 1.6;">Readings are for reflection and perspective, never guaranteed predictions.<br/>You received this because you created a Sortes account. Reply STOP and we will not write again.</p>
+          <p style="color: #9aa3b2; font-size: 13px; line-height: 1.6;">Readings are for reflection and perspective, never guaranteed predictions.<br/>You received this because you created a Sortes account.${unsub ? ` <a href="${unsub}" style="color: #9aa3b2;">Unsubscribe from these reminders</a>.` : ""}</p>
         </div>`,
     }),
   });
