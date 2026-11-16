@@ -93,7 +93,7 @@ export default function WesternTransits({
           value={date}
           onChange={(e) => setDate(e.target.value)}
           aria-label="Transit date"
-          className="rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream focus:border-gold/60 focus:outline-none"
+          className="rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream focus:border-gold/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
         />
         <button
           type="button"

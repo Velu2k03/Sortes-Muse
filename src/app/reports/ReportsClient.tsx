@@ -19,7 +19,7 @@ import { profileToReportFields } from "@/lib/birth-profiles";
 import type { SavedReport, ReportType } from "@/lib/reports";
 
 const inputClass =
-  "w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none";
+  "w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold";
 const labelClass = "mb-1.5 block text-sm font-medium text-cream";
 
 const PRESETS: { label: string; latitude: number; longitude: number }[] = [

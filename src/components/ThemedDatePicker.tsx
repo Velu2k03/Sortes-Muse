@@ -193,7 +193,7 @@ export default function ThemedDatePicker({
         onClick={openPicker}
         aria-expanded={open}
         aria-haspopup="dialog"
-        className="num flex w-full items-center justify-between gap-3 rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-left text-base text-cream focus:border-gold/60 focus:outline-none"
+        className="num flex w-full items-center justify-between gap-3 rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-left text-base text-cream focus:border-gold/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
       >
         <span className={value ? "" : "text-mist"}>{formatDisplay(value)}</span>
         <Icon name="calendar" size={20} className="shrink-0 text-goldbright" />
@@ -221,7 +221,7 @@ export default function ThemedDatePicker({
                 value={viewMonth}
                 onChange={(e) => setViewMonth(Number(e.target.value))}
                 aria-label="Month"
-                className="num min-w-0 rounded-lg border border-gold/25 bg-panel px-2 py-2 text-sm font-semibold text-cream focus:border-gold/60 focus:outline-none"
+                className="num min-w-0 rounded-lg border border-gold/25 bg-panel px-2 py-2 text-sm font-semibold text-cream focus:border-gold/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
               >
                 {MONTHS.map((m, i) => (
                   <option key={m} value={i + 1}>
@@ -233,7 +233,7 @@ export default function ThemedDatePicker({
                 value={viewYear}
                 onChange={(e) => setViewYear(Number(e.target.value))}
                 aria-label="Year"
-                className="num min-w-0 rounded-lg border border-gold/25 bg-panel px-2 py-2 text-sm font-semibold text-cream focus:border-gold/60 focus:outline-none"
+                className="num min-w-0 rounded-lg border border-gold/25 bg-panel px-2 py-2 text-sm font-semibold text-cream focus:border-gold/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
               >
                 {Array.from(
                   { length: today.getFullYear() - 1900 + 1 },
@@ -339,7 +339,7 @@ export default function ThemedDatePicker({
               }}
               placeholder="MM/DD/YYYY"
               inputMode="numeric"
-              className="num w-full rounded-xl border border-gold/25 bg-panel/70 px-3 py-2 text-sm text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none"
+              className="num w-full rounded-xl border border-gold/25 bg-panel/70 px-3 py-2 text-sm text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
             />
             {typedError && (
               <p className="mt-1 text-xs text-danger">{typedError}</p>

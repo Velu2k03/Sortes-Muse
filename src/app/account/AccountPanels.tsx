@@ -249,7 +249,7 @@ export function PasswordPanel({ p }: { p: AccountSettings["password"] }) {
             value={p.currentPassword}
             onChange={(e) => p.setCurrentPassword(e.target.value)}
             autoComplete="current-password"
-            className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none"
+            className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
           />
         </div>
         <div>
@@ -265,7 +265,7 @@ export function PasswordPanel({ p }: { p: AccountSettings["password"] }) {
             onChange={(e) => p.setNewPassword(e.target.value)}
             placeholder="At least 8 characters"
             autoComplete="new-password"
-            className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none"
+            className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
           />
         </div>
         <button
@@ -349,7 +349,7 @@ export function DataPanel({
             value={d.deletePassword}
             onChange={(e) => d.setDeletePassword(e.target.value)}
             placeholder="Your password"
-            className="mt-1 w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-2.5 text-base text-cream focus:border-gold/60 focus:outline-none"
+            className="mt-1 w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-2.5 text-base text-cream focus:border-gold/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
           />
           <div className="mt-3 flex flex-wrap items-end gap-3">
             <div className="min-w-44 flex-1">
@@ -364,7 +364,7 @@ export function DataPanel({
                 value={d.deleteCode}
                 onChange={(e) => d.setDeleteCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                 placeholder="6-digit code"
-                className="mt-1 w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-2.5 text-base text-cream focus:border-gold/60 focus:outline-none"
+                className="mt-1 w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-2.5 text-base text-cream focus:border-gold/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
               />
             </div>
             <button

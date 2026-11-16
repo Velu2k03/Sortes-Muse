@@ -42,7 +42,7 @@ import type { ChartForm, ChartPrefs, ChartSession } from "./useChartsClient";
  */
 
 const inputClass =
-  "w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none";
+  "w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold";
 const labelClass = "mb-1.5 block text-sm font-medium text-cream";
 
 const SYSTEM_ORDER: ChartSystem[] = ["western", "ziwei", "vedic"];

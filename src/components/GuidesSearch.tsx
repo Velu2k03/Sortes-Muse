@@ -37,7 +37,7 @@ export default function GuidesSearch({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search guides, e.g. celtic, love, charts…"
-            className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none"
+            className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
           />
         </>
       )}
