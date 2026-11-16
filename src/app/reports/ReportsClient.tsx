@@ -487,10 +487,10 @@ export default function ReportsClient() {
             setError("");
           }}
           aria-label="Report type"
-          trackColor={siteTheme === "light" ? "#ffffff" : "#1a1f2e"}
-          thumbColor="#d4af37"
+          trackColor={siteTheme === "light" ? "#ffffff" : "#1a2a44"}
+          thumbColor="#b9975b"
           textColor={siteTheme === "light" ? "#45423c" : "#9ca3af"}
-          activeTextColor="#0a0e1a"
+          activeTextColor="#0a1526"
           className={siteTheme === "light" ? "ring-1 ring-gold/25" : ""}
         />
       </div>
@@ -588,9 +588,9 @@ export default function ReportsClient() {
             inline
             closeButton
             width={320}
-            background="#1a1f2e"
-            color="#ede6d6"
-            fuseColor="#d4af37"
+            background="#1a2a44"
+            color="#faf6ec"
+            fuseColor="#b9975b"
           />
           <button
             type="button"
@@ -616,17 +616,17 @@ export default function ReportsClient() {
         onClick={generate}
         disabled={generating || outOfOracles}
         className="mt-6 w-full"
-        baseColor={siteTheme === "light" ? "#ffffff" : "#1a1f2e"}
-        lineColor={siteTheme === "light" ? "#8a6d0a" : "#d4af37"}
-        textColor={siteTheme === "light" ? "#1c1a15" : "#ede6d6"}
-        tint="#d4af37"
+        baseColor={siteTheme === "light" ? "#ffffff" : "#1a2a44"}
+        lineColor={siteTheme === "light" ? "#8a6d0a" : "#b9975b"}
+        textColor={siteTheme === "light" ? "#1c1a15" : "#faf6ec"}
+        tint="#b9975b"
       >
         {generating ? "Generating…" : "Generate report · 1 Oracle"}
       </SpecularButton>
       )}
       {generating && (
         <p className="mt-3 flex items-center justify-center gap-2 text-sm text-cream/75">
-          <StatusMark status="running" size={20} color="#d4af37" />
+          <StatusMark status="running" size={20} color="#b9975b" />
           Writing your report…
         </p>
       )}
@@ -636,9 +636,9 @@ export default function ReportsClient() {
             name="report"
             argument="generate"
             status={generating ? "running" : failedCall ? "error" : "done"}
-            surfaceColor="#1a1f2e"
-            color="#ede6d6"
-            progressColor="#d4af37"
+            surfaceColor="#1a2a44"
+            color="#faf6ec"
+            progressColor="#b9975b"
             onRetry={generate}
           />
         </div>

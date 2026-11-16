@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ZIWEI_LEGEND_ZH } from "@/lib/ziwei-i18n";
 import ThemedDatePicker from "@/components/ThemedDatePicker";
 import { formatUtcOffset } from "@/lib/format-offset";
+import { BRAND } from "@/lib/brand";
 import CardBurst from "@/components/CardBurst";
 // Phase 4C (4.8a): the chart renderers are code-split. Every one of
 // them renders only after a chart is cast (behind `result`), so they
@@ -127,10 +128,10 @@ export function SystemPicker({ prefs, s }: { prefs: ChartPrefs; s: ChartSession 
             ariaLabel="Chart system"
             size="lg"
             radius={12}
-            accentColor={siteTheme === "light" ? "#8a6d0a" : "#d4af37"}
-            surfaceColor={siteTheme === "light" ? "#ffffff" : "#1a1f2e"}
+            accentColor={siteTheme === "light" ? "#8a6d0a" : "#b9975b"}
+            surfaceColor={siteTheme === "light" ? "#ffffff" : "#1a2a44"}
             highlightColor={siteTheme === "light" ? "#f3ead3" : "#3a3120"}
-            textColor={siteTheme === "light" ? "#1c1a15" : "#ede6d6"}
+            textColor={siteTheme === "light" ? "#1c1a15" : "#faf6ec"}
             className="w-full [&>button]:w-full [&>button]:justify-between"
           />
         </div>
@@ -304,10 +305,10 @@ export function BirthForm({ prefs, form, s }: { prefs: ChartPrefs; form: ChartFo
             ariaLabel="Birthplace"
             size="lg"
             radius={12}
-            accentColor={siteTheme === "light" ? "#8a6d0a" : "#d4af37"}
-            surfaceColor={siteTheme === "light" ? "#ffffff" : "#1a1f2e"}
+            accentColor={siteTheme === "light" ? "#8a6d0a" : "#b9975b"}
+            surfaceColor={siteTheme === "light" ? "#ffffff" : "#1a2a44"}
             highlightColor={siteTheme === "light" ? "#f3ead3" : "#3a3120"}
-            textColor={siteTheme === "light" ? "#1c1a15" : "#ede6d6"}
+            textColor={siteTheme === "light" ? "#1c1a15" : "#faf6ec"}
             className="w-full [&>button]:w-full [&>button]:justify-between"
           />
         )}
@@ -425,8 +426,8 @@ export function ResultHeader({ prefs, s, result }: { prefs: ChartPrefs; s: Chart
         card and the button below exist for every result, before
         interpretation, reusing chartSummaryText. */}
     <div aria-hidden="true" style={{ position: "fixed", left: "-10000px", top: 0, width: 1200, height: 630 }}>
-      <div ref={shareRef} style={{ width: 1200, height: 630, background: "#0a0e1a", color: "#ede6d6", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 60, fontFamily: "Cormorant Garamond, Georgia, serif", border: "2px solid #d4af37" }}>
-        <div style={{ fontSize: 28, letterSpacing: 8, color: "#d4af37" }}>SORTES</div>
+      <div ref={shareRef} style={{ width: 1200, height: 630, background: BRAND.navyDeep, color: BRAND.cream, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 60, fontFamily: "Cormorant Garamond, Georgia, serif", border: `2px solid ${BRAND.gold}` }}>
+        <div style={{ fontSize: 28, letterSpacing: 8, color: BRAND.gold }}>SORTES</div>
         <div style={{ fontSize: 48, marginTop: 12 }}>{result.system === "ziwei" ? "Ziwei chart" : result.system === "vedic" ? "Vedic chart" : "Western chart"}</div>
         <div style={{ fontSize: 24, marginTop: 24, maxWidth: 900, textAlign: "center" }}>{chartSummaryText(result, ziweiLang)}</div>
         <div style={{ fontSize: 18, marginTop: 24, color: "#9ca3af" }}>A reflection, not a prediction. sortes.resonantatlas.com</div>
@@ -778,9 +779,9 @@ export function InterpretationPanel({ prefs, s, result }: { prefs: ChartPrefs; s
           inline
           closeButton
           width={320}
-          background="#1a1f2e"
-          color="#ede6d6"
-          fuseColor="#d4af37"
+          background="#1a2a44"
+          color="#faf6ec"
+          fuseColor="#b9975b"
         />
         <button
           type="button"

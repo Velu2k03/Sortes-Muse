@@ -37,10 +37,10 @@ export default function CustomWesternWheel({ result, theme }: { result: WesternR
   const cx = 320;
   const cy = 320;
   const dark = theme === "dark";
-  const bg = dark ? "#1a1f2e" : "#fffdf5";
-  const text = dark ? "#ede6d6" : "#1c1a15";
-  const gold = dark ? "#f4d03f" : "#7c5e00";
-  const line = dark ? "#d4af37" : "#8a6d0a";
+  const bg = dark ? "#1a2a44" : "#fffdf5";
+  const text = dark ? "#faf6ec" : "#1c1a15";
+  const gold = dark ? "#d6be8a" : "#7c5e00";
+  const line = dark ? "#b9975b" : "#8a6d0a";
   const asc = result.ascendantLongitude;
   const mc = result.midheavenLongitude;
   // M1.2: without a birth time there is no Ascendant, Midheaven, or

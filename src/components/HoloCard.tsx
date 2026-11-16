@@ -64,7 +64,7 @@ export default function HoloCard({
   alt = "",
   preset = "bursts",
   intensity = 0.85,
-  foilColor = "#d4af37",
+  foilColor = "#b9975b",
   width = 320,
   radius = 14,
   tiltMax = 14,

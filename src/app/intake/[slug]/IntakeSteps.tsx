@@ -504,7 +504,7 @@ export function ImpressionStep({ f, drawnCards }: { f: IntakeState; drawnCards: 
       {generationFailed && (
         <div className="mx-auto mt-4 max-w-md space-y-3">
           {/* Batch 3.1: toast colours come from the brand tokens,
-              not raw hex (the old gold #d4af37 is gone). */}
+              not raw hex. */}
           <SwipeToast
             open={toastOpen}
             onClose={() => setToastOpen(false)}
