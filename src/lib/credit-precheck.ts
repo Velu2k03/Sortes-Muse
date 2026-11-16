@@ -26,7 +26,17 @@ export async function preCheckOracleBalance(
   if (!userId || !required) return { user: null };
   const user = await getUserById(userId);
   if (!user || user.credits < cost) {
-    const unit = CREDIT_COSTS_ENABLED ? `${cost} credits` : cost === 1 ? "1 Oracle" : `${cost} Oracles`;
+    // Flag ON: "1 credit" / "2 credits". Flag OFF: "1 Oracle" / "2 Oracles".
+    // The flag-ON branch used to say "1 credits" (no singular); fixed on
+    // the D5 rehearsal branch and owed to the cutover (this branch never
+    // merges, so the cutover must carry this fix).
+    const unit = CREDIT_COSTS_ENABLED
+      ? cost === 1
+        ? "1 credit"
+        : `${cost} credits`
+      : cost === 1
+        ? "1 Oracle"
+        : `${cost} Oracles`;
     return {
       denied: NextResponse.json(
         { error: `You need ${unit} for this ${noun}. No ${CREDIT_COSTS_ENABLED ? "credits were" : "Oracle was"} spent.` },
