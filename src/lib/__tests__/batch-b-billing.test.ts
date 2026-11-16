@@ -31,14 +31,15 @@ import {
 } from "@/app/api/cron/subscription-drip/route";
 
 // Phase 2 batch 3: billing rules + checkout/webhook wiring.
-// The credit-cost flag ships OFF, so every cost helper returns 1
-// (the old Oracle unit) until the cutover flips it. These tests pin
-// that behaviour, the variant maps, the top-up verify rules, the
-// subscription verify rules, and the drip month math.
+// D5 REHEARSAL BRANCH ONLY (Velu approved 2026-11-16): the flag is ON
+// here, so every cost helper returns the credit amounts (1-card 100,
+// 3-card 200, chart 300, report 300, follow-up 50). Main keeps the flag
+// OFF and these tests pin the 1-Oracle behaviour there. This file is
+// updated on this branch only and NEVER merges.
 
-describe("credit costs (flag OFF)", () => {
-  it("the flag ships OFF", () => {
-    expect(CREDIT_COSTS_ENABLED).toBe(false);
+describe("credit costs (flag ON, D5 rehearsal)", () => {
+  it("the flag is ON on this rehearsal branch", () => {
+    expect(CREDIT_COSTS_ENABLED).toBe(true);
   });
 
   it("the plan numbers are Velu's exact values", () => {
@@ -51,13 +52,15 @@ describe("credit costs (flag OFF)", () => {
     });
   });
 
-  it("every cost helper returns 1 while the flag is OFF", () => {
-    expect(readingCostForSpreadCards(1)).toBe(1);
-    expect(readingCostForSpreadCards(3)).toBe(1);
-    expect(readingCostForSpreadCards(10)).toBe(1);
-    expect(chartCost()).toBe(1);
-    expect(reportCost()).toBe(1);
-    expect(followUpCost()).toBe(1);
+  it("every cost helper returns the credit amounts while the flag is ON", () => {
+    expect(readingCostForSpreadCards(1)).toBe(100);
+    expect(readingCostForSpreadCards(3)).toBe(200);
+    // 10 cards is a deep reading at the chart price (300), per the
+    // Batch B plan which prices 1-card and 3-card only.
+    expect(readingCostForSpreadCards(10)).toBe(300);
+    expect(chartCost()).toBe(300);
+    expect(reportCost()).toBe(300);
+    expect(followUpCost()).toBe(50);
   });
 });
 

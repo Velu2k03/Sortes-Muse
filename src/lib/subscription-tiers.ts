@@ -71,8 +71,13 @@ export function grantableMonthly(currentMonthly: number, tier: SubscriptionTier)
  * Oracle conversion for all holders, then verify. The flag ships
  * OFF in this batch; flipping it is a deliberate, reviewed change,
  * never a drive-by. Do NOT flip it without the runbook.
+ *
+ * D5 REHEARSAL BRANCH ONLY (Velu approved 2026-11-16): this branch
+ * flips the flag to true for Preview testing of the purchase flow
+ * (Batch 6.5 Part B). It NEVER merges to main. Main keeps the flag
+ * OFF until the cutover decision.
  */
-export const CREDIT_COSTS_ENABLED = false;
+export const CREDIT_COSTS_ENABLED = true;
 
 /** Credit cost of one reading/report/follow-up, once the flag is ON. */
 export const READING_CREDIT_COSTS = {
