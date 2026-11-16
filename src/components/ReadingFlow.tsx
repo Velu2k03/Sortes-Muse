@@ -128,8 +128,13 @@ function GateScreen({
                 ✦ Start my free reading
               </button>
             </ClickSpark>
+            {/* UX audit Phase 2, F24: the button already says free,
+                so the line under it used to say it twice more. What
+                the button does not say is the limit: one free Quick
+                Insight per device (or per account when signed in).
+                That fact stays. */}
             <p className="mt-3 text-sm text-mist">
-              Free, no payment card required. One free Quick Insight per{" "}
+              One free Quick Insight per{" "}
               {signedIn ? "account" : "device"}.
             </p>
           </>

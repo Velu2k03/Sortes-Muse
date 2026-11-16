@@ -207,7 +207,12 @@ export default function SpreadsPage() {
                   href={`/spreads/${s.slug}`}
                   className="btn-ghost mt-4 block rounded-xl border border-gold/30 px-4 py-3 text-center font-semibold"
                 >
-                  {s.slug === "quick-insight" && freeAvailable ? "Start my free reading" : "Begin reading"}
+                  {/* UX audit Phase 2, F23: every card says "Begin
+                      reading". The free CTA appears once per screen,
+                      in the hero banner above; the Quick Insight card
+                      used to repeat it here. The card still shows its
+                      price (Free). */}
+                  Begin reading
                   <span className="sr-only">: {s.name}</span>
                 </Link>
               )}
