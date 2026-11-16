@@ -69,7 +69,11 @@ describe("home page: first-visit comprehension", () => {
       path.resolve(process.cwd(), "src/app/oracles/CreditsClient.tsx"),
       "utf8"
     ).replace(/\s+/g, " ");
-    expect(creditsSrc).toContain("Oracles never expire");
+    // UX audit Phase 2, F37: the balance line states the cost
+    // equivalence only. The "never expire" promise is said once on
+    // the page, on the top-up cards, not repeated here.
+    expect(creditsSrc).toContain("1 Oracle = 1 full reading.");
+    expect(creditsSrc).not.toContain("never expire");
   });
 
   it("states what a paid reading gives", () => {

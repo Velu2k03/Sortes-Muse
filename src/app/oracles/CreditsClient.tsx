@@ -98,7 +98,7 @@ export default function CreditsPage() {
           {user && <p className="mt-1 text-sm text-mist">Signed in as {user.email}</p>}
         </div>
         <p className="max-w-md text-sm text-cream/75">
-          1 Oracle = 1 full reading. Oracles never expire.
+          1 Oracle = 1 full reading.
           An Oracle opens a reading, not a prediction or promise.{" "}
           <Link href="/faq#what-are-the-five-oracle-rules" className="text-goldbright underline">
             See all five Oracle rules
