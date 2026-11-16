@@ -46,9 +46,14 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  // RFC 8058 one-click: the mail client POSTs to the header URI,
+  // which already carries u and t, with only
+  // List-Unsubscribe=One-Click in the body. The confirmation form
+  // posts u and t as fields instead. Read both, URI first.
+  const fromUrl = req.nextUrl.searchParams;
   const form = await req.formData().catch(() => null);
-  const userId = form?.get("u")?.toString() ?? "";
-  const token = form?.get("t")?.toString() ?? "";
+  const userId = fromUrl.get("u") ?? form?.get("u")?.toString() ?? "";
+  const token = fromUrl.get("t") ?? form?.get("t")?.toString() ?? "";
   if (!verifyUnsubscribeToken(userId, token)) {
     return page(
       "This unsubscribe link is not valid.",

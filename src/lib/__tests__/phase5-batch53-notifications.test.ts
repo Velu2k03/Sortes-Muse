@@ -53,6 +53,9 @@ describe("Phase 5 Batch 5.3 notifications honesty", () => {
     expect(route).toContain("export async function POST");
     expect(route).toContain('method="post"');
     expect(route).toContain("Stop win-back emails?");
+    // RFC 8058 one-click POSTs carry u and t in the URI, not the
+    // body, so the POST handler reads them from the URL first.
+    expect(route).toContain("nextUrl.searchParams");
   });
 
   it("the account page has a notifications toggle wired to its API", () => {
