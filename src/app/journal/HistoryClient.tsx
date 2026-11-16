@@ -109,19 +109,13 @@ export default function HistoryPage() {
         <p className="mx-auto mt-4 max-w-xl text-cream/75">
           {user
             ? "Every full reading and saved chart interpretation you complete is kept here and synced to your account, so your journal follows you across devices. Daily cards are saved here as a one-line entry, not a full reading."
-            : "Every full reading and saved chart interpretation you complete is kept here on this device. Sign in to sync your journal across devices. Daily cards are saved here as a one-line entry, not a full reading."}
+            : // UX audit Phase 2, F25: the guest subhead used to be
+              // two paragraphs saying the same thing (guest-only
+              // storage + sign in to sync). One paragraph now, with
+              // the data-loss warning folded in: clearing browser
+              // data deletes guest entries.
+              "Every full reading and saved chart interpretation you complete is kept here on this device. If you clear your browser data, they are gone. Sign in to sync your journal across devices. Daily cards are saved here as a one-line entry, not a full reading."}
         </p>
-        {/* Phase 3 (3.5): plain device-only warning for guests. Guest
-            entries live in this browser's storage; clearing browser
-            data deletes them. Signed-in entries are synced, so the
-            warning is guest-only. */}
-        {!user && (
-          <p className="mx-auto mt-3 max-w-xl text-sm text-goldbright/90">
-            Guest entries live only on this device and browser. If you
-            clear your browser data, they are gone. Sign in to keep
-            them.
-          </p>
-        )}
       </div>
 
       {history === null && hydrated && (
