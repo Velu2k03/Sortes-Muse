@@ -342,7 +342,7 @@ export function NextStepPanel({ field }: { field: ReadingField }) {
           placeholder="e.g. Message her before the weekend"
           maxLength={300}
           aria-label="My next step"
-          className="w-full flex-1 rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none"
+          className="w-full flex-1 rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
         />
         <button
           type="button"
@@ -381,7 +381,7 @@ export function NotePanel({ reading, field }: { reading: Reading; field: Reading
           maxLength={1000}
           rows={3}
           aria-label="Note on this reading"
-          className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none"
+          className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
         />
         <button
           type="button"
@@ -443,7 +443,7 @@ export function RevisitPanel({ reading, field }: { reading: Reading; field: Read
             maxLength={1000}
             rows={3}
             aria-label="Revisit note"
-            className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none"
+            className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
           />
           <button
             type="button"
@@ -495,7 +495,7 @@ export function RevisitPanel({ reading, field }: { reading: Reading; field: Read
           maxLength={1000}
           rows={3}
           aria-label="Revisit note"
-          className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none"
+          className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
         />
         <button
           type="button"
@@ -638,7 +638,7 @@ export function FollowUpThread({
               placeholder="Ask a follow-up about this reading..."
               maxLength={300}
               aria-label="Follow-up question"
-              className="w-full flex-1 rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none"
+              className="w-full flex-1 rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
             />
             <button
               type="button"

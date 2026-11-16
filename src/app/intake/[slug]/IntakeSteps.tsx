@@ -207,7 +207,7 @@ export function FormStep({ f, category }: { f: IntakeState; category: IntakeCate
             onChange={(e) => setStory(e.target.value)}
             placeholder="Share what is happening in your own words, as much or as little as you like…"
             rows={5}
-            className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none"
+            className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
           />
         </div>
 
@@ -231,7 +231,7 @@ export function FormStep({ f, category }: { f: IntakeState; category: IntakeCate
             placeholder={`e.g. ${category.examples[0]}`}
             aria-describedby={questionError ? "intake-question-error" : undefined}
             aria-invalid={questionError}
-            className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none"
+            className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
           />
           {questionError && (
             <p id="intake-question-error" role="alert" className="mt-2 text-sm text-red-300">
@@ -321,7 +321,7 @@ export function ConfirmStep({ f, category }: { f: IntakeState; category: IntakeC
                   setSuggestionDismissed(false);
                 }}
                 aria-label="Your question"
-                className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base italic text-cream focus:border-gold/60 focus:outline-none"
+                className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base italic text-cream focus:border-gold/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
               />
             </dd>
           </div>
@@ -478,7 +478,7 @@ export function ImpressionStep({ f, drawnCards }: { f: IntakeState; drawnCards: 
           onChange={(e) => setImpression(e.target.value)}
           placeholder="e.g. hopeful"
           maxLength={40}
-          className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none"
+          className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
         />
       </div>
 

@@ -412,7 +412,7 @@ function SignInPanel({ s }: { s: ReturnType<typeof useSignIn> }) {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
               autoComplete="email"
-              className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none"
+              className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
             />
           </div>
           <div>
@@ -429,7 +429,7 @@ function SignInPanel({ s }: { s: ReturnType<typeof useSignIn> }) {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder={mode === "signup" ? "At least 8 characters" : "Your password"}
                 autoComplete={mode === "signup" ? "new-password" : "current-password"}
-                className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 pr-16 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none"
+                className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 pr-16 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
               />
               {/* Batch 3.5 (#35): show or hide the typed password.
                   A plain button, not an icon, so its purpose is
@@ -497,7 +497,7 @@ function SignInPanel({ s }: { s: ReturnType<typeof useSignIn> }) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
-              className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none"
+              className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
             />
           </div>
           {mode === "signup" && (
@@ -558,7 +558,7 @@ function SignInPanel({ s }: { s: ReturnType<typeof useSignIn> }) {
               value={code}
               onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
               placeholder="123456"
-              className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-center text-2xl tracking-[0.5em] text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none"
+              className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-center text-2xl tracking-[0.5em] text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
             />
           </div>
           {devCode && (

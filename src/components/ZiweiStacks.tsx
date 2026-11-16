@@ -114,7 +114,7 @@ export default function ZiweiStacks({
           value={year}
           onChange={(e) => setYear(Number(e.target.value))}
           aria-label="Stack year"
-          className="rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream focus:border-gold/60 focus:outline-none"
+          className="rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream focus:border-gold/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
         />
         <button
           type="button"
