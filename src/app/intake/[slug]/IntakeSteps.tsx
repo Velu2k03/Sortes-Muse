@@ -57,6 +57,13 @@ export function useStepFocus<T extends HTMLElement>() {
   // which behaves like "not reduced". In this motion version the
   // value is frozen at first render, so reading it through a ref
   // keeps the mount effect from ever re-running.
+  // UX audit Phase 2, F20: every heading this focuses carries
+  // outline-none! (not outline-none). The global :focus-visible rule
+  // in globals.css is unlayered, so it beats Tailwind's layered
+  // outline-none and draws a gold box around the heading, which
+  // reads as a text input. The trailing ! is load-bearing. The ring
+  // is correct on interactive elements; a heading focused only so a
+  // screen reader announces the step must not show one.
   const reduce = useReducedMotion() ?? false;
   const reduceRef = useRef(reduce);
   useEffect(() => {
@@ -125,7 +132,7 @@ export function CategoryStep({ f }: { f: IntakeState }) {
       <p className="text-sm text-gold">
         Step 1 of 4
       </p>
-      <h1 ref={headingRef} tabIndex={-1} className="mt-3 scroll-mt-32 font-display text-4xl text-goldbright outline-none sm:text-5xl">
+      <h1 ref={headingRef} tabIndex={-1} className="mt-3 scroll-mt-32 font-display text-4xl text-goldbright outline-none! sm:text-5xl">
         What is on your mind?
       </h1>
       <p className="mx-auto mt-3 max-w-md text-cream/75">
@@ -149,7 +156,16 @@ export function CategoryStep({ f }: { f: IntakeState }) {
               setAnswers({});
               setStep("form");
             }}
-            className="rounded-2xl border border-gold/25 bg-panel/60 p-5 text-left transition hover:-translate-y-0.5 hover:border-gold/60"
+            className={`rounded-2xl border border-gold/25 bg-panel/60 p-5 text-left transition hover:-translate-y-0.5 hover:border-gold/60${
+              // UX audit Phase 2, F21: 5 cards in a 2-column grid
+              // orphaned the last one alone on row 3. The last card
+              // spans both columns and centers at half width, so the
+              // grid reads 2 + 2 + 1 centered instead of 2 + 2 + 1
+              // stranded left. Single column below sm is unaffected.
+              i === INTAKE_CATEGORIES.length - 1
+                ? " sm:col-span-2 sm:mx-auto sm:w-1/2"
+                : ""
+            }`}
           >
             <p className="font-display text-xl text-cream">{c.name}</p>
             <p className="mt-1 text-sm italic text-mist">{c.tagline}</p>
@@ -173,7 +189,7 @@ export function FormStep({ f, category }: { f: IntakeState; category: IntakeCate
       <p className="text-center text-sm text-gold">
         Step 2 of 4
       </p>
-      <h1 ref={headingRef} tabIndex={-1} className="mt-3 scroll-mt-32 text-center font-display text-4xl text-goldbright outline-none">
+      <h1 ref={headingRef} tabIndex={-1} className="mt-3 scroll-mt-32 text-center font-display text-4xl text-goldbright outline-none!">
         {category.name}
       </h1>
       <p className="mx-auto mt-3 max-w-md text-center text-sm text-cream/75">
@@ -294,7 +310,7 @@ export function ConfirmStep({ f, category }: { f: IntakeState; category: IntakeC
       <p className="text-sm text-gold">
         Step 3 of 4
       </p>
-      <h1 ref={headingRef} tabIndex={-1} className="mt-3 scroll-mt-32 font-display text-4xl text-goldbright outline-none sm:text-5xl">
+      <h1 ref={headingRef} tabIndex={-1} className="mt-3 scroll-mt-32 font-display text-4xl text-goldbright outline-none! sm:text-5xl">
         Check and draw
       </h1>
 
@@ -428,7 +444,7 @@ export function ImpressionStep({ f, drawnCards }: { f: IntakeState; drawnCards: 
       <p className="text-sm text-gold">
         Your cards are drawn
       </p>
-      <h1 ref={headingRef} tabIndex={-1} className="mt-3 scroll-mt-32 font-display text-4xl text-goldbright outline-none sm:text-5xl">
+      <h1 ref={headingRef} tabIndex={-1} className="mt-3 scroll-mt-32 font-display text-4xl text-goldbright outline-none! sm:text-5xl">
         First, what do you see?
       </h1>
       <p className="mx-auto mt-3 max-w-md text-sm text-cream/75">
@@ -589,7 +605,7 @@ export function ImpressionStep({ f, drawnCards }: { f: IntakeState; drawnCards: 
 export function ProcessingStage({ activeStep, complete, streamedText, drawnCards }: { activeStep: number; complete: boolean; streamedText: string; drawnCards?: DrawnCard[] | null }) {
   const ref = useStepFocus<HTMLDivElement>();
   return (
-    <div ref={ref} tabIndex={-1} aria-label="Creating your reading" className="flex min-h-[55vh] scroll-mt-32 flex-col items-center justify-center text-center outline-none">
+    <div ref={ref} tabIndex={-1} aria-label="Creating your reading" className="flex min-h-[55vh] scroll-mt-32 flex-col items-center justify-center text-center outline-none!">
       <ReadingWait activeStep={activeStep} complete={complete} drawnCards={drawnCards} />
       {streamedText.length > 0 && (
         <div className="mt-8 w-full text-left">

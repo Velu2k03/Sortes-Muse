@@ -27,7 +27,10 @@ export const INTAKE_CATEGORIES: IntakeCategory[] = [
   {
     key: "love",
     name: "Love and Relationships",
-    tagline: "Relationships and connection.",
+    // UX audit Phase 2, F22: the old tagline restated the title
+    // ("Relationships and connection"). The tagline must carry a fact
+    // the title does not: what the reading asks about.
+    tagline: "You, them, and where things stand.",
     fields: [
       { key: "yourName", label: "Your first name", type: "text", placeholder: "e.g. Maya", required: true },
       { key: "partnerName", label: "Their first name", type: "text", placeholder: "e.g. Alex", required: true },
@@ -76,7 +79,9 @@ export const INTAKE_CATEGORIES: IntakeCategory[] = [
   {
     key: "finances",
     name: "Finances and Money",
-    tagline: "Clarity around resources and flow.",
+    // UX audit Phase 2, F22: "Clarity around resources and flow"
+    // was mystical padding. Same rule as love: carry a fact.
+    tagline: "Income, goals, and the struggle.",
     fields: [
       { key: "incomeSource", label: "Income source", type: "text", placeholder: "e.g. Salary, freelance, business", required: true },
       { key: "goal", label: "Financial goal", type: "text", placeholder: "What are you working toward?", required: true },
