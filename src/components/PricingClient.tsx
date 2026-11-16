@@ -12,7 +12,6 @@ import { HStack } from "@astryxdesign/core/HStack";
 import { Grid } from "@astryxdesign/core/Grid";
 import { StarBorder } from "@/components/ReactBits";
 import CountUp from "@/components/CountUp";
-import { CREDIT_PACKS } from "@/lib/site";
 
 // Astryx scoped pilot (pricing page only, Velu 2026-11-14). UI only
 // until Phase 2 batch 3: the tier buttons were disabled
@@ -22,7 +21,8 @@ import { CREDIT_PACKS } from "@/lib/site";
 // POST /api/checkout/subscription (kind "subscription"), top-ups
 // the same route (kind "topup"). Sign-in is required — a guest
 // gets the account page (the sign-in entry point) instead.
-// Packs stay on /oracles, untouched by this page.
+// Packs retired (Velu, 2026-11-16, D1): no pack UI anywhere;
+// /oracles sells top-ups only.
 //
 // Feature lists are written ONLY from features that exist in the
 // code today (verified 2026-11-14):
@@ -115,11 +115,9 @@ const TOPUPS = [
 export default function PricingClient({
   subscriptionsEnabled = false,
   topupsEnabled = false,
-  packsEnabled = true,
 }: {
   subscriptionsEnabled?: boolean;
   topupsEnabled?: boolean;
-  packsEnabled?: boolean;
 }) {
   const [billing, setBilling] = useState<Billing>("monthly");
   const [processing, setProcessing] = useState<string | null>(null);
@@ -293,18 +291,9 @@ export default function PricingClient({
             </Link>
             .{" "}
           </>
-        ) : packsEnabled ? (
-          <>
-            Oracle packs available now.{" "}
-            <Link href="/oracles" className="font-semibold text-goldbright underline">
-              See Oracle packs
-            </Link>
-          </>
         ) : (
-          // Cutover on and subscriptions not configured: /oracles
-          // sells top-ups, not packs, so the footer points there
-          // instead of claiming packs are available (Codex P2,
-          // PR #116).
+          // Packs retired (Velu, 2026-11-16, D1): /oracles sells
+          // top-ups, not packs, so the footer points there.
           <Link href="/oracles" className="font-semibold text-goldbright underline">
             See top-ups
           </Link>
@@ -354,40 +343,6 @@ export default function PricingClient({
         </Grid>
       </section>
 
-      {packsEnabled && (
-        <section className="mt-12" aria-labelledby="packs-heading">
-          <h2 id="packs-heading" className="text-center font-display text-3xl text-goldbright">
-            Oracle packs — available now
-          </h2>
-          <p className="mx-auto mt-2 max-w-xl text-center text-sm text-cream/75">
-            One reading costs 1 Oracle. Buy a pack and read right away —
-            purchased Oracles never expire.
-          </p>
-          <Grid columns={{ minWidth: 280, max: 3 }} gap={4} className="mt-6">
-            {CREDIT_PACKS.map((pack) => (
-              <Card key={pack.id} padding={4}>
-                <VStack gap={0} className="pricing-card-dark text-center">
-                  <h3 className="font-display text-xl text-cream">{pack.name}</h3>
-                  <p className="mt-3 font-display text-3xl font-bold text-goldbright lining-nums tabular-nums">
-                    ${pack.price.toFixed(2)}
-                  </p>
-                  <p className="mt-2 text-base text-cream lining-nums tabular-nums">
-                    <span className="font-display text-xl">{pack.readings}</span>{" "}
-                    Oracles
-                  </p>
-                  <p className="mt-1 text-sm text-cream/75">Never expires</p>
-                  <Link
-                    href="/oracles"
-                    className="btn-ghost mt-4 inline-block rounded-xl px-6 py-3 text-sm font-semibold"
-                  >
-                    Get Oracles
-                  </Link>
-                </VStack>
-              </Card>
-            ))}
-          </Grid>
-        </section>
-      )}
     </Section>
   );
 }

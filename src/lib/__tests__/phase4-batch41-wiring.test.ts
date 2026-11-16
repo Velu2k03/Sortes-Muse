@@ -6,22 +6,23 @@ const src = (rel: string) => readFileSync(path.resolve(process.cwd(), rel), "utf
 
 describe("Phase 4 Batch 4.1 Oracles page", () => {
   const page = src("src/app/oracles/page.tsx");
-  const buy = src("src/app/oracles/PackBuyButton.tsx");
   const credits = src("src/app/oracles/CreditsClient.tsx");
 
-  it("uses brand tokens for the pack badges, not raw old-gold hex", () => {
-    expect(page).toContain("Most popular");
-    expect(page).toContain("Best value");
-    expect(page).toContain("bg-gold/15");
+  it("sells top-ups only, with brand tokens and no pack copy", () => {
+    // Packs retired (Velu, 2026-11-16, D1): the page renders the
+    // two top-ups (1,000 / 3,000 Oracles) and nothing pack-shaped.
+    expect(page).toContain("Top up Oracles");
+    expect(page).toContain("TOPUPS.map");
+    expect(page).toContain("TopUpBuyButton");
     expect(page).toContain("text-goldbright");
-    expect(page).not.toContain("#14100a");
-    expect(page).not.toContain("#d6be8a");
-    expect(page).not.toContain("#b9975b");
-  });
-
-  it("says what is happening while checkout opens", () => {
-    expect(buy).toContain('"Opening checkout…"');
-    expect(buy).not.toContain('? "…"');
+    expect(page).not.toContain("Oracle packs");
+    expect(page).not.toContain("CREDIT_PACKS");
+    expect(page).not.toContain("PackBuyButton");
+    expect(page).not.toContain("Most popular");
+    expect(page).not.toContain("Best value");
+    expect(page).not.toContain("First Light");
+    expect(page).not.toContain("Constellation");
+    expect(page).not.toContain("Celestial Treasury");
   });
 
   it("points guests at the free reading, and takes the counter colour from a token", () => {

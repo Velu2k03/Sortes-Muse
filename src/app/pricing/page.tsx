@@ -40,7 +40,6 @@ export default function Pricing() {
       <PricingClient
         subscriptionsEnabled={subscriptionsConfigured() && CREDIT_COSTS_ENABLED}
         topupsEnabled={topUpsConfigured() && CREDIT_COSTS_ENABLED}
-        packsEnabled={!CREDIT_COSTS_ENABLED}
       />
     </Theme>
   );

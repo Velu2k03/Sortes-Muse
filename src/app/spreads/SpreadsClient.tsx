@@ -7,7 +7,6 @@ import { useCanHide } from "@/lib/use-mounted";
 import { SPREADS } from "@/lib/tarot";
 import { SPREAD_SAMPLES } from "@/lib/spread-samples";
 import SpreadDiagram from "@/components/SpreadDiagram";
-import CheckoutModal from "@/components/CheckoutModal";
 import { GlareHover } from "@/components/ReactBitsNew";
 import { useAuth, deviceHeldSession } from "@/components/AuthProvider";
 import { freeReadingUsed } from "@/lib/storage";
@@ -17,16 +16,16 @@ import FieldGroup from "@/components/FieldGroup";
 
 /**
  * Spread selection.
- * There is exactly ONE payment in the whole app: buying Oracle packs.
- * 1 Oracle = 1 full reading of any spread. Spreads show numbered
- * miniature card backs for their card positions whether or not the
- * seeker can start a reading right now (no free reading left and 0
- * Oracles); the moment they have an Oracle, the spread opens with
- * "Begin reading" and the gate offers the personalized intake.
+ * Packs retired (Velu, 2026-11-16, D1): Oracles are bought via
+ * subscriptions and top-ups, not packs. 1 Oracle = 1 full reading
+ * of any spread. Spreads show numbered miniature card backs for
+ * their card positions whether or not the seeker can start a
+ * reading right now (no free reading left and 0 Oracles); the
+ * moment they have an Oracle, the spread opens with "Begin
+ * reading" and the gate offers the personalized intake.
  */
 export default function SpreadsPage() {
   const hide = useCanHide();
-  const [checkoutOpen, setCheckoutOpen] = useState(false);
   // Deep UX Batch C: question picker. A newcomer should not have to
   // self-diagnose a spread name; they pick what they are asking
   // about, and the matching card is highlighted and scrolled to.
@@ -184,13 +183,12 @@ export default function SpreadsPage() {
                 />
               ) : locked ? (
                 <>
-                  <button
-                    type="button"
-                    onClick={() => setCheckoutOpen(true)}
+                  <Link
+                    href="/oracles"
                     className="btn-ghost mt-4 rounded-xl border border-gold/30 px-4 py-3 text-center font-semibold"
                   >
                     Get Oracles to begin
-                  </button>
+                  </Link>
                   {/* Phase 5: locked cards used to offer only the
                       checkout button, so a spread detail page was
                       not discoverable from the index. This link
@@ -265,16 +263,13 @@ export default function SpreadsPage() {
             See all five Oracle rules
           </Link>
         </p>
-        <button
-          type="button"
-          onClick={() => setCheckoutOpen(true)}
+        <Link
+          href="/oracles"
           className="btn-ghost mt-4 rounded-xl px-6 py-3 text-sm font-semibold"
         >
-          View Oracle packs
-        </button>
+          Top up Oracles
+        </Link>
       </div>
-
-      <CheckoutModal open={checkoutOpen} onClose={() => setCheckoutOpen(false)} />
     </div>
   );
 }
