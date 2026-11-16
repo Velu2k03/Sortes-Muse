@@ -293,12 +293,22 @@ export default function PricingClient({
             </Link>
             .{" "}
           </>
+        ) : packsEnabled ? (
+          <>
+            Oracle packs available now.{" "}
+            <Link href="/oracles" className="font-semibold text-goldbright underline">
+              See Oracle packs
+            </Link>
+          </>
         ) : (
-          <>Oracle packs available now.{" "}</>
+          // Cutover on and subscriptions not configured: /oracles
+          // sells top-ups, not packs, so the footer points there
+          // instead of claiming packs are available (Codex P2,
+          // PR #116).
+          <Link href="/oracles" className="font-semibold text-goldbright underline">
+            See top-ups
+          </Link>
         )}
-        <Link href="/oracles" className="font-semibold text-goldbright underline">
-          See Oracle packs
-        </Link>
       </p>
 
       <section className="mt-12" aria-labelledby="topups-heading">

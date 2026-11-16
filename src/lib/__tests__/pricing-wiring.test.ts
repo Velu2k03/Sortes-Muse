@@ -275,6 +275,12 @@ describe("Pricing honesty: gated CTAs, packs link, checkout wiring", () => {
     expect(c).toContain("Oracle packs available now.");
     expect(c).not.toContain("Subscriptions open soon");
     expect(c).not.toContain("Coming soon");
+    // Codex P2 (PR #116): the footer is gated on packsEnabled too,
+    // not just the packs cards. When the cutover is on, /oracles
+    // sells top-ups, so the footer points there instead of claiming
+    // packs are available.
+    expect(c).toContain(") : packsEnabled ? (");
+    expect(c).toContain("See top-ups");
     const link = c.match(
       /<Link href="\/oracles"[^>]*>([\s\S]*?)<\/Link>/
     );
