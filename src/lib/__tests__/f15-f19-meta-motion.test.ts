@@ -17,7 +17,9 @@ describe("F15: no middle-dot meta strings", () => {
     expect(src("src/lib/tarot.ts")).toContain('name: "Past, Present, Future"');
     expect(src("src/lib/tarot.ts")).not.toContain("Past · Present · Future");
     expect(src("src/components/SampleReading.tsx")).toContain("Past, Present, Future");
-    expect(src("src/app/deck/[slug]/page.tsx")).toContain("Past, Present, Future");
+    // UX audit Phase 2, F35 removed the "Past, Present, Future"
+    // button from the card page, so this file no longer pins it
+    // there; the spread name is still pinned in the other files.
     expect(src("src/app/reading/[id]/ReadingSections.tsx")).toContain("Try Past, Present, Future");
   });
 
