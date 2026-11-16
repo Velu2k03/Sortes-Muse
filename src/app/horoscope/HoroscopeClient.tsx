@@ -5,6 +5,7 @@ import Link from "next/link";
 import { dailyHoroscope, weeklyHoroscope, SUN_SIGNS, type SunSign } from "@/lib/daily";
 import Icon from "@/components/Icon";
 import ThemedDatePicker from "@/components/ThemedDatePicker";
+import OptionWheel from "@/components/OptionWheel";
 import AnimatedContent from "@/components/AnimatedContent";
 import RubberSegment from "@/components/RubberSegment";
 import { ClickSpark, StarBorder } from "@/components/ReactBits";
@@ -80,9 +81,12 @@ export default function HoroscopeClient({
     return () => mq.removeEventListener("change", sync);
   }, []);
   const [view, setView] = useState<"daily" | "weekly">("daily");
-  // RubberSegment follows the document theme here (2026-11-04),
-  // instead of keeping its dark track in light mode. The sign grid
-  // uses CSS tokens, so it needs no theme tracking.
+  // OptionWheel takes hard colours, so it bypasses the theme tokens
+  // like the credits Counter and charts dials did. Track the
+  // document theme here and pass its text/active colours as hex.
+  // RubberSegment uses CSS tokens now (audit end-of-phase fix), so
+  // it needs no theme tracking; siteTheme still drives its
+  // light-mode ring below.
   const [siteTheme, setSiteTheme] = useState<"dark" | "light">("dark");
   useEffect(() => {
     const sync = () =>
@@ -130,33 +134,45 @@ export default function HoroscopeClient({
           A general reflection for your sun sign. Free, unsaved, no birth data needed.
         </p>
       </div>
-      {/* UX audit Phase 2, F28: the Sun sign used to be a spinning
-          wheel with a select under reduced motion, plus a 12-sign
-          link grid below the page doing the same job. The wheel
-          duplicated the grid, and its blurred next sign read as a
-          broken render in a still. One picker now: a grid of
-          buttons, the same control for everyone, no motion needed.
-          The wheel component is deleted (nothing else used it). */}
-      <div className="mx-auto mt-8 rounded-3xl border border-gold/25 bg-panel/70 p-6">
-        <fieldset>
-          <legend className="mb-1.5 block text-sm font-medium text-cream">
+      {/* The Sun sign picker is the spinning wheel again, restored
+          by Velu's 2026-11-16 push-gate decision (the audit's F28
+          grid replaced it). Under reduced motion it is a select, the
+          same control for everyone else is the wheel. The duplicate
+          12-sign link grid below the page stays gone (F28): the
+          wheel is the only picker now. */}
+      <div className="mx-auto mt-8 grid gap-4 rounded-3xl border border-gold/25 bg-panel/70 p-6 sm:grid-cols-2">
+        <div>
+          <span className="mb-1.5 block text-sm font-medium text-cream">
             Sun sign
-          </legend>
-          <div className="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-4">
-            {SUN_SIGNS.map((s) => (
-              <button
-                key={s}
-                type="button"
-                aria-pressed={s === sign}
-                onClick={() => { setSign(s); resetReveal(); }}
-                className={`min-h-11 rounded-full px-4 py-3 text-sm font-semibold transition ${s === sign ? "bg-gold text-ink" : "border border-gold/30 text-cream/90 hover:bg-gold/10"}`}
-              >
-                {s}
-              </button>
-            ))}
-          </div>
-        </fieldset>
-        <div className="mt-4">
+          </span>
+          {reducedMotion ? (
+            <select
+              id="horoscope-sign"
+              value={sign}
+              onChange={(e) => { setSign(e.target.value as SunSign); resetReveal(); }}
+              className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream focus:border-gold/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+            >
+              {SUN_SIGNS.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <div className="h-64 overflow-hidden rounded-xl">
+              <p className="mb-2 text-xs text-mist">Spin the wheel: drag it, or focus it and use arrow keys.</p>
+              <OptionWheel
+                ariaLabel="Sun sign"
+                items={[...SUN_SIGNS]}
+                defaultSelected={SUN_SIGNS.indexOf(sign)}
+                onChange={(index) => { setSign(SUN_SIGNS[index]); resetReveal(); }}
+                textColor={siteTheme === "light" ? "#45423c" : "#9ca3af"}
+                activeColor={siteTheme === "light" ? "#7c5e00" : "#f4d03f"}
+              />
+            </div>
+          )}
+        </div>
+        <div>
           <label htmlFor="horoscope-date" className="mb-1.5 block text-sm font-medium text-cream">
             Date
           </label>

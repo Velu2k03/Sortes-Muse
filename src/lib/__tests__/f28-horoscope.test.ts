@@ -1,10 +1,10 @@
 /**
- * UX audit Phase 2, F28 (horoscope).
- * Two ways to pick a sign (spinning wheel + a 12-sign link grid
- * below) did the same job, and the wheel's blurred next sign read
- * as a broken render in a still. One picker now: a grid of buttons
- * inside the form, the same control for everyone. The wheel is
- * deleted (nothing else used it), and the helper lines are cut.
+ * UX audit Phase 2, F28 (horoscope), as decided at the push gate.
+ * Velu's 2026-11-16 decision restored the spinning wheel: the sign
+ * picker is the wheel again (a select under reduced motion), and the
+ * audit's 12-button grid is gone. The rest of F28 stands: the
+ * duplicate 12-sign link grid below the form stays gone, and the
+ * helper line that repeated the button stays cut.
  */
 import { readFileSync } from "node:fs";
 import path from "node:path";
@@ -14,24 +14,34 @@ function src(rel: string): string {
   return readFileSync(path.resolve(process.cwd(), rel), "utf8");
 }
 
-describe("F28 one sign picker: the grid", () => {
-  it("the form picks a sign from a grid of buttons, not a wheel", () => {
+describe("F28 one sign picker: the wheel is back", () => {
+  it("the form picks a sign with the spinning wheel, not a grid", () => {
     const client = src("src/app/horoscope/HoroscopeClient.tsx");
-    expect(client).toContain("SUN_SIGNS.map((s) =>");
-    expect(client).toContain("<fieldset>");
-    expect(client).toContain("<legend");
-    expect(client).toContain("aria-pressed={s === sign}");
-    expect(client).toContain("min-h-11 rounded-full");
-    expect(client).not.toContain("OptionWheel");
+    expect(client).toContain('import OptionWheel from "@/components/OptionWheel"');
+    expect(client).toContain("<OptionWheel");
+    expect(client).toContain('ariaLabel="Sun sign"');
+    expect(client).toContain("items={[...SUN_SIGNS]}");
+    expect(client).toContain("defaultSelected={SUN_SIGNS.indexOf(sign)}");
+    expect(client).toContain("setSign(SUN_SIGNS[index])");
+    expect(client).not.toContain("<fieldset>");
+    expect(client).not.toContain("aria-pressed={s === sign}");
     expect(client).not.toContain("Choose your sign from the grid below");
   });
 
-  it("the helper line that repeated the button is gone", () => {
+  it("under reduced motion the wheel is a select", () => {
+    const client = src("src/app/horoscope/HoroscopeClient.tsx");
+    expect(client).toContain("{reducedMotion ? (");
+    expect(client).toContain('id="horoscope-sign"');
+    expect(client).toContain("<select");
+    expect(client).toContain("<option");
+  });
+
+  it("the helper line that repeated the button is still gone", () => {
     const client = src("src/app/horoscope/HoroscopeClient.tsx");
     expect(client).not.toContain("Choose your sign and date, then reveal your reflection.");
   });
 
-  it("the duplicate link grid below the form is gone; deep links still work", () => {
+  it("the duplicate link grid below the form is still gone; deep links still work", () => {
     const page = src("src/app/horoscope/page.tsx");
     expect(page).not.toContain("All twelve signs");
     expect(page).not.toContain("/horoscope?sign=");
@@ -39,7 +49,8 @@ describe("F28 one sign picker: the grid", () => {
     expect(page).toContain("searchParams");
   });
 
-  it("the wheel component is deleted", () => {
-    expect(() => src("src/components/OptionWheel.tsx")).toThrow();
+  it("the wheel component exists again", () => {
+    const wheel = src("src/components/OptionWheel.tsx");
+    expect(wheel).toContain("OptionWheel");
   });
 });
