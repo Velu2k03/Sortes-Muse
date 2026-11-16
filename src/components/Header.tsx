@@ -4,9 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { useAuth, deviceHeldSession } from "@/components/AuthProvider";
-import { freeReadingUsed } from "@/lib/storage";
-import { isFreeAvailableFor } from "@/lib/free-reading";
+import { useAuth } from "@/components/AuthProvider";
 import CountUp from "@/components/CountUp";
 import Icon from "@/components/Icon";
 import BranchedMenu, { type BranchedMenuItem } from "@/components/BranchedMenu";
@@ -89,7 +87,7 @@ function syncThemeColor(theme: "dark" | "light"): void {
 }
 
 export default function Header() {
-  const { credits, user, loadError, refresh, freeReadingAvailable, authFailed } = useAuth();
+  const { credits, user, loadError, refresh } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
   // Deep pages highlight their parent section: a reading detail
@@ -106,42 +104,6 @@ export default function Header() {
   // Index into GROUPS of the open desktop popover, or null.
   const [openGroup, setOpenGroup] = useState<number | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
-  // AF-014: a guest with 0 Oracles and an unused free reading sees
-  // "1 free reading" in the pill instead of "0 Oracles". The device
-  // flags are read on mount and whenever the tab regains focus or the
-  // wallet changes, so using the free reading elsewhere updates the
-  // pill. Batch 1 (C1): the pill goes through isFreeAvailableFor,
-  // never the raw device flag, so a signed-in user whose /me failed
-  // (user null, credits 0 after migration) does not see "Free" from
-  // a device flag that was never used on this device.
-  const [deviceFree, setDeviceFree] = useState(false);
-  const [hadSession, setHadSession] = useState(false);
-  useEffect(() => {
-    const syncFree = () => {
-      try {
-        setDeviceFree(!freeReadingUsed());
-        setHadSession(deviceHeldSession());
-      } catch {
-        setDeviceFree(false);
-        setHadSession(false);
-      }
-    };
-    syncFree();
-    window.addEventListener("focus", syncFree);
-    window.addEventListener("sortes:credits-changed", syncFree);
-    return () => {
-      window.removeEventListener("focus", syncFree);
-      window.removeEventListener("sortes:credits-changed", syncFree);
-    };
-  }, []);
-  const freeAvailable = isFreeAvailableFor({
-    slug: "quick-insight",
-    signedIn: !!user,
-    serverFree: freeReadingAvailable,
-    deviceFree,
-    hadSession,
-    authFailed,
-  });
   // AF-038: an open desktop dropdown closes on scroll, so it never
   // covers the page while the visitor reads on.
   useEffect(() => {
@@ -227,8 +189,6 @@ export default function Header() {
     window.dispatchEvent(new Event("sortes-theme-change"));
   };
   const initial = user?.email ? user.email.charAt(0).toUpperCase() : "?";
-  // AF-014: signed-out, 0 Oracles, free reading still unused.
-  const showFreePill = !user && credits === 0 && freeAvailable;
   // BranchedMenu colours are theme-aware: the panel background is
   // bg-navydeep, which is dark navy in dark theme and light cream in
   // light theme, so hardcoded dark-theme ink fails axe in light
@@ -368,44 +328,36 @@ export default function Header() {
               /oracles; the separate Top up button is gone.
               P0-1: while credits is null the balance is unknown, so
               the pill shows a skeleton, never 0, and the aria-label
-              says loading instead of "0 Oracles".
-              AF-014: a signed-out visitor with 0 Oracles and an
-              unused free reading sees "1 free reading" and the pill
-              goes to the free Quick Insight, not the top-up page. */}
-          <Link
-            href={showFreePill ? "/spreads/quick-insight" : "/oracles"}
-            className="flex min-h-11 items-center gap-1.5 rounded-full border border-gold/40 bg-gold/10 px-2.5 py-2.5 text-sm font-semibold text-goldbright"
-            aria-label={
-              credits === null
-                ? "Oracle balance loading. Top up."
-                : showFreePill
-                  ? "1 free reading available. Start your free Quick Insight reading."
+              says loading instead of "0 Oracles". */}
+          {/* UX audit Phase 2, F05 (2026-11-16): the Oracle pill is a balance display for signed-in users. Guests do not see it: for them it was a second free-reading action competing with the hero gold button. The header keeps Sign in only for guests. */}
+          {user && (
+            <Link
+              href="/oracles"
+              className="flex min-h-11 items-center gap-1.5 rounded-full border border-gold/40 bg-gold/10 px-2.5 py-2.5 text-sm font-semibold text-goldbright"
+              aria-label={
+                credits === null
+                  ? "Oracle balance loading. Top up."
                   : `Oracle balance: ${credits} Oracles. Top up.`
-            }
-            title={showFreePill ? "Your first Quick Insight reading is free" : "Your Oracles — top up"}
-          >
-            <Icon name="coin" size={18} />
-            {credits === null ? (
-              <span className="inline-block h-4 w-6 animate-pulse rounded bg-gold/30" aria-hidden="true" />
-            ) : showFreePill ? (
-              <span>1 free reading</span>
-            ) : (
-              <span className="num">
-                <CountUp value={credits} />
-              </span>
-            )}
-            {/* Phase 6 (D3): the word "Oracles" hides below 420px so the
-                header row fits at 390px. The coin + count stay, and the
-                aria-label still reads the full balance. The buttons
-                keep p-3 (44px touch targets, asserted by charts-check)
-                — the pill is the flexible part, not the buttons. */}
-            {!showFreePill && (
-              <>
-                <span className="hidden min-[420px]:inline">Oracles</span>
-                <span className="hidden border-l border-gold/40 pl-1.5 sm:inline">Get Oracles</span>
-              </>
-            )}
-          </Link>
+              }
+              title="Your Oracles — top up"
+            >
+              <Icon name="coin" size={18} />
+              {credits === null ? (
+                <span className="inline-block h-4 w-6 animate-pulse rounded bg-gold/30" aria-hidden="true" />
+              ) : (
+                <span className="num">
+                  <CountUp value={credits} />
+                </span>
+              )}
+              {/* Phase 6 (D3): the word "Oracles" hides below 420px so the
+                  header row fits at 390px. The coin + count stay, and the
+                  aria-label still reads the full balance. The buttons
+                  keep p-3 (44px touch targets, asserted by charts-check)
+                  — the pill is the flexible part, not the buttons. */}
+              <span className="hidden min-[420px]:inline">Oracles</span>
+              <span className="hidden border-l border-gold/40 pl-1.5 sm:inline">Get Oracles</span>
+            </Link>
+          )}
           {loadError && (
             <button
               type="button"

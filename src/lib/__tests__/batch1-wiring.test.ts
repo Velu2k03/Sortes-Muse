@@ -88,15 +88,21 @@ describe("Batch 1 wiring guards", () => {
     expect(src("src/app/intake/[slug]/useIntakeFlow.ts")).toContain("!authLoading &&");
   });
 
-  it("C1 (re-check 3): the header pill goes through the helper, never the raw device flag", () => {
+  it("C1 (re-check 3): the header shows no free pill at all (F05)", () => {
     const header = src("src/components/Header.tsx");
-    expect(header).toContain("isFreeAvailableFor({");
-    expect(header).toContain("authFailed");
-    expect(header).toContain("deviceHeldSession");
-    // The device flag feeds the helper exactly once (as deviceFree).
-    // A signed-in user whose /me failed (user null, credits 0 after
-    // migration) must not see "1 free reading" from an unused flag.
-    expect(header.split("!freeReadingUsed()").length - 1).toBe(1);
+    // UX audit Phase 2, F05 (2026-11-16): the Oracle pill is a
+    // balance display for signed-in users only. Guests see no pill,
+    // so a signed-in user whose /me failed (user null, credits 0
+    // after migration) cannot see "1 free reading" from an unused
+    // device flag — there is no free pill left to show it. The free
+    // logic lives only in the hero and the return loop, where it
+    // still goes through isFreeAvailableFor.
+    expect(header).not.toContain("1 free reading");
+    expect(header).not.toContain("isFreeAvailableFor");
+    expect(header).not.toContain("freeReadingUsed");
+    expect(header).not.toContain("deviceHeldSession");
+    // The pill renders only when a user exists.
+    expect(header).toContain("{user && (");
   });
 
   it("C1 (re-check 2): the expiry branch clears both session keys, and the session-key write cannot throw", () => {

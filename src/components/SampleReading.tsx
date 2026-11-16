@@ -72,7 +72,7 @@ export default function SampleReading({ collapsed = false }: { collapsed?: boole
           const card = getCard(s.id);
           return (
             <div key={s.id} className="flex flex-col items-center gap-2">
-              <div className="relative h-40 w-24 overflow-hidden rounded-xl border border-gold/40 shadow-[0_8px_30px_rgba(0,0,0,0.6)] sm:h-48 sm:w-28">
+              <div className="relative h-40 w-24 overflow-hidden rounded-xl border border-gold/40 shadow-card-lg sm:h-48 sm:w-28">
                 <Image
                   src={card.image}
                   alt={card.name}

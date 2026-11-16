@@ -28,9 +28,9 @@ describe("Remodel sample: today's card below the hero", () => {
     const sampleAt = page.indexOf("<TodaySample />");
     expect(sampleAt).toBeGreaterThan(-1);
     // Below the hero (after its submit button) and above StatsStrip.
-    // Hero rotation (Velu, 2026-11-15): the submit button renders
-    // the variant's primary CTA, not "Draw my card".
-    expect(sampleAt).toBeGreaterThan(page.indexOf("{variant.primaryCta}"));
+    // UX audit Phase 2, F03: the submit button renders the fixed
+    // primary CTA, not "Draw my card".
+    expect(sampleAt).toBeGreaterThan(page.indexOf("{HERO_COPY.primaryCta}"));
     expect(sampleAt).toBeLessThan(page.indexOf("<StatsStrip />"));
   });
 
@@ -102,10 +102,11 @@ describe("Remodel How it works: Ask, Draw, Read", () => {
       (m) => m[1].replace(/\s+/g, " ").trim()
     );
     expect(headings).toContain("How it works");
-    // The "What is tarot?" one-liner stays where it is.
-    expect(page).toContain(
-      "78 cards. Tarot helps you think. It doesn&apos;t predict."
-    );
+    // The "What is tarot?" one-liner stays where it is. F16a: the
+    // "It doesn't predict" rebuttal is cut; the footer carries the
+    // one disclaimer per page.
+    expect(page).toContain("78 cards. Tarot helps you think.");
+    expect(page).not.toContain("It doesn&apos;t predict");
   });
 
   it("rewrites the three steps as Ask, Draw, Read", () => {

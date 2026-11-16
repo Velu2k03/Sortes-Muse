@@ -98,16 +98,15 @@ export default function ReturnLoop() {
   const quote = QUOTES[new Date().getDay()];
 
   return (
-    <section className="mx-auto max-w-6xl px-4 py-12 sm:px-6" aria-label="Your return">
+    <section className="mx-auto max-w-6xl px-4 py-8 sm:px-6" aria-label="Your return">
       <div className="rounded-3xl border border-gold/25 bg-panel/60 p-6 sm:p-8">
         <p className="text-center font-display text-2xl italic text-goldbright">&ldquo;{quote}&rdquo;</p>
-        <p className="mt-2 text-center text-xs text-mist">A small reminder for today, not a prediction.</p>
         <div className="mt-6 grid gap-4 sm:grid-cols-2">
           <div className="rounded-2xl border border-gold/20 bg-ink/40 p-4">
-            {/* unslopovich (2026-11-16, Velu approved): eyebrow tracking
-                toned down from 0.2em, the spaced-out small-caps were
-                a generated tell. */}
-            <p className="text-xs uppercase tracking-[0.1em] text-gold">Today&apos;s card</p>
+            {/* UX audit Phase 2, F14 (2026-11-16): sentence-case label,
+                untracked, one step smaller than the body text. The
+                tracked small-caps were a generated tell. */}
+            <p className="text-sm text-gold">Today&apos;s card</p>
             {dailyName ? (
               <p className="mt-2 text-cream/90">
                 You drew <span className="font-semibold text-goldbright">{dailyName}</span>
@@ -126,10 +125,9 @@ export default function ReturnLoop() {
             )}
           </div>
           <div className="rounded-2xl border border-gold/20 bg-ink/40 p-4">
-            {/* unslopovich (2026-11-16, Velu approved): eyebrow tracking
-                toned down from 0.2em, the spaced-out small-caps were
-                a generated tell. */}
-            <p className="text-xs uppercase tracking-[0.1em] text-gold">Your journal</p>
+            {/* UX audit Phase 2, F14 (2026-11-16): sentence-case label,
+                untracked, one step smaller than the body text. */}
+            <p className="text-sm text-gold">Your journal</p>
             {latest ? (
               <>
                 <p className="mt-2 text-cream/90">
@@ -152,7 +150,7 @@ export default function ReturnLoop() {
                 </Link>
               </>
             )}
-            <Link href="/journal" className="mt-3 inline-flex min-h-11 items-center text-sm text-mist underline underline-offset-4">
+            <Link href="/journal" className="mt-3 flex min-h-11 items-center text-sm text-mist underline underline-offset-4">
               See all past readings
             </Link>
           </div>
