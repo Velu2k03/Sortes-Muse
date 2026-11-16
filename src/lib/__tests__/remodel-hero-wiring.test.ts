@@ -2,9 +2,10 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "fs";
 import path from "path";
 
-// UX audit Phase 2, F03 + F04 + F05 (2026-11-16): the hero is one
-// fixed headline, Velu's own (see src/lib/hero-copy.ts and
-// hero-copy.test.ts). The Fable H1 ("Ask a question. Draw a tarot
+// Hero copy rotation (Velu, 2026-11-15, restored by his 2026-11-16
+// push-gate decision): the H1, subhead, and CTA rotate among four
+// variants (see src/lib/hero-variants.ts and
+// hero-rotation.test.ts). The Fable H1 ("Ask a question. Draw a tarot
 // card. Get an AI reading.") and subhead are retired by his decision.
 // The free reading stays 1-card Quick Insight only, and the 3-card
 // spread is PLANNED as the next step after the first reading — so the
@@ -26,13 +27,13 @@ import path from "path";
 const src = (rel: string) =>
   readFileSync(path.resolve(process.cwd(), rel), "utf8");
 
-describe("Remodel hero: fixed H1, question box, example questions", () => {
-  it("the H1 renders the fixed headline, not a rotating variant", () => {
+describe("Remodel hero: rotating H1, question box, example questions", () => {
+  it("the H1 renders the variant H1, not a fixed string", () => {
     const page = src("src/app/page.tsx");
     const match = page.match(/<h1[^>]*>([\s\S]*?)<\/h1>/);
     expect(match).not.toBeNull();
     const h1 = (match as RegExpMatchArray)[1].replace(/\s+/g, " ").trim();
-    expect(h1).toBe("{HERO_COPY.h1}");
+    expect(h1).toBe("{variant.h1}");
     expect(h1).not.toBe("Sortes");
     // The retired Fable H1 is gone from the hero element.
     expect(page).not.toContain(
@@ -40,14 +41,14 @@ describe("Remodel hero: fixed H1, question box, example questions", () => {
     );
   });
 
-  it("the subhead renders the fixed subhead and does not promise a clear answer", () => {
+  it("the subhead renders the variant subhead and does not promise a clear answer", () => {
     const page = src("src/app/page.tsx");
     const match = page.match(
       /<p className="mt-4 max-w-xl text-base[^"]*">([\s\S]*?)<\/p>/
     );
     expect(match).not.toBeNull();
     const subhead = (match as RegExpMatchArray)[1].replace(/\s+/g, " ").trim();
-    expect(subhead).toBe("{HERO_COPY.h2}");
+    expect(subhead).toBe("{variant.h2}");
     expect(subhead).not.toContain("Get a clear answer");
     const flat = page.replace(/\s+/g, " ");
     expect(flat).not.toMatch(/(draw|pick)\s+(three|3)\s+cards?/i);
@@ -58,16 +59,17 @@ describe("Remodel hero: fixed H1, question box, example questions", () => {
     expect(page).not.toContain("No experience needed. Just a question.");
   });
 
-  it("the hero has a question box with a gold submit button (fixed primary CTA)", () => {
+  it("the hero has a question box with a gold submit button (variant primary CTA)", () => {
     const page = src("src/app/page.tsx");
     const flat = page.replace(/\s+/g, " ");
     expect(flat).toContain('placeholder="What\'s on your mind?"');
-    // UX audit Phase 2, F03 + F05: the submit button renders the
-    // fixed primary CTA label ("Draw Your Card"), not the old
-    // free-gated "Draw my card — free". The "free" wording now
-    // lives only in the friction line below, still gated on
-    // freeAvailable (Batch 6a rule, ReturnLoop pattern).
-    expect(flat).toContain("{HERO_COPY.primaryCta}");
+    // Velu's 2026-11-16 push-gate decision restored the rotation:
+    // the submit button renders the variant primary CTA label
+    // ("Draw Your Card" on first paint), not the old free-gated
+    // "Draw my card — free". The "free" wording now lives only in
+    // the friction line below, still gated on freeAvailable
+    // (Batch 6a rule, ReturnLoop pattern).
+    expect(flat).toContain("{variant.primaryCta}");
     expect(flat).not.toContain('"Draw my card — free"');
     expect(flat).toContain("isFreeAvailableFor");
     expect(flat).toContain("<form");

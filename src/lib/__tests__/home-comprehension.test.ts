@@ -25,14 +25,17 @@ const src = readFileSync(path.resolve(process.cwd(), "src/app/page.tsx"), "utf8"
 
 describe("home page: first-visit comprehension", () => {
   it("states what Sortes does", () => {
-    // UX audit Phase 2, F03 + F04: one fixed headline, and the
-    // subhead names tarot in one short line. The rotation is gone.
-    const copySrc = readFileSync(
-      path.resolve(process.cwd(), "src/lib/hero-copy.ts"),
+    // Hero copy rotation (Velu, 2026-11-15, restored by his
+    // 2026-11-16 push-gate decision): the subhead rotates among the
+    // four variants. Variant A (first paint) is the clear personal
+    // reading line; tarot is named on the page by the "78 cards"
+    // line below, not by the subhead.
+    const variantsSrc = readFileSync(
+      path.resolve(process.cwd(), "src/lib/hero-variants.ts"),
       "utf8"
     ).replace(/\s+/g, " ");
-    expect(copySrc).toContain("A personal tarot reading for the question on your mind.");
-    expect(src).toContain("{HERO_COPY.h2}");
+    expect(variantsSrc).toContain("Get a clear, personal reading for the question on your mind.");
+    expect(src).toContain("{variant.h2}");
     // Batch 6a: the "mirror" line is replaced by the plain version.
     // F16a: the "It doesn't predict" rebuttal is cut; the footer
     // carries the one disclaimer per page.
@@ -91,13 +94,14 @@ describe("home page: first-visit comprehension", () => {
   });
 
   it("has one primary CTA, the free reading (AF-034)", () => {
-    // UX audit Phase 2, F03 + F05: one fixed CTA label, the gold
-    // submit with "Draw Your Card", and it works with no question
-    // typed. The secondary CTA is gone. The "free" wording now
-    // lives only in the friction line below, still gated on
-    // freeAvailable (Batch 6a rule), so a returner who already
-    // used the free reading sees the hero without the free promise.
-    expect(src).toContain("{HERO_COPY.primaryCta}");
+    // Velu's 2026-11-16 push-gate decision restored the rotation:
+    // one rotating CTA label, the gold submit with "Draw Your Card"
+    // on first paint, and it works with no question typed. The
+    // secondary CTA is gone. The "free" wording now lives only in
+    // the friction line below, still gated on freeAvailable
+    // (Batch 6a rule), so a returner who already used the free
+    // reading sees the hero without the free promise.
+    expect(src).toContain("{variant.primaryCta}");
     expect(src).not.toContain("Explore Readings");
     expect(src).not.toContain("Ask your question");
     expect(src).not.toContain("All spreads, one Oracle each");

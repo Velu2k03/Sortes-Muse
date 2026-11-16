@@ -5,12 +5,12 @@ import path from "path";
 // Batch 11: the hero was the one-word brand (Velu, 2026-11-13).
 // Batch 12 (Velu, 2026-11-13, Option B): the subhead was Claude's
 // line. BOTH are superseded by the remodel (Velu, 2026-11-14,
-// Fable's review) and the UX audit Phase 2 fix (2026-11-16, F03):
-// the H1, subhead, and CTA are ONE fixed copy (see
-// src/lib/hero-copy.ts and hero-copy.test.ts), and
-// "Sortes" lives in the header logo. The free
-// reading stays 1-card Quick Insight only, and the 3-card spread is
-// PLANNED as the visible next step after the first reading (the nudge
+// Fable's review) and the rotation restore (Velu, 2026-11-16
+// push-gate decision): the H1, subhead, and CTA rotate among four
+// variants (see src/lib/hero-variants.ts and
+// hero-rotation.test.ts), and "Sortes" lives in the header logo.
+// The free reading stays 1-card Quick Insight only, and the 3-card
+// spread is PLANNED as the visible next step after the first reading (the nudge
 // link to it is built in remodel batch 3; the spread itself already
 // exists) — so the hero must NOT promise three cards. The TAGLINE constant ("Cast the lots. Read your
 // story.") is the brand line for the footer, share text, and
@@ -19,16 +19,16 @@ import path from "path";
 const src = (rel: string) =>
   readFileSync(path.resolve(process.cwd(), rel), "utf8");
 
-describe("Batch 11: one-word brand hero (superseded by the remodel and the fixed copy)", () => {
-  it("the H1 renders the fixed headline, not the one-word brand", () => {
+describe("Batch 11: one-word brand hero (superseded by the remodel and the rotation)", () => {
+  it("the H1 renders the variant H1, not the one-word brand", () => {
     const page = src("src/app/page.tsx");
     const match = page.match(/<h1[^>]*>([\s\S]*?)<\/h1>/);
     expect(match).not.toBeNull();
     const h1 = (match as RegExpMatchArray)[1].replace(/\s+/g, " ").trim();
-    expect(h1).toBe("{HERO_COPY.h1}");
+    expect(h1).toBe("{variant.h1}");
   });
 
-  it("the subhead renders the fixed subhead and does not promise three cards", () => {
+  it("the subhead renders the variant subhead and does not promise three cards", () => {
     const page = src("src/app/page.tsx");
     // Assert on the hero <p> itself, not the whole file: the comment
     // above the H1 quotes the change, so a whole-file toContain
@@ -38,18 +38,19 @@ describe("Batch 11: one-word brand hero (superseded by the remodel and the fixed
     );
     expect(match).not.toBeNull();
     const subhead = (match as RegExpMatchArray)[1].replace(/\s+/g, " ").trim();
-    expect(subhead).toBe("{HERO_COPY.h2}");
+    expect(subhead).toBe("{variant.h2}");
     const flat = page.replace(/\s+/g, " ");
     expect(flat).not.toMatch(/(draw|pick)\s+(three|3)\s+cards?/i);
   });
 
-  it("the button is the gold submit with the fixed primary CTA", () => {
+  it("the button is the gold submit with the variant primary CTA", () => {
     const page = src("src/app/page.tsx").replace(/\s+/g, " ");
-    // UX audit Phase 2, F03: the submit button renders the fixed
-    // primary CTA, not the old free-gated "Draw my card — free".
-    // The "free" wording now lives only in the friction line below,
-    // still gated on freeAvailable.
-    expect(page).toContain("{HERO_COPY.primaryCta}");
+    // Velu's 2026-11-16 push-gate decision restored the rotation:
+    // the submit button renders the variant primary CTA, not the old
+    // free-gated "Draw my card — free". The "free" wording now
+    // lives only in the friction line below, still gated on
+    // freeAvailable.
+    expect(page).toContain("{variant.primaryCta}");
     expect(page).not.toContain('"Draw my card — free"');
     expect(page).not.toContain("Ask your question");
   });

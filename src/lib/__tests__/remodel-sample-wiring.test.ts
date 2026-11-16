@@ -28,9 +28,9 @@ describe("Remodel sample: today's card below the hero", () => {
     const sampleAt = page.indexOf("<TodaySample />");
     expect(sampleAt).toBeGreaterThan(-1);
     // Below the hero (after its submit button) and above StatsStrip.
-    // UX audit Phase 2, F03: the submit button renders the fixed
+    // Velu 2026-11-16 restored the rotation: the submit button renders the variant
     // primary CTA, not "Draw my card".
-    expect(sampleAt).toBeGreaterThan(page.indexOf("{HERO_COPY.primaryCta}"));
+    expect(sampleAt).toBeGreaterThan(page.indexOf("{variant.primaryCta}"));
     expect(sampleAt).toBeLessThan(page.indexOf("<StatsStrip />"));
   });
 

@@ -10,7 +10,7 @@ import { MAJORS, cardSlug, getCard } from "@/lib/cards";
 import { setHeroQuestion, freeReadingUsed } from "@/lib/storage";
 import { useAuth, deviceHeldSession } from "@/components/AuthProvider";
 import { isFreeAvailableFor } from "@/lib/free-reading";
-import { HERO_COPY } from "@/lib/hero-copy";
+import { HERO_VARIANTS, randomHeroVariantIndex } from "@/lib/hero-variants";
 import ReturningHome from "@/components/ReturningHome";
 import StatsStrip from "@/components/StatsStrip";
 import SampleReading from "@/components/SampleReading";
@@ -89,6 +89,26 @@ export default function Home() {
   const { user, freeReadingAvailable, authFailed, loading: authLoading } = useAuth();
   const [usedFree, setUsedFree] = useState(false);
   const [hadSession, setHadSession] = useState(false);
+  // Hero copy rotation (Velu, 2026-11-15): the H1, subhead, and CTA
+  // labels rotate randomly among four variants on each page load.
+  // The page is server-rendered, so the hero renders variant A
+  // (index 0) on the server and on first paint, then picks a random
+  // variant after mount. A random pick during render would disagree
+  // between server and client (hydration mismatch). The setState
+  // runs in a microtask, the same pattern as the device flags below
+  // (react-hooks/set-state-in-effect is an error in this repo).
+  // Restored 2026-11-16 by Velu's push-gate decision ("Restore the
+  // rotation"): the audit had replaced it with one fixed headline
+  // (F03), and he overruled that. The single-CTA layout from the
+  // audit (F05) stays: only the primary CTA label rotates, the
+  // secondary CTA link is not restored.
+  const [variantIndex, setVariantIndex] = useState(0);
+  const variant = HERO_VARIANTS[variantIndex];
+  useEffect(() => {
+    queueMicrotask(() => {
+      setVariantIndex(randomHeroVariantIndex());
+    });
+  }, []);
   // Velu's Option B (2026-11-14, "Show the hero to all signed-out
   // guests"): the hero shows to EVERY signed-out guest, regardless
   // of device flags. The Batch 3 four-signal rule (signed in, used
@@ -175,26 +195,29 @@ export default function Home() {
           {/* AF-042: the hero motion wrappers were no-ops (initial
               false, animate to the final values), so they are plain
               elements now — one less animation instance each. */}
-          {/* UX audit Phase 2, F03 + F04 + F05 (2026-11-16): one fixed
-              headline, Velu's own, and one short subhead that names
-              tarot. The rotation is gone (F03), the secondary CTA is
-              gone (F05, one primary action per screen), and the
-              "No experience needed" line is gone (F06, it said the
-              same thing as the invitation). The free reading stays
-              1-card Quick Insight only. The "free" wording is gated
-              on freeAvailable (Batch 6a rule): it never promises a
-              free reading to someone who must sign in first, and it
-              fails closed while auth is loading. No entrance
-              animation on the hero copy: it renders at full opacity
-              on first paint (the old fade left the first frame almost
-              empty behind the moon image), and the example questions
-              stay visible as tappable chips instead of rotating one
-              at a time. */}
+          {/* Hero copy rotation (Velu, 2026-11-15, restored by his
+              2026-11-16 push-gate decision): the H1, subhead, and
+              primary CTA label rotate randomly among four variants
+              (src/lib/hero-variants.ts) on each page load. Variant A
+              is his headline, so it renders on the server and on
+              first paint. The audit's one fixed headline (F03) was
+              overruled; the single-CTA layout (F05, one primary
+              action per screen) stays, so the secondary CTA link is
+              not restored, and the "No experience needed" line stays
+              gone (F06). The free reading stays 1-card Quick Insight
+              only. The "free" wording is gated on freeAvailable
+              (Batch 6a rule): it never promises a free reading to
+              someone who must sign in first, and it fails closed
+              while auth is loading. No entrance animation on the hero
+              copy: it renders at full opacity on first paint (the old
+              fade left the first frame almost empty behind the moon
+              image), and the example questions stay visible as
+              tappable chips instead of rotating one at a time. */}
           <h1 className="mt-6 max-w-4xl text-balance font-display text-4xl leading-tight text-goldbright sm:text-5xl">
-            {HERO_COPY.h1}
+            {variant.h1}
           </h1>
           <p className="mt-4 max-w-xl text-base leading-relaxed text-cream/80">
-            {HERO_COPY.h2}
+            {variant.h2}
           </p>
           <form
             action="/intake/quick-insight"
@@ -220,7 +243,7 @@ export default function Home() {
               type="submit"
               className="btn-gold rounded-2xl px-6 py-4 text-center text-base font-bold leading-snug sm:shrink-0 sm:px-8 sm:text-lg"
             >
-              {HERO_COPY.primaryCta}
+              {variant.primaryCta}
             </button>
           </form>
           {/* Sonnet review: the chips are a labelled group with 44px
