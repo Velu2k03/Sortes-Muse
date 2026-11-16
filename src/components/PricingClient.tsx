@@ -115,9 +115,11 @@ const TOPUPS = [
 export default function PricingClient({
   subscriptionsEnabled = false,
   topupsEnabled = false,
+  packsEnabled = true,
 }: {
   subscriptionsEnabled?: boolean;
   topupsEnabled?: boolean;
+  packsEnabled?: boolean;
 }) {
   const [billing, setBilling] = useState<Billing>("monthly");
   const [processing, setProcessing] = useState<string | null>(null);
@@ -342,38 +344,40 @@ export default function PricingClient({
         </Grid>
       </section>
 
-      <section className="mt-12" aria-labelledby="packs-heading">
-        <h2 id="packs-heading" className="text-center font-display text-3xl text-goldbright">
-          Oracle packs — available now
-        </h2>
-        <p className="mx-auto mt-2 max-w-xl text-center text-sm text-cream/75">
-          One reading costs 1 Oracle. Buy a pack and read right away —
-          purchased Oracles never expire.
-        </p>
-        <Grid columns={{ minWidth: 280, max: 3 }} gap={4} className="mt-6">
-          {CREDIT_PACKS.map((pack) => (
-            <Card key={pack.id} padding={4}>
-              <VStack gap={0} className="pricing-card-dark text-center">
-                <h3 className="font-display text-xl text-cream">{pack.name}</h3>
-                <p className="mt-3 font-display text-3xl font-bold text-goldbright lining-nums tabular-nums">
-                  ${pack.price.toFixed(2)}
-                </p>
-                <p className="mt-2 text-base text-cream lining-nums tabular-nums">
-                  <span className="font-display text-xl">{pack.readings}</span>{" "}
-                  Oracles
-                </p>
-                <p className="mt-1 text-sm text-cream/75">Never expires</p>
-                <Link
-                  href="/oracles"
-                  className="btn-ghost mt-4 inline-block rounded-xl px-6 py-3 text-sm font-semibold"
-                >
-                  Get Oracles
-                </Link>
-              </VStack>
-            </Card>
-          ))}
-        </Grid>
-      </section>
+      {packsEnabled && (
+        <section className="mt-12" aria-labelledby="packs-heading">
+          <h2 id="packs-heading" className="text-center font-display text-3xl text-goldbright">
+            Oracle packs — available now
+          </h2>
+          <p className="mx-auto mt-2 max-w-xl text-center text-sm text-cream/75">
+            One reading costs 1 Oracle. Buy a pack and read right away —
+            purchased Oracles never expire.
+          </p>
+          <Grid columns={{ minWidth: 280, max: 3 }} gap={4} className="mt-6">
+            {CREDIT_PACKS.map((pack) => (
+              <Card key={pack.id} padding={4}>
+                <VStack gap={0} className="pricing-card-dark text-center">
+                  <h3 className="font-display text-xl text-cream">{pack.name}</h3>
+                  <p className="mt-3 font-display text-3xl font-bold text-goldbright lining-nums tabular-nums">
+                    ${pack.price.toFixed(2)}
+                  </p>
+                  <p className="mt-2 text-base text-cream lining-nums tabular-nums">
+                    <span className="font-display text-xl">{pack.readings}</span>{" "}
+                    Oracles
+                  </p>
+                  <p className="mt-1 text-sm text-cream/75">Never expires</p>
+                  <Link
+                    href="/oracles"
+                    className="btn-ghost mt-4 inline-block rounded-xl px-6 py-3 text-sm font-semibold"
+                  >
+                    Get Oracles
+                  </Link>
+                </VStack>
+              </Card>
+            ))}
+          </Grid>
+        </section>
+      )}
     </Section>
   );
 }

@@ -243,6 +243,13 @@ describe("Pricing toggle, savings, top-ups, credit costs", () => {
     expect(c).toContain("One reading costs 1 Oracle.");
     expect(c).toContain("Get Oracles");
     expect(c).toContain('href="/oracles"');
+    // Codex P2 (PR #116): the packs stop being sold when the
+    // credit cutover flips on (/oracles renders top-ups instead),
+    // so the section is gated on the packsEnabled prop — it must
+    // not advertise packs that are no longer for sale.
+    expect(c).toContain("packsEnabled");
+    expect(c).toContain("{packsEnabled && (");
+    expect(c).toContain('aria-labelledby="packs-heading"');
     // The cancelled credit cutover's cost table is gone: no
     // per-reading credit costs (100/200/300/50) anywhere on the page.
     // Assert on the JSX, not the whole file: the header comment
@@ -411,6 +418,10 @@ describe("Pricing page: Astryx pilot wiring", () => {
     expect(p).toContain("<PricingClient");
     expect(p).toContain("subscriptionsEnabled={subscriptionsConfigured() && CREDIT_COSTS_ENABLED}");
     expect(p).toContain("topupsEnabled={topUpsConfigured() && CREDIT_COSTS_ENABLED}");
+    // Batch 4.3 (Codex P2, PR #116): the packs section shows only
+    // while the packs are actually sold — /oracles stops selling
+    // them when the credit cutover flips on.
+    expect(p).toContain("packsEnabled={!CREDIT_COSTS_ENABLED}");
     expect(p).toContain('title: "Pricing"');
     expect(p).toContain('canonical: "/pricing"');
     // Phase 2 batch 3: the meta/OG descriptions describe the live
