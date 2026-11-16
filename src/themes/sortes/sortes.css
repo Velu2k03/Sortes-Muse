@@ -217,9 +217,9 @@
     --color-info: light-dark(#0074e2, #6d9cfe);
     --color-info-muted: light-dark(#b9d7ff, #88bcff3D);
     --color-on-info: light-dark(#ffffff, #111111);
-    --color-text-info: light-dark(#0067ce, #a1caff);
-    --color-text-success: light-dark(#2f7d33, #90ca90);
-    --color-text-warning: light-dark(#836700, #eec448);
+    --color-text-info: light-dark(#0065ca, #a1caff);
+    --color-text-success: light-dark(#2c7630, #90ca90);
+    --color-text-warning: light-dark(#7f6400, #eec448);
     --color-text-error: light-dark(#c0262c, #ffaea7);
     --color-on-info-muted: light-dark(#003978, #a1caff);
     --color-on-success-muted: light-dark(#00490b, #90ca90);

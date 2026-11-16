@@ -47,5 +47,14 @@ export const sortesTheme = defineTheme({
     "--color-border": ["#d8c98f", "rgba(212, 175, 55, 0.35)"],
     "--color-border-emphasized": ["#7c5e00", "#d4af37"],
     "--color-background-inverted": ["#141b2e", "#ede6d6"],
+    // CodeRabbit, PR #117: the Astryx base light values for these
+    // three text tokens fall below AA 4.5:1 on the new cream body
+    // (#ede6d6). Darkened just enough to pass, hue kept, dark
+    // values unchanged. Success #2f7d33 (4.12) -> #2c7630 (4.51);
+    // warning #836700 (4.33) -> #7f6400 (4.53); info #0067ce
+    // (4.41) -> #0065ca (4.55).
+    "--color-text-success": ["#2c7630", "#90ca90"],
+    "--color-text-warning": ["#7f6400", "#eec448"],
+    "--color-text-info": ["#0065ca", "#a1caff"],
   },
 });
