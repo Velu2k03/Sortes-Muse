@@ -298,6 +298,27 @@ body {
   }
 }
 
+/* Daily hold progress bar (HoldCard, Velu 2026-11-16): a native
+   <progress> element, so no ARIA role is needed. The fill is the
+   gold token; the track is the Tailwind bg-gold/20 on the element
+   itself. The value is set per frame with no transition, so it is
+   a state indicator under reduced motion, not an animation. */
+.daily-progress {
+  -webkit-appearance: none;
+  appearance: none;
+}
+.daily-progress::-webkit-progress-bar {
+  background: transparent;
+}
+.daily-progress::-webkit-progress-value {
+  background: var(--color-gold);
+  border-radius: 9999px;
+}
+.daily-progress::-moz-progress-bar {
+  background: var(--color-gold);
+  border-radius: 9999px;
+}
+
 /* Soft gold glow for primary CTAs */
 .btn-gold {
   position: relative;

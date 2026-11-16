@@ -9,11 +9,15 @@ describe("Phase 3 Batch 3.4 daily card", () => {
   const modal = src("src/components/CardModal.tsx");
 
   it("keeps the hold-to-draw ritual", () => {
-    // Velu's decision (2026-11-16): the rituals stay. The HoldButton
-    // and its StarBorder are not replaced by a plain button.
-    expect(daily).toContain("HoldButton");
-    expect(daily).toContain("StarBorder");
-    expect(daily).toContain("<HoldButton");
+    // Velu's decision (2026-11-16): the rituals stay, and the hold
+    // moved onto the card itself (HoldCard with a progress bar). The
+    // separate HoldButton and its StarBorder are gone; the hold, not
+    // a tap, still draws the card.
+    expect(daily).toContain("HoldCard");
+    expect(daily).toContain("<HoldCard");
+    expect(daily).toContain("holdTime={1200}");
+    expect(daily).toContain("onHold={draw}");
+    expect(daily).not.toContain("HoldButton");
   });
 
   it("focuses the revealed card on a same-day return", () => {

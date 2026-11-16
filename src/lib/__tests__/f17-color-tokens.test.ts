@@ -82,10 +82,19 @@ describe("F17: no colour literals outside the token set", () => {
     expect(charts).toContain('accentColor="var(--color-gold)"');
     expect(charts).toContain('surfaceColor="var(--color-panel)"');
     expect(charts).toContain('textColor="var(--color-cream)"');
-    // HoldButton (daily): tokens, so the theme flips without JS tracking.
+    // HoldCard (daily, Velu 2026-11-16): token classes for the bar,
+    // so the theme flips without JS tracking. The track is the
+    // Tailwind token class bg-gold/20 on the <progress> element;
+    // the fill is the gold token in globals.css
+    // (.daily-progress pseudo-elements), never a hardcoded hex.
     const daily = src("src/app/daily/page.tsx");
-    expect(daily).toContain('backgroundColor="var(--color-panel)"');
-    expect(daily).toContain('fillColor="var(--color-gold)"');
+    const holdCard = src("src/components/HoldCard.tsx");
+    expect(holdCard).toContain("bg-gold/20");
+    expect(holdCard).not.toContain("#d4af37");
+    expect(holdCard).not.toContain("#f4d03f");
+    const css = src("src/app/globals.css");
+    expect(css).toContain(".daily-progress::-webkit-progress-value");
+    expect(css).toContain(".daily-progress::-moz-progress-bar");
     expect(daily).not.toContain("siteTheme");
     // SwipeToast call sites: tokens.
     expect(src("src/app/reading/[id]/ReadingSections.tsx")).toContain('background="var(--color-panel)"');

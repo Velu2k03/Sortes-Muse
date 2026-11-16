@@ -16,8 +16,7 @@ import { drawSingle } from "@/lib/tarot";
 import TarotCard from "@/components/TarotCard";
 import CardModal from "@/components/CardModal";
 import { trackDailyCardDrawn } from "@/components/Analytics";
-import { StarBorder } from "@/components/ReactBits";
-import HoldButton from "@/components/HoldButton";
+import HoldCard from "@/components/HoldCard";
 import HoloCard from "@/components/HoloCard";
 import Link from "next/link";
 
@@ -159,32 +158,16 @@ export default function DailyPage() {
               exit={{ opacity: 0 }}
               className="flex flex-col items-center"
             >
-              <TarotCard cardId={null} size="lg" disabled />
-              {/* UX audit Phase 2, F26: this used to have two actions
-                  doing the same thing (HoldButton + a tap alternative)
-                  plus an instruction line explaining the control. One
-                  action now. The hold ritual stays (Velu's standing
-                  decision); the button label says "Hold", and the gold
-                  fill shows progress on any press, so the control
-                  teaches itself. This reverses AF-048, which added
-                  the tap alternative because first-time visitors
-                  stalled on hold-only; flag for Velu's review at the
-                  push gate, and restore the tap alternative if the
-                  stall returns. */}
-              <StarBorder radius="1rem" className="mt-4" animated>
-                <HoldButton
-                  size="lg"
-                  holdTime={1200}
-                  backgroundColor="var(--color-panel)"
-                  fillColor="var(--color-gold)"
-                  textColor="var(--color-cream)"
-                  fillTextColor="var(--color-navydeep)"
-                  doneLabel="Casting…"
-                  onHold={draw}
-                >
-                  Hold to draw today&apos;s card
-                </HoldButton>
-              </StarBorder>
+              {/* Velu's 2026-11-16 push-gate decision: keep the "Draw
+                  now" tap alternative gone, and make the card itself
+                  hold-and-press instead of a separate button, showing
+                  a progress bar. The hold ritual stays (his standing
+                  decision); the card is the hold target (HoldCard),
+                  the bar under it fills during the hold, and a tap
+                  never draws. This replaces the audit's F26 fix
+                  (a separate hold button below the card), which kept
+                  a separate button. AF-048's tap alternative stays gone. */}
+              <HoldCard holdTime={1200} onHold={draw} className="mt-4" />
             </motion.div>
           )}
 
