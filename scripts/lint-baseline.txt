@@ -12,10 +12,6 @@ src/components/GlideSelect.tsx	jsx-a11y/prefer-tag-over-role	Use <option> instea
 src/components/GlideSelect.tsx	jsx-a11y/prefer-tag-over-role	Use <select size=...>, <select multiple=...>, or <datalist> instead of the "listbox" role to ensure accessibility across all devices.
 src/components/HoloCard.tsx	jsx-a11y/prefer-tag-over-role	Use <img alt=...>, or <img alt=...> instead of the "img" role to ensure accessibility across all devices.
 src/components/InfiniteSpiral.tsx	jsx-a11y/no-static-element-interactions	Avoid non-native interactive elements. If using native HTML is not possible, add an appropriate role and support for tabbing, mouse, keyboard, and touch inputs to an interactive content element.
-src/components/OptionWheel.tsx	jsx-a11y/click-events-have-key-events	Visible, non-interactive elements with click handlers must have at least one keyboard listener.
-src/components/OptionWheel.tsx	jsx-a11y/interactive-supports-focus	Elements with the 'option' interactive role must be focusable.
-src/components/OptionWheel.tsx	jsx-a11y/prefer-tag-over-role	Use <option> instead of the "option" role to ensure accessibility across all devices.
-src/components/OptionWheel.tsx	jsx-a11y/prefer-tag-over-role	Use <select size=...>, <select multiple=...>, or <datalist> instead of the "listbox" role to ensure accessibility across all devices.
 src/components/ReactBits.tsx	jsx-a11y/click-events-have-key-events	Visible, non-interactive elements with click handlers must have at least one keyboard listener.
 src/components/ReactBits.tsx	jsx-a11y/no-static-element-interactions	Avoid non-native interactive elements. If using native HTML is not possible, add an appropriate role and support for tabbing, mouse, keyboard, and touch inputs to an interactive content element.
 src/components/RubberSegment.tsx	jsx-a11y/prefer-tag-over-role	Use <input type="radio"> instead of the "radio" role to ensure accessibility across all devices.

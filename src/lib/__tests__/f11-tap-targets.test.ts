@@ -40,12 +40,6 @@ describe("F11: tap targets are at least 44px", () => {
     expect(pricing).toContain('className="mt-4 min-h-11"');
   });
 
-  it("horoscope steppers are 44px", () => {
-    const wheel = src("src/components/OptionWheel.tsx");
-    expect(wheel).toContain("h-11 w-11 rounded-full");
-    expect(wheel).not.toContain("h-9 w-9 rounded-full");
-  });
-
   it("footer links are 44px", () => {
     const footer = src("src/components/Footer.tsx");
     expect(footer).toContain("inline-flex min-h-11 items-center py-2 text-cream/80");

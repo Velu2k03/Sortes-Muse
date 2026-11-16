@@ -6,7 +6,6 @@ import { dailyHoroscope, weeklyHoroscope, SUN_SIGNS, type SunSign } from "@/lib/
 import { BRAND } from "@/lib/brand";
 import Icon from "@/components/Icon";
 import ThemedDatePicker from "@/components/ThemedDatePicker";
-import OptionWheel from "@/components/OptionWheel";
 import AnimatedContent from "@/components/AnimatedContent";
 import RubberSegment from "@/components/RubberSegment";
 import { ClickSpark, StarBorder } from "@/components/ReactBits";
@@ -82,10 +81,9 @@ export default function HoroscopeClient({
     return () => mq.removeEventListener("change", sync);
   }, []);
   const [view, setView] = useState<"daily" | "weekly">("daily");
-  // OptionWheel takes hard colours, so it bypasses the theme tokens
-  // like the credits Counter and charts dials did. Track the
-  // document theme here. RubberSegment now follows the theme too,
-  // 2026-11-04, instead of keeping its dark track in light mode.
+  // RubberSegment follows the document theme here (2026-11-04),
+  // instead of keeping its dark track in light mode. The sign grid
+  // uses CSS tokens, so it needs no theme tracking.
   const [siteTheme, setSiteTheme] = useState<"dark" | "light">("dark");
   useEffect(() => {
     const sync = () =>
@@ -133,39 +131,33 @@ export default function HoroscopeClient({
           A general reflection for your sun sign. Free, unsaved, no birth data needed.
         </p>
       </div>
-      <div className="mx-auto mt-8 grid gap-4 rounded-3xl border border-gold/25 bg-panel/70 p-6 sm:grid-cols-2">
-        <div>
-          <span className="mb-1.5 block text-sm font-medium text-cream">
+      {/* UX audit Phase 2, F28: the Sun sign used to be a spinning
+          wheel with a select under reduced motion, plus a 12-sign
+          link grid below the page doing the same job. The wheel
+          duplicated the grid, and its blurred next sign read as a
+          broken render in a still. One picker now: a grid of
+          buttons, the same control for everyone, no motion needed.
+          The wheel component is deleted (nothing else used it). */}
+      <div className="mx-auto mt-8 rounded-3xl border border-gold/25 bg-panel/70 p-6">
+        <fieldset>
+          <legend className="mb-1.5 block text-sm font-medium text-cream">
             Sun sign
-          </span>
-          {reducedMotion ? (
-            <select
-              id="horoscope-sign"
-              value={sign}
-              onChange={(e) => { setSign(e.target.value as SunSign); resetReveal(); }}
-              className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream focus:border-gold/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
-            >
-              {SUN_SIGNS.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
-          ) : (
-            <div className="h-64 overflow-hidden rounded-xl">
-              <p className="mb-2 text-xs text-mist">Choose your sign from the grid below, or spin the wheel: drag it, or focus it and use arrow keys.</p>
-              <OptionWheel
-                ariaLabel="Sun sign"
-                items={[...SUN_SIGNS]}
-                defaultSelected={SUN_SIGNS.indexOf(sign)}
-                onChange={(index) => { setSign(SUN_SIGNS[index]); resetReveal(); }}
-                textColor="var(--color-mist)"
-                activeColor="var(--color-goldbright)"
-              />
-            </div>
-          )}
-        </div>
-        <div>
+          </legend>
+          <div className="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-4">
+            {SUN_SIGNS.map((s) => (
+              <button
+                key={s}
+                type="button"
+                aria-pressed={s === sign}
+                onClick={() => { setSign(s); resetReveal(); }}
+                className={`min-h-11 rounded-full px-4 py-3 text-sm font-semibold transition ${s === sign ? "bg-gold text-ink" : "border border-gold/30 text-cream/90 hover:bg-gold/10"}`}
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+        </fieldset>
+        <div className="mt-4">
           <label htmlFor="horoscope-date" className="mb-1.5 block text-sm font-medium text-cream">
             Date
           </label>
@@ -207,11 +199,11 @@ export default function HoroscopeClient({
         <p className="mt-6 animate-pulse text-center text-sm text-gold motion-reduce:animate-none">
           Loading…
         </p>
-      ) : mounted && !revealed ? (
-        <p className="mt-6 text-center text-sm text-cream/75">
-          Choose your sign and date, then reveal your reflection.
-        </p>
-      ) : (
+      ) : // UX audit Phase 2, F28: the helper line "Choose your sign
+      // and date, then reveal your reflection" repeated what the
+      // button already says. Nothing renders here before the reveal
+      // now; the button is the action.
+      mounted && !revealed ? null : (
         <article className="mt-6 rounded-3xl border border-gold/25 bg-panel/70 p-6">
           {/* Phase 2, 2.2: the sign line used to type itself out with
               fake typos. It renders in full now, like the body below. */}
