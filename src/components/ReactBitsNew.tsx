@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import clsx from "clsx";
 import { usePathname } from "next/navigation";
 import { motion } from "motion/react";
@@ -39,6 +39,32 @@ import { motion } from "motion/react";
 function isReducedMotion(): boolean {
   if (typeof window === "undefined") return false;
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+// Shared by AnimatedList and Orb. All-pages follow-up to fix 10
+// (PR #147 Codex P2s): MotionConfig reducedMotion="user" disables
+// transform/layout animations but preserves opacity animations, so
+// the guides list still faded in with staggered delays for
+// reduced-motion users, and the Orb's one-time isReducedMotion()
+// check never reacted to a mid-session change. This hook fixes
+// both: it subscribes to the media query, the same pattern
+// useChartPrefs and DeckClient use.
+// Hydration-safe by construction: the state starts false, which
+// matches the server render (the server cannot see
+// prefers-reduced-motion), so the first client render hydrates
+// identically and no React #418 fires; the effect then syncs the
+// real preference after mount. Never branch the rendered tree on
+// this value, only animation props and effect behaviour.
+function usePrefersReducedMotion(): boolean {
+  const [reduced, setReduced] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const sync = () => setReduced(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+  return reduced;
 }
 
 function isTouchPointer(event: React.PointerEvent): boolean {
@@ -153,14 +179,24 @@ export function AnimatedList({
   // hydration error on the guides page. MotionConfig
   // reducedMotion="user" already makes the stagger instant for
   // those users, so the branch was redundant.
+  // All-pages follow-up to fix 10 (PR #147 Codex P2): "instant"
+  // only covered transform/layout. MotionConfig preserves opacity
+  // animations, so reduced-motion users still got the 0.35s fade
+  // with staggered delays. The list is now fully static for them:
+  // initial={false} skips the entrance and duration/delay 0 kills
+  // the tween, while normal-motion users keep the fade. The hook
+  // starts false (server-identical first render, no #418) and
+  // syncs after mount, so the tree never branches, only the
+  // animation props change.
+  const reduce = usePrefersReducedMotion();
   return (
     <div className={className}>
       {children.map((child, i) => (
         <motion.div
           key={i}
-          initial={{ opacity: 0, y: 12 }}
+          initial={reduce ? false : { opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: i * 0.06, duration: 0.35, ease: "easeOut" }}
+          transition={reduce ? { duration: 0, delay: 0 } : { delay: i * 0.06, duration: 0.35, ease: "easeOut" }}
         >
           {child}
         </motion.div>
@@ -175,23 +211,28 @@ export function Orb({
   className?: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  // All-pages follow-up to fix 10 (PR #147 Codex P2): the old
+  // effect checked isReducedMotion() once at mount, so a visitor
+  // who enabled reduced motion mid-session kept the pointer-follow
+  // moving the orbs. The effect now depends on the live
+  // usePrefersReducedMotion subscription: enabling reduced motion
+  // detaches the listener and parks both orbs at their rest
+  // position, disabling it re-attaches the listener. The rendered
+  // tree never branches on the preference, so no React #418.
+  const reduce = usePrefersReducedMotion();
   // Codex fresh re-review on PR 50, correct: the first fix listened
   // on the background layer, but hero copy and CTAs are siblings of
   // that layer, so moves over them never reached it. Listen on the
   // shared hero section ancestor (closest section), keeping the
   // decorative layer click-through.
   useEffect(() => {
-    // All-pages fix 10: the pointer-follow guard reads the
-    // preference here, inside the effect, not in render. The old
-    // `if (reduce) return <div>` branch rendered a different tree
-    // on the client than the server for reduced-motion users,
-    // which threw a React #418 hydration error on the homepage.
-    // MotionConfig reducedMotion="user" already makes the rotate
-    // and scale loops static for those users, so the branch was
-    // redundant.
-    if (isReducedMotion()) return;
     const section = ref.current?.closest("section");
     if (!section) return;
+    if (reduce) {
+      ref.current?.style.setProperty("--orb-x", "0px");
+      ref.current?.style.setProperty("--orb-y", "0px");
+      return;
+    }
     const onMove = (event: PointerEvent) => {
       if (event.pointerType === "touch" || !ref.current) return;
       const rect = section.getBoundingClientRect();
@@ -202,7 +243,7 @@ export function Orb({
     };
     section.addEventListener("pointermove", onMove);
     return () => section.removeEventListener("pointermove", onMove);
-  }, []);
+  }, [reduce]);
   return (
     <div
       ref={ref}
