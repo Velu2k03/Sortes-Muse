@@ -4,7 +4,8 @@ import { SpotlightCard } from "@/components/ReactBitsNew";
 
 import Link from "next/link";
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { forwardRef, useEffect, useMemo, useState } from "react";
+import { Virtuoso, type ItemProps, type ListProps } from "react-virtuoso";
 import { getHistory, freeReadingUsed } from "@/lib/storage";
 import { useAuth, deviceHeldSession } from "@/components/AuthProvider";
 import { isFreeAvailableFor } from "@/lib/free-reading";
@@ -28,6 +29,166 @@ import PageHeader from "@/components/PageHeader";
  * section. Follow-ups now link to the real thread on the reading
  * detail page (M2.1), not to a new reading.
  */
+
+// Journal virtualization (Vercel guideline: large lists >50 items).
+// pick-ui-library's curated pick for long lists is Virtuoso, and
+// the all-pages audit noted it as the fit for this history list
+// once it passes 50 items, the same treatment /deck got in PR #132
+// (react-virtuoso is already installed). Storage caps history at
+// MAX_HISTORY 100, but all 100 would still render without this.
+// The timeline is a single list view, grouped by day, so there is
+// no grid view here and no content-visibility alternative to pick.
+// NOT GroupedVirtuoso: in isolation (stock component, no custom
+// List/Item, no computeItemKey, no initialItemCount, data
+// ["AAA-first", "BBB-second", "CCC-third"], groupCounts [3]) it
+// renders the header, BBB and CCC but drops the first data element
+// AAA entirely, and the same off-by-one showed on /journal (the
+// newest reading of the first day never mounted). Plain Virtuoso
+// with flattened rows is used instead, the same component /deck
+// uses: each day contributes one header row plus one row per
+// reading, so the day grouping stays in the flow, in the chosen
+// sort order, and headers scroll away like they did before (the
+// old timeline had no sticky headers).
+// The List stays a plain div with space-y-4, the timeline's row
+// spacing: Virtuoso measures items by their offset positions, and
+// the margins space-y adds are part of those offsets. Do NOT switch
+// this to flex column + gap: on /deck that made Virtuoso's size
+// model drift (gap is not part of offset positions) and recurse
+// into RangeError: Maximum call stack size exceeded on scroll.
+// Row height is ~200px as a mid estimate (desktop rows are
+// ~150px, stacked mobile rows ~260px, day headers ~20px);
+// Virtuoso measures the real height once a row renders, so this
+// only sizes unmeasured rows. initialItemCount renders the first
+// 20 rows on the server so the list is not empty on first paint.
+// The print sheet below is NOT virtualized: it is display: none
+// on screen and window.print() needs the full journal, so it keeps
+// rendering every reading.
+const JournalTimelineList = forwardRef<
+  HTMLDivElement,
+  ListProps<HTMLDivElement>
+>(function JournalTimelineList({ style, children }, ref) {
+  return (
+    <div ref={ref} style={style} className="mt-10 space-y-4">
+      {children}
+    </div>
+  );
+});
+
+const JournalTimelineItem = (props: ItemProps<TimelineRow>) => {
+  const { children, style, item: _row, ...domProps } = props;
+  void _row;
+  return (
+    <div style={style} {...domProps}>
+      {children}
+    </div>
+  );
+};
+
+// One row of the flattened timeline: a day header, or one reading.
+// Flattened so plain Virtuoso can render the grouped timeline
+// (see the virtualization comment above: GroupedVirtuoso drops
+// the first data element).
+type TimelineRow =
+  | { type: "header"; key: string; label: string }
+  | { type: "reading"; key: string; reading: Reading };
+
+// One timeline entry, extracted verbatim from the old
+// groupReadingsByDay(...).map render so the virtualized list
+// renders exactly the same card: same thumbnails, meta, title,
+// question, chart summary, Open / Follow-up / Delete actions.
+// The delete arm/confirm logic lives in HistoryPage and arrives
+// here as armed + onDeleteClick, so this stays presentational.
+function JournalReadingCard({
+  reading: r,
+  armed,
+  onDeleteClick,
+}: {
+  reading: Reading;
+  armed: boolean;
+  onDeleteClick: () => void;
+}) {
+  return (
+    <article className="rounded-3xl border border-gold/20 bg-panel/60 p-5 sm:p-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+        <div className="flex -space-x-3">
+          {(r.cards ?? []).slice(0, 5).map((d) => (
+            <div
+              key={d.positionKey}
+              className="relative h-20 w-12 overflow-hidden rounded-md border border-gold/40 bg-navydeep"
+            >
+              <Image
+                src={getCard(d.cardId).image}
+                alt={`${getCard(d.cardId).name}${d.reversed ? ", reversed" : ""}`}
+                fill
+                sizes="48px"
+                className="object-cover"
+                style={
+                  d.reversed
+                    ? { transform: "rotate(180deg)" }
+                    : undefined
+                }
+              />
+            </div>
+          ))}
+          {(r.cards ?? []).length > 5 && (
+            <div className="flex h-20 w-12 items-center justify-center rounded-md border border-gold/40 bg-navydeep text-xs text-goldbright">
+              +{(r.cards ?? []).length - 5}
+            </div>
+          )}
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm text-mist">
+            {r.free ? "Free reading" : "1 Oracle"}
+            {r.aiGenerated ? " · Personalized" : ""}
+            {(r.followUps?.length ?? 0) > 0 &&
+              ` · ${r.followUps?.length} follow-up${
+                (r.followUps?.length ?? 0) === 1 ? "" : "s"
+              }`}
+            {r.revisitNote && " · Revisited"}
+          </p>
+          <h2 className="mt-1 font-display text-2xl text-cream">
+            {r.spreadName}
+          </h2>
+          {r.question && (
+            <p className="mt-1 truncate text-sm italic text-cream/75">
+              “{r.question}”
+            </p>
+          )}
+          {r.chartSummary && (
+            <p className="mt-1 text-sm text-cream/75">{r.chartSummary}</p>
+          )}
+        </div>
+        <div className="flex shrink-0 flex-wrap gap-2">
+          <Link
+            href={`/reading/${r.id}`}
+            className="btn-ghost rounded-xl px-4 py-3 text-sm font-semibold"
+          >
+            Open reading
+          </Link>
+          {r.aiGenerated &&
+            r.interpretation &&
+            !r.chartSummary && (
+              <Link
+                href={`/reading/${r.id}`}
+                className="btn-gold rounded-xl px-4 py-3 text-sm font-bold"
+                title="Continue the follow-up thread on this reading"
+              >
+                Follow-up
+              </Link>
+            )}
+          <button
+            type="button"
+            onClick={onDeleteClick}
+            className="rounded-xl border border-danger/30 px-4 py-2.5 text-sm font-semibold text-danger"
+          >
+            {armed ? "Confirm delete?" : "Delete"}
+          </button>
+        </div>
+      </div>
+    </article>
+  );
+}
+
 export default function HistoryPage() {
   const { user, deleteReading, freeReadingAvailable, authFailed, loading: authLoading } = useAuth();
   // Batch 6a (Batch 1 drift): the empty-journal line used to promise
@@ -68,17 +229,60 @@ export default function HistoryPage() {
   // this keeps it one action per entry while guarding the data.
   const [armedId, setArmedId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  // M2.2 delete, extracted so the virtualized card stays
+  // presentational: first tap arms, second tap deletes.
+  const handleDeleteClick = async (r: Reading) => {
+    if (armedId !== r.id) {
+      setArmedId(r.id);
+      setDeleteError(null);
+      return;
+    }
+    const ok = await deleteReading(r.id);
+    if (ok) {
+      setHistory((h) => (h ? h.filter((x) => x.id !== r.id) : h));
+      setArmedId(null);
+    } else {
+      setDeleteError("Could not delete that reading. Please try again.");
+    }
+  };
   // Deep UX Batch B: journal search and sort, so a growing journal
   // stays usable instead of becoming a longer list.
   const [search, setSearch] = useState("");
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
-  const filteredHistory = (history ?? [])
-    .filter((r) => {
-      const q = search.trim().toLowerCase();
-      if (!q) return true;
-      return (r.question ?? "").toLowerCase().includes(q) || r.spreadName.toLowerCase().includes(q) || (r.category ?? "").toLowerCase().includes(q);
-    })
-    .sort((a, b) => sortOrder === "newest" ? b.createdAt.localeCompare(a.createdAt) : a.createdAt.localeCompare(b.createdAt));
+  // Memoized so the virtualized timeline gets a stable data
+  // identity: without this, every render (a delete arm, a keystroke
+  // elsewhere) would hand Virtuoso a new array.
+  const filteredHistory = useMemo(
+    () =>
+      (history ?? [])
+        .filter((r) => {
+          const q = search.trim().toLowerCase();
+          if (!q) return true;
+          return (r.question ?? "").toLowerCase().includes(q) || r.spreadName.toLowerCase().includes(q) || (r.category ?? "").toLowerCase().includes(q);
+        })
+        .sort((a, b) => sortOrder === "newest" ? b.createdAt.localeCompare(a.createdAt) : a.createdAt.localeCompare(b.createdAt)),
+    [history, search, sortOrder],
+  );
+  // Day groups for the virtualized timeline, flattened into rows:
+  // one header row per day, then one row per reading under it.
+  // Flat rows let plain Virtuoso render the grouped timeline
+  // (GroupedVirtuoso drops the first data element, see above).
+  const dayGroups = useMemo(
+    () => groupReadingsByDay(filteredHistory),
+    [filteredHistory],
+  );
+  const timelineRows = useMemo<TimelineRow[]>(
+    () =>
+      dayGroups.flatMap((g): TimelineRow[] => [
+        { type: "header", key: `day-${g.label}`, label: g.label },
+        ...g.readings.map((r): TimelineRow => ({
+          type: "reading",
+          key: r.id,
+          reading: r,
+        })),
+      ]),
+    [dayGroups],
+  );
 
   useEffect(() => {
     const local = getHistory();
@@ -599,120 +803,51 @@ export default function HistoryPage() {
             ))}
           </div>
 
-          {/* M2.2: timeline, grouped by day, in the chosen sort order. */}
-          <div className="mt-10 space-y-8">
-            {groupReadingsByDay(filteredHistory).map((group) => (
-              <section key={group.label}>
-                <p className="text-sm text-gold">
-                  {group.label}
+          {/* M2.2: timeline, grouped by day, in the chosen sort order.
+              Virtualized with plain Virtuoso over flattened rows: one
+              header row per day, then one row per reading under it.
+              Only the rows near the viewport are in the DOM. Spacing
+              is the old rhythm, re-expressed for siblings in one
+              list: space-y-4 on the list keeps 16px between rows
+              (was space-y-4 between readings inside each day), and
+              a pt-4 on later day headers makes the gap from the last
+              reading of one day to the next header 16 + 16 = 32px
+              (was space-y-8 between sections). The one deliberate
+              4px change: a day header to its first reading is 16px
+              now, was mt-3 (12px) inside the section. Headers scroll
+              away like before; there were no sticky headers. The
+              print sheet above still renders every reading. */}
+          <Virtuoso
+            useWindowScroll
+            data={timelineRows}
+            computeItemKey={(_index, row) => row.key}
+            initialItemCount={20}
+            defaultItemHeight={200}
+            overscan={8}
+            // Render ~3 rows past the viewport edge, so fast scrolling
+            // does not flash empty space before new rows mount.
+            increaseViewportBy={300}
+            components={{ List: JournalTimelineList, Item: JournalTimelineItem }}
+            itemContent={(index, row) =>
+              row.type === "header" ? (
+                <p
+                  className={
+                    index === 0
+                      ? "text-sm text-gold"
+                      : "pt-4 text-sm text-gold"
+                  }
+                >
+                  {row.label}
                 </p>
-                <div className="mt-3 space-y-4">
-                  {group.readings.map((r) => (
-                    <article
-                      key={r.id}
-                      className="rounded-3xl border border-gold/20 bg-panel/60 p-5 sm:p-6"
-                    >
-                      <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-                        <div className="flex -space-x-3">
-                          {(r.cards ?? []).slice(0, 5).map((d) => (
-                            <div
-                              key={d.positionKey}
-                              className="relative h-20 w-12 overflow-hidden rounded-md border border-gold/40 bg-navydeep"
-                            >
-                              <Image
-                                src={getCard(d.cardId).image}
-                                alt={`${getCard(d.cardId).name}${d.reversed ? ", reversed" : ""}`}
-                                fill
-                                sizes="48px"
-                                className="object-cover"
-                                style={
-                                  d.reversed
-                                    ? { transform: "rotate(180deg)" }
-                                    : undefined
-                                }
-                              />
-                            </div>
-                          ))}
-                          {(r.cards ?? []).length > 5 && (
-                            <div className="flex h-20 w-12 items-center justify-center rounded-md border border-gold/40 bg-navydeep text-xs text-goldbright">
-                              +{(r.cards ?? []).length - 5}
-                            </div>
-                          )}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm text-mist">
-                            {r.free ? "Free reading" : "1 Oracle"}
-                            {r.aiGenerated ? " · Personalized" : ""}
-                            {(r.followUps?.length ?? 0) > 0 &&
-                              ` · ${r.followUps?.length} follow-up${
-                                (r.followUps?.length ?? 0) === 1 ? "" : "s"
-                              }`}
-                            {r.revisitNote && " · Revisited"}
-                          </p>
-                          <h2 className="mt-1 font-display text-2xl text-cream">
-                            {r.spreadName}
-                          </h2>
-                          {r.question && (
-                            <p className="mt-1 truncate text-sm italic text-cream/75">
-                              “{r.question}”
-                            </p>
-                          )}
-                          {r.chartSummary && (
-                            <p className="mt-1 text-sm text-cream/75">{r.chartSummary}</p>
-                          )}
-                        </div>
-                        <div className="flex shrink-0 flex-wrap gap-2">
-                          <Link
-                            href={`/reading/${r.id}`}
-                            className="btn-ghost rounded-xl px-4 py-3 text-sm font-semibold"
-                          >
-                            Open reading
-                          </Link>
-                          {r.aiGenerated &&
-                            r.interpretation &&
-                            !r.chartSummary && (
-                              <Link
-                                href={`/reading/${r.id}`}
-                                className="btn-gold rounded-xl px-4 py-3 text-sm font-bold"
-                                title="Continue the follow-up thread on this reading"
-                              >
-                                Follow-up
-                              </Link>
-                            )}
-                          <button
-                            type="button"
-                            onClick={async () => {
-                              if (armedId !== r.id) {
-                                setArmedId(r.id);
-                                setDeleteError(null);
-                                return;
-                              }
-                              const ok = await deleteReading(r.id);
-                              if (ok) {
-                                setHistory((h) =>
-                                  h ? h.filter((x) => x.id !== r.id) : h
-                                );
-                                setArmedId(null);
-                              } else {
-                                setDeleteError(
-                                  "Could not delete that reading. Please try again."
-                                );
-                              }
-                            }}
-                            className="rounded-xl border border-danger/30 px-4 py-2.5 text-sm font-semibold text-danger"
-                          >
-                            {armedId === r.id
-                              ? "Confirm delete?"
-                              : "Delete"}
-                          </button>
-                        </div>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              </section>
-            ))}
-          </div>
+              ) : (
+                <JournalReadingCard
+                  reading={row.reading}
+                  armed={armedId === row.reading.id}
+                  onDeleteClick={() => handleDeleteClick(row.reading)}
+                />
+              )
+            }
+          />
         </>
       )}
     </div>
