@@ -74,16 +74,16 @@ export default function SpreadsPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
-      <div className="text-center">
+      <div className="text-left">
         <PageHeader eyebrow="Readings" title="Choose your spread" titleClassName="sm:text-6xl" />
-        <p className="mx-auto mt-4 max-w-xl text-cream/75">
+        <p className="mt-4 max-w-xl text-cream/75">
           {!freeAvailable
             ? "Each reading uses 1 Oracle, any spread. Oracles never expire."
             : "First Quick Insight free. After that, 1 Oracle, any spread."}
         </p>
         {/* Personal Phase 4, Decision 16: reflection disclaimer on
             the spread pages themselves, not only on FAQ. */}
-        <p className="mx-auto mt-3 max-w-xl text-xs italic text-mist">
+        <p className="mt-3 max-w-xl text-xs italic text-mist">
           For reflection, not prediction.
         </p>
       </div>
@@ -197,7 +197,7 @@ export default function SpreadsPage() {
                       cost, or spread data changes. */}
                   <Link
                     href={`/spreads/${s.slug}`}
-                    className="mt-3 block text-center text-sm font-semibold text-goldbright underline underline-offset-4"
+                    className="mt-3 block text-left text-sm font-semibold text-goldbright underline underline-offset-4"
                   >
                     View spread detail<span className="sr-only">: {s.name}</span>
                   </Link>
