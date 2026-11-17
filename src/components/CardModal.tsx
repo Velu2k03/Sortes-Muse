@@ -38,7 +38,13 @@ export default function CardModal({ cardId, onClose }: Props) {
           aria-label={card.name}
         >
           <motion.div
-            className="relative max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-t-3xl border border-gold/30 bg-navydeep p-6 sm:rounded-3xl sm:p-8"
+            /* All-pages fix 9 (touch-action + overscroll, 2026-11-17):
+               overscroll-contain stops scroll chaining, so scrolling
+               to the top or bottom of a long card detail no longer
+               scrolls the page behind the modal (Vercel modal rule).
+               The panel is the scrollable element (overflow-y-auto),
+               so the rule lives here, not on the backdrop. */
+            className="relative max-h-[92vh] w-full max-w-2xl overflow-y-auto overscroll-contain rounded-t-3xl border border-gold/30 bg-navydeep p-6 sm:rounded-3xl sm:p-8"
             initial={{ y: 60, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 60, opacity: 0 }}

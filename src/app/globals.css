@@ -143,6 +143,26 @@ h2 {
   text-wrap: balance;
 }
 
+/* All-pages fix 9 (touch-action + overscroll, 2026-11-17): the
+   audit found no `touch-action: manipulation` anywhere in the app
+   (Vercel touch rule). One rule here removes the mobile tap delay
+   on every interactive element, so taps fire on first touch
+   instead of waiting ~300ms for a double-tap zoom. The selector
+   is interactive elements only, not html/body/*: `manipulation`
+   keeps pan and pinch-zoom but drops double-tap zoom, and drag
+   surfaces (the /deck spiral, OptionWheel, TarotCard) must keep
+   their own touch handling untouched. */
+a,
+button,
+input,
+select,
+textarea,
+label,
+summary,
+[role="button"] {
+  touch-action: manipulation;
+}
+
 /* Header logo (Velu, 2026-11-15): the logo is FIXED, no rotation.
    The old logo-turn-once spin is removed. The SORTES wordmark keeps
    the Cormorant Garamond display face with a gold gradient and a
