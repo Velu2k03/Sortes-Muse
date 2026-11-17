@@ -580,6 +580,22 @@ html[data-theme="light"] {
   html {
     scroll-behavior: auto;
   }
+  /* All-pages follow-up to fix 10, PR #154 Codex P2: the guides
+     list (AnimatedList in ReactBitsNew.tsx) mounts its rows with
+     Motion initial={{ opacity: 0, y: 12 }}, and the
+     usePrefersReducedMotion hook still returns false until its
+     effect runs, so on an initial load with reduced motion already
+     enabled the rows would start invisible and fade in before the
+     effect could flip initial to false. JS cannot fix the first
+     paint: it runs after it. CSS can: the stylesheet loads before
+     first paint, and !important beats Motion's inline opacity: 0 /
+     translateY, so the rows are fully visible from the very first
+     paint for reduced-motion users. No React tree change, so no
+     hydration risk. Normal-motion users never match this query. */
+  .animated-list-item {
+    opacity: 1 !important;
+    transform: none !important;
+  }
 }
 
 /* Phase 5 (5.4a): Heirloom print export. The heirloom sheet is

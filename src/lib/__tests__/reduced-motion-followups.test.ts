@@ -11,6 +11,15 @@
  * reacted if a visitor enabled reduced motion mid-session, so the
  * pointer-follow kept moving the orbs.
  *
+ * PR #154 Codex P2 on P2-1: the hook alone does not cover the
+ * initial load, it still returns false until its effect runs, so
+ * rows mount with the opacity-zero entrance. The first paint is
+ * covered by CSS instead: each row carries className
+ * "animated-list-item" and globals.css forces opacity 1 / no
+ * transform under prefers-reduced-motion: reduce, !important
+ * beating Motion's inline style. CSS loads before JS, no React
+ * tree change, no hydration risk.
+ *
  * Both fixes share one hook, usePrefersReducedMotion, the same
  * pattern useChartPrefs and DeckClient use: state starts false
  * (server-identical first render, no #418) and an effect syncs the
@@ -77,6 +86,23 @@ describe("reduced-motion follow-ups (PR #147 P2s)", () => {
     expect(list).toContain("transition={reduce ? { duration: 0, delay: 0 }");
     // Normal motion keeps the original fade with stagger.
     expect(list).toContain("delay: i * 0.06, duration: 0.35");
+  });
+
+  it("AnimatedList rows are visible from the first paint under reduced motion (PR #154 P2)", () => {
+    const list = component(file, "AnimatedList", "Orb");
+    // The JS hook cannot cover the initial load: it returns false
+    // until its effect runs, so rows mount with the opacity-zero
+    // entrance. Each row therefore carries a class the CSS below
+    // can force visible before JS runs at all.
+    expect(list).toContain('className="animated-list-item"');
+    // CSS layer in globals.css: !important beats Motion's inline
+    // opacity: 0 / translateY, and the stylesheet loads before
+    // first paint, so no flash and no fade on initial load.
+    const css = src("src/app/globals.css");
+    const reduceBlock = css.slice(css.indexOf("@media (prefers-reduced-motion: reduce)"));
+    expect(reduceBlock).toContain(".animated-list-item {");
+    expect(reduceBlock).toContain("opacity: 1 !important;");
+    expect(reduceBlock).toContain("transform: none !important;");
   });
 
   it("Orb reacts to a mid-session reduced-motion change", () => {

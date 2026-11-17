@@ -188,12 +188,28 @@ export function AnimatedList({
   // starts false (server-identical first render, no #418) and
   // syncs after mount, so the tree never branches, only the
   // animation props change.
+  // PR #154 Codex P2, initial-load hole in the hook alone: the
+  // hook still returns false until its effect runs, so on an
+  // initial /guides load with reduced motion already enabled the
+  // rows mount with the opacity-zero entrance and the effect flips
+  // initial only after mount, which cannot undo that first
+  // entrance. The JS gate above therefore covers mid-session
+  // changes only. The first paint is covered by CSS instead: each
+  // row carries className "animated-list-item", and globals.css
+  // forces opacity 1 / no transform under
+  // prefers-reduced-motion: reduce. CSS loads before JS and
+  // !important beats Motion's inline opacity: 0, so reduced-motion
+  // users see the list fully visible from the very first paint,
+  // with no React tree change and no hydration risk. Normal-motion
+  // users are untouched: the media query does not match them and
+  // the fade below still runs.
   const reduce = usePrefersReducedMotion();
   return (
     <div className={className}>
       {children.map((child, i) => (
         <motion.div
           key={i}
+          className="animated-list-item"
           initial={reduce ? false : { opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={reduce ? { duration: 0, delay: 0 } : { delay: i * 0.06, duration: 0.35, ease: "easeOut" }}
