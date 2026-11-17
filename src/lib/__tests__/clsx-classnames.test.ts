@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "fs";
+import { readFileSync, readdirSync, statSync } from "fs";
 import path from "path";
 
 // clsx for className ternaries (pick-ui-library gap, 2026-11-17):
@@ -22,9 +22,43 @@ import path from "path";
 // so the token set is identical, only the trailing space
 // the template left behind is gone. FoldText's `.trim()`
 // on the template is gone with it.
+//
+// clsx test site-wide (2026-11-17, this branch): the two
+// tests named "... remains site-wide" below used to scan
+// only the CONVERTED / UNGUARDED lists, so they locked
+// those files, not literally the whole site. They now walk
+// every non-test source file under src/ (247 files at the
+// time of this change), so the names are true. Test files
+// are excluded from the scan: this file names the banned
+// patterns in its own strings and comments, and the
+// colocated *.test.ts route tests do the same (same pattern
+// as the Batch 6a slop guard and the Batch 2a typewriter
+// guard).
 
 const src = (rel: string) =>
   readFileSync(path.resolve(process.cwd(), rel), "utf8");
+
+// Every non-test source file under src/, following the
+// Batch 6a walker: recurse, skip __tests__ directories,
+// skip *.test.ts / *.test.tsx files (including the colocated
+// route tests under src/app).
+function sourceFiles(dir: string): string[] {
+  const out: string[] = [];
+  for (const entry of readdirSync(dir)) {
+    const p = path.join(dir, entry);
+    if (statSync(p).isDirectory()) {
+      if (entry === "__tests__") continue;
+      out.push(...sourceFiles(p));
+    } else if (
+      (p.endsWith(".ts") || p.endsWith(".tsx")) &&
+      !p.endsWith(".test.ts") &&
+      !p.endsWith(".test.tsx")
+    ) {
+      out.push(p);
+    }
+  }
+  return out;
+}
 
 // Every file converted in this branch.
 const CONVERTED = [
@@ -64,11 +98,16 @@ describe("clsx classnames (pick-ui-library gap)", () => {
 
   it("no guarded className append boilerplate remains site-wide", () => {
     // The pattern this branch removes: `${className ? ` ${className}` : ''}`
-    // (and the titleClassName variant in PageHeader). Any re-introduction
-    // should go through clsx instead.
-    const all = CONVERTED.map(src).join("\n");
-    expect(all).not.toContain("className ? ` ${className}`");
-    expect(all).not.toContain("titleClassName ? ` ${titleClassName}`");
+    // (and the titleClassName variant in PageHeader, and any
+    // other *ClassName prop of the same shape). Any re-introduction
+    // should go through clsx instead. Scanned over every
+    // non-test source file under src/, not just the converted list.
+    const offenders = sourceFiles("src").filter((rel) =>
+      /[A-Za-z]*[Cc]lassName\s*\?\s*`\s*\$\{[A-Za-z]*[Cc]lassName\}`/.test(
+        src(rel),
+      ),
+    );
+    expect(offenders).toEqual([]);
   });
 
   it("Header nav links share one clsx base instead of two duplicated strings", () => {
@@ -162,9 +201,13 @@ describe("clsx unguarded className interpolations", () => {
   it("no unguarded ${className} interpolation remains site-wide", () => {
     // The pattern this follow-up removes: `... ${className}`
     // inside a className template literal with no guard. Any
-    // re-introduction should go through clsx instead.
-    const all = UNGUARDED.map(src).join("\n");
-    expect(all).not.toContain("${className}");
+    // re-introduction should go through clsx instead. Scanned
+    // over every non-test source file under src/, not just
+    // the converted list.
+    const offenders = sourceFiles("src").filter((rel) =>
+      /\$\{[A-Za-z]*[Cc]lassName\}/.test(src(rel)),
+    );
+    expect(offenders).toEqual([]);
   });
 
   it("each unguarded site keeps its exact base classes in clsx form", () => {
