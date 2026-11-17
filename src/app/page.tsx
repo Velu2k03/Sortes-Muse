@@ -43,6 +43,22 @@ const fadeUpFor = (hide: boolean) => ({
   viewport: { once: true, margin: "-60px" },
   transition: { duration: 0.25, ease: "easeOut" as const },
 });
+// Layout fix Run D: one authored entrance per section, not one identical
+// fadeUp on all three. Intro keeps fadeUp (24px, 0.25s), steps fade in
+// with no rise (0.25s), daily rises gently (12px, 0.2s). All within the
+// 150-250ms guide, same hide/reduced-motion handling as fadeUpFor.
+const fadeInFor = (hide: boolean) => ({
+  initial: hide ? { opacity: 0 } : (false as const),
+  whileInView: { opacity: 1 },
+  viewport: { once: true, margin: "-60px" },
+  transition: { duration: 0.25, ease: "easeOut" as const },
+});
+const riseSoftFor = (hide: boolean) => ({
+  initial: hide ? { opacity: 0, y: 12 } : (false as const),
+  whileInView: { opacity: 1, y: 0 },
+  viewport: { once: true, margin: "-60px" },
+  transition: { duration: 0.2, ease: "easeOut" as const },
+});
 
 // Phase 4C (4.6): the orbit carousel is replaced by a static grid of
 // the same six Major Arcana cards, each linking to its own card page.
@@ -69,6 +85,8 @@ const EXAMPLE_QUESTIONS = [
 export default function Home() {
   const hide = useCanHide();
   const fadeUp = fadeUpFor(hide);
+  const fadeIn = fadeInFor(hide);
+  const riseSoft = riseSoftFor(hide);
   const revealKey = hide ? "reveal" : "static";
   const fanCards = MAJORS.slice(0, 5);
   const middle = (fanCards.length - 1) / 2;
@@ -382,7 +400,7 @@ export default function Home() {
             errors, no-img-element warning) and Phase 4C already
             removed its cursor glow from this page as a gimmick, so
             the existing motion step cards stay. */}
-        <motion.div key={`${revealKey}-steps`} {...fadeUp} className="mt-12">
+        <motion.div key={`${revealKey}-steps`} {...fadeIn} className="mt-12">
           <h3 className="font-display text-3xl text-goldbright">
             How it works
           </h3>
@@ -433,7 +451,7 @@ export default function Home() {
       {/* DAILY CARD TEASER */}
       <section className="border-y border-gold/10 bg-navydeep/40 py-10">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
-        <motion.div key={revealKey} {...fadeUp}>
+        <motion.div key={revealKey} {...riseSoft}>
           <h2 className="mt-4 font-display text-4xl text-goldbright sm:text-5xl">
             One card, every morning
           </h2>
