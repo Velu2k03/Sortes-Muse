@@ -129,6 +129,7 @@ export function SystemPicker({ prefs, s }: { prefs: ChartPrefs; s: ChartSession 
             value={system}
             onChange={(v) => selectSystem(v as ChartSystem)}
             ariaLabel="Chart system"
+            name="system"
             size="lg"
             radius={12}
             // Codex P1, PR #117: token-backed colours, not duplicated
@@ -322,6 +323,10 @@ export function BirthForm({ prefs, form, s }: { prefs: ChartPrefs; form: ChartFo
               }
             }}
             ariaLabel="Birthplace"
+            // Same name as the native select in the
+            // reduced-motion branch above, so the submitted
+            // field name does not change with motion preference.
+            name="place"
             size="lg"
             radius={12}
             accentColor="var(--color-gold)"
