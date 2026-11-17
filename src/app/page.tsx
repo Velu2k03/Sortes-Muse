@@ -501,10 +501,22 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Phase 2 pricing preview: the three plans as identical cards,
-          same size and padding, Star marked popular by a gold border
-          and badge, never by height (#59, #75). Full pricing lives
-          on /pricing. */}
+      {/* Pricing preview, editorial layout (Velu, 2026-11-17):
+          the old lock is CANCELLED, identical-size pricing cards
+          with popular by border/badge only. Per Griffin Video 3
+          Fix 1 (focal point, one action per screen) Star is the
+          focal standout, not equal to the other two. Per Tristen
+          Video 1 Fix 4 (break the center) the section is
+          left-aligned and asymmetric, not three equal cards in a
+          row. Per Taste, no three feature cards; hierarchy comes
+          from weight and colour, not size alone. Per Impeccable
+          craft floor, same-size icon-plus-heading-plus-text cards
+          are refused as page structure, and no kicker/eyebrow
+          sits above the heading. Spark and Moon are quiet rows
+          separated by hairline rules, grouped by spacing, not
+          boxes (Griffin Fix 2). Tier names, prices, Oracle
+          counts and the /pricing link are unchanged. Full
+          pricing lives on /pricing. */}
       <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6" aria-label="Pricing preview">
         <h2 className="mt-4 font-display text-4xl text-goldbright sm:text-5xl">
           Simple plans, clear prices
@@ -512,41 +524,50 @@ export default function Home() {
         <p className="mt-6 max-w-lg text-cream/75">
           Start free with one card a day.
         </p>
-        <div className="mt-8 grid gap-4 sm:grid-cols-3">
-          {[
-            { name: "Spark", price: "$9.99", oracles: "1,000 Oracles a month", popular: false },
-            { name: "Star", price: "$19.99", oracles: "2,500 Oracles a month", popular: true },
-            { name: "Moon", price: "$39.99", oracles: "6,000 Oracles a month", popular: false },
-          ].map((tier) => (
-            <div
-              key={tier.name}
-              className={`relative rounded-2xl border p-6 text-center ${
-                tier.popular
-                  ? "border-gold bg-gold/10 shadow-gold"
-                  : "border-gold/25 bg-panel/60"
-              }`}
+        <div className="mt-8 grid gap-10 lg:grid-cols-12 lg:gap-12">
+          {/* Star, the focal tier: the one large panel, gold
+              border and glow, the section's single action inside it. */}
+          <article className="relative rounded-2xl border border-gold bg-gold/10 p-8 text-left shadow-gold lg:col-span-7">
+            <span className="absolute -top-3 left-6 rounded-full bg-gold px-3 py-1 text-xs font-bold uppercase tracking-wide text-ink">
+              Most popular
+            </span>
+            <h3 className="font-display text-4xl text-goldbright">Star</h3>
+            <p className="mt-4 text-5xl font-bold text-cream">
+              $19.99
+              <span className="text-base font-normal text-mist"> / month</span>
+            </p>
+            <p className="mt-2 text-base text-cream/80">2,500 Oracles a month</p>
+            <Link
+              href="/pricing"
+              className="btn-gold mt-8 inline-block rounded-2xl px-8 py-3.5 font-semibold"
             >
-              {tier.popular && (
-                <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-gold px-3 py-1 text-xs font-bold uppercase tracking-wide text-ink">
-                  Most popular
-                </span>
-              )}
-              <h3 className="font-display text-2xl text-goldbright">{tier.name}</h3>
-              <p className="mt-2 text-3xl font-bold text-cream">
-                {tier.price}
-                <span className="text-base font-normal text-mist"> / month</span>
+              See full pricing
+            </Link>
+          </article>
+          {/* Spark and Moon, quiet supporting rows: no boxes, no
+              backgrounds, separated by hairline rules only. */}
+          <ul className="divide-y divide-gold/25 lg:col-span-5">
+            <li className="flex items-baseline justify-between gap-4 py-6 first:pt-0">
+              <div>
+                <h3 className="font-display text-2xl text-goldbright">Spark</h3>
+                <p className="mt-2 text-sm text-cream/75">1,000 Oracles a month</p>
+              </div>
+              <p className="shrink-0 text-2xl font-bold text-cream">
+                $9.99
+                <span className="text-sm font-normal text-mist"> / month</span>
               </p>
-              <p className="mt-2 text-sm text-cream/75">{tier.oracles}</p>
-            </div>
-          ))}
-        </div>
-        <div className="mt-8">
-          <Link
-            href="/pricing"
-            className="btn-gold inline-block rounded-2xl px-8 py-3.5 font-semibold"
-          >
-            See full pricing
-          </Link>
+            </li>
+            <li className="flex items-baseline justify-between gap-4 py-6 last:pb-0">
+              <div>
+                <h3 className="font-display text-2xl text-goldbright">Moon</h3>
+                <p className="mt-2 text-sm text-cream/75">6,000 Oracles a month</p>
+              </div>
+              <p className="shrink-0 text-2xl font-bold text-cream">
+                $39.99
+                <span className="text-sm font-normal text-mist"> / month</span>
+              </p>
+            </li>
+          </ul>
         </div>
       </section>
     </div>
