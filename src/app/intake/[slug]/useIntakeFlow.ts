@@ -164,7 +164,17 @@ export function useIntakeFlow(slug: string) {
         : getIntakeDraft(slug);
       if (d && d.categoryKey && getCategory(d.categoryKey)) {
         setCategoryKey(d.categoryKey);
-        setAnswers(d.answers);
+        // Intake fields restoration: keep only answer keys that
+        // belong to this category, so a stale key from another
+        // category never gates or leaks into the form.
+        const knownKeys = new Set(
+          getCategory(d.categoryKey).fields.map((field) => field.key)
+        );
+        const safeDraftAnswers: Record<string, string> = {};
+        for (const [k, v] of Object.entries(d.answers)) {
+          if (knownKeys.has(k)) safeDraftAnswers[k] = v;
+        }
+        setAnswers(safeDraftAnswers);
         setStory(d.story);
         setQuestion(d.question);
         setStep("form");
@@ -234,13 +244,25 @@ export function useIntakeFlow(slug: string) {
     answers.firstName?.trim() ||
     "friend";
 
-  // Batch 3b: the question is the ONLY required field (Velu:
-  // "cut it"). The story is optional context and the category
-  // fields are no longer rendered, so nothing else gates the
-  // "Review my reading" button.
+  // Intake fields restoration (Velu, 2026-11-17): the required
+  // category fields gate the "Review my reading" button again.
+  // Batch 3b had cut them to the question only. The story stays
+  // optional, and nickname, ages and birthdays never block.
+  // firstMissingField returns the first missing required field (or
+  // "question") so the form can focus it, or null when all are
+  // filled.
+  const firstMissingField = (): string | null => {
+    if (!category) return null;
+    for (const field of category.fields) {
+      if (field.required && !answers[field.key]?.trim()) return field.key;
+    }
+    if (!question.trim()) return "question";
+    return null;
+  };
+
   const formValid = () => {
     if (!category) return false;
-    return question.trim().length > 0;
+    return firstMissingField() === null;
   };
 
   // M1.1: drawing is free and separate from generation. The confirm
@@ -535,7 +557,7 @@ export function useIntakeFlow(slug: string) {
     question, setQuestion, setOriginalQuestion, suggestionDismissed,
     setSuggestionDismissed, drawnCards, impression, setImpression, error,
     processingLine, processingComplete, streamedText, streamingModel, busy, generationFailed, toastOpen,
-    setToastOpen, isFreeAvailable, gate, credits, category, questionSuggestion, set, formValid,
+    setToastOpen, isFreeAvailable, gate, credits, category, questionSuggestion, set, formValid, firstMissingField,
     beginDraw, beginGeneration, retryGeneration, startOver,
   };
 }
