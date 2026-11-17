@@ -32,22 +32,22 @@ export function ReadingHeader({ reading }: { reading: Reading }) {
           { label: reading.spreadName },
         ]}
       />
-      <p className="num text-center text-sm text-gold">
+      <p className="num text-left text-sm text-gold">
         {reading.spreadName} · {date}
       </p>
-      <SplitText tag="h1" text="Your reading" className="mt-3 text-center font-display text-5xl text-goldbright" />
+      <SplitText tag="h1" text="Your reading" className="mt-3 text-left font-display text-5xl text-goldbright" textAlign="left" />
       {reading.question && (
-        <p className="mx-auto mt-4 max-w-xl text-center italic text-cream/80">
+        <p className="mt-4 max-w-xl text-left italic text-cream/80">
           “{reading.question}”
         </p>
       )}
       {reading.originalQuestion && (
-        <p className="mx-auto mt-2 max-w-xl text-center text-xs text-mist">
+        <p className="mt-2 max-w-xl text-left text-xs text-mist">
           First written as: “{reading.originalQuestion}”
         </p>
       )}
       {reading.firstImpression && (
-        <p className="mx-auto mt-2 max-w-xl text-center text-sm text-goldbright">
+        <p className="mt-2 max-w-xl text-left text-sm text-goldbright">
           Your first impression: {reading.firstImpression}
         </p>
       )}

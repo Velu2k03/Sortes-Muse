@@ -78,7 +78,7 @@ export default function ReadingDetail({ id }: { id: string }) {
       <AtAGlance reading={reading} />
       <CardMeanings reading={reading} />
 
-      <p className="mx-auto mt-10 max-w-3xl text-center text-sm text-mist">
+      <p className="mt-10 max-w-3xl text-left text-sm text-mist">
         Your story is not shown here on purpose: it was used for this reading only and is not saved.
       </p>
 
@@ -89,7 +89,7 @@ export default function ReadingDetail({ id }: { id: string }) {
       {/* Batch 3.3 (#8): the actions are two panels, not one mixed
           one. "Ask more" is everything that continues the reading;
           "Keep and share" is everything that saves or sends it. */}
-      <section aria-label="Ask more" className="mx-auto mt-10 flex max-w-3xl flex-col items-center gap-4 rounded-3xl border border-gold/25 bg-panel/60 p-6 text-center sm:p-8">
+      <section aria-label="Ask more" className="mx-auto mt-10 flex max-w-3xl flex-col items-start gap-4 rounded-3xl border border-gold/25 bg-panel/60 p-6 text-left sm:p-8">
         <h2 className="font-display text-2xl text-cream">Ask more</h2>
         {reading.free && reading.spreadSlug === "quick-insight" && <ThreeCardNudge />}
         {hasFollowUpThread && (
@@ -104,7 +104,7 @@ export default function ReadingDetail({ id }: { id: string }) {
         </p>
       </section>
 
-      <section aria-label="Keep and share" className="mx-auto mt-6 flex max-w-3xl flex-col items-center gap-4 rounded-3xl border border-gold/25 bg-panel/60 p-6 text-center sm:p-8">
+      <section aria-label="Keep and share" className="mx-auto mt-6 flex max-w-3xl flex-col items-start gap-4 rounded-3xl border border-gold/25 bg-panel/60 p-6 text-left sm:p-8">
         <h2 className="font-display text-2xl text-cream">Keep and share</h2>
         {!user && <GuestKeepNotice />}
         <ShareReading
@@ -116,7 +116,7 @@ export default function ReadingDetail({ id }: { id: string }) {
         <ReadingHeirloom reading={reading} />
       </section>
 
-      <p className="mx-auto mt-8 max-w-md text-center text-xs italic leading-relaxed text-mist">
+      <p className="mt-8 max-w-md text-left text-xs italic leading-relaxed text-mist">
         For reflection and perspective, not guaranteed predictions.
       </p>
     </div>
