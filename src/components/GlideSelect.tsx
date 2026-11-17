@@ -30,6 +30,18 @@ export interface GlideSelectProps {
   align?: 'left' | 'right';
   disabled?: boolean;
   ariaLabel?: string;
+  /**
+   * Passed through to base-ui Select.Root, which renders it on
+   * the library's visually-hidden value-holder input (tabIndex
+   * -1, aria-hidden, 1px clipped) -- the input a form submits.
+   * Without it that input is unnamed in the live DOM, which is
+   * what the Griffin + Vercel re-run audit flagged on /charts
+   * (PR #159 follow-up, 2026-11-18): the system picker and the
+   * birthplace preset picker each render one. Optional, so the
+   * existing call sites that do not need a form name are
+   * untouched; the two /charts sites pass "system" and "place".
+   */
+  name?: string;
   className?: string;
 }
 
@@ -63,9 +75,11 @@ const norm = (o: string | GlideSelectOption): GlideSelectOption => (typeof o ===
  * unchanged: same options/value/defaultValue/onChange/placeholder/
  * colours/sizes/placement/disabled/ariaLabel props, same call
  * sites in ChartSections (system picker, birthplace picker), same
- * Sortes tokens on the trigger and the popup. Base-ui Select is
- * non-modal here (modal={false}), so opening it does not lock
- * page scroll, as before.
+ * Sortes tokens on the trigger and the popup. The optional name
+ * prop (2026-11-18) is the one addition since: it is passed to
+ * Select.Root, which puts it on the hidden value-holder input.
+ * Base-ui Select is non-modal here (modal={false}), so opening
+ * it does not lock page scroll, as before.
  *
  * Portal fix (PR #148 blocker, 2026-11-18): Select.Portal mounts
  * the popup under document.body, outside the wrapper div, so CSS
@@ -94,6 +108,7 @@ const GlideSelect: React.FC<GlideSelectProps> = ({
   align = 'left',
   disabled = false,
   ariaLabel = 'Select',
+  name,
   className = ''
 }) => {
   const items = options.map(norm);
@@ -126,6 +141,7 @@ const GlideSelect: React.FC<GlideSelectProps> = ({
         items={items}
         value={value}
         defaultValue={defaultValue}
+        name={name}
         onValueChange={(v) => {
           if (v == null) return;
           const it = items.find((x) => x.value === v);
