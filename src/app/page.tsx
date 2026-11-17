@@ -386,7 +386,7 @@ export default function Home() {
           <h3 className="font-display text-3xl text-goldbright">
             How it works
           </h3>
-          <div className="mt-8 grid gap-4 sm:grid-cols-3">
+          <ol className="mt-8 grid divide-y divide-gold/25 sm:grid-cols-3 sm:gap-8 sm:divide-y-0 sm:border-t sm:border-gold/25">
             {[
               {
                 title: "Ask",
@@ -400,16 +400,24 @@ export default function Home() {
                 title: "Read",
                 text: "Get a reading written for your question.",
               },
-            ].map((s) => (
-              <div
+            ].map((s, i) => (
+              <li
                 key={s.title}
-                className="rounded-2xl border border-gold/25 bg-panel/60 p-6"
+                className="flex gap-5 py-5 sm:flex-col sm:gap-3 sm:pb-0 sm:pt-6"
               >
-                <p className="font-display text-2xl text-gold">{s.title}</p>
-                <p className="mt-2 text-sm leading-relaxed text-cream/80">{s.text}</p>
-              </div>
+                <span
+                  aria-hidden="true"
+                  className="font-display text-5xl leading-none text-gold"
+                >
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <div>
+                  <p className="font-display text-2xl text-cream">{s.title}</p>
+                  <p className="mt-2 text-sm leading-relaxed text-cream/80">{s.text}</p>
+                </div>
+              </li>
             ))}
-          </div>
+          </ol>
         </motion.div>
       </section>
 
