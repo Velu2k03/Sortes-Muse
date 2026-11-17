@@ -17,8 +17,18 @@ const src = (rel: string) =>
 describe("F11: tap targets are at least 44px", () => {
   it("header nav triggers and Journal link are 44px", () => {
     const header = src("src/components/Header.tsx");
-    expect(header).toContain("inline-flex min-h-11 items-center px-2 text-sm font-semibold text-goldbright");
-    expect(header).toContain("inline-flex min-h-11 items-center px-2 text-sm text-cream/80");
+    // clsx (pick-ui-library gap, 2026-11-17): the nav links share
+    // one base through clsx instead of two duplicated full strings,
+    // so the tap-target classes are asserted in their new shape:
+    // the shared base carries min-h-11 in both states, and each
+    // state adds only its colour/weight branch.
+    expect(header).toContain(
+      '"inline-flex min-h-11 items-center px-2 text-sm",',
+    );
+    expect(header).toContain('"font-semibold text-goldbright"');
+    expect(header).toContain(
+      '"text-cream/80 transition hover:text-goldbright"',
+    );
   });
 
   it("header Sign in link is 44px", () => {

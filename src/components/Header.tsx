@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import clsx from "clsx";
 import { useAuth } from "@/components/AuthProvider";
 import NumberFlow from "@number-flow/react";
 import Icon from "@/components/Icon";
@@ -254,11 +255,12 @@ export default function Header() {
                   aria-expanded={isOpen}
                   aria-haspopup="menu"
                   aria-controls={`nav-menu-${g.label.toLowerCase()}`}
-                  className={
+                  className={clsx(
+                    "inline-flex min-h-11 items-center px-2 text-sm",
                     isOpen || isActive
-                      ? "inline-flex min-h-11 items-center px-2 text-sm font-semibold text-goldbright"
-                      : "inline-flex min-h-11 items-center px-2 text-sm text-cream/80 transition hover:text-goldbright"
-                  }
+                      ? "font-semibold text-goldbright"
+                      : "text-cream/80 transition hover:text-goldbright",
+                  )}
                 >
                   {g.label}
                 </button>
@@ -302,9 +304,10 @@ export default function Header() {
                         role="menuitem"
                         aria-current={activeHref === kid.value ? "page" : undefined}
                         onClick={() => setOpenGroup(null)}
-                        className={`block rounded-xl px-3 py-2.5 text-sm transition hover:bg-gold/10 hover:text-goldbright ${
-                          activeHref === kid.value ? "font-semibold text-goldbright" : "text-cream/85"
-                        }`}
+                        className={clsx(
+                          "block rounded-xl px-3 py-2.5 text-sm transition hover:bg-gold/10 hover:text-goldbright",
+                          activeHref === kid.value ? "font-semibold text-goldbright" : "text-cream/85",
+                        )}
                       >
                         {kid.label}
                       </Link>
@@ -317,11 +320,12 @@ export default function Header() {
           <Link
             href="/journal"
             aria-current={activeHref === "/journal" ? "page" : undefined}
-            className={
+            className={clsx(
+              "inline-flex min-h-11 items-center px-2 text-sm",
               activeHref === "/journal"
-                ? "inline-flex min-h-11 items-center px-2 text-sm font-semibold text-goldbright"
-                : "inline-flex min-h-11 items-center px-2 text-sm text-cream/80 transition hover:text-goldbright"
-            }
+                ? "font-semibold text-goldbright"
+                : "text-cream/80 transition hover:text-goldbright",
+            )}
           >
             Journal
           </Link>

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { type CSSProperties, type ReactNode } from 'react';
+import clsx from 'clsx';
 import { Select } from '@base-ui-components/react/select';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { ArrowDown01Icon, Tick02Icon } from '@hugeicons/core-free-icons';
@@ -116,7 +117,7 @@ const GlideSelect: React.FC<GlideSelectProps> = ({
 
   return (
     <div
-      className={`group relative inline-block data-[disabled]:opacity-50${className ? ` ${className}` : ''}`}
+      className={clsx('group relative inline-block data-[disabled]:opacity-50', className)}
       data-size={size}
       data-disabled={disabled ? '' : undefined}
       style={themeVars}

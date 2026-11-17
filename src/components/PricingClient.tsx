@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import clsx from "clsx";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { showFailureToast, dismissFailureToast } from "@/lib/failure-toast";
@@ -290,11 +291,10 @@ export default function PricingClient({
           type="button"
           aria-pressed={billing === "monthly"}
           onClick={() => syncBilling("monthly")}
-          className={`min-h-11 rounded-l-full border px-5 py-2 text-sm font-semibold ${
-            billing === "monthly"
-              ? "border-gold bg-gold text-ink"
-              : "border-gold/40 bg-panel text-cream"
-          }`}
+          className={clsx(
+            "min-h-11 rounded-l-full border px-5 py-2 text-sm font-semibold",
+            billing === "monthly" ? "border-gold bg-gold text-ink" : "border-gold/40 bg-panel text-cream",
+          )}
         >
           Monthly
         </button>
@@ -302,11 +302,10 @@ export default function PricingClient({
           type="button"
           aria-pressed={billing === "annual"}
           onClick={() => syncBilling("annual")}
-          className={`min-h-11 rounded-r-full border px-5 py-2 text-sm font-semibold ${
-            billing === "annual"
-              ? "border-gold bg-gold text-ink"
-              : "border-gold/40 bg-panel text-cream"
-          }`}
+          className={clsx(
+            "min-h-11 rounded-r-full border px-5 py-2 text-sm font-semibold",
+            billing === "annual" ? "border-gold bg-gold text-ink" : "border-gold/40 bg-panel text-cream",
+          )}
         >
           Annual
         </button>

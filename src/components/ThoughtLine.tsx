@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import clsx from 'clsx';
 import { animate, useReducedMotion, type AnimationPlaybackControls } from 'motion/react';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { ArrowDown01Icon, SparklesIcon, Tick02Icon } from '@hugeicons/core-free-icons';
@@ -280,7 +281,7 @@ const ThoughtLine: React.FC<ThoughtLineProps> = ({
 
   return (
     <div
-      className={`group inline-flex flex-col items-start leading-[1.2] font-medium [color:var(--tl-color)] [font-family:inherit] [font-size:var(--tl-font)]${className ? ` ${className}` : ''}`}
+      className={clsx('group inline-flex flex-col items-start leading-[1.2] font-medium [color:var(--tl-color)] [font-family:inherit] [font-size:var(--tl-font)]', className)}
       data-working={isWorking ? '' : undefined}
       data-open={open && hasTrace ? '' : undefined}
       style={

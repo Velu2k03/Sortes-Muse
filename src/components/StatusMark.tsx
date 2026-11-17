@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useLayoutEffect, useRef, type CSSProperties, type ReactNode } from 'react';
+import clsx from 'clsx';
 import { animate, useMotionValue, useReducedMotion } from 'motion/react';
 
 export type StatusMarkStatus = 'pending' | 'running' | 'done' | 'failed' | 'cancelled';
@@ -141,7 +142,7 @@ const StatusMark: React.FC<StatusMarkProps> = ({
 
   return (
     <span
-      className={`group relative inline-flex items-center align-middle leading-none [gap:calc(var(--sm-size)*0.5)]${className ? ` ${className}` : ''}`}
+      className={clsx('group relative inline-flex items-center align-middle leading-none [gap:calc(var(--sm-size)*0.5)]', className)}
       data-status={status}
       data-indeterminate={indeterminate ? '' : undefined}
       data-strike={strike ? '' : undefined}

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import clsx from 'clsx';
 import { animate, motion, useMotionValue, useReducedMotion, useTransform, type MotionValue } from 'motion/react';
 
 export type RubberSegmentSize = 'sm' | 'md' | 'lg';
@@ -356,7 +357,7 @@ const RubberSegment: React.FC<RubberSegmentProps> = ({
       // spilled out of their equal slots into each other on a phone.
       // Full width with equal slots gives each label its own third,
       // and the wrapping labels below fit inside that slot.
-      className={`group relative grid w-full max-w-full grid-flow-col auto-cols-auto align-middle select-none touch-pan-y [font-family:inherit] [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] p-[var(--rs-inset)] rounded-[var(--rs-radius)] [background:var(--rs-track)] data-[equal]:auto-cols-[minmax(0,1fr)] data-[held]:cursor-grabbing aria-disabled:pointer-events-none aria-disabled:saturate-50${className ? ` ${className}` : ''}`}
+      className={clsx('group relative grid w-full max-w-full grid-flow-col auto-cols-auto align-middle select-none touch-pan-y [font-family:inherit] [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] p-[var(--rs-inset)] rounded-[var(--rs-radius)] [background:var(--rs-track)] data-[equal]:auto-cols-[minmax(0,1fr)] data-[held]:cursor-grabbing aria-disabled:pointer-events-none aria-disabled:saturate-50', className)}
       style={
         {
           '--rs-track': trackColor,

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, type ButtonHTMLAttributes, type CSSProperties, type ReactNode } from 'react';
+import clsx from 'clsx';
 
 const SIZES: Record<SpecularButtonSize, string> = {
   sm: 'px-5 py-2.5 text-[0.875rem]',
@@ -495,7 +496,7 @@ const SpecularButton = ({
       type={type}
       disabled={disabled}
       onClick={onClick}
-      className={`${BUTTON} ${SIZES[size] ?? SIZES.lg}${className ? ` ${className}` : ''}`}
+      className={clsx(BUTTON, SIZES[size] ?? SIZES.lg, className)}
       style={
         {
           '--sb-radius': `${radius}px`,

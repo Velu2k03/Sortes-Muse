@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import clsx from "clsx";
 import "./ReactBits.css";
 
 // Phase 4C (4.6/4.7): DarkVeil, ShinyText, and MagicBento were deleted
@@ -89,7 +90,7 @@ export function StarBorder({
 }) {
   return (
     <span
-      className={`star-border-frame ${animated ? "star-border-frame--animated" : "star-border-frame--static"} ${className}`}
+      className={clsx("star-border-frame", animated ? "star-border-frame--animated" : "star-border-frame--static", className)}
       style={{ "--star-radius": radius } as CSSProperties}
     >
       {children}

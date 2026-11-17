@@ -12,6 +12,7 @@
  * horoscope sun-sign wheel.
  */
 import { useId, useRef, useState, useCallback, useEffect, type CSSProperties } from 'react';
+import clsx from 'clsx';
 
 type Side = 'left' | 'right';
 
@@ -357,7 +358,7 @@ const OptionWheel = ({
       // Focus stays on the listbox (arrow keys move the wheel), so point
       // assistive tech at the selected option (WAI-ARIA APG listbox).
       aria-activedescendant={selectedIndex < items.length ? `${optionId}-${selectedIndex}` : undefined}
-      className={`relative h-full w-full select-none overflow-hidden outline-none [touch-action:none] ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}${className ? ` ${className}` : ''}`}
+      className={clsx('relative h-full w-full select-none overflow-hidden outline-none [touch-action:none]', isDragging ? 'cursor-grabbing' : 'cursor-grab', className)}
       style={
         {
           '--ow-text-color': textColor,
@@ -381,9 +382,11 @@ const OptionWheel = ({
           id={`${optionId}-${index}`}
           role="option"
           aria-selected={selectedIndex === index}
-          className={`absolute top-1/2 cursor-pointer whitespace-nowrap leading-none will-change-[transform,opacity,filter] [font-size:var(--ow-font-size)] [color:color-mix(in_srgb,var(--ow-active-color)_calc(var(--ow-p,0)*100%),var(--ow-text-color))] ${
-            side === 'right' ? 'right-[var(--ow-inset)] origin-right' : 'left-[var(--ow-inset)] origin-left'
-          } ${selectedIndex === index ? 'font-medium' : 'font-extralight'}`}
+          className={clsx(
+            'absolute top-1/2 cursor-pointer whitespace-nowrap leading-none will-change-[transform,opacity,filter] [font-size:var(--ow-font-size)] [color:color-mix(in_srgb,var(--ow-active-color)_calc(var(--ow-p,0)*100%),var(--ow-text-color))]',
+            side === 'right' ? 'right-[var(--ow-inset)] origin-right' : 'left-[var(--ow-inset)] origin-left',
+            selectedIndex === index ? 'font-medium' : 'font-extralight',
+          )}
           onClick={() => handleItemClick(index)}
         >
           {label}
