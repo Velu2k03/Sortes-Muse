@@ -8,7 +8,7 @@ import ReadingText from "@/components/ReadingText";
 import TarotCard from "@/components/TarotCard";
 import SlideCommit from "@/components/SlideCommit";
 import SwipeToast from "@/components/SwipeToast";
-import { INTAKE_CATEGORIES, getCategory } from "@/lib/intake";
+import { INTAKE_CATEGORIES, SENSITIVE_KEYS, getCategory } from "@/lib/intake";
 import { BRAND } from "@/lib/brand";
 import { peekHeroQuestion } from "@/lib/storage";
 import type { DrawnCard } from "@/lib/types";
@@ -176,14 +176,19 @@ export function CategoryStep({ f }: { f: IntakeState }) {
   );
 }
 
-/** Step 2: the story (optional) and the question (the only required field). Batch 3b cut the category fields. */
+/** Step 2: the category's fields, the story (optional), and the question. Intake fields restored 2026-11-17 (Velu): Batch 3b had cut the category fields to the question only. */
 export function FormStep({ f, category }: { f: IntakeState; category: IntakeCategory }) {
-  const { setStep, story, setStory, question, setQuestion, setOriginalQuestion, setSuggestionDismissed, formValid } = f;
+  const { setStep, answers, set, story, setStory, question, setQuestion, setOriginalQuestion, setSuggestionDismissed, firstMissingField } = f;
   const headingRef = useStepFocus<HTMLHeadingElement>();
   // Batch 3.1 (#45/#46): the question error is shown inline under the
   // field, and the field is focused, instead of disabling the button.
   const questionRef = useRef<HTMLTextAreaElement>(null);
   const [questionError, setQuestionError] = useState(false);
+  // Intake fields restoration: one inline error per missing required
+  // field, same pattern as the question error. Refs so the submit
+  // handler can focus the first missing field.
+  const [fieldErrors, setFieldErrors] = useState<Record<string, boolean>>({});
+  const fieldRefs = useRef<Record<string, HTMLElement | null>>({});
   return (
     <>
       <p className="text-center text-sm text-gold">
@@ -194,8 +199,10 @@ export function FormStep({ f, category }: { f: IntakeState; category: IntakeCate
       </h1>
       <p className="mx-auto mt-3 max-w-md text-center text-sm text-cream/75">
         Tell us what&apos;s going on. Your story goes to the AI for
-        this reading only and is not stored. Your question and
-        category are saved to your journal.
+        this reading only and is not stored.{" "}
+        {category.key === "love"
+          ? "Your question, first name, and category are saved to your journal."
+          : "Your question and category are saved to your journal."}
       </p>
 
       {category.key === "health" && (
@@ -214,6 +221,74 @@ export function FormStep({ f, category }: { f: IntakeState; category: IntakeCate
       </div>
 
       <div className="mt-8 space-y-5">
+        {/* Intake fields restoration (Velu, 2026-11-17): the picked
+            category's fields, wired to answers. The inner variable is
+            `field`, not `f`: the old code reused `f`, which already
+            names the IntakeState prop here. Required fields carry the
+            gold asterisk; optional ones say so in the label. Birthdays
+            carry the "stays on your device" hint. */}
+        {category.fields.map((field) => (
+          <div key={field.key}>
+            <label
+              htmlFor={`intake-${field.key}`}
+              className="mb-1.5 block text-sm font-medium text-cream"
+            >
+              {field.label}
+              {field.required && <span className="text-gold"> *</span>}
+            </label>
+            {field.type === "textarea" ? (
+              <textarea
+                id={`intake-${field.key}`}
+                ref={(el) => { fieldRefs.current[field.key] = el; }}
+                value={answers[field.key] ?? ""}
+                onChange={(e) => { set(field.key, e.target.value); setFieldErrors((prev) => ({ ...prev, [field.key]: false })); }}
+                placeholder={field.placeholder}
+                rows={3}
+                maxLength={1000}
+                aria-describedby={fieldErrors[field.key] ? `intake-${field.key}-error` : undefined}
+                aria-invalid={!!fieldErrors[field.key]}
+                className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+              />
+            ) : field.type === "select" ? (
+              <select
+                id={`intake-${field.key}`}
+                ref={(el) => { fieldRefs.current[field.key] = el; }}
+                value={answers[field.key] ?? ""}
+                onChange={(e) => { set(field.key, e.target.value); setFieldErrors((prev) => ({ ...prev, [field.key]: false })); }}
+                aria-describedby={fieldErrors[field.key] ? `intake-${field.key}-error` : undefined}
+                aria-invalid={!!fieldErrors[field.key]}
+                className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream focus:border-gold/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+              >
+                <option value="">Choose…</option>
+                {field.options?.map((o) => (
+                  <option key={o} value={o}>
+                    {o}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                id={`intake-${field.key}`}
+                ref={(el) => { fieldRefs.current[field.key] = el; }}
+                type={field.type}
+                value={answers[field.key] ?? ""}
+                onChange={(e) => { set(field.key, e.target.value); setFieldErrors((prev) => ({ ...prev, [field.key]: false })); }}
+                placeholder={field.placeholder}
+                maxLength={field.type === "text" ? 1000 : undefined}
+                aria-describedby={fieldErrors[field.key] ? `intake-${field.key}-error` : undefined}
+                aria-invalid={!!fieldErrors[field.key]}
+                className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+              />
+            )}
+            {field.hint && <p className="mt-1 text-xs text-mist">{field.hint}</p>}
+            {fieldErrors[field.key] && (
+              <p id={`intake-${field.key}-error`} role="alert" className="mt-2 text-sm text-red-300">
+                Please fill this in, then review your reading.
+              </p>
+            )}
+          </div>
+        ))}
+
         <div>
           <label htmlFor="intake-story" className="mb-1.5 block text-sm font-medium text-cream">
             Your story / background <span className="font-normal text-mist">(optional)</span>
@@ -282,11 +357,27 @@ export function FormStep({ f, category }: { f: IntakeState; category: IntakeCate
         <button
           type="button"
           onClick={() => {
-            if (!formValid()) {
-              setQuestionError(true);
-              questionRef.current?.focus();
+            const missing = firstMissingField();
+            if (missing) {
+              // Mark every missing required field (and the question)
+              // so each shows its own inline error, then focus the
+              // first one. The button stays enabled, same as the
+              // question-only pattern from Batch 3.1.
+              const errs: Record<string, boolean> = {};
+              for (const field of category.fields) {
+                if (field.required && !answers[field.key]?.trim()) errs[field.key] = true;
+              }
+              if (!question.trim()) errs.question = true;
+              setFieldErrors(errs);
+              setQuestionError(!question.trim());
+              if (missing === "question") {
+                questionRef.current?.focus();
+              } else {
+                fieldRefs.current[missing]?.focus();
+              }
               return;
             }
+            setFieldErrors({});
             setQuestionError(false);
             setOriginalQuestion(question);
             setSuggestionDismissed(false);
@@ -303,8 +394,17 @@ export function FormStep({ f, category }: { f: IntakeState; category: IntakeCate
 
 /** Step 3: review, optional rewrite suggestion, then draw. */
 export function ConfirmStep({ f, category }: { f: IntakeState; category: IntakeCategory }) {
-  const { spread, setStep, question, setQuestion, suggestionDismissed, setSuggestionDismissed, error, isFreeAvailable, questionSuggestion, beginDraw } = f;
+  const { spread, setStep, answers, question, setQuestion, suggestionDismissed, setSuggestionDismissed, error, isFreeAvailable, questionSuggestion, beginDraw } = f;
   const headingRef = useStepFocus<HTMLHeadingElement>();
+  // Intake fields restoration: the details the seeker filled in,
+  // shown back for a check. Birthdays are left out (they never
+  // leave the device) and empty optional fields are left out too.
+  // Long answers are cut to about two lines.
+  const filledDetails = category.fields.filter(
+    (field) => !SENSITIVE_KEYS.includes(field.key) && answers[field.key]?.trim()
+  );
+  const truncateDetail = (value: string) =>
+    value.length > 140 ? `${value.slice(0, 140)}…` : value;
   return (
     <>
       <p className="text-sm text-gold">
@@ -324,6 +424,19 @@ export function ConfirmStep({ f, category }: { f: IntakeState; category: IntakeC
             <dt className="text-sm text-mist">Area</dt>
             <dd className="mt-1 text-cream">{category.name}</dd>
           </div>
+          {filledDetails.length > 0 && (
+            <div>
+              <dt className="text-sm text-mist">Your details</dt>
+              <dd className="mt-1 space-y-1 text-cream">
+                {filledDetails.map((field) => (
+                  <p key={field.key}>
+                    <span className="text-mist">{field.label.replace(/ \(optional\)$/, "")}: </span>
+                    {truncateDetail(answers[field.key].trim())}
+                  </p>
+                ))}
+              </dd>
+            </div>
+          )}
           <div>
             <dt className="text-sm text-mist">Your question</dt>
             <dd className="mt-1">

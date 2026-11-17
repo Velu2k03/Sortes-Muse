@@ -4,7 +4,7 @@ import { getSession, guestFreeUsed } from "@/lib/auth";
 import { getReadingForUser, getUserById, hasUsedFreeReading, saveReadingWithSpend } from "@/lib/db";
 import { isUuid } from "@/lib/ids";
 import cardsData from "@/data/cards.json";
-import { SENSITIVE_KEYS } from "@/lib/intake";
+import { getCategory, SENSITIVE_KEYS } from "@/lib/intake";
 import { getSpread } from "@/lib/tarot";
 import { computeSpreadFacts, type FactCard } from "@/lib/spread-facts";
 import { generateChatStream } from "@/lib/ai";
@@ -129,9 +129,22 @@ function buildUserPrompt(
     })
     .join("\n");
 
+  // Intake fields restoration (Velu, 2026-11-17): the prompt shows
+  // the field labels ("Their first name: Alex") instead of the raw
+  // keys ("partnerName: Alex"). Non-string values are skipped: one
+  // would crash the route with a 500 today.
+  const categoryFields = (() => {
+    try {
+      return getCategory(intake.category).fields;
+    } catch {
+      return [];
+    }
+  })();
+  const labelFor = (key: string) =>
+    categoryFields.find((field) => field.key === key)?.label.replace(/ \(optional\)$/, "") ?? key;
   const safeAnswers = Object.entries(intake.answers)
-    .filter(([k, v]) => !SENSITIVE_KEYS.includes(k) && v.trim())
-    .map(([k, v]) => `${k}: ${v.trim()}`)
+    .filter(([k, v]) => typeof v === "string" && !SENSITIVE_KEYS.includes(k) && v.trim())
+    .map(([k, v]) => `${labelFor(k)}: ${(v as string).trim()}`)
     .join("\n");
 
   const impression = (intake.firstImpression ?? "").trim().slice(0, 100);
