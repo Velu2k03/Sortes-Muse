@@ -33,6 +33,19 @@ describe("pricing toggle sliding pill", () => {
     );
   });
 
+  it("documents the raw-span exception and uses token-backed z-1 (PR #152, Codex P1)", () => {
+    const c = src("src/components/PricingClient.tsx");
+    // AGENTS.md self-check exception: the pill is deliberately
+    // a raw <span> because no Astryx primitive fits a plain
+    // decorative DOM node taking a ref and direct style writes.
+    expect(c).toContain("AGENTS.md self-check exception");
+    expect(c).toContain("No Astryx primitive fits it");
+    // Buttons sit above the pill with the token-backed z-1
+    // utility, never the arbitrary z-[1] value.
+    expect(c).toContain("relative z-1 min-h-11");
+    expect(c).not.toContain("z-[1]");
+  });
+
   it("positions the pill from the active button's offsetLeft/offsetWidth", () => {
     const c = src("src/components/PricingClient.tsx");
     expect(c).toContain(
@@ -92,6 +105,30 @@ describe("pricing toggle sliding pill", () => {
     expect(c).toContain('aria-pressed={billing === "annual"}');
     expect(c).toContain('onClick={() => syncBilling("monthly")}');
     expect(c).toContain('onClick={() => syncBilling("annual")}');
-    expect(c).toContain('"/pricing?billing=annual"');
+    // PR #152 fix: the URL is written with history.replaceState,
+    // not router.replace (a router navigation re-rendered the page
+    // mid-toggle and the searchParams effect flipped billing back
+    // to Monthly, so the pill flickered instead of sliding).
+    expect(c).toContain('"?billing=annual"');
+    expect(c).toContain('window.history.replaceState(null, "", `/pricing${qs}`);');
+    expect(c).not.toContain("router.replace(");
+  });
+
+  it("the pill really slides: no snap fires on toggle, no navigation flicker (PR #152 fix)", () => {
+    const c = src("src/components/PricingClient.tsx");
+    // The resize/fonts snap subscribes ONCE on mount through a
+    // ref to the latest moveBillingPill. It used to depend on
+    // moveBillingPill, so it re-ran on every billing change and
+    // its .ready snap fired as a microtask right after the toggle
+    // commit, setting transition: none + reflow and cancelling
+    // the in-flight 250ms slide, so the pill jumped.
+    expect(c).toContain("const moveBillingPillRef = useRef(moveBillingPill);");
+    expect(c).toContain("moveBillingPillRef.current = moveBillingPill;");
+    expect(c).toContain("const snap = () => moveBillingPillRef.current(false);");
+    // The toggle writes the URL with replaceState and no router
+    // navigation, so the searchParams effect never reads a stale
+    // param mid-toggle. Back/forward still navigates, so that
+    // effect still corrects billing then.
+    expect(c).toContain('if (next !== billing) queueMicrotask(() => setBilling(next))');
   });
 });

@@ -12,7 +12,14 @@ import path from "path";
 // paint, no hydration mismatch); the client writes the param back
 // with router.replace on change (replace, not push, so Back leaves
 // the page instead of stepping through states) and reads it back
-// in an effect so Back/forward restores the state. Defaults are
+// in an effect so Back/forward restores the state. Two exceptions
+// use window.history.replaceState instead, for the same reason:
+// /horoscope (its client mounts with key={sign}, a router
+// navigation would remount it) and the pricing toggle (PR #152
+// fix: a router navigation re-rendered the page mid-toggle and
+// the searchParams effect read the stale param and flipped
+// billing back, so the pill flickered instead of sliding).
+// Defaults are
 // omitted, so the URL stays clean. /oracles is untouched: it
 // already syncs (purchase=success), and its checkout return must
 // keep working exactly as it does.
@@ -53,8 +60,16 @@ describe("url-state-sync: pricing toggle (?billing=annual)", () => {
     expect(client()).toContain("useState<Billing>(initialBilling)");
   });
   it("toggling writes ?billing=annual and omits the param for Monthly", () => {
-    expect(client()).toContain('"/pricing?billing=annual"');
-    expect(client()).toContain('router.replace(');
+    // PR #152 fix: syncBilling uses window.history.replaceState,
+    // NOT router.replace. A router navigation re-rendered the page
+    // mid-toggle and the searchParams effect read the stale param
+    // and flipped billing back to Monthly, so the pill flickered
+    // instead of sliding. replaceState writes the URL with no
+    // navigation; Back/forward still navigates, so the effect
+    // below still corrects billing then.
+    expect(client()).toContain('"?billing=annual"');
+    expect(client()).toContain("window.history.replaceState");
+    expect(client()).not.toContain("router.replace(");
     expect(client()).toContain('onClick={() => syncBilling("monthly")}');
     expect(client()).toContain('onClick={() => syncBilling("annual")}');
   });

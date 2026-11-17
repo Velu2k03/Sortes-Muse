@@ -172,15 +172,22 @@ export default function PricingClient({
   // URL state sync (all-pages fix 4): Monthly is the default, so
   // it is omitted and the URL stays clean (/pricing); Annual is
   // written as ?billing=annual, the value the audit named.
-  // router.replace, not push: toggling billing is not a navigation
-  // step, so Back leaves the page instead of stepping through
-  // Monthly/Annual. scroll: false keeps the toggle in view.
+  // history.replaceState, NOT router.replace: a router navigation
+  // re-renders the page mid-toggle, and the searchParams effect
+  // below then reads the stale param (Monthly) and flips billing
+  // back to Monthly, then forward to Annual again, so the pill
+  // flickers instead of sliding (PR #152 fix, diagnosed live:
+  // annual, monthly, annual in one click). replaceState writes
+  // the URL with no navigation and no re-render, so the toggle
+  // slides once and stays; Back/forward still navigates, so the
+  // searchParams effect below still corrects billing then. Same
+  // pattern as /horoscope (HoroscopeClient syncHoroscopeUrl),
+  // which uses replaceState for the same reason. replaceState
+  // writes no history entry, so Back leaves the page, as before.
   const syncBilling = (next: Billing) => {
     setBilling(next);
-    router.replace(
-      next === "annual" ? "/pricing?billing=annual" : "/pricing",
-      { scroll: false },
-    );
+    const qs = next === "annual" ? "?billing=annual" : "";
+    window.history.replaceState(null, "", `/pricing${qs}`);
   };
   // Back/forward: the URL is the source of truth when it changes
   // without a toggle click. The server re-renders with a new
@@ -233,9 +240,22 @@ export default function PricingClient({
     pillPositioned.current = true;
   }, [billing, moveBillingPill]);
   // Resize and webfont load change the buttons' widths, so
-  // re-measure without animating.
+  // re-measure without animating. Subscribed ONCE on mount: the
+  // effect used to depend on moveBillingPill, so it re-ran on
+  // every billing change, and since document.fonts is already
+  // loaded by then, its .ready snap fired as a microtask right
+  // after the toggle commit, setting transition: none + reflow
+  // and cancelling the in-flight 250ms slide, so the pill
+  // jumped instead of sliding (PR #152 fix, diagnosed live).
+  // A ref always points at the latest moveBillingPill, so the
+  // once-subscribed handlers still re-measure the current
+  // billing; fonts load once, so one snap is enough.
+  const moveBillingPillRef = useRef(moveBillingPill);
   useEffect(() => {
-    const snap = () => moveBillingPill(false);
+    moveBillingPillRef.current = moveBillingPill;
+  });
+  useEffect(() => {
+    const snap = () => moveBillingPillRef.current(false);
     window.addEventListener("resize", snap);
     let cancelled = false;
     document.fonts?.ready.then(() => {
@@ -245,7 +265,7 @@ export default function PricingClient({
       cancelled = true;
       window.removeEventListener("resize", snap);
     };
-  }, [moveBillingPill]);
+  }, []);
 
   // Sonner full use (2026-11-17): see CHECKOUT_FAILED above.
   // The toast outlives the page (one app-wide Toaster): leaving the
@@ -353,7 +373,17 @@ export default function PricingClient({
           is aria-hidden, the buttons keep aria-pressed.
           width="fit-content" + mx-auto: the bar hugs the two
           buttons instead of stretching full-width, which only
-          shows now that the bar itself has a background. */}
+          shows now that the bar itself has a background.
+          AGENTS.md self-check exception (PR #152, Codex P1):
+          the pill is deliberately a raw <span>, not an Astryx
+          component. No Astryx primitive fits it: it is a plain
+          decorative DOM node that takes a ref and direct style
+          writes (transform/width, via moveBillingPill) per the
+          transitions.dev snippet, and it carries no content,
+          no semantics, and no interaction. The same file
+          already uses raw spans for inline text (e.g. the
+          credit amounts), so this is the established pattern
+          for non-component text/decorative spans here. */}
       <HStack hAlign="center" gap={0} width="fit-content" className="relative mx-auto mt-8 rounded-full border border-gold/40 bg-panel p-1">
         <span ref={pillRef} aria-hidden="true" className="billing-toggle-pill" />
         <button
@@ -364,7 +394,7 @@ export default function PricingClient({
           aria-pressed={billing === "monthly"}
           onClick={() => syncBilling("monthly")}
           className={clsx(
-            "relative z-[1] min-h-11 rounded-full bg-transparent px-5 py-2 text-sm font-semibold transition-colors duration-250",
+            "relative z-1 min-h-11 rounded-full bg-transparent px-5 py-2 text-sm font-semibold transition-colors duration-250",
             billing === "monthly" ? "text-ink" : "text-cream",
           )}
         >
@@ -378,7 +408,7 @@ export default function PricingClient({
           aria-pressed={billing === "annual"}
           onClick={() => syncBilling("annual")}
           className={clsx(
-            "relative z-[1] min-h-11 rounded-full bg-transparent px-5 py-2 text-sm font-semibold transition-colors duration-250",
+            "relative z-1 min-h-11 rounded-full bg-transparent px-5 py-2 text-sm font-semibold transition-colors duration-250",
             billing === "annual" ? "text-ink" : "text-cream",
           )}
         >

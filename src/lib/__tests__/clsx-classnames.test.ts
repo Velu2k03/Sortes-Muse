@@ -82,7 +82,7 @@ describe("clsx classnames (pick-ui-library gap)", () => {
     // colour. The base string appears once per button.
     expect(
       c.match(
-        /"relative z-\[1\] min-h-11 rounded-full bg-transparent px-5 py-2 text-sm font-semibold transition-colors duration-250",/g,
+        /"relative z-1 min-h-11 rounded-full bg-transparent px-5 py-2 text-sm font-semibold transition-colors duration-250",/g,
       )?.length,
     ).toBe(2);
     expect(c).toContain('billing === "monthly" ? "text-ink" : "text-cream"');

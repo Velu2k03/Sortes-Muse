@@ -42,7 +42,7 @@ describe("F11: tap targets are at least 44px", () => {
     // string now, so the count locks min-h-11 on both of them.
     expect(
       pricing.match(
-        /relative z-\[1\] min-h-11 rounded-full bg-transparent px-5 py-2/g,
+        /relative z-1 min-h-11 rounded-full bg-transparent px-5 py-2/g,
       )?.length,
     ).toBe(2);
   });
