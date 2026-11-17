@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, type CSSProperties, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
-import { motion, useReducedMotion } from "motion/react";
+import { motion } from "motion/react";
 
 /**
  * Phase 4, React Bits expansion, no new dependencies.
@@ -145,8 +145,13 @@ export function AnimatedList({
   children: ReactNode[];
   className?: string;
 }) {
-  const reduce = useReducedMotion();
-  if (reduce) return <div className={className}>{children}</div>;
+  // All-pages fix 10: no useReducedMotion branch here. The old
+  // `if (reduce) return <div>` rendered a different tree on the
+  // client than the server for reduced-motion users (the server
+  // cannot see prefers-reduced-motion), which threw a React #418
+  // hydration error on the guides page. MotionConfig
+  // reducedMotion="user" already makes the stagger instant for
+  // those users, so the branch was redundant.
   return (
     <div className={className}>
       {children.map((child, i) => (
@@ -169,14 +174,21 @@ export function Orb({
   className?: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
-  const reduce = useReducedMotion();
   // Codex fresh re-review on PR 50, correct: the first fix listened
   // on the background layer, but hero copy and CTAs are siblings of
   // that layer, so moves over them never reached it. Listen on the
   // shared hero section ancestor (closest section), keeping the
   // decorative layer click-through.
   useEffect(() => {
-    if (reduce) return;
+    // All-pages fix 10: the pointer-follow guard reads the
+    // preference here, inside the effect, not in render. The old
+    // `if (reduce) return <div>` branch rendered a different tree
+    // on the client than the server for reduced-motion users,
+    // which threw a React #418 hydration error on the homepage.
+    // MotionConfig reducedMotion="user" already makes the rotate
+    // and scale loops static for those users, so the branch was
+    // redundant.
+    if (isReducedMotion()) return;
     const section = ref.current?.closest("section");
     if (!section) return;
     const onMove = (event: PointerEvent) => {
@@ -189,14 +201,7 @@ export function Orb({
     };
     section.addEventListener("pointermove", onMove);
     return () => section.removeEventListener("pointermove", onMove);
-  }, [reduce]);
-  if (reduce) {
-    return (
-      <div aria-hidden="true" className={`pointer-events-none absolute inset-0 overflow-hidden ${className}`}>
-        <div className="absolute left-1/4 top-1/4 h-72 w-72 rounded-full opacity-25 blur-3xl" style={{ background: "radial-gradient(circle, color-mix(in srgb, var(--color-gold) 50%, transparent) 0%, transparent 70%)" }} />
-      </div>
-    );
-  }
+  }, []);
   return (
     <div
       ref={ref}
@@ -226,9 +231,16 @@ export function Orb({
 }
 
 export function PageTransition({ children }: { children: ReactNode }) {
-  const reduce = useReducedMotion();
   const pathname = usePathname();
-  if (reduce) return <>{children}</>;
+  // All-pages fix 10: no useReducedMotion branch here. The old
+  // `if (reduce) return <>{children}</>` rendered a different tree
+  // on the client than the server for reduced-motion users (the
+  // server cannot see prefers-reduced-motion), which threw a React
+  // #418 hydration error on EVERY page, because this wraps all of
+  // them in layout.tsx. MotionConfig reducedMotion="user" already
+  // makes the rise instant for those users, so the branch was
+  // redundant. The wrapper div stays for them too; it carries no
+  // styling of its own, so layout is unchanged.
   // Codex review on PR 43, correct: a layout component is preserved
   // across client-side navigation, so without a key this motion.div
   // does not remount and its initial animation runs only on the

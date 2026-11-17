@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export type FaqItem = { q: string; a?: string; bullets?: string[]; group: string };
 
@@ -24,6 +24,58 @@ function slug(q: string): string {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
+}
+
+/**
+ * All-pages fix 10: one item, with its open state mirrored in
+ * React. Native <details> already toggles on keyboard and the
+ * browser exposes its state, but the audit CHECK asked for an
+ * explicit aria-expanded in the DOM, and the summary had no visual
+ * affordance at all (no chevron). The state is mirrored, not
+ * owned: onToggle fires on every open change, including the
+ * Expand all / Collapse all buttons and the hash opener, both of
+ * which set el.open directly, so aria-expanded and the chevron
+ * stay in sync without owning the open attribute. Timing is
+ * already instant (measured ~106ms to toggle in the browser),
+ * inside the transitions.dev 150-250ms band, so no grid-rows
+ * grow animation is added.
+ */
+function FaqItem({ f }: { f: FaqItem }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <details
+      id={slug(f.q)}
+      className="scroll-mt-24 rounded-3xl border border-gold/25 bg-panel/70 p-6"
+      onToggle={(e) => setOpen(e.currentTarget.open)}
+    >
+      <summary
+        aria-expanded={open}
+        className="flex cursor-pointer items-center justify-between gap-4 font-display text-2xl text-goldbright"
+      >
+        <span>{f.q}</span>
+        <svg
+          aria-hidden="true"
+          width="20"
+          height="20"
+          viewBox="0 0 20 20"
+          fill="none"
+          className={`shrink-0 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+        >
+          <path d="M5 7.5 10 12.5 15 7.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </summary>
+      {f.bullets ? (
+        <ul className="mt-3 list-disc space-y-1.5 pl-5 leading-relaxed text-cream/85">
+          {f.bullets.map((b) => (
+            <li key={b}>{b}</li>
+          ))}
+        </ul>
+      ) : null}
+      {f.a ? (
+        <p className="mt-3 whitespace-pre-line leading-relaxed text-cream/85">{f.a}</p>
+      ) : null}
+    </details>
+  );
 }
 
 /**
@@ -121,25 +173,7 @@ export default function FaqList({ faqs }: { faqs: FaqItem[] }) {
             <h2 className="font-display text-3xl text-goldbright">{g.name}</h2>
             <div className="mt-4 space-y-4">
               {g.items.map((f) => (
-                <details
-                  key={f.q}
-                  id={slug(f.q)}
-                  className="scroll-mt-24 rounded-3xl border border-gold/25 bg-panel/70 p-6"
-                >
-                  <summary className="cursor-pointer font-display text-2xl text-goldbright">
-                    {f.q}
-                  </summary>
-                  {f.bullets ? (
-                    <ul className="mt-3 list-disc space-y-1.5 pl-5 leading-relaxed text-cream/85">
-                      {f.bullets.map((b) => (
-                        <li key={b}>{b}</li>
-                      ))}
-                    </ul>
-                  ) : null}
-                  {f.a ? (
-                    <p className="mt-3 whitespace-pre-line leading-relaxed text-cream/85">{f.a}</p>
-                  ) : null}
-                </details>
+                <FaqItem key={f.q} f={f} />
               ))}
             </div>
           </section>
