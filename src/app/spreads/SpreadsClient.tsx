@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "motion/react";
 import { useCanHide } from "@/lib/use-mounted";
 import { SPREADS } from "@/lib/tarot";
@@ -24,16 +25,46 @@ import FieldGroup from "@/components/FieldGroup";
  * moment they have an Oracle, the spread opens with "Begin
  * reading" and the gate offers the personalized intake.
  */
-export default function SpreadsPage() {
+export default function SpreadsPage({
+  initialPickedSlug = null,
+}: {
+  // URL state sync (all-pages fix 4): the server page reads
+  // ?spread=<slug> and passes it in, so a refresh or a shared link
+  // keeps the picked spread highlighted instead of clearing it.
+  initialPickedSlug?: string | null;
+}) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const hide = useCanHide();
   // Deep UX Batch C: question picker. A newcomer should not have to
   // self-diagnose a spread name; they pick what they are asking
   // about, and the matching card is highlighted and scrolled to.
-  const [pickedSlug, setPickedSlug] = useState<string | null>(null);
+  const [pickedSlug, setPickedSlug] = useState<string | null>(initialPickedSlug);
   const pickSpread = (slug: string) => {
     setPickedSlug(slug);
+    // URL state sync (all-pages fix 4): the pick is written as
+    // ?spread=<slug>, so it survives a refresh and is shareable.
+    // router.replace, not push: picking is not a navigation step,
+    // so Back leaves the page instead of stepping through picks.
+    // scroll: false keeps the scroll where pickSpread puts it.
+    router.replace(`/spreads?spread=${slug}`, { scroll: false });
     document.getElementById(`spread-${slug}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
   };
+  // Back/forward: the URL is the source of truth when it changes
+  // without a pick. The server re-renders with a new
+  // initialPickedSlug prop, but useState keeps the mounted value,
+  // so the param has to be read back here. No scroll on a
+  // back/forward restore: the seeker is navigating history, not
+  // picking. No-op on mount and on our own replace, where the
+  // param already matches the state.
+  useEffect(() => {
+    const raw = searchParams.get("spread");
+    const next =
+      raw && SPREADS.some((s) => s.slug === raw) ? raw : null;
+    // Phase 4C lint: setState deferred a microtask past the effect,
+    // the same pattern the codebase already uses for this rule.
+    if (next !== pickedSlug) queueMicrotask(() => setPickedSlug(next));
+  }, [searchParams, pickedSlug]);
   const { credits, user, freeReadingAvailable, authFailed, loading: authLoading } = useAuth();
   // Re-check fix: the session flag and the device free flag are read
   // in a mount effect, not during render. The server renders without

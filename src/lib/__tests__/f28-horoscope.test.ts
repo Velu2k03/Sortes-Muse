@@ -22,7 +22,11 @@ describe("F28 one sign picker: the wheel is back", () => {
     expect(client).toContain('ariaLabel="Sun sign"');
     expect(client).toContain("items={[...SUN_SIGNS]}");
     expect(client).toContain("defaultSelected={SUN_SIGNS.indexOf(sign)}");
-    expect(client).toContain("setSign(SUN_SIGNS[index])");
+    expect(client).toContain("onChange={(index) => changeSign(SUN_SIGNS[index])}");
+    // changeSign is the sign setter (all-pages fix 4): it sets the
+    // sign, resets the reveal, and mirrors the sign into ?sign=.
+    expect(client).toContain("const changeSign = (next: SunSign) => {");
+    expect(client).toContain("setSign(next);");
     expect(client).not.toContain("<fieldset>");
     expect(client).not.toContain("aria-pressed={s === sign}");
     expect(client).not.toContain("Choose your sign from the grid below");

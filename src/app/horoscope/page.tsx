@@ -10,11 +10,17 @@ import HoroscopeClient from "./HoroscopeClient";
 export default async function HoroscopePage({
   searchParams,
 }: {
-  searchParams: Promise<{ sign?: string | string[] }>;
+  searchParams: Promise<{ sign?: string | string[]; view?: string | string[] }>;
 }) {
-  const { sign: raw } = await searchParams;
+  const { sign: raw, view: rawView } = await searchParams;
   const q = Array.isArray(raw) ? raw[0] : raw;
   const sign: SunSign = q && isSunSign(q) ? q : "Aries";
+  // URL state sync (all-pages fix 4): ?view=weekly opens on the
+  // weekly view; anything else is Daily, the default. The sign
+  // handling above is unchanged (?sign= already worked on load;
+  // the client now also writes it back, see HoroscopeClient).
+  const v = Array.isArray(rawView) ? rawView[0] : rawView;
+  const view = v === "weekly" ? "weekly" : "daily";
   const today = new Date().toISOString().slice(0, 10);
   // UX audit Phase 2, F28: a 12-sign link grid used to sit below
   // the form, doing the same job as the sign picker. The picker is
@@ -22,6 +28,6 @@ export default async function HoroscopePage({
   // grid is gone. ?sign= deep links still work (the searchParams
   // handling above is unchanged).
   return (
-    <HoroscopeClient key={sign} initialSign={sign} initialDate={today} />
+    <HoroscopeClient key={sign} initialSign={sign} initialDate={today} initialView={view} />
   );
 }
