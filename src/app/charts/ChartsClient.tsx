@@ -1,6 +1,7 @@
 "use client";
 
 import { useChartForm, useChartPrefs, useChartSession } from "./useChartsClient";
+import type { ChartSystem } from "@/lib/chart-submit";
 import {
   BirthDetailsBar,
   BirthForm,
@@ -16,10 +17,17 @@ import {
  * src/lib/chart-submit.ts. The rendered tree is unchanged, so a
  * system switch keeps the same result section mounted, as before.
  */
-export default function ChartsClient() {
+export default function ChartsClient({
+  initialSystem = "western",
+}: {
+  // URL state sync (all-pages fix 4): the server page reads
+  // ?system= and passes it in, so a refresh or a shared link
+  // opens on that system instead of resetting to Western.
+  initialSystem?: ChartSystem;
+}) {
   const prefs = useChartPrefs();
   const form = useChartForm();
-  const s = useChartSession(form, prefs);
+  const s = useChartSession(form, prefs, initialSystem);
   const { setDate, setTime, setUnknownTime, setTimeZoneOverride, setPreset, setLatitude, setLongitude, birthSaveEpochRef } = form;
   const { setResult, setInterpretation, setSaved, hasData, result } = s;
 

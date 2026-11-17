@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { showFailureToast, dismissFailureToast } from "@/lib/failure-toast";
 import { Card } from "@astryxdesign/core/Card";
@@ -121,14 +121,46 @@ const CHECKOUT_FAILED = "Checkout failed";
 export default function PricingClient({
   subscriptionsEnabled = false,
   topupsEnabled = false,
+  initialBilling = "monthly",
 }: {
   subscriptionsEnabled?: boolean;
   topupsEnabled?: boolean;
+  // URL state sync (all-pages fix 4): the server page reads
+  // ?billing=annual and passes it in, so a refresh or a shared
+  // link opens on Annual instead of resetting to Monthly.
+  initialBilling?: Billing;
 }) {
-  const [billing, setBilling] = useState<Billing>("monthly");
+  const [billing, setBilling] = useState<Billing>(initialBilling);
   const [processing, setProcessing] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // URL state sync (all-pages fix 4): Monthly is the default, so
+  // it is omitted and the URL stays clean (/pricing); Annual is
+  // written as ?billing=annual, the value the audit named.
+  // router.replace, not push: toggling billing is not a navigation
+  // step, so Back leaves the page instead of stepping through
+  // Monthly/Annual. scroll: false keeps the toggle in view.
+  const syncBilling = (next: Billing) => {
+    setBilling(next);
+    router.replace(
+      next === "annual" ? "/pricing?billing=annual" : "/pricing",
+      { scroll: false },
+    );
+  };
+  // Back/forward: the URL is the source of truth when it changes
+  // without a toggle click. The server re-renders with a new
+  // initialBilling prop, but useState keeps the mounted value, so
+  // the param has to be read back here. No-op on mount and on our
+  // own replace, where the param already matches the state.
+  useEffect(() => {
+    const next: Billing =
+      searchParams.get("billing") === "annual" ? "annual" : "monthly";
+    // Phase 4C lint: setState deferred a microtask past the effect,
+    // the same pattern the codebase already uses for this rule.
+    if (next !== billing) queueMicrotask(() => setBilling(next));
+  }, [searchParams, billing]);
 
   // Sonner full use (2026-11-17): see CHECKOUT_FAILED above.
   // The toast outlives the page (one app-wide Toaster): leaving the
@@ -232,7 +264,7 @@ export default function PricingClient({
         <button
           type="button"
           aria-pressed={billing === "monthly"}
-          onClick={() => setBilling("monthly")}
+          onClick={() => syncBilling("monthly")}
           className={`min-h-11 rounded-l-full border px-5 py-2 text-sm font-semibold ${
             billing === "monthly"
               ? "border-gold bg-gold text-ink"
@@ -244,7 +276,7 @@ export default function PricingClient({
         <button
           type="button"
           aria-pressed={billing === "annual"}
-          onClick={() => setBilling("annual")}
+          onClick={() => syncBilling("annual")}
           className={`min-h-11 rounded-r-full border px-5 py-2 text-sm font-semibold ${
             billing === "annual"
               ? "border-gold bg-gold text-ink"

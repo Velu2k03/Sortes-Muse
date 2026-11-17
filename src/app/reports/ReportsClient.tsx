@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import ReadingText from "@/components/ReadingText";
 import { useAuth } from "@/components/AuthProvider";
@@ -311,9 +312,16 @@ const TYPE_BLURBS: Record<ReportType, string> = {
     "Two charts side by side, read through their cross-aspects. Dynamics only, never a verdict.",
 };
 
-export default function ReportsClient() {
+export default function ReportsClient({
+  initialType = "transit",
+}: {
+  // URL state sync (all-pages fix 4): the server page reads
+  // ?type= and passes it in, so a refresh or a shared link opens
+  // on that report type instead of resetting to Transit.
+  initialType?: ReportType;
+}) {
   const { user, credits, loading, refresh } = useAuth();
-  const [type, setType] = useState<ReportType>("transit");
+  const [type, setType] = useState<ReportType>(initialType);
   // Segment and button colours bypass the theme tokens, so track the
   // document theme the same way the credits page does, 2026-11-04.
   const [siteTheme, setSiteTheme] = useState<"dark" | "light">("dark");
@@ -343,6 +351,45 @@ export default function ReportsClient() {
   // (for example an expired session) so the sign-in prompt replaces the form action.
   const [signInNeeded, setSignInNeeded] = useState(false);
   const [saved, setSaved] = useState<SavedReport[]>([]);
+  // URL state sync (all-pages fix 4): this block sits after the
+  // state declarations because syncType clears the result and the
+  // error, and the lint forbids using their setters before they
+  // are declared. Transit is the default, so it is omitted and
+  // the URL stays clean (/reports); Year-ahead and Comparison are
+  // written as ?type=year-ahead / ?type=comparison. router.replace,
+  // not push: switching types is not a navigation step, so Back
+  // leaves the page instead of stepping through types.
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const syncType = (next: ReportType) => {
+    setType(next);
+    setResult(null);
+    setError("");
+    router.replace(
+      next === "transit" ? "/reports" : `/reports?type=${next}`,
+      { scroll: false },
+    );
+  };
+  // Back/forward: the URL is the source of truth when it changes
+  // without a segment tap. The server re-renders with a new
+  // initialType prop, but useState keeps the mounted value, so
+  // the param has to be read back here; the result belongs to the
+  // old type, so it clears with it. No-op on mount and on our own
+  // replace, where the param already matches the state.
+  useEffect(() => {
+    const raw = searchParams.get("type");
+    const next: ReportType =
+      raw === "year-ahead" || raw === "comparison" ? raw : "transit";
+    // Phase 4C lint: setState deferred a microtask past the effect,
+    // the same pattern the codebase already uses for this rule.
+    if (next !== type) {
+      queueMicrotask(() => {
+        setType(next);
+        setResult(null);
+        setError("");
+      });
+    }
+  }, [searchParams, type]);
 
   const loadSaved = async () => {
     if (user) {
@@ -495,11 +542,7 @@ export default function ReportsClient() {
             { value: "comparison", label: "Relationship comparison" },
           ]}
           value={type}
-          onChange={(v) => {
-            setType(v as ReportType);
-            setResult(null);
-            setError("");
-          }}
+          onChange={(v) => syncType(v as ReportType)}
           aria-label="Report type"
           trackColor="var(--color-panel)"
           thumbColor="var(--color-gold)"

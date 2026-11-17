@@ -46,11 +46,35 @@ function longDate(iso: string): string {
 export default function HoroscopeClient({
   initialSign,
   initialDate,
+  initialView = "daily",
 }: {
   initialSign: SunSign;
   initialDate: string;
+  // URL state sync (all-pages fix 4): the server page reads
+  // ?view=weekly and passes it in, so a refresh or a shared link
+  // opens on the weekly view instead of resetting to Daily.
+  initialView?: "daily" | "weekly";
 }) {
   const [sign, setSign] = useState<SunSign>(initialSign);
+  // URL state sync (all-pages fix 4): the sign and the view are
+  // mirrored into ?sign= and ?view=, so a refresh or a shared link
+  // keeps them; the server reads both back as initial props.
+  // history.replaceState, NOT router.replace: the page mounts this
+  // client with key={sign}, so a router navigation would remount
+  // it and wipe the picked date and the reveal state. replaceState
+  // writes no history entry, so Back leaves the page, as before.
+  // Defaults are omitted, so the URL stays clean: Aries is the
+  // default sign, Daily the default view. The picked date and the
+  // reveal state are deliberately NOT synced: the date is a
+  // transient picker value that resets the reveal, and a shared
+  // link should open today's reflection for the shared sign.
+  const syncHoroscopeUrl = (nextSign: SunSign, nextView: "daily" | "weekly") => {
+    const params = new URLSearchParams();
+    if (nextSign !== "Aries") params.set("sign", nextSign);
+    if (nextView === "weekly") params.set("view", "weekly");
+    const qs = params.toString();
+    window.history.replaceState(null, "", qs ? `/horoscope?${qs}` : "/horoscope");
+  };
   // AF-088: false on the server and first client render, so the HTML
   // carries the reflection as plain text; true after mount, when the
   // reveal flow takes over.
@@ -80,7 +104,7 @@ export default function HoroscopeClient({
     mq.addEventListener("change", sync);
     return () => mq.removeEventListener("change", sync);
   }, []);
-  const [view, setView] = useState<"daily" | "weekly">("daily");
+  const [view, setView] = useState<"daily" | "weekly">(initialView);
   // OptionWheel takes hard colours, so it bypasses the theme tokens
   // like the credits Counter and charts dials did. Track the
   // document theme here and pass its text/active colours as hex.
@@ -109,6 +133,19 @@ export default function HoroscopeClient({
     if (revealTimer.current) clearTimeout(revealTimer.current);
     setRevealed(false);
     setRevealing(false);
+  };
+  // URL state sync (all-pages fix 4): every sign or view change
+  // mirrors the new pair into the URL (see syncHoroscopeUrl) and
+  // resets the reveal, as changing either did before.
+  const changeSign = (next: SunSign) => {
+    setSign(next);
+    resetReveal();
+    syncHoroscopeUrl(next, view);
+  };
+  const changeView = (next: "daily" | "weekly") => {
+    setView(next);
+    resetReveal();
+    syncHoroscopeUrl(sign, next);
   };
   const handleReveal = () => {
     if (reducedMotion) {
@@ -149,7 +186,7 @@ export default function HoroscopeClient({
             <select
               id="horoscope-sign"
               value={sign}
-              onChange={(e) => { setSign(e.target.value as SunSign); resetReveal(); }}
+              onChange={(e) => changeSign(e.target.value as SunSign)}
               className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream focus:border-gold/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
             >
               {SUN_SIGNS.map((s) => (
@@ -165,7 +202,7 @@ export default function HoroscopeClient({
                 ariaLabel="Sun sign"
                 items={[...SUN_SIGNS]}
                 defaultSelected={SUN_SIGNS.indexOf(sign)}
-                onChange={(index) => { setSign(SUN_SIGNS[index]); resetReveal(); }}
+                onChange={(index) => changeSign(SUN_SIGNS[index])}
                 textColor={siteTheme === "light" ? "#45423c" : "#9ca3af"}
                 activeColor={siteTheme === "light" ? "#7c5e00" : "#f4d03f"}
               />
@@ -186,7 +223,7 @@ export default function HoroscopeClient({
             { value: "weekly", label: "Weekly" },
           ]}
           value={view}
-          onChange={(v) => { setView(v as "daily" | "weekly"); resetReveal(); }}
+          onChange={(v) => changeView(v as "daily" | "weekly")}
           aria-label="Daily or weekly"
           trackColor="var(--color-panel)"
           thumbColor="var(--color-gold)"

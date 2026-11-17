@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import type { ZiweiLanguage } from "@/lib/ziwei-i18n";
 import type { ZiweiView } from "@/components/ZiweiChartBoard";
 import { useAuth } from "@/components/AuthProvider";
@@ -234,11 +235,13 @@ export function useChartForm() {
 export type ChartForm = ReturnType<typeof useChartForm>;
 
 /** System selection, calculation, result cache, interpretation, save and share. */
-export function useChartSession(form: ChartForm, prefs: ChartPrefs) {
+export function useChartSession(form: ChartForm, prefs: ChartPrefs, initialSystem: ChartSystem = "western") {
   const { date, time, unknownTime, timeZoneOverride, gender, preset, latitude, longitude, placeSearch, birthSaveEpochRef, resolveCalcCoordinates, rememberBirthDetails } = form;
   const { reducedMotion, ziweiLang } = prefs;
   const { persistReading, user, refresh } = useAuth();
-  const [system, setSystem] = useState<ChartSystem>("western");
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [system, setSystem] = useState<ChartSystem>(initialSystem);
   const formRef = useRef<HTMLFormElement | null>(null);
   const [focus, setFocus] = useState<(typeof FOCUS_AREAS)[number]>("general");
   const [question, setQuestion] = useState("");
@@ -297,7 +300,22 @@ export function useChartSession(form: ChartForm, prefs: ChartPrefs) {
   // system to a cached successful one left a stale Retry action
   // that could spend an Oracle on an already-successful chart.
   const systemCache = useRef<Record<string, { result: ChartResult | null; interpretation: string; interpError: string; saved: boolean; fingerprint: string; interpFree: boolean; interpFallback: boolean; interpFailed: boolean; interpModel: string | null }>>({});
-  const selectSystem = (s: ChartSystem) => {
+  // URL state sync (all-pages fix 4): Western is the default, so
+  // it is omitted and the URL stays clean (/charts); Vedic and
+  // Ziwei are written as ?system=vedic / ?system=ziwei. router.replace,
+  // not push: switching systems is not a navigation step, so Back
+  // leaves the page instead of stepping through systems.
+  const syncSystemUrl = (s: ChartSystem) => {
+    router.replace(
+      s === "western" ? "/charts" : `/charts?system=${s}`,
+      { scroll: false },
+    );
+  };
+  // applySystem is the state + cache half of a system switch. The
+  // scroll and the URL write live in selectSystem (user tap) only,
+  // so a back-button restore neither scrolls the form into view
+  // nor rewrites the URL it just came from.
+  const applySystem = (s: ChartSystem, scroll: boolean) => {
     const cached = systemCache.current[s];
     // The toast is global, not per system: drop it so its Retry can
     // never interpret a different system's chart.
@@ -328,11 +346,31 @@ export function useChartSession(form: ChartForm, prefs: ChartPrefs) {
     // Picking a system brings the form up into view, so the fields
     // for the new system are right there instead of leaving the
     // user staring at the wheel.
-    formRef.current?.scrollIntoView({
-      behavior: reducedMotion ? "auto" : "smooth",
-      block: "start",
-    });
+    if (scroll) {
+      formRef.current?.scrollIntoView({
+        behavior: reducedMotion ? "auto" : "smooth",
+        block: "start",
+      });
+    }
   };
+  const selectSystem = (s: ChartSystem) => {
+    applySystem(s, true);
+    syncSystemUrl(s);
+  };
+  // Back/forward: the URL is the source of truth when it changes
+  // without a system tap. The server re-renders with a new
+  // initialSystem prop, but useState keeps the mounted value, so
+  // the param has to be read back here. No-op on mount and on our
+  // own replace, where the param already matches the state.
+  useEffect(() => {
+    const raw = searchParams.get("system");
+    const next: ChartSystem =
+      raw === "vedic" || raw === "ziwei" ? raw : "western";
+    // Phase 4C lint: setState deferred a microtask past the effect,
+    // the same pattern the codebase already uses for this rule.
+    if (next !== system) queueMicrotask(() => applySystem(next, false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState<ChartResult | null>(null);

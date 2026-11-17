@@ -34,12 +34,24 @@ export const metadata = {
   }),
 };
 
-export default function Pricing() {
+export default async function Pricing({
+  searchParams,
+}: {
+  searchParams: Promise<{ billing?: string | string[] }>;
+}) {
+  // URL state sync (all-pages fix 4): ?billing=annual opens on
+  // Annual; anything else (including a bad value) is Monthly, the
+  // default. Reading searchParams makes this route dynamic, the
+  // same pattern /deck and /horoscope already use.
+  const sp = await searchParams;
+  const raw = Array.isArray(sp.billing) ? sp.billing[0] : sp.billing;
+  const initialBilling = raw === "annual" ? "annual" : "monthly";
   return (
     <Theme theme={sortesTheme} mode="dark">
       <PricingClient
         subscriptionsEnabled={subscriptionsConfigured() && CREDIT_COSTS_ENABLED}
         topupsEnabled={topUpsConfigured() && CREDIT_COSTS_ENABLED}
+        initialBilling={initialBilling}
       />
     </Theme>
   );
