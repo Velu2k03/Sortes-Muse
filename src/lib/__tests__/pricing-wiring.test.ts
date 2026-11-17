@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { readFileSync, existsSync } from "fs";
+import { readFileSync, existsSync, readdirSync, statSync } from "fs";
 import path from "path";
 
 // Sortes Phase 2 batch 1 (Velu, 2026-11-14): the Astryx scoped
@@ -450,11 +450,44 @@ describe("Pricing card contrast: dark islands on the light page", () => {
 });
 
 describe("Pricing page: Astryx pilot wiring", () => {
-  it("wraps the page in the built Sortes theme, dark mode, pricing route only", () => {
+  it("scopes the built Sortes theme via data-astryx-theme on the client root, no Theme provider", () => {
+    // Pricing theme-clobber fix (2026-11-17): the page used to
+    // wrap PricingClient in <Theme theme={sortesTheme}
+    // mode="dark">. As the root Theme it synced data-theme="dark"
+    // to <html> and removed the attribute on unmount, clobbering
+    // Sortes' own html[data-theme]: stored light flipped to dark
+    // ~500ms after paint, and navigating away from /pricing left
+    // data-theme null with the user stuck on dark until reload.
+    // The provider is gone. The sortes.css scope now comes from
+    // data-astryx-theme="sortes" on PricingClient's root Section,
+    // which spreads data-* props onto its outer div (BaseProps
+    // allows data-* attributes). The built theme object and its
+    // CSS still exist and still load from globals.css.
     const p = page();
-    expect(p).toContain('import { sortesTheme } from "@/themes/sortes/sortes.js";');
-    expect(p).toContain('import { Theme } from "@astryxdesign/core/theme";');
-    expect(p).toContain('<Theme theme={sortesTheme} mode="dark">');
+    expect(p).not.toContain('from "@astryxdesign/core/theme"');
+    // JSX usage, not a bare substring: "<Theme" alone also
+    // matches <ThemedDatePicker and the comments below naming
+    // the removed wrapper. A JSX <Theme> tag always starts a
+    // line (indented) in this codebase.
+    expect(p).not.toMatch(/^\s*<Theme[\s>]/m);
+    expect(p).not.toContain("sortesTheme");
+    const c = client();
+    expect(c).toContain('data-astryx-theme="sortes"');
+    // The attribute must sit on the root Section, not on a
+    // nested element: the @scope root is the element carrying
+    // it, and only the page root covers every Astryx component
+    // on the page (including the tier and top-up Cards).
+    const section = c.match(
+      /<Section[\s\S]*?data-astryx-theme="sortes"[\s\S]*?>/
+    );
+    expect(section).not.toBeNull();
+    // The wrapper's color-scheme: dark is preserved by a CSS
+    // rule on the scope root, so native controls and
+    // light-dark() values inside the dark cards keep rendering
+    // dark without any <html> writes.
+    expect(src("src/app/globals.css")).toContain(
+      '[data-astryx-theme="sortes"]'
+    );
     // Phase 2 batch 3: the page passes the Lemon Squeezy config
     // (read at request time) into the client as props. The buttons
     // ALSO need the credit flag ON (Codex P1): a subscription or
@@ -476,6 +509,56 @@ describe("Pricing page: Astryx pilot wiring", () => {
     // open" label, gated on the config props.
     expect(p).toContain("Sortes subscriptions: Spark $9.99");
     expect(p).not.toContain("coming soon");
+  });
+
+  it("uses no Astryx Theme provider anywhere in src (site-wide, theme-clobber guard)", () => {
+    // The invariant the clobber fix rests on: no <Theme> may
+    // claim <html>. Pricing was the only user; the guard walks
+    // every non-test source file so a future Theme cannot
+    // reintroduce the overwrite silently. Test files are
+    // excluded: this file names the banned pattern in its own
+    // strings (same pattern as the Batch 6a slop guard and the
+    // clsx site-wide test). The generated theme definition
+    // (src/themes/sortes/sortesTheme.ts) and the theme registry
+    // (src/astryx-themes.ts) are not providers — they only
+    // define / register the theme object — so they are out of
+    // scope for the module-import check only; they are still
+    // scanned for <Theme JSX like every other file.
+    const offenders: string[] = [];
+    const walk = (dir: string) => {
+      for (const entry of readdirSync(dir)) {
+        const full = path.join(dir, entry);
+        if (statSync(full).isDirectory()) {
+          if (entry === "__tests__") continue;
+          walk(full);
+        } else if (
+          (full.endsWith(".ts") || full.endsWith(".tsx")) &&
+          !full.endsWith(".test.ts") &&
+          !full.endsWith(".test.tsx")
+        ) {
+          const body = readFileSync(full, "utf8");
+          // <Theme JSX is banned everywhere: no file may render
+          // a provider. The match is a line-start JSX tag, not a
+          // bare "<Theme" substring: that would also match
+          // <ThemedDatePicker (a date picker, not a provider)
+          // and comments naming the removed wrapper. A JSX
+          // <Theme> tag always starts a line (indented) in this
+          // codebase.
+          const isThemeDefinition =
+            full.includes(`${path.sep}themes${path.sep}`) ||
+            full.endsWith(`${path.sep}astryx-themes.ts`);
+          if (
+            /^\s*<Theme[\s>]/m.test(body) ||
+            (!isThemeDefinition &&
+              body.includes('from "@astryxdesign/core/theme"'))
+          ) {
+            offenders.push(full);
+          }
+        }
+      }
+    };
+    walk(path.resolve(process.cwd(), "src"));
+    expect(offenders).toEqual([]);
   });
 
   it("renders tiers with Astryx Card / Badge / Button, NumberFlow, no StarBorder", () => {
