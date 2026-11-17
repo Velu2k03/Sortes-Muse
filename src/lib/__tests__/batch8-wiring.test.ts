@@ -30,7 +30,7 @@ describe("Batch 8: catalogue animations", () => {
     expect(dealRotation(3)).toBe(5);
   });
 
-  it("both deal-in rows use the rotation, scale, and 100ms stagger", () => {
+  it("both deal-in rows use the rotation, scale, and 40ms stagger", () => {
     for (const rel of [
       "src/app/reading/[id]/ReadingSections.tsx",
       "src/app/intake/[slug]/IntakeSteps.tsx",
@@ -38,8 +38,11 @@ describe("Batch 8: catalogue animations", () => {
       const file = src(rel);
       expect(file).toContain("rotate: ((i * 7) % 11) - 5");
       expect(file).toContain("y: -48, scale: 1.12");
-      expect(file).toContain("delay: reduceMotion ? 0 : i * 0.1");
-      expect(file).toContain("duration: 0.5");
+      // transitions.dev retiming (all-pages fix 2): was 100ms stagger
+      // at 0.5s, now 40ms stagger capped at 0.2s at 0.25s. The
+      // deal-in wiring (rotation, scale, animate target) is unchanged.
+      expect(file).toContain("delay: reduceMotion ? 0 : Math.min(i * 0.04, 0.2)");
+      expect(file).toContain("duration: 0.25");
       expect(file).toContain("animate={{ opacity: 1, y: 0, scale: 1, rotate: 0 }}");
     }
   });

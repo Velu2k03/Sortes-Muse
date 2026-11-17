@@ -146,7 +146,10 @@ export default function SpreadsPage() {
             key={`${s.slug}-${hide ? "reveal" : "static"}`}
             initial={hide ? { opacity: 0, y: 24 } : false}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.05, duration: 0.4 }}
+            // transitions.dev 150-250ms band: was duration 0.4s with
+            // stagger i * 0.05, so the last spread finished at 0.65s.
+            // Now 0.25s, stagger 0.04s, last spread done by 0.45s.
+            transition={{ delay: i * 0.04, duration: 0.25 }}
             className={`relative flex gap-4 overflow-hidden rounded-3xl border bg-panel/70 p-4 sm:gap-6 sm:p-5 ${pickedSlug === s.slug ? "border-gold shadow-gold-ring" : "border-gold/25"}`}
           >
             {/* Batch 6c: the diagram is a thumbnail now (Batch 4a's

@@ -402,10 +402,13 @@ export default function DeckClient({
             key={c.id}
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: Math.min(i * 0.02, 0.5), duration: 0.4 }}
+            // transitions.dev 150-250ms band: was duration 0.4s with
+            // delay capped at 0.5s, so the last tile finished at 0.9s.
+            // Now 0.25s, delay capped at 0.2s, last tile done by 0.45s.
+            transition={{ delay: Math.min(i * 0.02, 0.2), duration: 0.25 }}
             // Grid virtualization: content-visibility, not a windowing
             // grid. True windowing remounts tiles when they scroll back
-            // into view, which would replay the 0.4s entrance animation
+            // into view, which would replay the 0.25s entrance animation
             // on every scroll. content-visibility is the Vercel
             // guideline's named alternative: off-screen tiles skip
             // layout and paint but stay in the DOM, so no remount and

@@ -115,6 +115,9 @@ const CallChip: React.FC<CallChipProps> = ({
       const live = fill ? new DOMMatrix(getComputedStyle(fill).transform).a : fraction.current;
       setFraction(Math.min(1, Math.max(0, live)), true);
       if (animate && shake > 0 && !reduceMotion() && rootRef.current) {
+        // Deliberate emphasis, NOT a reveal: the 450ms error shake is
+        // the failure signal, same family as SlideCommit's 0.45s shake.
+        // At 0.25s it reads as a jitter, not a shake. Kept on purpose.
         shakeAnim.current = rootRef.current.animate(
           SHAKE.map(k => ({ transform: `translateX(${k * shake}px)`, easing: 'cubic-bezier(0.77, 0, 0.175, 1)' })),
           { duration: 450, composite: 'add' }
