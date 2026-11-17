@@ -26,7 +26,6 @@ import ReadingText from "@/components/ReadingText";
 import InfoHint from "@/components/InfoHint";
 import SplitText from "@/components/SplitText";
 import AnimatedContent from "@/components/AnimatedContent";
-import SwipeToast from "@/components/SwipeToast";
 import HeirloomPrint from "@/components/HeirloomPrint";
 import BirthProfilePicker from "@/components/BirthProfilePicker";
 import { profileToChartFields } from "@/lib/birth-profiles";
@@ -739,7 +738,7 @@ export function ChartLegend({ prefs, result }: { prefs: ChartPrefs; result: Char
 /** Focus, question, interpret, save, share, heirloom export. */
 export function InterpretationPanel({ prefs, s, result }: { prefs: ChartPrefs; s: ChartSession; result: ChartResultT }) {
   const { ziweiLang } = prefs;
-  const { focus, setFocus, question, setQuestion, interpretation, interpFallback, interpModel, interpLoading, interpError, interpFailed, interpToastOpen, setInterpToastOpen, interpFree, interpSignInNeeded, user, saved, shareBusy, displayFree, onInterpret, onSaveChart, onShareChart } = s;
+  const { focus, setFocus, question, setQuestion, interpretation, interpFallback, interpModel, interpLoading, interpError, interpFailed, interpFree, interpSignInNeeded, user, saved, shareBusy, displayFree, onInterpret, onSaveChart, onShareChart } = s;
   return (
   <section id="chart-interpretation" className="mt-10 scroll-mt-24 rounded-3xl border border-gold/25 bg-panel/70 p-6" aria-label="Chart interpretation">
     <h3 className="font-display text-2xl text-goldbright">{result.system === "ziwei" && ziweiLang === "zh" ? "解读" : "Interpretation"}</h3>
@@ -787,19 +786,6 @@ export function InterpretationPanel({ prefs, s, result }: { prefs: ChartPrefs; s
     )}
     {interpFailed && (
       <div className="mt-4 space-y-3">
-        <SwipeToast
-          open={interpToastOpen}
-          onClose={() => setInterpToastOpen(false)}
-          title="Interpretation failed"
-          actionLabel="Retry"
-          onAction={onInterpret}
-          inline
-          closeButton
-          width={320}
-          background="var(--color-panel)"
-          color="var(--color-cream)"
-          fuseColor="var(--color-gold)"
-        />
         <button
           type="button"
           onClick={onInterpret}

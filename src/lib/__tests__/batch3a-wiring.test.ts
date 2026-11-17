@@ -37,9 +37,10 @@ describe("Batch 3a wiring", () => {
   });
 
   it("both intake error messages are announced", () => {
-    // Re-check: the retry-path error sits in normal flow (the toast
-    // is inline, not fixed), so a scroll to the heading can leave
-    // it below the fold. role="alert" announces it on mount.
+    // Re-check: the retry-path error sits in normal flow (the failure
+    // toast is a floating Sonner toast, not in this block), so a scroll
+    // to the heading can leave it below the fold. role="alert"
+    // announces it on mount.
     const alerts = steps.match(/<p role="alert"/g) ?? [];
     expect(alerts).toHaveLength(2);
   });

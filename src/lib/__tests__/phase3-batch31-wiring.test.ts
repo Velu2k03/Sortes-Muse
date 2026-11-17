@@ -55,10 +55,15 @@ describe("Phase 3 Batch 3.1 intake form and no dead end", () => {
   });
 
   it("takes the toast colours from the brand tokens, not raw hex", () => {
-    expect(steps).toContain('background="var(--color-panel)"');
-    expect(steps).toContain('color="var(--color-cream)"');
-    expect(steps).toContain('fuseColor="var(--color-gold)"');
-    expect(steps).not.toContain('fuseColor="#b9975b"');
+    // The toast is now the one Sonner Toaster (SonnerToaster.tsx).
+    const toaster = readFileSync(
+      path.resolve(process.cwd(), "src/components/SonnerToaster.tsx"),
+      "utf8"
+    );
+    expect(toaster).toContain('"--normal-bg": "var(--color-panel)"');
+    expect(toaster).toContain('"--normal-text": "var(--color-cream)"');
+    expect(toaster).toContain("var(--color-gold)");
+    expect(toaster).not.toContain("#b9975b");
     expect(steps).not.toContain('background="#1a2a44"');
   });
 });

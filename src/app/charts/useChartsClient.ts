@@ -8,6 +8,7 @@ import { chartFreeUsed, clearPendingAttemptId, makeReading, pendingAttemptId, ty
 import { unconfirmedMessage } from "@/lib/generate-failure";
 import { chartInterpretationCost } from "@/lib/chart-pricing";
 import { BRAND } from "@/lib/brand";
+import { showFailureToast, dismissFailureToast } from "@/lib/failure-toast";
 import { buildStaticChartInterpretation } from "@/lib/chart-fallback";
 import {
   FOCUS_AREAS,
@@ -29,6 +30,8 @@ import {
 /** Display preferences: reduced motion, site theme, Ziwei view/language/glosses. */
 /** An error whose message came from the server's own response body. */
 class ServerError extends Error {}
+
+const INTERPRETATION_FAILED = "Interpretation failed";
 
 export function useChartPrefs() {
   const [reducedMotion, setReducedMotion] = useState(false);
@@ -241,10 +244,11 @@ export function useChartSession(form: ChartForm, prefs: ChartPrefs) {
   const [interpLoading, setInterpLoading] = useState(false);
   const [interpError, setInterpError] = useState("");
   // Phase D: interpFailed marks a genuine call failure (not a balance
-  // stop) and drives the persistent retry UI; the toast flag drives
-  // the transient toast on top of it.
+  // stop) and drives the persistent retry UI; the Sonner toast fires
+  // once per failure from handleInterpretFailure. Its Retry runs the
+  // latest onInterpret (a ref), like the Try again button.
   const [interpFailed, setInterpFailed] = useState(false);
-  const [interpToastOpen, setInterpToastOpen] = useState(false);
+  const interpretRef = useRef<() => void>(() => {});
   const [interpFree, setInterpFree] = useState(false);
   // Batch D (B4): interpretation needs sign-in; set on a 401 (for example an
   // expired session) so the panel shows a sign-in prompt, not a generic error.
@@ -284,9 +288,12 @@ export function useChartSession(form: ChartForm, prefs: ChartPrefs) {
   // too. Without them in the snapshot, switching from a failed
   // system to a cached successful one left a stale Retry action
   // that could spend an Oracle on an already-successful chart.
-  const systemCache = useRef<Record<string, { result: ChartResult | null; interpretation: string; interpError: string; saved: boolean; fingerprint: string; interpFree: boolean; interpFallback: boolean; interpFailed: boolean; interpToastOpen: boolean; interpModel: string | null }>>({});
+  const systemCache = useRef<Record<string, { result: ChartResult | null; interpretation: string; interpError: string; saved: boolean; fingerprint: string; interpFree: boolean; interpFallback: boolean; interpFailed: boolean; interpModel: string | null }>>({});
   const selectSystem = (s: ChartSystem) => {
     const cached = systemCache.current[s];
+    // The toast is global, not per system: drop it so its Retry can
+    // never interpret a different system's chart.
+    dismissFailureToast(INTERPRETATION_FAILED);
     setSystem(s);
     if (cached && cached.fingerprint === inputFingerprint) {
       setResult(cached.result);
@@ -300,7 +307,6 @@ export function useChartSession(form: ChartForm, prefs: ChartPrefs) {
       setInterpFree(cached.interpFree);
       setInterpFallback(cached.interpFallback);
       setInterpFailed(cached.interpFailed);
-      setInterpToastOpen(cached.interpToastOpen);
       setInterpModel(cached.interpModel);
       calcFingerprintRef.current = cached.fingerprint;
     } else {
@@ -309,7 +315,6 @@ export function useChartSession(form: ChartForm, prefs: ChartPrefs) {
       setInterpError("");
       setSaved(false);
       setInterpFailed(false);
-      setInterpToastOpen(false);
       setInterpModel(null);
     }
     // Picking a system brings the form up into view, so the fields
@@ -327,8 +332,8 @@ export function useChartSession(form: ChartForm, prefs: ChartPrefs) {
   // so TypeScript does not flag use before assignment.
   useEffect(() => {
     if (inputFingerprint !== calcFingerprintRef.current) return;
-    systemCache.current[system] = { result, interpretation, interpError, saved, fingerprint: inputFingerprint, interpFree, interpFallback, interpFailed, interpToastOpen, interpModel };
-  }, [system, result, interpretation, interpError, saved, inputFingerprint, interpFree, interpFallback, interpFailed, interpToastOpen, interpModel]);
+    systemCache.current[system] = { result, interpretation, interpError, saved, fingerprint: inputFingerprint, interpFree, interpFallback, interpFailed, interpModel };
+  }, [system, result, interpretation, interpError, saved, inputFingerprint, interpFree, interpFallback, interpFailed, interpModel]);
   const [showBurst, setShowBurst] = useState(false);
   const resultRef = useRef<HTMLElement | null>(null);
   // Auto-scroll to the result after Calculate: it used to appear below
@@ -409,7 +414,7 @@ export function useChartSession(form: ChartForm, prefs: ChartPrefs) {
           : unconfirmedMessage("interpretation", "your journal")
       );
       setInterpFailed(true);
-      setInterpToastOpen(true);
+      showFailureToast(INTERPRETATION_FAILED, () => interpretRef.current());
       // Phase 2, 2.3: the AI failed, so show the deterministic
       // standard interpretation built from the computed placements
       // instead of leaving only an error. It is labelled as
@@ -428,7 +433,7 @@ export function useChartSession(form: ChartForm, prefs: ChartPrefs) {
     setInterpLoading(true);
     // Phase D: a new attempt clears the previous failure UI.
     setInterpFailed(false);
-    setInterpToastOpen(false);
+    dismissFailureToast(INTERPRETATION_FAILED);
     // M0.1 credit authority: the client never spends. The route requires
     // sign-in, spends (or claims the free use) only after a real model
     // generates text, and stores the interpretation in the same transaction.
@@ -483,6 +488,12 @@ export function useChartSession(form: ChartForm, prefs: ChartPrefs) {
       setInterpLoading(false);
     }
   }
+  useEffect(() => {
+    interpretRef.current = onInterpret;
+  });
+  // The toast outlives the page (one app-wide Toaster): leaving the
+  // page drops it so its Retry cannot run against an unmounted page.
+  useEffect(() => () => dismissFailureToast(INTERPRETATION_FAILED), []);
 
   async function onSaveChart() {
     if (!result || !interpretation) return;
@@ -599,7 +610,7 @@ export function useChartSession(form: ChartForm, prefs: ChartPrefs) {
   return {
     system, selectSystem, formRef, focus, setFocus, question, setQuestion,
     interpretation, setInterpretation, interpFallback, interpModel, interpLoading, interpError,
-    interpFailed, interpToastOpen, setInterpToastOpen, interpFree, interpSignInNeeded, user, saved, setSaved,
+    interpFailed, interpFree, interpSignInNeeded, user, saved, setSaved,
     shareBusy, shareRef, loading, error, result, setResult, showBurst, resultRef,
     displayFree, onInterpret, onSaveChart, onShareChart, onSubmit, hasData,
   };
