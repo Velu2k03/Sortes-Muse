@@ -1,10 +1,3 @@
-import { Theme } from "@astryxdesign/core/theme";
-// The built theme object, imported directly (not via the generated
-// src/astryx-themes.ts, which also imports sortes.css — global CSS
-// may only load from the root layout, so the CSS comes in through
-// globals.css instead). The Theme provider scopes the theme to
-// this page only; the rest of the app is untouched.
-import { sortesTheme } from "@/themes/sortes/sortes.js";
 import { pageSocial } from "@/lib/seo";
 import { subscriptionsConfigured, topUpsConfigured } from "@/lib/lemonsqueezy";
 import { CREDIT_COSTS_ENABLED } from "@/lib/subscription-tiers";
@@ -46,13 +39,28 @@ export default async function Pricing({
   const sp = await searchParams;
   const raw = Array.isArray(sp.billing) ? sp.billing[0] : sp.billing;
   const initialBilling = raw === "annual" ? "annual" : "monthly";
+  // No Astryx <Theme> wrapper here (pricing theme-clobber fix,
+  // 2026-11-17): the Theme provider's only job on this page was
+  // scoping the built sortes theme via data-astryx-theme="sortes"
+  // on its wrapper, but as the root Theme it also synced
+  // data-theme="dark" to <html> and removed the attribute on
+  // unmount — clobbering Sortes' own html[data-theme] (stored
+  // light flipped to dark ~500ms after paint; navigating away
+  // left data-theme null and the user stuck on dark). The scope
+  // now lives on PricingClient's root Section instead, which
+  // spreads data-* props onto its outer div (BaseProps allows
+  // data-* attributes), so the @scope'd sortes.css rules apply
+  // exactly as before with no provider and no <html> writes.
+  // The sortes theme object itself is still built and its CSS
+  // still loads from globals.css; only the provider is gone.
+  // Nothing in src/ consumes the Theme context (no useTheme),
+  // and the theme is built (__built: true), so no runtime style
+  // injection is lost either.
   return (
-    <Theme theme={sortesTheme} mode="dark">
-      <PricingClient
-        subscriptionsEnabled={subscriptionsConfigured() && CREDIT_COSTS_ENABLED}
-        topupsEnabled={topUpsConfigured() && CREDIT_COSTS_ENABLED}
-        initialBilling={initialBilling}
-      />
-    </Theme>
+    <PricingClient
+      subscriptionsEnabled={subscriptionsConfigured() && CREDIT_COSTS_ENABLED}
+      topupsEnabled={topUpsConfigured() && CREDIT_COSTS_ENABLED}
+      initialBilling={initialBilling}
+    />
   );
 }

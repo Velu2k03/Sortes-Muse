@@ -351,7 +351,29 @@ export default function PricingClient({
     // (minWidth 440, max 2): Star's focal panel on one side,
     // Spark and Moon as quiet hairline rows on the other; it
     // collapses to a single column, Star first, on narrow screens.
-    <Section variant="transparent" maxWidth="64rem" padding={8} paddingInline={4} className="mx-auto">
+    <Section
+      variant="transparent"
+      maxWidth="64rem"
+      padding={8}
+      paddingInline={4}
+      className="mx-auto"
+      // Pricing theme-clobber fix (2026-11-17): the sortes theme
+      // scope root. sortes.css is @scope'd to
+      // [data-astryx-theme="sortes"], and this attribute used to
+      // come from the Astryx <Theme> wrapper on the pricing page.
+      // That wrapper is gone — as the root Theme it synced
+      // data-theme="dark" to <html> and removed the attribute on
+      // unmount, clobbering Sortes' own html[data-theme]. Section
+      // spreads data-* props onto its outer div (BaseProps allows
+      // data-* attributes), so the attribute lands on the same
+      // scope root with no provider and no <html> writes. The
+      // wrapper was display: contents, so removing it changes no
+      // layout; its data-theme="dark" was inert (no CSS selects
+      // [data-theme] except on <html>), and its color-scheme: dark
+      // is preserved by the [data-astryx-theme="sortes"] rule in
+      // globals.css.
+      data-astryx-theme="sortes"
+    >
       <VStack gap={0} className="text-center">
         {/* UX audit Phase 2, F14 (Hallmark re-run): the "Pricing"
             eyebrow above the H1 is gone. The H1 already says what
