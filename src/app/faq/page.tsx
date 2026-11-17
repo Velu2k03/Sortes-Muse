@@ -16,7 +16,7 @@ export const FAQS: FaqItem[] = [
   {
     group: "Pricing and Oracles",
     q: "What is free in Sortes?",
-    a: "The daily card, the deck browser, and chart calculation are free, no account needed. Your first Quick Insight reading and your first chart interpretation per system are free too.",
+    a: "The daily card, the deck browser, and chart calculation are free, no account needed. Your first Quick Insight reading and your first chart interpretation per system are free too, but chart interpretations need you to sign in.",
   },
   {
     group: "Pricing and Oracles",
