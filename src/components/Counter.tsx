@@ -1,5 +1,14 @@
 'use client';
 
+// LEFT HAND-BUILT (all-pages fix 6, NumberFlow swap, 2026-11-17):
+// Counter stays in-house. NumberFlow has no equivalent for this
+// component's intro spin (digits spin a full turn when the balance
+// scrolls into view), motion blur, or spring bounce, so swapping
+// the /oracles big balance or the /reports inline balance would
+// visibly change the moment. Audit fix 6 names only the Header
+// Oracle balance and the PricingClient savings, both CountUp sites,
+// which did swap to NumberFlow. Do not swap Counter without Velu.
+
 import {
   useEffect,
   useId,
