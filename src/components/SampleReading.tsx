@@ -109,12 +109,9 @@ export default function SampleReading({ collapsed = false }: { collapsed?: boole
         >
           Get my reading · 1 Oracle
         </Link>
-        <p className="mt-3 text-xs text-mist">
-          Your first Quick Insight reading is free.
-        </p>
         <p className="mt-1 text-xs text-mist">
-          Real readings are written by AI from your cards, question, and
-          story: 300-600 words, on screen in up to about 3 minutes.
+          AI-written from your cards and question. 300-600 words, about 3
+          minutes.
         </p>
       </div>
     </motion.div>
@@ -137,8 +134,7 @@ export default function SampleReading({ collapsed = false }: { collapsed?: boole
             See what a personalized reading feels like
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-cream/75">
-            An invented example: Maya&apos;s question, answered the way yours
-            will be. Yours is written around your own story and question.
+            An invented example. Yours is written around your story.
           </p>
         </motion.div>
 

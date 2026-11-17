@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { pageSocial } from "@/lib/seo";
 import CreditsPage from "./CreditsClient";
 import TopUpBuyButton from "./TopUpBuyButton";
+import InfoHint from "@/components/InfoHint";
 import { SITE_URL } from "@/lib/site";
 import { topUpsConfigured } from "@/lib/lemonsqueezy";
 import { CREDIT_COSTS_ENABLED, TOPUPS } from "@/lib/subscription-tiers";
@@ -106,16 +107,20 @@ export default function Credits() {
 
       {/* UX audit Phase 2, F37: three small-print paragraphs used
           to sit here (payment methods, USD/taxes, 14-day refund).
-          One footnote block now, three sentences, same facts. The
-          "never expire" promise is said once on this page, on the
-          top-up cards above; it is not repeated here. */}
+          Phase 7 (7.2): only the refund window stays visible, it is
+          decision-critical. The payment methods and taxes move
+          behind an info icon. The "never expire" promise is said
+          once on this page, on the top-up cards above; it is not
+          repeated here. */}
       <div className="mx-auto mt-6 max-w-xl text-center text-sm text-cream/75">
         <p>
-          Pay with cards, PayPal, Apple Pay, or Google Pay through
-          Lemon Squeezy, where available in your region. Prices are in
-          US dollars; checkout shows the full amount, including any
-          applicable taxes or fees. Unused top-ups can be refunded
-          within 14 days of purchase.
+          Unused top-ups can be refunded within 14 days of purchase.{" "}
+          <InfoHint label="About payment methods">
+            Pay with cards, PayPal, Apple Pay, or Google Pay through
+            Lemon Squeezy, where available in your region. Prices are in
+            US dollars; checkout shows the full amount, including any
+            applicable taxes or fees.
+          </InfoHint>
         </p>
       </div>
 

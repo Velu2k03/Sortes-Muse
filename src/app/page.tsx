@@ -269,7 +269,7 @@ export default function Home() {
             </p>
           )}
           <p className="mt-2 text-xs text-mist/80">
-            Your reading is written just for you and saved in your journal.
+            Written just for you, saved in your journal.
           </p>
           {/* Phase 2 3D hero (Velu's choice 5): the fan of 3D tarot
               cards with the gold moon behind, below the question
