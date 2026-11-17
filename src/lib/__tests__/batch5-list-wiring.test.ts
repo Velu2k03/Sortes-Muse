@@ -37,7 +37,9 @@ describe("Batch 5: the List view for /deck", () => {
   it("the list renders one link per card with name, arcana/suit and keywords", () => {
     const deck = src("src/app/deck/DeckClient.tsx");
     expect(deck).toContain('effectiveView === "list"');
-    expect(deck).toContain('<ul className="mt-6 space-y-2">');
+    // The list is a real <ul>, virtualized with Virtuoso; the row
+    // spacing stays space-y-2, the original spacing.
+    expect(deck).toContain('<ul ref={ref} style={style} className="mt-6 space-y-2">');
     expect(deck).toContain("Major Arcana");
     expect(deck).toContain('suitLabel(c.suit ?? "")');
     expect(deck).toContain("c.keywords.upright.slice(0, 3).join");
