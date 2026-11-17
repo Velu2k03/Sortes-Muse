@@ -292,9 +292,9 @@ export default function PricingClient({
             .{" "}
           </>
         ) : (
-          // Packs retired (Velu, 2026-11-16, D1): /oracles sells
-          // top-ups, not packs, so the footer points there.
-          <Link href="/oracles" className="font-semibold text-goldbright underline">
+          // Packs retired (Velu, 2026-11-16, D1): top-ups live in
+          // the section below, so the footer points there.
+          <Link href="#topups-heading" className="font-semibold text-goldbright underline">
             See top-ups
           </Link>
         )}

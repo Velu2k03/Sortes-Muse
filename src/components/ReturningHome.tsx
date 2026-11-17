@@ -246,7 +246,7 @@ export default function ReturningHome() {
           <>
             Your balance: {credits} {credits === 1 ? "Oracle" : "Oracles"} ·{" "}
             <Link
-              href="/oracles"
+              href="/pricing"
               className="font-semibold text-goldbright underline underline-offset-4"
             >
               Top up

@@ -45,7 +45,7 @@ describe("Phase 3 Batch 3.1 intake form and no dead end", () => {
     // Both error alerts offer the link when the error is an out-of-Oracles one.
     const links = steps.match(/error\.startsWith\("You need 1 Oracle"\)[\s\S]*?Get Oracles/g) ?? [];
     expect(links.length).toBe(2);
-    expect(steps).toContain('href="/oracles"');
+    expect(steps).toContain('href="/pricing"');
   });
 
   it("announces each step name to screen readers on mobile", () => {

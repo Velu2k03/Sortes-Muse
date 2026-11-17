@@ -171,7 +171,7 @@ describe("ReturningHome: greeting, today's card, cost-labelled button, balance",
     expect(home).toContain("Your balance:");
     expect(home).toContain("Oracles");
     expect(home).toContain("Your balance is loading.");
-    expect(home).toContain('href="/oracles"');
+    expect(home).toContain('href="/pricing"');
     expect(home).toContain("Top up");
   });
 

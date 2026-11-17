@@ -184,7 +184,7 @@ export default function SpreadsPage() {
               ) : locked ? (
                 <>
                   <Link
-                    href="/oracles"
+                    href="/pricing"
                     className="btn-ghost mt-4 rounded-xl border border-gold/30 px-4 py-3 text-center font-semibold"
                   >
                     Get Oracles to begin
@@ -269,7 +269,7 @@ export default function SpreadsPage() {
           </Link>
         </p>
         <Link
-          href="/oracles"
+          href="/pricing"
           className="btn-ghost mt-4 rounded-xl px-6 py-3 text-sm font-semibold"
         >
           Top up Oracles
