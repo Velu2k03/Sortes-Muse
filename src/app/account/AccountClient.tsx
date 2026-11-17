@@ -86,7 +86,7 @@ export default function AccountPage() {
   // skeleton above covers the wait, so no wrong H1 ever paints.
   return (
     <>
-      <h1 className="mt-3 text-center font-display text-5xl text-goldbright">
+      <h1 className="mt-3 text-left font-display text-5xl text-goldbright">
         {user ? "Your account" : "Sign in"}
       </h1>
       <div className="mt-6">
@@ -460,7 +460,7 @@ function SignInPanel({ s }: { s: ReturnType<typeof useSignIn> }) {
             </div>
           </div>
           {mode === "signin" && (
-            <p className="text-center text-sm">
+            <p className="text-left text-sm">
               {/* Batch 3.5 (#88): there is no password-reset route,
                   so a forgotten password signs in with an email
                   link instead. Switching tabs keeps the email. */}
@@ -488,7 +488,7 @@ function SignInPanel({ s }: { s: ReturnType<typeof useSignIn> }) {
                 : "Sign up"}
           </button>
           {mode === "signin" && (
-            <p className="text-center text-xs text-mist">
+            <p className="text-left text-xs text-mist">
               Bought Oracles with a different email? They merge in when
               you sign in with that address.
             </p>
@@ -515,7 +515,7 @@ function SignInPanel({ s }: { s: ReturnType<typeof useSignIn> }) {
             />
           </div>
           {mode === "signup" && (
-            <p className="text-center text-xs text-mist">
+            <p className="text-left text-xs text-mist">
               No account with this email yet? Signing in with an email link
               creates one.
             </p>
