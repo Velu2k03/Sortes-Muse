@@ -76,14 +76,18 @@ describe("clsx classnames (pick-ui-library gap)", () => {
 
   it("PricingClient billing toggle goes through clsx at both buttons", () => {
     const c = src("src/components/PricingClient.tsx");
-    expect(c).toContain('"min-h-11 rounded-l-full border px-5 py-2 text-sm font-semibold",');
-    expect(c).toContain('"min-h-11 rounded-r-full border px-5 py-2 text-sm font-semibold",');
-    expect(c).toContain(
-      'billing === "monthly" ? "border-gold bg-gold text-ink" : "border-gold/40 bg-panel text-cream"',
-    );
-    expect(c).toContain(
-      'billing === "annual" ? "border-gold bg-gold text-ink" : "border-gold/40 bg-panel text-cream"',
-    );
+    // Sliding pill (2026-11-17): both buttons share one
+    // transparent base, the gold pill behind the active one
+    // owns the background now, so the buttons only swap text
+    // colour. The base string appears once per button.
+    expect(
+      c.match(
+        /"relative z-\[1\] min-h-11 rounded-full bg-transparent px-5 py-2 text-sm font-semibold transition-colors duration-250",/g,
+      )?.length,
+    ).toBe(2);
+    expect(c).toContain('billing === "monthly" ? "text-ink" : "text-cream"');
+    expect(c).toContain('billing === "annual" ? "text-ink" : "text-cream"');
+    expect(c).not.toContain('"border-gold bg-gold text-ink"');
   });
 
   it("ThemedDatePicker day states use the flat clsx object form, not a nested ternary", () => {

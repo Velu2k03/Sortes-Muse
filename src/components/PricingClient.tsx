@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import clsx from "clsx";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -38,6 +38,13 @@ const NUMBERFLOW_LOCALES = "en-US";
 // React throws #418 on hydration. Pin en-US so server and client
 // agree; visible formatting for Latin-locale users is unchanged.
 const CREDITS_LOCALE = "en-US";
+
+// Same isomorphic layout-effect alias the codebase already uses
+// (Counter.tsx, AnimatedContent.tsx): useLayoutEffect on the
+// client, useEffect on the server, so the first-paint pill
+// positioning below never warns during SSR.
+const useIsomorphicLayoutEffect =
+  typeof window === "undefined" ? useEffect : useLayoutEffect;
 
 // Astryx scoped pilot (pricing page only, Velu 2026-11-14). UI only
 // until Phase 2 batch 3: the tier buttons were disabled
@@ -188,6 +195,58 @@ export default function PricingClient({
     if (next !== billing) queueMicrotask(() => setBilling(next));
   }, [searchParams, billing]);
 
+  // Sliding pill (transitions.dev 16-tabs-sliding, 2026-11-17):
+  // the gold pill slides between Monthly and Annual instead of
+  // the active button jumping its background. JS writes the
+  // active button's offsetLeft/offsetWidth onto the pill; CSS
+  // owns the 250ms tween (.billing-toggle-pill in globals.css).
+  // First paint, resize, and webfont load position the pill
+  // WITHOUT a transition (transition: none, reflow, restore),
+  // so it never animates in from translateX(0)/width 0. Reduced
+  // motion: the global reduced-motion block in globals.css
+  // zeroes the transition, so the pill snaps.
+  const pillRef = useRef<HTMLSpanElement>(null);
+  const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const moveBillingPill = useCallback(
+    (animate: boolean) => {
+      const pill = pillRef.current;
+      const tab = tabRefs.current[billing === "monthly" ? 0 : 1];
+      if (!pill || !tab) return;
+      if (!animate) {
+        const prev = pill.style.transition;
+        pill.style.transition = "none";
+        pill.style.transform = `translateX(${tab.offsetLeft}px)`;
+        pill.style.width = `${tab.offsetWidth}px`;
+        void pill.offsetWidth;
+        pill.style.transition = prev;
+      } else {
+        pill.style.transform = `translateX(${tab.offsetLeft}px)`;
+        pill.style.width = `${tab.offsetWidth}px`;
+      }
+    },
+    [billing],
+  );
+  // First paint snaps, later billing changes slide.
+  const pillPositioned = useRef(false);
+  useIsomorphicLayoutEffect(() => {
+    moveBillingPill(pillPositioned.current);
+    pillPositioned.current = true;
+  }, [billing, moveBillingPill]);
+  // Resize and webfont load change the buttons' widths, so
+  // re-measure without animating.
+  useEffect(() => {
+    const snap = () => moveBillingPill(false);
+    window.addEventListener("resize", snap);
+    let cancelled = false;
+    document.fonts?.ready.then(() => {
+      if (!cancelled) snap();
+    });
+    return () => {
+      cancelled = true;
+      window.removeEventListener("resize", snap);
+    };
+  }, [moveBillingPill]);
+
   // Sonner full use (2026-11-17): see CHECKOUT_FAILED above.
   // The toast outlives the page (one app-wide Toaster): leaving the
   // page drops it so its Retry cannot run against an unmounted page.
@@ -286,25 +345,41 @@ export default function PricingClient({
         </p>
       </VStack>
 
-      <HStack hAlign="center" gap={0} className="mt-8">
+      {/* Sliding pill (transitions.dev 16-tabs-sliding,
+          2026-11-17): the gold pill behind the active button
+          slides between Monthly and Annual. The bar carries the
+          quiet border and panel background; the buttons are
+          transparent, only their text colour changes. The pill
+          is aria-hidden, the buttons keep aria-pressed.
+          width="fit-content" + mx-auto: the bar hugs the two
+          buttons instead of stretching full-width, which only
+          shows now that the bar itself has a background. */}
+      <HStack hAlign="center" gap={0} width="fit-content" className="relative mx-auto mt-8 rounded-full border border-gold/40 bg-panel p-1">
+        <span ref={pillRef} aria-hidden="true" className="billing-toggle-pill" />
         <button
           type="button"
+          ref={(el) => {
+            tabRefs.current[0] = el;
+          }}
           aria-pressed={billing === "monthly"}
           onClick={() => syncBilling("monthly")}
           className={clsx(
-            "min-h-11 rounded-l-full border px-5 py-2 text-sm font-semibold",
-            billing === "monthly" ? "border-gold bg-gold text-ink" : "border-gold/40 bg-panel text-cream",
+            "relative z-[1] min-h-11 rounded-full bg-transparent px-5 py-2 text-sm font-semibold transition-colors duration-250",
+            billing === "monthly" ? "text-ink" : "text-cream",
           )}
         >
           Monthly
         </button>
         <button
           type="button"
+          ref={(el) => {
+            tabRefs.current[1] = el;
+          }}
           aria-pressed={billing === "annual"}
           onClick={() => syncBilling("annual")}
           className={clsx(
-            "min-h-11 rounded-r-full border px-5 py-2 text-sm font-semibold",
-            billing === "annual" ? "border-gold bg-gold text-ink" : "border-gold/40 bg-panel text-cream",
+            "relative z-[1] min-h-11 rounded-full bg-transparent px-5 py-2 text-sm font-semibold transition-colors duration-250",
+            billing === "annual" ? "text-ink" : "text-cream",
           )}
         >
           Annual
