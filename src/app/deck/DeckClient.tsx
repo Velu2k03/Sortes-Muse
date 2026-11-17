@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, forwardRef } from "react";
 import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "motion/react";
+import { Virtuoso, type ItemProps, type ListProps } from "react-virtuoso";
 import {
   CARDS,
   suitLabel,
@@ -35,6 +36,39 @@ const FILTERS: { key: Filter; label: string }[] = [
   { key: "swords", label: "Swords" },
   { key: "pentacles", label: "Pentacles" },
 ];
+
+// Deck virtualization (Vercel guideline: large lists >50 items).
+// pick-ui-library's curated pick for long lists is Virtuoso, and
+// the all-pages audit noted it as the fit for this 78-card list,
+// so it is installed (react-virtuoso) rather than hand-rolled.
+// The list stays a real <ul> with real <li> rows, so the Batch 5
+// keyboard- and screen-reader-friendly contract holds: every card
+// is still a link, only the off-screen rows leave the DOM.
+// Spacing stays space-y-2, the original row spacing: Virtuoso
+// measures items by their offset positions, and the margins
+// space-y adds are part of those offsets. Row height is ~86px
+// (h-16 thumbnail + py-2.5 + border); that is the defaultItemHeight
+// below, and initialItemCount renders the first 20 rows on the
+// server so the list is not empty on first paint.
+const DeckList = forwardRef<HTMLUListElement, ListProps<HTMLUListElement>>(
+  function DeckList({ style, children }, ref) {
+    return (
+      <ul ref={ref} style={style} className="mt-6 space-y-2">
+        {children}
+      </ul>
+    );
+  },
+);
+
+const DeckListItem = (props: ItemProps<TarotCard>) => {
+  const { children, style, item: _card, ...domProps } = props;
+  void _card;
+  return (
+    <li style={style} {...domProps}>
+      {children}
+    </li>
+  );
+};
 
 // Phase 4A (4.4): the list is the default view (Batch 5: one text
 // row per card, the most keyboard- and screen-reader-friendly view);
@@ -306,36 +340,44 @@ export default function DeckClient({
             page, so it is fully keyboard- and screen-reader-
             friendly (unlike the pointer-only spiral). Rows are at
             least 44px tall for touch. */}
-        <ul className="mt-6 space-y-2">
-        {cards.map((c, i) => (
-          <li key={c.id}>
-          <Link
-            href={`/deck/${cardSlug(c.name)}`}
-            className="group flex min-h-[44px] items-center gap-4 rounded-xl border border-gold/20 bg-panel/50 px-3 py-2.5 transition hover:border-gold/60 hover:shadow-gold-sm"
-          >
-            <span className="relative block h-16 w-10 shrink-0 overflow-hidden rounded-md">
-              <Image
-                src={c.image}
-                alt=""
-                fill
-                sizes="40px"
-                className="object-cover"
-                loading={i < 10 ? "eager" : "lazy"}
-              />
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block truncate text-sm font-semibold text-cream group-hover:text-goldbright">
-                {c.name}
+        <Virtuoso
+          useWindowScroll
+          data={cards}
+          computeItemKey={(_index, card) => card.id}
+          initialItemCount={20}
+          defaultItemHeight={86}
+          overscan={8}
+          // Render ~3 rows past the viewport edge, so fast scrolling
+          // does not flash empty space before new rows mount.
+          increaseViewportBy={300}
+          components={{ List: DeckList, Item: DeckListItem }}
+          itemContent={(i, c) => (
+            <Link
+              href={`/deck/${cardSlug(c.name)}`}
+              className="group flex min-h-[44px] items-center gap-4 rounded-xl border border-gold/20 bg-panel/50 px-3 py-2.5 transition hover:border-gold/60 hover:shadow-gold-sm"
+            >
+              <span className="relative block h-16 w-10 shrink-0 overflow-hidden rounded-md">
+                <Image
+                  src={c.image}
+                  alt=""
+                  fill
+                  sizes="40px"
+                  className="object-cover"
+                  loading={i < 10 ? "eager" : "lazy"}
+                />
               </span>
-              <span className="block truncate text-xs text-mist">
-                {c.arcana === "major" ? "Major Arcana" : suitLabel(c.suit ?? "")}, {c.keywords.upright.slice(0, 3).join(", ")}
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-semibold text-cream group-hover:text-goldbright">
+                  {c.name}
+                </span>
+                <span className="block truncate text-xs text-mist">
+                  {c.arcana === "major" ? "Major Arcana" : suitLabel(c.suit ?? "")}, {c.keywords.upright.slice(0, 3).join(", ")}
+                </span>
               </span>
-            </span>
-            <span aria-hidden="true" className="shrink-0 text-lg text-gold">›</span>
-          </Link>
-          </li>
-        ))}
-      </ul>
+              <span aria-hidden="true" className="shrink-0 text-lg text-gold">›</span>
+            </Link>
+          )}
+        />
 
       {cards.length === 0 && (
         <div className="mt-16 text-center">
@@ -361,6 +403,17 @@ export default function DeckClient({
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: Math.min(i * 0.02, 0.5), duration: 0.4 }}
+            // Grid virtualization: content-visibility, not a windowing
+            // grid. True windowing remounts tiles when they scroll back
+            // into view, which would replay the 0.4s entrance animation
+            // on every scroll. content-visibility is the Vercel
+            // guideline's named alternative: off-screen tiles skip
+            // layout and paint but stay in the DOM, so no remount and
+            // no replay. The intrinsic size is a mid estimate (tile
+            // height varies with column width); the auto keyword keeps
+            // the measured size once a tile has rendered, so the
+            // scrollbar stays stable.
+            style={{ contentVisibility: "auto", containIntrinsicSize: "auto 320px" }}
           >
           <Link
             href={`/deck/${cardSlug(c.name)}`}
