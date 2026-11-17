@@ -41,7 +41,23 @@ const fadeUpFor = (hide: boolean) => ({
   initial: hide ? { opacity: 0, y: 24 } : (false as const),
   whileInView: { opacity: 1, y: 0 },
   viewport: { once: true, margin: "-60px" },
-  transition: { duration: 0.6, ease: "easeOut" as const },
+  transition: { duration: 0.25, ease: "easeOut" as const },
+});
+// Layout fix Run D: one authored entrance per section, not one identical
+// fadeUp on all three. Intro keeps fadeUp (24px, 0.25s), steps fade in
+// with no rise (0.25s), daily rises gently (12px, 0.2s). All within the
+// 150-250ms guide, same hide/reduced-motion handling as fadeUpFor.
+const fadeInFor = (hide: boolean) => ({
+  initial: hide ? { opacity: 0 } : (false as const),
+  whileInView: { opacity: 1 },
+  viewport: { once: true, margin: "-60px" },
+  transition: { duration: 0.25, ease: "easeOut" as const },
+});
+const riseSoftFor = (hide: boolean) => ({
+  initial: hide ? { opacity: 0, y: 12 } : (false as const),
+  whileInView: { opacity: 1, y: 0 },
+  viewport: { once: true, margin: "-60px" },
+  transition: { duration: 0.2, ease: "easeOut" as const },
 });
 
 // Phase 4C (4.6): the orbit carousel is replaced by a static grid of
@@ -69,6 +85,8 @@ const EXAMPLE_QUESTIONS = [
 export default function Home() {
   const hide = useCanHide();
   const fadeUp = fadeUpFor(hide);
+  const fadeIn = fadeInFor(hide);
+  const riseSoft = riseSoftFor(hide);
   const revealKey = hide ? "reveal" : "static";
   const fanCards = MAJORS.slice(0, 5);
   const middle = (fanCards.length - 1) / 2;
@@ -291,8 +309,8 @@ export default function Home() {
       <StatsStrip />
 
       {/* WHAT'S ON YOUR MIND */}
-      <section className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
-        <h2 className="text-center font-display text-3xl text-goldbright sm:text-4xl">
+      <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+        <h2 className="font-display text-4xl text-goldbright sm:text-5xl">
           What&apos;s on your mind?
         </h2>
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -304,7 +322,7 @@ export default function Home() {
           ].map((s) => (
             <div
               key={s.href}
-              className="rounded-3xl border border-gold/25 bg-panel/70 transition-transform duration-300 hover:-translate-y-1 hover:border-gold/60"
+              className="rounded-2xl border border-gold/25 bg-panel/70 transition-transform duration-300 hover:-translate-y-1 hover:border-gold/60"
             >
               <Link href={s.href} className="block p-6">
                 <p className="font-display text-2xl text-goldbright">{s.label}</p>
@@ -323,11 +341,11 @@ export default function Home() {
       {/* EXPLORE THE DECK */}
       <section className="border-y border-gold/10 bg-navydeep/40 py-10">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <div className="text-center">
+          <div>
             <h2 className="font-display text-4xl text-goldbright sm:text-5xl">
               Explore the deck
             </h2>
-            <p className="mx-auto mt-4 max-w-xl text-cream/75">
+            <p className="mt-6 max-w-xl text-cream/75">
               Browse all 78 cards.
             </p>
           </div>
@@ -343,7 +361,7 @@ export default function Home() {
                   aria-label={`Explore ${card.name} in the deck`}
                   className="block transition-transform duration-300 hover:-translate-y-1 focus-visible:-translate-y-1"
                 >
-                  <span className="relative block aspect-[3/5] w-full overflow-hidden rounded-lg border border-gold/30 shadow-card">
+                  <span className="relative block aspect-[3/5] w-full overflow-hidden rounded-xl border border-gold/25 shadow-card">
                     <Image
                       src={card.image}
                       alt=""
@@ -365,11 +383,11 @@ export default function Home() {
       {/* WHAT IS TAROT */}
       <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
         <motion.div key={`${revealKey}-intro`} {...fadeUp}>
-          <div className="rule-gold mx-auto w-24" />
-          <h2 className="mt-6 text-center font-display text-4xl text-goldbright sm:text-5xl">
+          <div className="rule-gold w-24" />
+          <h2 className="mt-6 font-display text-4xl text-goldbright sm:text-5xl">
             What is tarot?
           </h2>
-          <p className="mt-8 text-center text-base leading-relaxed text-cream/85">
+          <p className="mt-6 text-base leading-relaxed text-cream/85">
             78 cards. Tarot helps you think.
           </p>
         </motion.div>
@@ -382,11 +400,11 @@ export default function Home() {
             errors, no-img-element warning) and Phase 4C already
             removed its cursor glow from this page as a gimmick, so
             the existing motion step cards stay. */}
-        <motion.div key={`${revealKey}-steps`} {...fadeUp} className="mt-12">
-          <h3 className="text-center font-display text-3xl text-goldbright">
+        <motion.div key={`${revealKey}-steps`} {...fadeIn} className="mt-12">
+          <h3 className="font-display text-3xl text-goldbright">
             How it works
           </h3>
-          <div className="mt-8 grid gap-4 sm:grid-cols-3">
+          <ol className="mt-8 grid divide-y divide-gold/25 sm:grid-cols-3 sm:gap-8 sm:divide-y-0 sm:border-t sm:border-gold/25">
             {[
               {
                 title: "Ask",
@@ -400,16 +418,24 @@ export default function Home() {
                 title: "Read",
                 text: "Get a reading written for your question.",
               },
-            ].map((s) => (
-              <div
+            ].map((s, i) => (
+              <li
                 key={s.title}
-                className="rounded-2xl border border-gold/20 bg-panel/60 p-6"
+                className="flex gap-5 py-5 sm:flex-col sm:gap-3 sm:pb-0 sm:pt-6"
               >
-                <p className="font-display text-2xl text-gold">{s.title}</p>
-                <p className="mt-2 text-sm leading-relaxed text-cream/80">{s.text}</p>
-              </div>
+                <span
+                  aria-hidden="true"
+                  className="font-display text-5xl leading-none text-gold"
+                >
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <hgroup>
+                  <h4 className="font-display text-2xl text-cream">{s.title}</h4>
+                  <p className="mt-2 text-sm leading-relaxed text-cream/80">{s.text}</p>
+                </hgroup>
+              </li>
             ))}
-          </div>
+          </ol>
         </motion.div>
       </section>
 
@@ -424,12 +450,12 @@ export default function Home() {
 
       {/* DAILY CARD TEASER */}
       <section className="border-y border-gold/10 bg-navydeep/40 py-10">
-        <div className="mx-auto max-w-6xl px-4 text-center sm:px-6">
-        <motion.div key={revealKey} {...fadeUp}>
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+        <motion.div key={revealKey} {...riseSoft}>
           <h2 className="mt-4 font-display text-4xl text-goldbright sm:text-5xl">
             One card, every morning
           </h2>
-          <p className="mx-auto mt-4 max-w-lg text-cream/75">
+          <p className="mt-6 max-w-lg text-cream/75">
             Draw today&apos;s card in seconds.
           </p>
           {/* Phase 4C (4.6a): the scroll fan is a static fan. Same
@@ -437,7 +463,7 @@ export default function Home() {
               hovered card, no entrance animation. Phone width:
               72 + 4 x 48 = 264px, inside a 360px phone's 328px
               content width, so no horizontal scroll. */}
-          <ul role="list" className="mt-8 flex justify-center" aria-label="Tarot cards">
+          <ul role="list" className="mt-8 flex justify-start" aria-label="Tarot cards">
             {fanCards.map((c, i) => {
               const offset = i - middle;
               const tilt = offset * 7;
@@ -451,9 +477,9 @@ export default function Home() {
                   <Link
                     href="/deck"
                     aria-label={`See ${c.name} in the deck`}
-                    className="block rounded-lg transition-transform duration-300 hover:-translate-y-3 hover:scale-105 hover:rotate-0 focus-visible:-translate-y-3 focus-visible:scale-105 focus-visible:rotate-0"
+                    className="block rounded-xl transition-transform duration-300 hover:-translate-y-3 hover:scale-105 hover:rotate-0 focus-visible:-translate-y-3 focus-visible:scale-105 focus-visible:rotate-0"
                   >
-                    <div className="relative h-28 w-[4.5rem] overflow-hidden rounded-lg border border-gold/30 shadow-card sm:h-36 sm:w-24">
+                    <div className="relative h-28 w-[4.5rem] overflow-hidden rounded-xl border border-gold/25 shadow-card sm:h-36 sm:w-24">
                       <Image
                         src={c.image}
                         alt={c.name}
@@ -480,10 +506,10 @@ export default function Home() {
           and badge, never by height (#59, #75). Full pricing lives
           on /pricing. */}
       <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6" aria-label="Pricing preview">
-        <h2 className="mt-4 text-center font-display text-4xl text-goldbright sm:text-5xl">
+        <h2 className="mt-4 font-display text-4xl text-goldbright sm:text-5xl">
           Simple plans, clear prices
         </h2>
-        <p className="mx-auto mt-4 max-w-lg text-center text-cream/75">
+        <p className="mt-6 max-w-lg text-cream/75">
           Start free with one card a day.
         </p>
         <div className="mt-8 grid gap-4 sm:grid-cols-3">
@@ -514,7 +540,7 @@ export default function Home() {
             </div>
           ))}
         </div>
-        <div className="mt-8 text-center">
+        <div className="mt-8">
           <Link
             href="/pricing"
             className="btn-gold inline-block rounded-2xl px-8 py-3.5 font-semibold"

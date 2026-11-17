@@ -32,7 +32,6 @@
   --color-goldbright: #f4d03f;
   --color-cream: #ede6d6;
   --color-mist: #9ca3af;
-  --color-violet: #8b5cf6;
   --color-danger: #f87171;
 
   /* UX audit Phase 2, F17 (2026-11-16): shadows are tokens, not
@@ -70,7 +69,7 @@
    dark gold #7c5e00 on cream is about 4.9:1 (passes AA; the old
    light gold dropped to about 4.0:1 on the new cream and is retired);
    muted #5c5a52 on cream and on white panel
-   is about 6.5:1; violet #6d28d9 on white is about 6.5:1. His gold
+   is about 6.5:1. His gold
    #d4af37 is NOT used as normal text in light mode, it fails AA on
    cream, so it survives only as the btn-gold gradient behind dark
    #14100a text, and as borders and glows.
@@ -88,7 +87,6 @@ html[data-theme="light"] {
   --color-goldbright: #7c5e00;
   --color-cream: #141b2e;
   --color-mist: #45423c;
-  --color-violet: #6d28d9;
   --color-danger: #b91c1c;
 }
 /* Pricing page dark islands (contrast fix, 2026-11-14): the Astryx
@@ -122,7 +120,7 @@ html[data-theme="light"] {
   --color-cream: var(--color-text-primary, #ede6d6);
   --color-mist: var(--color-text-secondary, #9ca3af);
 }
-/* Numbers: genjutsu paint method, distinct readable numerals. Inter
+/* Numbers: genjutsu paint method, distinct readable numerals. Manrope
    with tabular figures, so prices, credits, degrees and counts line
    up and never inherit the display serif. Applied via .num and the
    font-number utility in both dark and light themes. */
@@ -283,15 +281,17 @@ body {
       transparent 58%
     );
     transform: translateX(-120%) skewX(-12deg);
-    animation: card-sheen 6s ease-in-out infinite;
+    /* Calmed (Run D): 9s cycle, sweep only in the last 10%. The negative
+       delay puts the first sweep about 1.5s after load so the deck still
+       feels alive on first sight, then it mostly rests. */
+    animation: card-sheen 9s ease-in-out -6.6s infinite;
     pointer-events: none;
   }
   @keyframes card-sheen {
     0%,
-    60% {
+    90% {
       transform: translateX(-120%) skewX(-12deg);
     }
-    95%,
     100% {
       transform: translateX(220%) skewX(-12deg);
     }
@@ -330,7 +330,8 @@ body {
     inset 0 1px 0 rgba(255, 255, 255, 0.35);
   transition: transform 0.15s ease, box-shadow 0.2s ease;
 }
-/* Slow light sweep across gold buttons; draws the eye to the CTA */
+/* Light sweep across gold buttons: plays once on hover or keyboard focus
+   only (Run D), then rests. No infinite loop. */
 @media (prefers-reduced-motion: no-preference) {
   .btn-gold::after {
     content: "";
@@ -343,16 +344,17 @@ body {
       transparent 60%
     );
     transform: translateX(-130%);
-    animation: btn-shimmer 3.4s ease-in-out infinite;
     pointer-events: none;
   }
+  .btn-gold:hover::after,
+  .btn-gold:focus-visible::after {
+    animation: btn-shimmer 0.6s ease-out 1;
+  }
   @keyframes btn-shimmer {
-    0%,
-    55% {
+    from {
       transform: translateX(-130%);
     }
-    92%,
-    100% {
+    to {
       transform: translateX(130%);
     }
   }
@@ -489,7 +491,9 @@ html[data-theme="light"] {
     }
   }
   .magic-glow {
-    animation: magic-glow 3.2s ease-in-out infinite;
+    /* One-shot (Run D): glows once on mount, then settles at the resting
+       shadow and stays still. The class is never removed by JS. */
+    animation: magic-glow 3.2s ease-in-out 1 forwards;
   }
   @keyframes magic-glow {
     0%,

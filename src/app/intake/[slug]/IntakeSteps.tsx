@@ -206,7 +206,7 @@ export function FormStep({ f, category }: { f: IntakeState; category: IntakeCate
       </p>
 
       {category.key === "health" && (
-        <div className="mt-6 rounded-2xl border border-violet/40 bg-violet/10 p-4 text-sm leading-relaxed text-cream/85">
+        <div className="mt-6 rounded-2xl border border-gold/40 bg-gold/10 p-4 text-sm leading-relaxed text-cream/85">
           A gentle note: health readings are wellness reflection only.
           They never diagnose or predict medical outcomes and cannot
           replace a licensed professional.
