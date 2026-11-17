@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useLayoutEffect, useMemo, useRef, type CSSProperties, type ReactNode } from 'react';
+import clsx from 'clsx';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
@@ -433,7 +434,7 @@ const FoldText = ({
   return (
     <span
       ref={rootRef}
-      className={`inline-block whitespace-pre-wrap select-text leading-[0.95] tracking-[-0.04em] ${className}`.trim()}
+      className={clsx("inline-block whitespace-pre-wrap select-text leading-[0.95] tracking-[-0.04em]", className)}
       style={rootStyle}
     >
       <span className="sr-only select-none">{text}</span>

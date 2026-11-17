@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react';
+import clsx from 'clsx';
 
 export interface InfiniteSpiralItem {
   id?: string | number;
@@ -236,7 +237,7 @@ const InfiniteSpiral = ({
   return (
     <div
       ref={rootRef}
-      className={`relative isolate h-full min-h-80 w-full overflow-hidden ${className}`}
+      className={clsx("relative isolate h-full min-h-80 w-full overflow-hidden", className)}
       style={rootStyle}
       onMouseEnter={() => {
         hoveredRef.current = true;
