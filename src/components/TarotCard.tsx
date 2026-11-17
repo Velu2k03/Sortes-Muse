@@ -15,6 +15,15 @@ interface Props {
   size?: "sm" | "md" | "lg";
   label?: string;
   disabled?: boolean;
+  // transitions.dev 150-250ms band, scoped per page: the flip and
+  // burst defaults (0.55s / 0.85s) are kept for every existing
+  // caller (deck, intake, reading, WaitDeck, charts). A page that
+  // needs the fast band passes these in — /daily passes 0.25 for
+  // both. Do not lower the defaults globally without a separate
+  // all-pages decision: the flip must stay readable as a 3D flip
+  // and the burst as a shower, not a flash.
+  flipDuration?: number;
+  burstDuration?: number;
 }
 
 const SIZES = {
@@ -38,6 +47,8 @@ export default function TarotCard({
   size = "md",
   label,
   disabled = false,
+  flipDuration = 0.55,
+  burstDuration,
 }: Props) {
   const card = cardId ? getCard(cardId) : null;
   const interactive = Boolean(onFlip) && !disabled && Boolean(cardId);
@@ -53,7 +64,8 @@ export default function TarotCard({
   // `celebrate` prop was never passed by any parent, so it never
   // fired. Now the burst renders whenever the card is revealed
   // (and not reduced motion). CardBurst animates once on mount
-  // (0.85s) and then sits invisible, so it fires once per reveal
+  // (0.85s by default, or burstDuration when a page passes one)
+  // and then sits invisible, so it fires once per reveal
   // and does not re-fire on re-render.
 
   // Mouse-follow tilt (desktop pointers only, skipped for reduced motion).
@@ -116,7 +128,7 @@ export default function TarotCard({
           }
           className={`perspective-1000 ${SIZES[size]} relative min-h-[8rem] min-w-[5rem] cursor-pointer disabled:cursor-default`}
         >
-          {revealed && !reducedMotion && <CardBurst />}
+          {revealed && !reducedMotion && <CardBurst duration={burstDuration} />}
           {/* Validator fix: a button may only contain phrasing
               content, so the flip container and both faces are spans
               with block display, not divs. Same flip, same layout. */}
@@ -124,7 +136,7 @@ export default function TarotCard({
             className="preserve-3d relative block h-full w-full"
             initial={false}
             animate={{ rotateY: revealed ? 180 : 0 }}
-            transition={{ duration: 0.55, ease: [0.2, 0.7, 0.3, 1] }}
+            transition={{ duration: flipDuration, ease: [0.2, 0.7, 0.3, 1] }}
           >
             {/* Back (face down) */}
             <span

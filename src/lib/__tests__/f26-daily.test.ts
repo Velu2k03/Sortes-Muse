@@ -50,3 +50,24 @@ describe("F26 daily card: the card itself is hold-and-press", () => {
     expect(card).toContain("only a completed hold fires onHold");
   });
 });
+
+describe("daily timing: reveals in the transitions.dev 150-250ms band", () => {
+  it("the reveal, detail panel and meaning all animate at 0.25s", () => {
+    const daily = src("src/app/daily/page.tsx");
+    // The 0.8s flip reveal, the 0.6s-delayed 0.6s detail panel and
+    // the 0.6s meaning fade were the slowest reveals in the app.
+    expect(daily).not.toContain("duration: 0.8");
+    expect(daily).not.toContain("duration: 0.6");
+    expect(daily).not.toContain("delay: 0.6");
+    expect(daily).toContain("transition={{ duration: 0.25, ease: \"easeOut\" }}");
+    expect(daily).toContain("transition={{ delay: 0.1, duration: 0.25 }}");
+    // The flip and burst are scoped to /daily via props, not changed
+    // globally: TarotCard and CardBurst keep their defaults elsewhere.
+    expect(daily).toContain("flipDuration={0.25}");
+    expect(daily).toContain("burstDuration={0.25}");
+    const card = src("src/components/TarotCard.tsx");
+    expect(card).toContain("flipDuration = 0.55");
+    const burst = src("src/components/CardBurst.tsx");
+    expect(burst).toContain("duration = 0.85");
+  });
+});

@@ -62,6 +62,6 @@ describe("Batch 8: catalogue animations", () => {
     expect(card).toContain("rotateY: revealed ? 180 : 0");
     expect(card).toContain("Golden bloom");
     expect(card).toContain("card-back-sheen");
-    expect(card).toContain("{revealed && !reducedMotion && <CardBurst />}");
+    expect(card).toContain("{revealed && !reducedMotion && <CardBurst duration={burstDuration} />}");
   });
 });
