@@ -467,22 +467,22 @@ export default function ReportsClient() {
     <div className="mx-auto max-w-3xl px-4 py-10">
       {/* UX audit Phase 2, F29: the H1 was one vague word ("Reports").
           It now says what the reports are. */}
-      <h1 className="mt-2 text-center font-display text-5xl text-goldbright">Your astrology reports</h1>
-      <p className="mt-3 text-center text-cream/80">
+      <h1 className="mt-2 text-left font-display text-5xl text-goldbright">Your astrology reports</h1>
+      <p className="mt-3 text-left text-cream/80">
         1 Oracle per report. Reports never expire.
       </p>
       {/* Phase E (item 9): delivery format and length, stated before
           anyone spends an Oracle. */}
-      <p className="mx-auto mt-2 max-w-xl text-center text-sm text-mist">
+      <p className="mt-2 max-w-xl text-left text-sm text-mist">
         Delivered on screen, printable as PDF,
         plus the tables for your type.
       </p>
-      <p className="mt-2 text-center text-sm text-mist">
+      <p className="mt-2 text-left text-sm text-mist">
         Birth details are used only for this report, never stored, never sent to AI.
       </p>
 
       {!loading && user && credits !== null && (
-        <p className="mt-4 text-center text-sm text-cream">
+        <p className="mt-4 text-left text-sm text-cream">
           Your balance: <strong className="text-goldbright"><Counter value={credits} fontSize={14} /> {credits === 1 ? "Oracle" : "Oracles"}</strong>
         </p>
       )}
@@ -508,7 +508,7 @@ export default function ReportsClient() {
           className={siteTheme === "light" ? "ring-1 ring-gold/25" : ""}
         />
       </div>
-      <p className="mt-3 text-center text-sm text-cream/75">{TYPE_BLURBS[type]}</p>
+      <p className="mt-3 text-left text-sm text-cream/75">{TYPE_BLURBS[type]}</p>
       <details className="mx-auto mt-4 max-w-xl rounded-2xl border border-gold/20 bg-panel/60 p-4 text-left">
         <summary className="cursor-pointer font-semibold text-goldbright">Read a sample report, before you spend an Oracle</summary>
         <p className="mt-2 text-sm text-cream/80">
@@ -523,7 +523,7 @@ export default function ReportsClient() {
         <p className="mt-3 text-xs italic text-mist">Sample report, invented seeker, invented positions.</p>
       </details>
       {type === "comparison" && (
-        <p className="mt-2 text-center text-sm text-mist">
+        <p className="mt-2 text-left text-sm text-mist">
           You enter both charts. Never a prediction about whether a relationship will last.
         </p>
       )}
