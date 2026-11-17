@@ -134,11 +134,11 @@ export function CategoryStep({ f }: { f: IntakeState }) {
       <h1 ref={headingRef} tabIndex={-1} className="mt-3 scroll-mt-32 font-display text-4xl text-goldbright outline-none! sm:text-5xl">
         What is on your mind?
       </h1>
-      <p className="mx-auto mt-3 max-w-md text-cream/75">
+      <p className="mt-3 max-w-md text-cream/75">
         Choose the area of life for this reading.
       </p>
       {pendingQuestion && (
-        <p className="mx-auto mt-4 max-w-md rounded-2xl border border-gold/25 bg-panel/60 p-4 text-sm text-cream/85">
+        <p className="mt-4 max-w-md rounded-2xl border border-gold/25 bg-panel/60 p-4 text-sm text-cream/85">
           Your question: &ldquo;{pendingQuestion}&rdquo;
         </p>
       )}
@@ -190,13 +190,13 @@ export function FormStep({ f, category }: { f: IntakeState; category: IntakeCate
   const fieldRefs = useRef<Record<string, HTMLElement | null>>({});
   return (
     <>
-      <p className="text-center text-sm text-gold">
+      <p className="text-left text-sm text-gold">
         Step 2 of 4
       </p>
-      <h1 ref={headingRef} tabIndex={-1} className="mt-3 scroll-mt-32 text-center font-display text-4xl text-goldbright outline-none!">
+      <h1 ref={headingRef} tabIndex={-1} className="mt-3 scroll-mt-32 text-left font-display text-4xl text-goldbright outline-none!">
         {category.name}
       </h1>
-      <p className="mx-auto mt-3 max-w-md text-center text-sm text-cream/75">
+      <p className="mt-3 max-w-md text-left text-sm text-cream/75">
         Tell us what&apos;s going on. Your story goes to the AI for
         this reading only and is not stored.{" "}
         {category.key === "love"
@@ -212,7 +212,7 @@ export function FormStep({ f, category }: { f: IntakeState; category: IntakeCate
         </div>
       )}
 
-      <div className="mt-4 text-center">
+      <div className="mt-4 text-left">
         <button type="button" onClick={f.startOver} className="text-sm text-mist underline underline-offset-4 hover:text-cream">
           Start over
         </button>
@@ -559,7 +559,7 @@ export function ImpressionStep({ f, drawnCards }: { f: IntakeState; drawnCards: 
       <h1 ref={headingRef} tabIndex={-1} className="mt-3 scroll-mt-32 font-display text-4xl text-goldbright outline-none! sm:text-5xl">
         First, what do you see?
       </h1>
-      <p className="mx-auto mt-3 max-w-md text-sm text-cream/75">
+      <p className="mt-3 max-w-md text-sm text-cream/75">
         One word, if you like. We&apos;ll include it in your reading.
       </p>
 
@@ -590,7 +590,7 @@ export function ImpressionStep({ f, drawnCards }: { f: IntakeState; drawnCards: 
         ))}
       </div>
 
-      <p className="mt-4 text-xs text-mist">
+      <p className="mt-4 text-center text-xs text-mist">
         Reversed cards are shown upside down.
       </p>
       <div className="mx-auto mt-6 max-w-md">
