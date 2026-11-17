@@ -57,13 +57,13 @@ const SYSTEM_BLURBS: Record<ChartSystem, string> = {
 /** Page header and the collapsed "How your inputs are used" notes. */
 export function ChartsIntro() {
   return (
-  <div className="text-center">
+  <div className="text-left">
     <PageHeader eyebrow="Birth Charts" title="Cast a birth chart" titleClassName="sm:text-6xl" />
-    <p className="mx-auto mt-4 max-w-xl text-cream/75">
+    <p className="mt-4 max-w-xl text-cream/75">
       Ziwei, Western, and Vedic charts. Calculation is free. First
       interpretation per system is free, then 1 Oracle.
     </p>
-    <p className="mx-auto mt-2 max-w-xl text-sm text-cream/80">
+    <p className="mt-2 max-w-xl text-sm text-cream/80">
       {/* Phase 7 (7.3): privacy detail, not needed to start a
           calculation, so it sits behind an info icon. */}
       <InfoHint label="About your birth data">
@@ -99,7 +99,7 @@ export function SystemPicker({ prefs, s }: { prefs: ChartPrefs; s: ChartSession 
     <>
     {reducedMotion ? (
       <>
-        <p className="mx-auto mt-8 max-w-lg text-center text-sm text-cream/75">Choose a system</p>
+        <p className="mt-8 max-w-lg text-left text-sm text-cream/75">Choose a system</p>
         <div className="mx-auto mt-2 flex max-w-lg flex-wrap gap-3">
         {SYSTEM_ORDER.map((s) => (
           <button
@@ -118,7 +118,7 @@ export function SystemPicker({ prefs, s }: { prefs: ChartPrefs; s: ChartSession 
       </>
     ) : (
       <div className="mx-auto mt-8 max-w-lg">
-        <p className="text-center text-sm text-cream/75">Choose a system</p>
+        <p className="text-left text-sm text-cream/75">Choose a system</p>
         <div className="mt-2">
           <GlideSelect
             options={[
@@ -148,7 +148,7 @@ export function SystemPicker({ prefs, s }: { prefs: ChartPrefs; s: ChartSession 
       </div>
     )}
 
-    <p className="mx-auto mt-3 max-w-lg text-center text-sm text-cream/75">{SYSTEM_BLURBS[system]}</p>
+    <p className="mt-3 max-w-lg text-left text-sm text-cream/75">{SYSTEM_BLURBS[system]}</p>
     </>
   );
 }
@@ -428,7 +428,7 @@ export function ResultHeader({ prefs, s, result }: { prefs: ChartPrefs; s: Chart
         plain-words interpretation must not be hidden below it.
         This jump link is the guided next step for anyone who
         does not want to read degrees themselves. */}
-    <p className="mb-4 text-center text-sm text-cream/80">
+    <p className="mb-4 text-left text-sm text-cream/80">
       You do not need to read the degrees yourself.{" "}
       <a href="#chart-interpretation" className="font-semibold text-goldbright underline">
         Skip to the plain-words interpretation
