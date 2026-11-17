@@ -53,7 +53,7 @@ describe("F17: no colour literals outside the token set", () => {
       "src/components/InfiniteSpiral.tsx",
       "src/components/ReturningHome.tsx",
       "src/components/SpreadDiagram.tsx",
-      "src/components/SwipeToast.tsx",
+      "src/components/SonnerToaster.tsx",
       "src/components/TarotCard.tsx",
       "src/components/ThemedDatePicker.tsx",
       "src/components/PricingClient.tsx",
@@ -96,9 +96,11 @@ describe("F17: no colour literals outside the token set", () => {
     expect(css).toContain(".daily-progress::-webkit-progress-value");
     expect(css).toContain(".daily-progress::-moz-progress-bar");
     expect(daily).not.toContain("siteTheme");
-    // SwipeToast call sites: tokens.
-    expect(src("src/app/reading/[id]/ReadingSections.tsx")).toContain('background="var(--color-panel)"');
-    expect(src("src/app/reports/ReportsClient.tsx")).toContain('background="var(--color-panel)"');
+    // Sonner toaster (replaced SwipeToast, 2026-11-17): tokens.
+    const toaster = src("src/components/SonnerToaster.tsx");
+    expect(toaster).toContain('"--normal-bg": "var(--color-panel)"');
+    expect(toaster).toContain('"--normal-text": "var(--color-cream)"');
+    expect(toaster).toContain('background: "var(--color-gold)"');
     // SlideCommit parses hex, so it takes BRAND.
     const intake = src("src/app/intake/[slug]/IntakeSteps.tsx");
     expect(intake).toContain("trackColor={BRAND.panel}");

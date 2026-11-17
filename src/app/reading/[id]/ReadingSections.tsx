@@ -11,7 +11,6 @@ import HeirloomPrint from "@/components/HeirloomPrint";
 import ReadingText from "@/components/ReadingText";
 import { readingToPlainText } from "@/lib/readingMarkdown";
 import SplitText from "@/components/SplitText";
-import SwipeToast from "@/components/SwipeToast";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import AnimatedContent from "@/components/AnimatedContent";
 import type { FollowUpState, ReadingField } from "./useReadingDetail";
@@ -674,19 +673,6 @@ export function FollowUpThread({
           </p>
           {f.followUpFailed && (
             <div className="space-y-3">
-              <SwipeToast
-                open={f.followUpToastOpen}
-                onClose={() => f.setFollowUpToastOpen(false)}
-                title="Follow-up failed"
-                actionLabel="Retry"
-                onAction={f.askFollowUp}
-                inline
-                closeButton
-                width={320}
-                background="var(--color-panel)"
-                color="var(--color-cream)"
-                fuseColor="var(--color-gold)"
-              />
               <button
                 type="button"
                 onClick={f.askFollowUp}

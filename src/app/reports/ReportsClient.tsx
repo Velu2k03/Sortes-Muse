@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import ReadingText from "@/components/ReadingText";
 import { useAuth } from "@/components/AuthProvider";
 import RubberSegment from "@/components/RubberSegment";
 import SpecularButton from "@/components/SpecularButton";
 import StatusMark from "@/components/StatusMark";
-import SwipeToast from "@/components/SwipeToast";
+import { showFailureToast, dismissFailureToast } from "@/lib/failure-toast";
 import CallChip from "@/components/CallChip";
 import AnimatedContent from "@/components/AnimatedContent";
 import Counter from "@/components/Counter";
@@ -17,6 +17,8 @@ import { SAMPLE_TRANSIT_REPORT } from "@/lib/sample-report";
 import BirthProfilePicker from "@/components/BirthProfilePicker";
 import { profileToReportFields } from "@/lib/birth-profiles";
 import type { SavedReport, ReportType } from "@/lib/reports";
+
+const REPORT_FAILED = "Report failed";
 
 const inputClass =
   "w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold";
@@ -330,10 +332,12 @@ export default function ReportsClient() {
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState("");
   // Phase D: failedCall marks a genuine call failure (not validation
-  // or a balance stop) and drives the persistent retry UI; toastOpen
-  // drives the transient toast on top of it.
+  // or a balance stop) and drives the persistent retry UI; the Sonner
+  // toast fires once per failure from generate. Its Retry runs the
+  // latest generate (a ref), like the Try again button.
   const [failedCall, setFailedCall] = useState(false);
-  const [toastOpen, setToastOpen] = useState(false);
+  const generateRef = useRef<() => void>(() => {});
+  const notifyFailed = () => showFailureToast(REPORT_FAILED, () => generateRef.current());
   const [result, setResult] = useState<SavedReport | null>(null);
   // Batch D (B4): reports need sign-in; set when the server answers 401
   // (for example an expired session) so the sign-in prompt replaces the form action.
@@ -369,7 +373,7 @@ export default function ReportsClient() {
     setResult(null);
     // Phase D: a new attempt clears the previous failure UI.
     setFailedCall(false);
-    setToastOpen(false);
+    dismissFailureToast(REPORT_FAILED);
     if (!birth.date) {
       setError("Please enter a birth date.");
       return;
@@ -428,7 +432,7 @@ export default function ReportsClient() {
         setError(msg);
         if (res.status !== 402) {
           setFailedCall(true);
-          setToastOpen(true);
+          notifyFailed();
         }
         return;
       }
@@ -447,11 +451,17 @@ export default function ReportsClient() {
       // committed already, so never claim "not spent". A retry replays the report.
       setError(unconfirmedMessage("report", "your saved reports"));
       setFailedCall(true);
-      setToastOpen(true);
+      notifyFailed();
     } finally {
       setGenerating(false);
     }
   }
+  useEffect(() => {
+    generateRef.current = generate;
+  });
+  // The toast outlives the page (one app-wide Toaster): leaving the
+  // page drops it so its Retry cannot run against an unmounted page.
+  useEffect(() => () => dismissFailureToast(REPORT_FAILED), []);
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
@@ -583,19 +593,6 @@ export default function ReportsClient() {
 
       {failedCall && (
         <div className="mt-4 space-y-3">
-          <SwipeToast
-            open={toastOpen}
-            onClose={() => setToastOpen(false)}
-            title="Report failed"
-            actionLabel="Retry"
-            onAction={generate}
-            inline
-            closeButton
-            width={320}
-            background="var(--color-panel)"
-            color="var(--color-cream)"
-            fuseColor="var(--color-gold)"
-          />
           <button
             type="button"
             onClick={generate}

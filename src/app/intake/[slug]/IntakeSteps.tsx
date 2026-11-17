@@ -7,7 +7,6 @@ import ReadingWait from "@/components/ReadingWait";
 import ReadingText from "@/components/ReadingText";
 import TarotCard from "@/components/TarotCard";
 import SlideCommit from "@/components/SlideCommit";
-import SwipeToast from "@/components/SwipeToast";
 import { INTAKE_CATEGORIES, SENSITIVE_KEYS, getCategory } from "@/lib/intake";
 import { BRAND } from "@/lib/brand";
 import { peekHeroQuestion } from "@/lib/storage";
@@ -544,7 +543,7 @@ export function ConfirmStep({ f, category }: { f: IntakeState; category: IntakeC
 
 /** The drawn cards, a one-word impression, then generation. */
 export function ImpressionStep({ f, drawnCards }: { f: IntakeState; drawnCards: DrawnCard[] }) {
-  const { setStep, impression, setImpression, error, busy, generationFailed, toastOpen, setToastOpen, beginGeneration, retryGeneration, isFreeAvailable } = f;
+  const { setStep, impression, setImpression, error, busy, generationFailed, beginGeneration, retryGeneration, isFreeAvailable } = f;
   const headingRef = useStepFocus<HTMLHeadingElement>();
   // Batch 8 (gist deal-in): the cards are dealt in from above with a
   // random rotation and a scale, one after another (a 100ms stagger),
@@ -633,21 +632,6 @@ export function ImpressionStep({ f, drawnCards }: { f: IntakeState; drawnCards: 
 
       {generationFailed && (
         <div className="mx-auto mt-4 max-w-md space-y-3">
-          {/* Batch 3.1: toast colours come from the brand tokens,
-              not raw hex. */}
-          <SwipeToast
-            open={toastOpen}
-            onClose={() => setToastOpen(false)}
-            title="Reading failed"
-            actionLabel="Retry"
-            onAction={retryGeneration}
-            inline
-            closeButton
-            width={320}
-            background="var(--color-panel)"
-            color="var(--color-cream)"
-            fuseColor="var(--color-gold)"
-          />
           <button
             type="button"
             onClick={retryGeneration}

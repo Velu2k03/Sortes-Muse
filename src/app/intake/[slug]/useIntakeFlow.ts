@@ -26,6 +26,9 @@ import { intakeGate } from "@/lib/intake-gate";
 import { useAuth, deviceHeldSession } from "@/components/AuthProvider";
 import { isFreeAvailableFor } from "@/lib/free-reading";
 import { trackReadingStarted, trackReadingCompleted } from "@/components/Analytics";
+import { showFailureToast, dismissFailureToast } from "@/lib/failure-toast";
+
+const READING_FAILED = "Reading failed";
 
 export type Step = "category" | "form" | "confirm" | "impression" | "processing";
 
@@ -64,9 +67,10 @@ export function useIntakeFlow(slug: string) {
   const [busy, setBusy] = useState(false);
   // Phase D: generationFailed marks a genuine call failure (not a
   // balance or validation stop) and drives the persistent retry UI;
-  // toastOpen drives the transient toast on top of it.
+  // the Sonner toast fires once per failure from the catch below. Its
+  // Retry runs the latest retryGeneration (a ref), like Try again.
   const [generationFailed, setGenerationFailed] = useState(false);
-  const [toastOpen, setToastOpen] = useState(false);
+  const retryRef = useRef<() => void>(() => {});
   // Phase 2, 2.1: the first Quick Insight is free (FAQ rule). Read the
   // device flag on mount; it gates the credit checks below and is marked
   // only after a successful generation, never before, so a failed
@@ -310,7 +314,7 @@ export function useIntakeFlow(slug: string) {
     // Phase D: a new attempt clears the previous failure UI, whatever
     // path this attempt ends on.
     setGenerationFailed(false);
-    setToastOpen(false);
+    dismissFailureToast(READING_FAILED);
     // M0.1 credit authority: the client never spends. The route spends
     // server-side only after a real model generates text, so a failed
     // generation can never cost a credit and no refund is needed. A guest
@@ -547,7 +551,7 @@ export function useIntakeFlow(slug: string) {
       // not to retry the same call.
       if (!was402) {
         setGenerationFailed(true);
-        setToastOpen(true);
+        showFailureToast(READING_FAILED, () => retryRef.current());
       }
       setBusy(false);
       // SlideCommit needs the rejection to show its error state; the
@@ -562,13 +566,19 @@ export function useIntakeFlow(slug: string) {
   const retryGeneration = () => {
     void beginGeneration().catch(() => {});
   };
+  useEffect(() => {
+    retryRef.current = retryGeneration;
+  });
+  // The toast outlives the page (one app-wide Toaster): leaving the
+  // page drops it so its Retry cannot run against an unmounted page.
+  useEffect(() => () => dismissFailureToast(READING_FAILED), []);
 
   return {
     spread, step, setStep, setCategoryKey, answers, setAnswers, story, setStory,
     question, setQuestion, setOriginalQuestion, suggestionDismissed,
     setSuggestionDismissed, drawnCards, impression, setImpression, error,
-    processingLine, processingComplete, streamedText, streamingModel, busy, generationFailed, toastOpen,
-    setToastOpen, isFreeAvailable, gate, credits, category, questionSuggestion, set, formValid, firstMissingField,
+    processingLine, processingComplete, streamedText, streamingModel, busy, generationFailed,
+    isFreeAvailable, gate, credits, category, questionSuggestion, set, formValid, firstMissingField,
     beginDraw, beginGeneration, retryGeneration, startOver,
   };
 }

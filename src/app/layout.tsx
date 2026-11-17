@@ -7,6 +7,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import Starfield from "@/components/Starfield";
 import InstallBanner from "@/components/InstallBanner";
+import SonnerToaster from "@/components/SonnerToaster";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 import { AuthProvider } from "@/components/AuthProvider";
 import MotionProvider from "@/components/MotionProvider";
@@ -162,6 +163,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           <main id="main-content" tabIndex={-1} className="flex-1 outline-none"><PageTransition>{children}</PageTransition></main>
           <Footer />
           <InstallBanner />
+          <SonnerToaster />
           {/* Phase 3: PushPrompt deleted (3.1) — it only asked for
               Notification permission and no real Web Push exists, so
               the prompt promised reminders that could never arrive. */}

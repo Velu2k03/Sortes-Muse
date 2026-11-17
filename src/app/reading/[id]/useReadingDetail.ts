@@ -1,12 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { showFailureToast, dismissFailureToast } from "@/lib/failure-toast";
 import { getReading, saveReading, updateReading as updateLocalReading, pendingAttemptId, clearPendingAttemptId } from "@/lib/storage";
 import type { Reading } from "@/lib/types";
 import { postFollowUp } from "@/lib/follow-up-client";
 import { useAuth } from "@/components/AuthProvider";
 
 type SetReading = (r: Reading | null) => void;
+
+const FOLLOW_UP_FAILED = "Follow-up failed";
 
 /**
  * Loads the reading: local copy first, then the signed-in server
@@ -109,10 +112,12 @@ export function useFollowUp(reading: Reading | null | undefined, setReading: Set
   const [followUpLoading, setFollowUpLoading] = useState(false);
   const [followUpError, setFollowUpError] = useState<string | null>(null);
   // Phase D: followUpFailed marks a genuine call failure (not a
-  // balance stop) and drives the persistent retry UI; the toast flag
-  // drives the transient toast on top of it.
+  // balance stop) and drives the persistent retry UI; the Sonner
+  // toast fires from each failure site, once per failure. The Retry
+  // action runs the latest askFollowUp (a ref), like the Try again button.
   const [followUpFailed, setFollowUpFailed] = useState(false);
-  const [followUpToastOpen, setFollowUpToastOpen] = useState(false);
+  const askRef = useRef<() => void>(() => {});
+  const notifyFailed = () => showFailureToast(FOLLOW_UP_FAILED, () => askRef.current());
 
   // Batch 1 (C2): after a failure, re-read the server copy before the
   // button re-enables. A dropped connection can hide a follow-up the
@@ -151,7 +156,7 @@ export function useFollowUp(reading: Reading | null | undefined, setReading: Set
     setFollowUpError(null);
     // Phase D: a new attempt clears the previous failure UI.
     setFollowUpFailed(false);
-    setFollowUpToastOpen(false);
+    dismissFailureToast(FOLLOW_UP_FAILED);
 
     // Guests get no follow-ups (the route returns 401): say so up front
     // instead of spending from the device wallet and refunding.
@@ -192,7 +197,7 @@ export function useFollowUp(reading: Reading | null | undefined, setReading: Set
             clearPendingAttemptId(attemptScope);
             setFollowUpError(null);
             setFollowUpFailed(false);
-            setFollowUpToastOpen(false);
+            dismissFailureToast(FOLLOW_UP_FAILED);
             setFollowUpQ("");
             await refresh();
             setFollowUpLoading(false);
@@ -203,7 +208,7 @@ export function useFollowUp(reading: Reading | null | undefined, setReading: Set
               "We could not confirm whether your follow-up was saved. Retrying is safe: the same request will not charge twice."
             );
             setFollowUpFailed(true);
-            setFollowUpToastOpen(true);
+            notifyFailed();
             setFollowUpLoading(false);
             return;
           }
@@ -215,14 +220,14 @@ export function useFollowUp(reading: Reading | null | undefined, setReading: Set
             "Your follow-up was not saved yet. Please try again. Retrying is safe: the same request will not charge twice."
           );
           setFollowUpFailed(true);
-          setFollowUpToastOpen(true);
+          notifyFailed();
           setFollowUpLoading(false);
           return;
         }
         const msg = data.error || "Something went wrong. Please try again.";
         setFollowUpError(msg.includes("spent") ? msg : `${msg} No Oracle was spent.`);
         setFollowUpFailed(true);
-        setFollowUpToastOpen(true);
+        notifyFailed();
         setFollowUpLoading(false);
         return;
       }
@@ -256,7 +261,7 @@ export function useFollowUp(reading: Reading | null | undefined, setReading: Set
         clearPendingAttemptId(attemptScope);
         setFollowUpError(null);
         setFollowUpFailed(false);
-        setFollowUpToastOpen(false);
+        dismissFailureToast(FOLLOW_UP_FAILED);
         setFollowUpQ("");
         await refresh();
       } else if (state === "unknown") {
@@ -264,7 +269,7 @@ export function useFollowUp(reading: Reading | null | undefined, setReading: Set
           "We could not confirm whether your follow-up was saved. Retrying is safe: the same request will not charge twice."
         );
         setFollowUpFailed(true);
-        setFollowUpToastOpen(true);
+        notifyFailed();
       } else {
         // "not-saved": the follow-up was not saved YET at check time;
         // the server may still be generating, so do not claim no spend.
@@ -272,12 +277,19 @@ export function useFollowUp(reading: Reading | null | undefined, setReading: Set
           "Could not reach the server. Your follow-up was not saved yet. Please try again. Retrying is safe: the same request will not charge twice."
         );
         setFollowUpFailed(true);
-        setFollowUpToastOpen(true);
+        notifyFailed();
       }
     } finally {
       setFollowUpLoading(false);
     }
   };
+
+  useEffect(() => {
+    askRef.current = askFollowUp;
+  });
+  // The toast outlives the page (one app-wide Toaster): leaving the
+  // page drops it so its Retry cannot run against an unmounted page.
+  useEffect(() => () => dismissFailureToast(FOLLOW_UP_FAILED), []);
 
   return {
     followUpQ,
@@ -286,8 +298,6 @@ export function useFollowUp(reading: Reading | null | undefined, setReading: Set
     followUpError,
     setFollowUpError,
     followUpFailed,
-    followUpToastOpen,
-    setFollowUpToastOpen,
     askFollowUp,
   };
 }
