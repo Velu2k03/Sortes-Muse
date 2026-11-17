@@ -19,8 +19,8 @@ describe("Batch 7: magical effects", () => {
     const card = src("src/components/TarotCard.tsx");
     // The burst renders whenever the card is revealed (and not
     // reduced motion). CardBurst animates once on mount.
-    expect(card).toContain("{revealed && !reducedMotion && <CardBurst />}");
-    expect(card).toContain("<CardBurst />");
+    expect(card).toContain("{revealed && !reducedMotion && <CardBurst duration={burstDuration} />}");
+    expect(card).toContain("<CardBurst duration={burstDuration} />");
     // The old `celebrate` prop (never passed by any parent) is gone:
     // no such field in Props and no such default in the destructuring.
     expect(card).not.toContain("celebrate?: boolean");
@@ -29,7 +29,7 @@ describe("Batch 7: magical effects", () => {
 
   it("the burst is skipped for reduced motion", () => {
     const card = src("src/components/TarotCard.tsx");
-    expect(card).toContain("!reducedMotion && <CardBurst />");
+    expect(card).toContain("!reducedMotion && <CardBurst duration={burstDuration} />");
   });
 
   it("the reading page deals the cards in with a stagger (Batch 8 enhanced it)", () => {
