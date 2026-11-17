@@ -48,7 +48,7 @@ export default function IntakeFlow({ slug }: { slug: string }) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -12 }}
-            className="text-center"
+            className="text-left"
           >
             <CategoryStep f={f} />
           </motion.div>
@@ -71,7 +71,7 @@ export default function IntakeFlow({ slug }: { slug: string }) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -12 }}
-            className="text-center"
+            className="text-left"
           >
             <ConfirmStep f={f} category={category} />
           </motion.div>
@@ -83,7 +83,7 @@ export default function IntakeFlow({ slug }: { slug: string }) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -12 }}
-            className="text-center"
+            className="text-left"
           >
             <ImpressionStep f={f} drawnCards={drawnCards} />
           </motion.div>
