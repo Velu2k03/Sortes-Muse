@@ -118,6 +118,34 @@ describe("all-pages fix 5: base-ui refactor", () => {
     expect(select).toContain("modal={false}");
   });
 
+  it("GlideSelect carries its --gs-* theme vars across the portal", () => {
+    // PR #148 blocker: Select.Portal mounts the popup under
+    // document.body, outside the wrapper div, so vars set only on
+    // the wrapper never reached the popup -- it rendered
+    // transparent, ~108px wide instead of the 176px menuWidth,
+    // with page text showing through. The fix is one shared
+    // themeVars object set on BOTH the wrapper and Select.Popup.
+    const select = src("src/components/GlideSelect.tsx");
+    for (const v of [
+      "'--gs-accent'",
+      "'--gs-surface'",
+      "'--gs-highlight'",
+      "'--gs-text'",
+      "'--gs-radius'",
+      "'--gs-inner-radius'",
+      "'--gs-chip'",
+      "'--gs-row'",
+      "'--gs-font'",
+      "'--gs-menu-w'",
+    ]) {
+      expect(select).toContain(v);
+    }
+    expect(select).toContain("const themeVars");
+    // The wrapper div and the portaled popup both get the object.
+    expect(select).toMatch(/<div[\s\S]*?style=\{themeVars\}/);
+    expect(select).toMatch(/<Select\.Popup[\s\S]*?style=\{themeVars\}/);
+  });
+
   it("BranchedMenu stays hand-built: no tree-view primitive exists", () => {
     const menu = src("src/components/BranchedMenu.tsx");
     expect(menu).not.toContain("@base-ui-components/react");

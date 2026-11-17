@@ -65,6 +65,15 @@ const norm = (o: string | GlideSelectOption): GlideSelectOption => (typeof o ===
  * Sortes tokens on the trigger and the popup. Base-ui Select is
  * non-modal here (modal={false}), so opening it does not lock
  * page scroll, as before.
+ *
+ * Portal fix (PR #148 blocker, 2026-11-18): Select.Portal mounts
+ * the popup under document.body, outside the wrapper div, so CSS
+ * custom properties set only on the wrapper never reach it -- the
+ * popup rendered transparent, ~108px wide instead of the 176px
+ * menuWidth, with page text showing through. The --gs-* variables
+ * therefore live in one shared `themeVars` object set on BOTH the
+ * wrapper (trigger) and Select.Popup (portaled popup and items).
+ * Do not move them back to the wrapper alone.
  */
 const GlideSelect: React.FC<GlideSelectProps> = ({
   options = DEFAULT_OPTIONS,
@@ -89,25 +98,28 @@ const GlideSelect: React.FC<GlideSelectProps> = ({
   const items = options.map(norm);
   const S = SIZES[size] ?? SIZES.md;
 
+  // One shared theme object: the trigger reads the --gs-* vars
+  // from the wrapper, the popup reads them from Select.Popup --
+  // see the portal fix in the header comment. Both must stay.
+  const themeVars = {
+    '--gs-accent': accentColor,
+    '--gs-surface': surfaceColor,
+    '--gs-highlight': highlightColor,
+    '--gs-text': textColor,
+    '--gs-radius': `${radius}px`,
+    '--gs-inner-radius': `${Math.max(3, radius - 4)}px`,
+    '--gs-chip': `${S.chip}px`,
+    '--gs-row': `${S.row}px`,
+    '--gs-font': `${S.font}px`,
+    '--gs-menu-w': `${menuWidth}px`
+  } as CSSProperties;
+
   return (
     <div
       className={`group relative inline-block data-[disabled]:opacity-50${className ? ` ${className}` : ''}`}
       data-size={size}
       data-disabled={disabled ? '' : undefined}
-      style={
-        {
-          '--gs-accent': accentColor,
-          '--gs-surface': surfaceColor,
-          '--gs-highlight': highlightColor,
-          '--gs-text': textColor,
-          '--gs-radius': `${radius}px`,
-          '--gs-inner-radius': `${Math.max(3, radius - 4)}px`,
-          '--gs-chip': `${S.chip}px`,
-          '--gs-row': `${S.row}px`,
-          '--gs-font': `${S.font}px`,
-          '--gs-menu-w': `${menuWidth}px`
-        } as CSSProperties
-      }
+      style={themeVars}
     >
       <Select.Root
         items={items}
@@ -149,6 +161,7 @@ const GlideSelect: React.FC<GlideSelectProps> = ({
             className="z-20 outline-none"
           >
             <Select.Popup
+              style={themeVars}
               className="min-w-full p-1 opacity-100 [width:var(--gs-menu-w)] [border-radius:var(--gs-radius)] [background:var(--gs-surface)] [box-shadow:0_4px_16px_color-mix(in_srgb,#000_22%,transparent)] [transition:opacity_180ms_cubic-bezier(0.23,1,0.32,1),transform_180ms_cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none data-[starting-style]:scale-95 data-[starting-style]:opacity-0 data-[ending-style]:scale-95 data-[ending-style]:opacity-0"
             >
               <Select.List className="relative grid gap-px outline-none">
