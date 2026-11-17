@@ -237,6 +237,7 @@ export function FormStep({ f, category }: { f: IntakeState; category: IntakeCate
             </label>
             {field.type === "textarea" ? (
               <textarea
+                name={field.key}
                 id={`intake-${field.key}`}
                 ref={(el) => { fieldRefs.current[field.key] = el; }}
                 value={answers[field.key] ?? ""}
@@ -250,6 +251,7 @@ export function FormStep({ f, category }: { f: IntakeState; category: IntakeCate
               />
             ) : field.type === "select" ? (
               <select
+                name={field.key}
                 id={`intake-${field.key}`}
                 ref={(el) => { fieldRefs.current[field.key] = el; }}
                 value={answers[field.key] ?? ""}
@@ -267,6 +269,7 @@ export function FormStep({ f, category }: { f: IntakeState; category: IntakeCate
               </select>
             ) : (
               <input
+                name={field.key}
                 id={`intake-${field.key}`}
                 ref={(el) => { fieldRefs.current[field.key] = el; }}
                 type={field.type}
@@ -293,6 +296,7 @@ export function FormStep({ f, category }: { f: IntakeState; category: IntakeCate
             Your story / background <span className="font-normal text-mist">(optional)</span>
           </label>
           <textarea
+            name="story"
             id="intake-story"
             value={story}
             onChange={(e) => setStory(e.target.value)}
@@ -310,6 +314,7 @@ export function FormStep({ f, category }: { f: IntakeState; category: IntakeCate
               maxLength 300, matching the server limit, so a longer
               question is never silently cut off. */}
           <textarea
+            name="question"
             id="intake-question"
             ref={questionRef}
             rows={2}
@@ -442,6 +447,7 @@ export function ConfirmStep({ f, category }: { f: IntakeState; category: IntakeC
               {/* Batch 3.1 (#39): same two-row textarea as the form step,
                   so the question is editable here without being cut off. */}
               <textarea
+                name="question"
                 rows={2}
                 maxLength={300}
                 value={question}
@@ -605,6 +611,7 @@ export function ImpressionStep({ f, drawnCards }: { f: IntakeState; drawnCards: 
           One word for your first reaction (optional)
         </label>
         <input
+          name="impression"
           id="intake-impression"
           type="text"
           value={impression}

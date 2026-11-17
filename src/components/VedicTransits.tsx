@@ -97,6 +97,7 @@ export default function VedicTransits({
       </p>
       <div className="mt-4 flex flex-col gap-3 sm:flex-row">
         <input
+          name="gochara-date"
           type="date"
           value={date}
           onChange={(e) => setDate(e.target.value)}

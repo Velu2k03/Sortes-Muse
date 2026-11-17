@@ -419,6 +419,7 @@ function SignInPanel({ s }: { s: ReturnType<typeof useSignIn> }) {
               Email address
             </label>
             <input
+              name="email"
               id="acct-email"
               type="email"
               required
@@ -435,6 +436,7 @@ function SignInPanel({ s }: { s: ReturnType<typeof useSignIn> }) {
             </label>
             <div className="relative">
               <input
+                name="password"
                 id="acct-password"
                 type={showPassword ? "text" : "password"}
                 required
@@ -505,6 +507,7 @@ function SignInPanel({ s }: { s: ReturnType<typeof useSignIn> }) {
               Email address
             </label>
             <input
+              name="email"
               id="acct-email"
               type="email"
               required
@@ -563,6 +566,7 @@ function SignInPanel({ s }: { s: ReturnType<typeof useSignIn> }) {
               Sign-in code
             </label>
             <input
+              name="code"
               id="acct-code"
               type="text"
               inputMode="numeric"

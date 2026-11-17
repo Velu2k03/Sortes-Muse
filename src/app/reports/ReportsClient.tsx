@@ -142,6 +142,7 @@ function BirthForm({
             Birth date
           </label>
           <input
+            name={`${prefix}-date`}
             id={`${prefix}-date`}
             type="date"
             required
@@ -152,6 +153,7 @@ function BirthForm({
         </div>
         <label className="flex items-center gap-2 text-sm text-cream">
           <input
+            name={`${prefix}-unknown-time`}
             type="checkbox"
             checked={value.unknownTime}
             onChange={(e) => set({ unknownTime: e.target.checked })}
@@ -168,6 +170,7 @@ function BirthForm({
                 Hour
               </label>
               <input
+                name={`${prefix}-hour`}
                 id={`${prefix}-hour`}
                 type="number"
                 min={0}
@@ -183,6 +186,7 @@ function BirthForm({
                 Minute
               </label>
               <input
+                name={`${prefix}-minute`}
                 id={`${prefix}-minute`}
                 type="number"
                 min={0}
@@ -200,6 +204,7 @@ function BirthForm({
           </label>
           <div className="flex gap-2">
             <input
+              name={`${prefix}-place`}
               id={`${prefix}-place`}
               type="text"
               className={inputClass}
@@ -233,6 +238,7 @@ function BirthForm({
             Or pick a common city
           </label>
           <select
+            name={`${prefix}-preset`}
             id={`${prefix}-preset`}
             className={inputClass}
             value={value.preset}
@@ -259,6 +265,7 @@ function BirthForm({
               Latitude
             </label>
             <input
+              name={`${prefix}-lat`}
               id={`${prefix}-lat`}
               type="number"
               step="any"
@@ -273,6 +280,7 @@ function BirthForm({
               Longitude
             </label>
             <input
+              name={`${prefix}-lon`}
               id={`${prefix}-lon`}
               type="number"
               step="any"
@@ -288,6 +296,7 @@ function BirthForm({
             Gender{genderRequired ? " (required for a year-ahead reading)" : ""}
           </label>
           <select
+            name={`${prefix}-gender`}
             id={`${prefix}-gender`}
             className={inputClass}
             value={value.gender}
@@ -587,6 +596,7 @@ export default function ReportsClient({
               Date for the transit report
             </label>
             <input
+              name="target-date"
               id="report-target-date"
               type="date"
               required
@@ -602,6 +612,7 @@ export default function ReportsClient({
               Year for the year-ahead reading
             </label>
             <input
+              name="year"
               id="report-year"
               type="number"
               min={1900}

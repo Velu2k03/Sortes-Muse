@@ -229,6 +229,7 @@ export default function ThemedDatePicker({
                 month clicks. */}
             <div className="flex min-w-0 items-center gap-2">
               <select
+                name="month"
                 value={viewMonth}
                 onChange={(e) => setViewMonth(Number(e.target.value))}
                 aria-label="Month"
@@ -241,6 +242,7 @@ export default function ThemedDatePicker({
                 ))}
               </select>
               <select
+                name="year"
                 value={viewYear}
                 onChange={(e) => setViewYear(Number(e.target.value))}
                 aria-label="Year"
@@ -331,6 +333,7 @@ export default function ThemedDatePicker({
               Or type a date
             </label>
             <input
+              name={`${id}-typed`}
               id={`${id}-typed`}
               type="text"
               value={typed}

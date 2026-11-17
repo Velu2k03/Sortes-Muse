@@ -50,6 +50,7 @@ export default function BirthProfilePicker({
         Saved birth profile
       </label>
       <select
+        name={`birth-profile-${label}`}
         id={`birth-profile-${label}`}
         value={selectedId}
         onChange={(e) => {
@@ -86,6 +87,7 @@ export default function BirthProfilePicker({
               Name for this profile
             </label>
             <input
+              name={`birth-profile-name-${label}`}
               id={`birth-profile-name-${label}`}
               type="text"
               value={newName}
@@ -134,6 +136,7 @@ export default function BirthProfilePicker({
                         Rename profile
                       </label>
                       <input
+                        name={`birth-profile-rename-${p.id}`}
                         id={`birth-profile-rename-${p.id}`}
                         type="text"
                         value={editName}
