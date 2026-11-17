@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type CSSProperties, type PointerEvent } from "react";
+import clsx from "clsx";
 
 import "./HoloCard.css";
 
@@ -309,7 +310,7 @@ export default function HoloCard({
   // spans (a button may only hold phrasing content); every one is
   // position:absolute in HoloCard.css, so they lay out exactly as before.
   const rootProps = {
-    className: `holo-card${className ? ` ${className}` : ""}`,
+    className: clsx("holo-card", className),
     "aria-label": alt || undefined,
     "data-ready": ready ? "" : undefined,
     "data-flippable": flippable ? "" : undefined,

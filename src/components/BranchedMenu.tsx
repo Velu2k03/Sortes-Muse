@@ -12,6 +12,7 @@
  * closed sections keep their children tabIndex -1.
  */
 import React, { isValidElement, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import clsx from 'clsx';
 import { HugeiconsIcon, type IconSvgElement } from '@hugeicons/react';
 import {
   CursorPointer01Icon,
@@ -174,7 +175,7 @@ const BranchedMenu: React.FC<BranchedMenuProps> = ({
   return (
     <nav
       ref={navRef}
-      className={`relative flex w-fit max-w-[min(var(--bm-w),100%)] flex-col pl-3.5 leading-[1.2] [color:var(--bm-ink)] [font-family:inherit] [font-size:var(--bm-font)] before:absolute before:top-2 before:bottom-0 before:left-0 before:w-0.5 before:rounded-[1px] before:[background:linear-gradient(to_bottom,var(--bm-line)_0%,var(--bm-line)_55%,transparent_100%)] before:content-['']${className ? ` ${className}` : ''}`}
+      className={clsx(`relative flex w-fit max-w-[min(var(--bm-w),100%)] flex-col pl-3.5 leading-[1.2] [color:var(--bm-ink)] [font-family:inherit] [font-size:var(--bm-font)] before:absolute before:top-2 before:bottom-0 before:left-0 before:w-0.5 before:rounded-[1px] before:[background:linear-gradient(to_bottom,var(--bm-line)_0%,var(--bm-line)_55%,transparent_100%)] before:content-['']`, className)}
       style={
         {
           '--bm-w': `${width}px`,

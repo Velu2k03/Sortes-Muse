@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
+import clsx from 'clsx';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { SplitText as GSAPSplitText } from 'gsap/SplitText';
@@ -444,7 +445,7 @@ const SplitText = ({
     <Tag
       key={text}
       ref={ref}
-      className={`split-parent inline-block whitespace-normal ${clip ? 'overflow-hidden' : 'overflow-visible'} ${trigger === 'click' ? 'cursor-pointer' : ''} ${className}`}
+      className={clsx('split-parent inline-block whitespace-normal', clip ? 'overflow-hidden' : 'overflow-visible', trigger === 'click' && 'cursor-pointer', className)}
       style={{
         textAlign,
         wordWrap: 'break-word',

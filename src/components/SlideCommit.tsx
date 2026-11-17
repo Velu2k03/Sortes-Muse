@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import clsx from 'clsx';
 import { animate, motion, useMotionValue, useMotionValueEvent, useReducedMotion, useTransform } from 'motion/react';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { ArrowRight02Icon, Tick02Icon } from '@hugeicons/core-free-icons';
@@ -356,7 +357,7 @@ const SlideCommit: React.FC<SlideCommitProps> = ({
   return (
     <div
       ref={rootRef}
-      className={`sc-root group relative inline-block align-middle [font-family:inherit] data-[disabled]:pointer-events-none data-[disabled]:saturate-50${className ? ` ${className}` : ''}`}
+      className={clsx('sc-root group relative inline-block align-middle [font-family:inherit] data-[disabled]:pointer-events-none data-[disabled]:saturate-50', className)}
       data-phase={phase}
       data-held={held ? '' : undefined}
       data-disabled={disabled ? '' : undefined}

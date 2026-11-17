@@ -11,6 +11,7 @@
  * buttons are real buttons with full date labels.
  */
 import { useEffect, useRef, useState } from "react";
+import clsx from "clsx";
 import Icon from "@/components/Icon";
 import AnimatedContent from "@/components/AnimatedContent";
 
@@ -288,15 +289,12 @@ export default function ThemedDatePicker({
                   }}
                   aria-label={`${MONTHS[c.m - 1]} ${c.d}, ${c.y}`}
                   aria-pressed={selected}
-                  className={`num rounded-lg py-2 text-sm ${
-                    selected
-                      ? "btn-gold font-bold"
-                      : isToday
-                        ? "border border-gold/70 font-bold text-goldbright"
-                        : c.inMonth
-                          ? "text-cream hover:bg-gold/15"
-                          : "text-mist hover:bg-gold/10"
-                  }`}
+                  className={clsx("num rounded-lg py-2 text-sm", {
+                    "btn-gold font-bold": selected,
+                    "border border-gold/70 font-bold text-goldbright": !selected && isToday,
+                    "text-cream hover:bg-gold/15": !selected && !isToday && c.inMonth,
+                    "text-mist hover:bg-gold/10": !selected && !isToday && !c.inMonth,
+                  })}
                 >
                   {c.d}
                 </button>

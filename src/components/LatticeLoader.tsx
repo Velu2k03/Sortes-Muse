@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
+import clsx from 'clsx';
 
 export type LatticeStatus = 'working' | 'done' | 'error';
 export type LatticePatternName =
@@ -185,7 +186,7 @@ const LatticeLoader: React.FC<LatticeLoaderProps> = ({
     <>
     <style>{STYLE}</style>
     <output
-      className={`ll-root group relative inline-flex items-center leading-none [font-family:inherit] [gap:calc(var(--ll-font)*0.625)] [font-size:var(--ll-font)]${className ? ` ${className}` : ''}`}
+      className={clsx('ll-root group relative inline-flex items-center leading-none [font-family:inherit] [gap:calc(var(--ll-font)*0.625)] [font-size:var(--ll-font)]', className)}
       data-status={status}
       data-shape={shape}
       data-glow={glow ? '' : undefined}
@@ -213,11 +214,12 @@ const LatticeLoader: React.FC<LatticeLoaderProps> = ({
           {pat.cells.map((unit, i) => (
             <span
               key={i}
-              className={
+              className={clsx(
+                CELL,
                 unit == null
-                  ? `${CELL} [opacity:calc(var(--ll-idle)*0.47)]`
-                  : `${CELL} [opacity:var(--ll-idle)] ${LIT[Math.round((pat.lit ?? 0.62) * 100)] || LIT[62]} [animation-timing-function:var(--ll-ease-in-out)] group-data-[glow]:[box-shadow:0_0_calc(var(--ll-cell)*1.2)_calc(var(--ll-cell)*0.12)_var(--ll-glow)]`
-              }
+                  ? '[opacity:calc(var(--ll-idle)*0.47)]'
+                  : `[opacity:var(--ll-idle)] ${LIT[Math.round((pat.lit ?? 0.62) * 100)] || LIT[62]} [animation-timing-function:var(--ll-ease-in-out)] group-data-[glow]:[box-shadow:0_0_calc(var(--ll-cell)*1.2)_calc(var(--ll-cell)*0.12)_var(--ll-glow)]`,
+              )}
               data-hole={unit == null ? '' : undefined}
               data-lit={pat.lit && pat.lit !== 0.62 ? Math.round(pat.lit * 100) : undefined}
               style={unit == null ? undefined : { animationDelay: `${Math.round(unit * d)}ms` }}

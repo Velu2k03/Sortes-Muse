@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import clsx from "clsx";
 
 /**
  * Page hero: gold label + display H1 (+ optional subtitle). Output is
@@ -23,7 +24,7 @@ export default function PageHeader({
   return (
     <>
       {eyebrow ? <p className="text-sm text-gold">{eyebrow}</p> : null}
-      <h1 className={`mt-3 font-display text-5xl text-goldbright${titleClassName ? ` ${titleClassName}` : ""}`}>
+      <h1 className={clsx("mt-3 font-display text-5xl text-goldbright", titleClassName)}>
         {title}
       </h1>
       {subtitle ? <p className="mx-auto mt-4 max-w-xl text-cream/75">{subtitle}</p> : null}
