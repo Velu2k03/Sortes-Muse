@@ -8,7 +8,8 @@ import { useEffect, useRef, useState } from "react";
  */
 export default function CountUp({
   value,
-  duration = 700,
+  // transitions.dev number pop-in token: --duration-very-slow, 500ms.
+  duration = 500,
 }: {
   value: number;
   duration?: number;
