@@ -41,7 +41,7 @@ const fadeUpFor = (hide: boolean) => ({
   initial: hide ? { opacity: 0, y: 24 } : (false as const),
   whileInView: { opacity: 1, y: 0 },
   viewport: { once: true, margin: "-60px" },
-  transition: { duration: 0.6, ease: "easeOut" as const },
+  transition: { duration: 0.25, ease: "easeOut" as const },
 });
 
 // Phase 4C (4.6): the orbit carousel is replaced by a static grid of
@@ -291,8 +291,8 @@ export default function Home() {
       <StatsStrip />
 
       {/* WHAT'S ON YOUR MIND */}
-      <section className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
-        <h2 className="text-center font-display text-3xl text-goldbright sm:text-4xl">
+      <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+        <h2 className="text-center font-display text-4xl text-goldbright sm:text-5xl">
           What&apos;s on your mind?
         </h2>
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -304,7 +304,7 @@ export default function Home() {
           ].map((s) => (
             <div
               key={s.href}
-              className="rounded-3xl border border-gold/25 bg-panel/70 transition-transform duration-300 hover:-translate-y-1 hover:border-gold/60"
+              className="rounded-2xl border border-gold/25 bg-panel/70 transition-transform duration-300 hover:-translate-y-1 hover:border-gold/60"
             >
               <Link href={s.href} className="block p-6">
                 <p className="font-display text-2xl text-goldbright">{s.label}</p>
@@ -327,7 +327,7 @@ export default function Home() {
             <h2 className="font-display text-4xl text-goldbright sm:text-5xl">
               Explore the deck
             </h2>
-            <p className="mx-auto mt-4 max-w-xl text-cream/75">
+            <p className="mx-auto mt-6 max-w-xl text-cream/75">
               Browse all 78 cards.
             </p>
           </div>
@@ -343,7 +343,7 @@ export default function Home() {
                   aria-label={`Explore ${card.name} in the deck`}
                   className="block transition-transform duration-300 hover:-translate-y-1 focus-visible:-translate-y-1"
                 >
-                  <span className="relative block aspect-[3/5] w-full overflow-hidden rounded-lg border border-gold/30 shadow-card">
+                  <span className="relative block aspect-[3/5] w-full overflow-hidden rounded-xl border border-gold/25 shadow-card">
                     <Image
                       src={card.image}
                       alt=""
@@ -369,7 +369,7 @@ export default function Home() {
           <h2 className="mt-6 text-center font-display text-4xl text-goldbright sm:text-5xl">
             What is tarot?
           </h2>
-          <p className="mt-8 text-center text-base leading-relaxed text-cream/85">
+          <p className="mt-6 text-center text-base leading-relaxed text-cream/85">
             78 cards. Tarot helps you think.
           </p>
         </motion.div>
@@ -403,7 +403,7 @@ export default function Home() {
             ].map((s) => (
               <div
                 key={s.title}
-                className="rounded-2xl border border-gold/20 bg-panel/60 p-6"
+                className="rounded-2xl border border-gold/25 bg-panel/60 p-6"
               >
                 <p className="font-display text-2xl text-gold">{s.title}</p>
                 <p className="mt-2 text-sm leading-relaxed text-cream/80">{s.text}</p>
@@ -429,7 +429,7 @@ export default function Home() {
           <h2 className="mt-4 font-display text-4xl text-goldbright sm:text-5xl">
             One card, every morning
           </h2>
-          <p className="mx-auto mt-4 max-w-lg text-cream/75">
+          <p className="mx-auto mt-6 max-w-lg text-cream/75">
             Draw today&apos;s card in seconds.
           </p>
           {/* Phase 4C (4.6a): the scroll fan is a static fan. Same
@@ -451,9 +451,9 @@ export default function Home() {
                   <Link
                     href="/deck"
                     aria-label={`See ${c.name} in the deck`}
-                    className="block rounded-lg transition-transform duration-300 hover:-translate-y-3 hover:scale-105 hover:rotate-0 focus-visible:-translate-y-3 focus-visible:scale-105 focus-visible:rotate-0"
+                    className="block rounded-xl transition-transform duration-300 hover:-translate-y-3 hover:scale-105 hover:rotate-0 focus-visible:-translate-y-3 focus-visible:scale-105 focus-visible:rotate-0"
                   >
-                    <div className="relative h-28 w-[4.5rem] overflow-hidden rounded-lg border border-gold/30 shadow-card sm:h-36 sm:w-24">
+                    <div className="relative h-28 w-[4.5rem] overflow-hidden rounded-xl border border-gold/25 shadow-card sm:h-36 sm:w-24">
                       <Image
                         src={c.image}
                         alt={c.name}
@@ -483,7 +483,7 @@ export default function Home() {
         <h2 className="mt-4 text-center font-display text-4xl text-goldbright sm:text-5xl">
           Simple plans, clear prices
         </h2>
-        <p className="mx-auto mt-4 max-w-lg text-center text-cream/75">
+        <p className="mx-auto mt-6 max-w-lg text-center text-cream/75">
           Start free with one card a day.
         </p>
         <div className="mt-8 grid gap-4 sm:grid-cols-3">
