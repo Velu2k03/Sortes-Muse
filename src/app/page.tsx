@@ -322,7 +322,7 @@ export default function Home() {
           ].map((s) => (
             <div
               key={s.href}
-              className="rounded-2xl border border-gold/25 bg-panel/70 transition-transform duration-300 hover:-translate-y-1 hover:border-gold/60"
+              className="rounded-2xl border border-gold/25 bg-panel/70 transition-transform duration-250 hover:-translate-y-1 hover:border-gold/60"
             >
               <Link href={s.href} className="block p-6">
                 <p className="font-display text-2xl text-goldbright">{s.label}</p>
@@ -359,7 +359,7 @@ export default function Home() {
                   key={card.id}
                   href={`/deck/${cardSlug(card.name)}`}
                   aria-label={`Explore ${card.name} in the deck`}
-                  className="block transition-transform duration-300 hover:-translate-y-1 focus-visible:-translate-y-1"
+                  className="block transition-transform duration-250 hover:-translate-y-1 focus-visible:-translate-y-1"
                 >
                   <span className="relative block aspect-[3/5] w-full overflow-hidden rounded-xl border border-gold/25 shadow-card">
                     <Image
@@ -477,7 +477,7 @@ export default function Home() {
                   <Link
                     href="/deck"
                     aria-label={`See ${c.name} in the deck`}
-                    className="block rounded-xl transition-transform duration-300 hover:-translate-y-3 hover:scale-105 hover:rotate-0 focus-visible:-translate-y-3 focus-visible:scale-105 focus-visible:rotate-0"
+                    className="block rounded-xl transition-transform duration-250 hover:-translate-y-3 hover:scale-105 hover:rotate-0 focus-visible:-translate-y-3 focus-visible:scale-105 focus-visible:rotate-0"
                   >
                     <div className="relative h-28 w-[4.5rem] overflow-hidden rounded-xl border border-gold/25 shadow-card sm:h-36 sm:w-24">
                       <Image
