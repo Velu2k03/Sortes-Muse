@@ -194,7 +194,7 @@ const BranchedMenu: React.FC<BranchedMenuProps> = ({
     >
       <span
         ref={markerRef}
-        className="absolute -top-px left-0 z-[1] h-4 w-0.5 rounded-[1px] opacity-0 [background:var(--bm-accent)] [transition:top_220ms_cubic-bezier(0.23,1,0.32,1),opacity_150ms_ease] data-[on]:opacity-100 motion-reduce:[transition:opacity_150ms_ease]"
+        className="absolute -top-px left-0 z-1 h-4 w-0.5 rounded-[1px] opacity-0 [background:var(--bm-accent)] [transition:top_220ms_cubic-bezier(0.23,1,0.32,1),opacity_150ms_ease] data-[on]:opacity-100 motion-reduce:[transition:opacity_150ms_ease]"
         aria-hidden="true"
       />
       {items.map((item, i) => {
