@@ -244,6 +244,7 @@ export function FormStep({ f, category }: { f: IntakeState; category: IntakeCate
                 onChange={(e) => { set(field.key, e.target.value); setFieldErrors((prev) => ({ ...prev, [field.key]: false })); }}
                 placeholder={field.placeholder}
                 rows={3}
+                maxLength={1000}
                 aria-describedby={fieldErrors[field.key] ? `intake-${field.key}-error` : undefined}
                 aria-invalid={!!fieldErrors[field.key]}
                 className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
@@ -273,6 +274,7 @@ export function FormStep({ f, category }: { f: IntakeState; category: IntakeCate
                 value={answers[field.key] ?? ""}
                 onChange={(e) => { set(field.key, e.target.value); setFieldErrors((prev) => ({ ...prev, [field.key]: false })); }}
                 placeholder={field.placeholder}
+                maxLength={field.type === "text" ? 1000 : undefined}
                 aria-describedby={fieldErrors[field.key] ? `intake-${field.key}-error` : undefined}
                 aria-invalid={!!fieldErrors[field.key]}
                 className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"

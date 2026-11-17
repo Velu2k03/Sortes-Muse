@@ -355,8 +355,19 @@ export function useIntakeFlow(slug: string) {
       };
 
       const intakeScope = `intake:${slug}`;
+      // Codex review (PR #120, P2): the attempt identity must include
+      // the non-sensitive answers. Without them, a seeker who goes
+      // back, edits an answer, and retries after a lost response gets
+      // the old reading replayed, because the ID still hashes only the
+      // spread, category, story and question. Keys are sorted and
+      // values trimmed so the hash does not depend on the order the
+      // fields were filled in or on stray whitespace; an unchanged
+      // input still replays instead of re-spending.
+      const sortedAnswers = Object.keys(safeAnswers)
+        .sort()
+        .map((k) => [k, safeAnswers[k].trim()]);
       const attemptId = signedIn
-        ? pendingAttemptId(intakeScope, JSON.stringify([slug, category.key, story.trim(), question.trim()]))
+        ? pendingAttemptId(intakeScope, JSON.stringify([slug, category.key, story.trim(), question.trim(), sortedAnswers]))
         : undefined;
       const res = await fetch("/api/reading/generate", {
         method: "POST",

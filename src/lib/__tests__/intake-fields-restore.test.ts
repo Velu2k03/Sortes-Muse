@@ -59,4 +59,23 @@ describe("Intake fields restoration", () => {
     const steps = src("src/app/intake/[slug]/IntakeSteps.tsx");
     expect(steps).toContain("fieldRefs.current[missing]?.focus()");
   });
+
+  it("free-text answers are capped at the API limit of 1000 characters", () => {
+    // The generate route rejects any answer over 1000 characters
+    // with a 400, so the form must not let one be typed.
+    const steps = src("src/app/intake/[slug]/IntakeSteps.tsx");
+    expect(steps).toContain("maxLength={1000}");
+    const route = src("src/app/api/reading/generate/route.ts");
+    expect(route).toContain("Each answer must be 1000 characters or fewer.");
+  });
+
+  it("the attempt identity includes the non-sensitive answers", () => {
+    // Codex review (PR #120): without the answers in the attempt
+    // hash, editing an answer after a lost response replays the old
+    // reading. Keys are sorted so fill order does not change the hash.
+    const hook = src("src/app/intake/[slug]/useIntakeFlow.ts");
+    expect(hook).toContain("sortedAnswers");
+    expect(hook).toContain("question.trim(), sortedAnswers");
+    expect(hook).not.toContain("question.trim()]))");
+  });
 });
