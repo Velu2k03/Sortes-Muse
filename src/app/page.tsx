@@ -292,7 +292,7 @@ export default function Home() {
 
       {/* WHAT'S ON YOUR MIND */}
       <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
-        <h2 className="text-center font-display text-4xl text-goldbright sm:text-5xl">
+        <h2 className="font-display text-4xl text-goldbright sm:text-5xl">
           What&apos;s on your mind?
         </h2>
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -323,11 +323,11 @@ export default function Home() {
       {/* EXPLORE THE DECK */}
       <section className="border-y border-gold/10 bg-navydeep/40 py-10">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <div className="text-center">
+          <div>
             <h2 className="font-display text-4xl text-goldbright sm:text-5xl">
               Explore the deck
             </h2>
-            <p className="mx-auto mt-6 max-w-xl text-cream/75">
+            <p className="mt-6 max-w-xl text-cream/75">
               Browse all 78 cards.
             </p>
           </div>
@@ -365,11 +365,11 @@ export default function Home() {
       {/* WHAT IS TAROT */}
       <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
         <motion.div key={`${revealKey}-intro`} {...fadeUp}>
-          <div className="rule-gold mx-auto w-24" />
-          <h2 className="mt-6 text-center font-display text-4xl text-goldbright sm:text-5xl">
+          <div className="rule-gold w-24" />
+          <h2 className="mt-6 font-display text-4xl text-goldbright sm:text-5xl">
             What is tarot?
           </h2>
-          <p className="mt-6 text-center text-base leading-relaxed text-cream/85">
+          <p className="mt-6 text-base leading-relaxed text-cream/85">
             78 cards. Tarot helps you think.
           </p>
         </motion.div>
@@ -383,7 +383,7 @@ export default function Home() {
             removed its cursor glow from this page as a gimmick, so
             the existing motion step cards stay. */}
         <motion.div key={`${revealKey}-steps`} {...fadeUp} className="mt-12">
-          <h3 className="text-center font-display text-3xl text-goldbright">
+          <h3 className="font-display text-3xl text-goldbright">
             How it works
           </h3>
           <div className="mt-8 grid gap-4 sm:grid-cols-3">
@@ -424,12 +424,12 @@ export default function Home() {
 
       {/* DAILY CARD TEASER */}
       <section className="border-y border-gold/10 bg-navydeep/40 py-10">
-        <div className="mx-auto max-w-6xl px-4 text-center sm:px-6">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <motion.div key={revealKey} {...fadeUp}>
           <h2 className="mt-4 font-display text-4xl text-goldbright sm:text-5xl">
             One card, every morning
           </h2>
-          <p className="mx-auto mt-6 max-w-lg text-cream/75">
+          <p className="mt-6 max-w-lg text-cream/75">
             Draw today&apos;s card in seconds.
           </p>
           {/* Phase 4C (4.6a): the scroll fan is a static fan. Same
@@ -437,7 +437,7 @@ export default function Home() {
               hovered card, no entrance animation. Phone width:
               72 + 4 x 48 = 264px, inside a 360px phone's 328px
               content width, so no horizontal scroll. */}
-          <ul role="list" className="mt-8 flex justify-center" aria-label="Tarot cards">
+          <ul role="list" className="mt-8 flex justify-start" aria-label="Tarot cards">
             {fanCards.map((c, i) => {
               const offset = i - middle;
               const tilt = offset * 7;
@@ -480,10 +480,10 @@ export default function Home() {
           and badge, never by height (#59, #75). Full pricing lives
           on /pricing. */}
       <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6" aria-label="Pricing preview">
-        <h2 className="mt-4 text-center font-display text-4xl text-goldbright sm:text-5xl">
+        <h2 className="mt-4 font-display text-4xl text-goldbright sm:text-5xl">
           Simple plans, clear prices
         </h2>
-        <p className="mx-auto mt-6 max-w-lg text-center text-cream/75">
+        <p className="mt-6 max-w-lg text-cream/75">
           Start free with one card a day.
         </p>
         <div className="mt-8 grid gap-4 sm:grid-cols-3">
@@ -514,7 +514,7 @@ export default function Home() {
             </div>
           ))}
         </div>
-        <div className="mt-8 text-center">
+        <div className="mt-8">
           <Link
             href="/pricing"
             className="btn-gold inline-block rounded-2xl px-8 py-3.5 font-semibold"
