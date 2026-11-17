@@ -129,6 +129,20 @@ html[data-theme="light"] {
   font-variant-numeric: tabular-nums;
 }
 
+/* All-pages fix 8 (font preload + text-balance, 2026-11-17): every
+   h1 and h2 balances its lines (text-wrap: balance) so headings
+   never widow on any page. One rule here covers all pages,
+   including headings rendered through shared components
+   (PageHeader, SplitText, GateScreen) that a per-file grep misses
+   — the same miss that made the audit report phantom missing h1s
+   (fix C, PR #133). The two existing text-balance classes
+   (homepage h1, GuidesSearch h2) stay; they are the same
+   declaration and harmless. */
+h1,
+h2 {
+  text-wrap: balance;
+}
+
 /* Header logo (Velu, 2026-11-15): the logo is FIXED, no rotation.
    The old logo-turn-once spin is removed. The SORTES wordmark keeps
    the Cormorant Garamond display face with a gold gradient and a
