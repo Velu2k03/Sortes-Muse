@@ -19,8 +19,15 @@ import { BRAND } from "@/lib/brand";
 // not "2,500"). respectMotionPreference defaults to true in
 // NumberFlow, the same reduced-motion skip CountUp had. NumberFlow's
 // own default is 900ms, so the 500ms must stay explicit.
+// locales: "en-US" pins Latin digits. Without it NumberFlow uses
+// the visitor's browser locale, and a locale such as fa-IR formats
+// integers with non-Latin digits this version does not support,
+// while the deleted CountUp always rendered Latin digits. It is a
+// separate `locales` prop, not a key of `format` (which is
+// Intl.NumberFormatOptions and has no locales field).
 const NUMBERFLOW_TIMING = { duration: 500, easing: "cubic-bezier(0.215, 0.61, 0.355, 1)" };
 const NUMBERFLOW_FORMAT = { useGrouping: false };
+const NUMBERFLOW_LOCALES = "en-US";
 
 // Header grouping, 2026-11-05: the desktop bar shows four groups
 // (Tarot, Astrology, Learn, Journal) instead of nine links plus a
@@ -355,6 +362,7 @@ export default function Header() {
                 <span className="num">
                   <NumberFlow
                     value={credits}
+                    locales={NUMBERFLOW_LOCALES}
                     format={NUMBERFLOW_FORMAT}
                     transformTiming={NUMBERFLOW_TIMING}
                   />

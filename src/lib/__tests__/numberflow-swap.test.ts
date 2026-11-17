@@ -48,6 +48,22 @@ describe("NumberFlow swap (all-pages fix 6)", () => {
     }
   });
 
+  it("pins a Latin-digit locale at every swapped site (PR #149 blocker)", () => {
+    // Codex P2: without `locales`, NumberFlow uses the visitor's
+    // browser locale, and a locale such as fa-IR formats integers
+    // with non-Latin digits this version does not support, while
+    // the deleted CountUp always rendered Latin digits. `locales`
+    // is a separate NumberFlow prop, not a key of `format`
+    // (Intl.NumberFormatOptions has no locales field), so it must
+    // be passed as its own prop at every site.
+    for (const c of [header(), pricing()]) {
+      expect(c).toContain('const NUMBERFLOW_LOCALES = "en-US";');
+      expect(c).toContain("locales={NUMBERFLOW_LOCALES}");
+    }
+    expect(header().match(/locales=\{NUMBERFLOW_LOCALES\}/g)).toHaveLength(1);
+    expect(pricing().match(/locales=\{NUMBERFLOW_LOCALES\}/g)).toHaveLength(2);
+  });
+
   it("deletes the in-house CountUp file", () => {
     expect(existsSync(path.resolve(process.cwd(), "src/components/CountUp.tsx"))).toBe(
       false
