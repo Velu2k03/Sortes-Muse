@@ -170,11 +170,8 @@ function GateScreen({
         )}
       </div>
 
-      <p className="mx-auto mt-8 max-w-md text-xs italic leading-relaxed text-mist">
-        Readings are for self-reflection and perspective, not guaranteed
-        predictions.
-      </p>
-
+      {/* Phase 7 (7.3): the reflection disclaimer is cut here, it
+          duplicates the footer disclaimer on every page. */}
       {/* AF-045: the layout diagram sits next to the position list,
           so a 1-card spread page is not a short list over a long
           empty page, and the layout itself teaches the spread. */}

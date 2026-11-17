@@ -17,7 +17,7 @@ export default function GuidesPage() {
     <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
       <PageHeader title="Guides to tarot and charts" />
       <p className="mt-4 max-w-xl text-cream/75">
-        The deck, how to ask a question, the Celtic Cross, topic spreads, and how tarot differs from a birth chart. Free, no account needed.
+        Tarot, questions, spreads, and charts. Free, no account needed.
       </p>
       <div className="mt-10">
         {/* AF-083: search stays hidden until there are >9 guides (5 now). */}

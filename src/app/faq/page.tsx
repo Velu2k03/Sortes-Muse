@@ -16,7 +16,7 @@ export const FAQS: FaqItem[] = [
   {
     group: "Pricing and Oracles",
     q: "What is free in Sortes?",
-    a: "The daily card is free every day, the deck browser with all 78 card meanings is free forever, chart calculation is free, and your first Quick Insight reading and your first chart interpretation per system are free. No payment is needed for the free parts, and no account is needed for the daily card, the deck browser, chart calculation, or your first Quick Insight; chart interpretations and reports need you to sign in.",
+    a: "The daily card, the deck browser, and chart calculation are free, no account needed. Your first Quick Insight reading and your first chart interpretation per system are free too.",
   },
   {
     group: "Pricing and Oracles",
@@ -37,37 +37,37 @@ export const FAQS: FaqItem[] = [
   {
     group: "Readings and Charts",
     q: "Are readings predictions?",
-    a: "No. Readings and chart interpretations are for reflection and perspective only. They are never guaranteed predictions, and they never replace professional advice about health, money, or legal matters.",
+    a: "No. Readings are for reflection and perspective only, never guaranteed predictions, and never a replacement for professional advice.",
   },
   {
     group: "Privacy and Data",
     q: "How is my birth data handled for charts?",
-    a: "Sortes calculates positions and stores only those positions, signs, and palaces. It does not store your raw birth date, time, or place, and it never sends raw birth data to an AI prompt. The AI interpretation receives only positions, signs, houses, and stars, plus your question or focus.",
+    a: "Sortes stores only calculated positions, signs, and palaces, never your raw birth date, time, or place, and never sends raw birth data to an AI prompt.",
   },
   {
     group: "Privacy and Data",
     q: "How long is tarot intake data kept?",
-    a: "Your story goes to the AI for this reading only and is not saved. Your question, first name, and category are saved in your journal: on this device as a guest, in your account when signed in, until you delete them.",
+    a: "Your story goes to the AI for this reading only and is not saved. Your question, first name, and category are saved in your journal until you delete them.",
   },
   {
     group: "Account",
     q: "How do I sign in?",
-    a: "On the account page, choose Continue with Google, or choose Email link to have a sign-in link sent to your email, then click the link in the email. Or choose Password to sign in with email and password. After you sign in, your guest Oracles and journal move into your account, and you stay signed in for 30 days.",
+    a: "On the account page, choose Continue with Google, Email link, or Password. After you sign in, your guest Oracles and journal move into your account.",
   },
   {
     group: "Pricing and Oracles",
     q: "What if I bought Oracles with a different email?",
-    a: "Sign in with that email and the Oracles merge into that account. If you signed in with a different email by mistake, sign out and sign in again with the email you used at checkout.",
+    a: "Sign in with that email and the Oracles merge in. If you used a different email by mistake, sign out and sign in again with the checkout email.",
   },
   {
     group: "Readings and Charts",
     q: "What is the difference between a tarot spread and a birth chart?",
-    a: "A tarot spread answers a specific question in the moment. A birth chart maps a birth moment, with planets in signs and houses, or stars in palaces, and it does not change with your question.",
+    a: "A spread answers one question in the moment. A birth chart maps a birth moment, and does not change with your question.",
   },
   {
     group: "Pricing and Oracles",
     q: "Can I get a refund?",
-    a: "Unused Oracle top-ups may be refunded within 14 days of purchase. Readings that have already been delivered or used are non-refundable. See the Terms page for the full wording.",
+    a: "Unused top-ups may be refunded within 14 days of purchase. Readings already delivered are non-refundable.",
   },
   {
     group: "Pricing and Oracles",
@@ -77,22 +77,17 @@ export const FAQS: FaqItem[] = [
   {
     group: "Pricing and Oracles",
     q: "What if a payment fails?",
-    a: "If a payment fails, no Oracles are added to your balance. You can try again from the Oracles page. If you were charged and no Oracles appeared, email " + CONTACT_EMAIL + ".",
+    a: "If a payment fails, no Oracles are added. Try again from the Oracles page. If you were charged and no Oracles appeared, email " + CONTACT_EMAIL + ".",
   },
   {
     group: "Readings and Charts",
     q: "What does a reading include?",
-    a: "Each reading is a written interpretation of your cards (or chart) around your question, about 300 to 600 words, shown on screen in up to about 3 minutes and saved to your journal. It includes what stands out, the tension and opportunity, what you may be overlooking, one practical step, and one reflection question.",
+    a: "A written interpretation of your cards or chart around your question, 300 to 600 words, on screen in up to about 3 minutes and saved to your journal. It names what stands out, the tension, what you may be overlooking, one practical step, and one reflection question.",
   },
   {
     group: "Privacy and Data",
     q: "How do I delete my data?",
-    a: "You can delete saved readings and journal entries yourself, and delete your account from the account page. To ask for deletion or an export by email, write to " + CONTACT_EMAIL + ".",
-  },
-  {
-    group: "Account",
-    q: "Who runs Sortes, and how do I contact you?",
-    a: "Sortes is run by Resonant Atlas. Contact is by email, listed in the footer of every page.",
+    a: "Delete saved readings and journal entries yourself, and your account from the account page. For export or deletion by email, write to " + CONTACT_EMAIL + ".",
   },
   {
     group: "Pricing and Oracles",

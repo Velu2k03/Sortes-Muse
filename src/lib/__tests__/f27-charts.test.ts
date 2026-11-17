@@ -35,8 +35,9 @@ describe("F27 charts speak plainly", () => {
     // The subhead wraps across source lines, so compare on
     // whitespace-collapsed text.
     const flat = charts.replace(/\s+/g, " ");
+    // Phase 7 (7.3): shortened to one line.
     expect(flat).toContain(
-      "Your first interpretation in each system is free; after that, 1 Oracle."
+      "First interpretation per system is free, then 1 Oracle."
     );
     expect(charts).not.toContain("first per system free");
   });

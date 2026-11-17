@@ -49,7 +49,9 @@ export default function GuidesSearch({
             className="block rounded-3xl border border-gold/25 bg-panel/70 p-6 hover:border-gold/60"
           >
             <h2 className="font-display text-3xl text-balance text-goldbright">{g.title}</h2>
-            <p className="mt-2 text-sm leading-relaxed text-cream/75">{g.description}</p>
+            {/* Phase 7 (7.3): the description paragraph is cut from the
+                index, it repeats the link text. The description stays
+                in the data for search and for the guide page itself. */}
             {/* UX audit Phase 2, F30: four cards all said "Read the
                 guide", identical link text to four different
                 destinations. Each link now names its guide, so it

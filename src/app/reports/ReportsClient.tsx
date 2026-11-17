@@ -502,7 +502,7 @@ export default function ReportsClient() {
       <details className="mx-auto mt-4 max-w-xl rounded-2xl border border-gold/20 bg-panel/60 p-4 text-left">
         <summary className="cursor-pointer font-semibold text-goldbright">Read a sample report, before you spend an Oracle</summary>
         <p className="mt-2 text-sm text-cream/80">
-          A full sample transit report, written for an invented seeker. Your generated report fills the same shape with your own positions.
+          A full sample report, written for an invented seeker.
         </p>
         <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-cream/80">
           <li>Transit report: interpretation, Western transits on your date, Vedic Gochara.</li>

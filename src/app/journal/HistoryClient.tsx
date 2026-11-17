@@ -108,13 +108,16 @@ export default function HistoryPage() {
         <PageHeader eyebrow="Journal" title="Your readings" titleClassName="sm:text-6xl" />
         <p className="mx-auto mt-4 max-w-xl text-cream/75">
           {user
-            ? "Every full reading and saved chart interpretation you complete is kept here and synced to your account, so your journal follows you across devices. Daily cards are saved here as a one-line entry, not a full reading."
+            ? "Readings and chart interpretations are kept here and synced to your account, so your journal follows you across devices."
             : // UX audit Phase 2, F25: the guest subhead used to be
               // two paragraphs saying the same thing (guest-only
               // storage + sign in to sync). One paragraph now, with
               // the data-loss warning folded in: clearing browser
               // data deletes guest entries.
-              "Every full reading and saved chart interpretation you complete is kept here on this device. If you clear your browser data, they are gone. Sign in to sync your journal across devices. Daily cards are saved here as a one-line entry, not a full reading."}
+              // Phase 7 (7.3): the daily-card sentence is cut, it is
+              // a detail and the daily card entry is visible in the
+              // list below.
+              "Readings and chart interpretations are kept here on this device. Clear your browser data and they are gone. Sign in to sync across devices."}
         </p>
       </div>
 

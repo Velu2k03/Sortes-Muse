@@ -27,7 +27,7 @@ export const SPREADS: Spread[] = [
     name: "Past, Present, Future",
     cards: 3,
     description:
-      "Three cards tracing where you have been, where you stand, and where the path leads.",
+      "Where you have been, where you stand, and where the path leads.",
     positions: [
       { key: "past", label: "Past", hint: "What shaped this moment" },
       { key: "present", label: "Present", hint: "Where you stand now" },
@@ -40,7 +40,7 @@ export const SPREADS: Spread[] = [
     name: "Love Insight",
     cards: 3,
     description:
-      "Three cards for a relationship question. You, the other person, and what connects you.",
+      "You, the other person, and what connects you.",
     positions: [
       { key: "you", label: "You", hint: "Where you stand in this" },
       { key: "them", label: "Them", hint: "Where the other person stands" },
@@ -53,7 +53,7 @@ export const SPREADS: Spread[] = [
     name: "Career Path",
     cards: 3,
     description:
-      "Three cards for a work question. Where you stand, what is in the way, and the next step.",
+      "Where you stand, what is in the way, and the next step.",
     positions: [
       { key: "current", label: "Current", hint: "Where your work stands now" },
       { key: "obstacle", label: "Obstacle", hint: "What is in the way" },
@@ -66,7 +66,7 @@ export const SPREADS: Spread[] = [
     name: "Weekly Outlook",
     cards: 3,
     description:
-      "Three cards for the week ahead. A focus, a challenge, and an opportunity.",
+      "A focus, a challenge, and an opportunity.",
     positions: [
       { key: "focus", label: "Focus", hint: "What deserves your attention this week" },
       { key: "challenge", label: "Challenge", hint: "What may test you this week" },
@@ -79,7 +79,7 @@ export const SPREADS: Spread[] = [
     name: "Celtic Cross",
     cards: 10,
     description:
-      "The classic ten-card spread. The full landscape: forces, hopes, and outcome.",
+      "The full landscape: forces, hopes, and outcome.",
     positions: [
       { key: "present", label: "Present", hint: "The heart of the matter" },
       { key: "challenge", label: "Challenge", hint: "What crosses you" },

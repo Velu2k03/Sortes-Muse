@@ -37,9 +37,8 @@ export default function ContactPage() {
           href={`mailto:${CONTACT_EMAIL}`}
         >
           {CONTACT_EMAIL}
-        </a>{" "}
-        about Oracles, a reading, your account, or a refund. We aim to reply
-        within two business days.
+        </a>
+        . We aim to reply within two business days.
       </p>
       <section className="mt-10">
         <h2 className="font-display text-2xl text-goldbright">Before you write</h2>
@@ -49,8 +48,7 @@ export default function ContactPage() {
             purchase. See the Terms of Service for the full wording.
           </li>
           <li>
-            Deleting your data: you can ask for export or deletion of your
-            data at any time by emailing {CONTACT_EMAIL}.
+            Deleting your data: ask for export or deletion at any time.
           </li>
           <li>
             Include the email address on your account, so we can find it.

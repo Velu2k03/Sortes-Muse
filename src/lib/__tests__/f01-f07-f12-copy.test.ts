@@ -15,7 +15,10 @@ const src = (rel: string) =>
 describe("F01/F07/F12: no stale pack wording in user-visible copy", () => {
   it("About sells top-ups, not packs (F01)", () => {
     const about = src("src/app/about/page.tsx");
-    expect(about).toContain("topped up through Lemon Squeezy");
+    // Phase 7 (7.3): the pricing tail is cut from the offers section
+    // per the cut list, it duplicates the pricing page and the FAQ.
+    // The page now mentions neither packs nor top-ups; the F01
+    // requirement that remains is no stale pack wording.
     expect(about).not.toContain("in packs sold through Lemon Squeezy");
     expect(about).not.toContain("Oracle packs");
   });

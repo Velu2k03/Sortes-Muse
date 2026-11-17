@@ -46,9 +46,8 @@ export default function BirthCardPage() {
       <div className="text-center">
         <PageHeader eyebrow="Calculator" title="Your birth card" titleClassName="sm:text-6xl" />
         <p className="mx-auto mt-4 max-w-xl text-cream/75">
-          Two Major Arcana cards from your birth date, calculated in your
-          browser. Nothing is stored or sent anywhere. A reflection tool,
-          not a prediction.
+          Two Major Arcana cards from your birth date. Calculated in your
+          browser, nothing stored or sent.
         </p>
       </div>
       <div className="mx-auto mt-8 rounded-3xl border border-gold/25 bg-panel/70 p-6">
