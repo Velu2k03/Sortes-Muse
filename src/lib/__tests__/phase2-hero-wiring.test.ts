@@ -47,7 +47,7 @@ describe("Phase 2 3D hero and pricing preview", () => {
     expect(css).not.toContain('html[data-theme="light"] canvas {');
   });
 
-  it("adds a pricing preview with the three plans as identical cards", () => {
+  it("adds a pricing preview with Star as the focal panel and Spark and Moon as quiet rows", () => {
     const page = src("src/app/page.tsx");
     expect(page).toContain('aria-label="Pricing preview"');
     expect(page).toContain("Simple plans, clear prices");
