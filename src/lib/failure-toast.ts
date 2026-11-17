@@ -11,3 +11,12 @@ export function showFailureToast(title: string, retry: () => void) {
 export function dismissFailureToast(title: string) {
   toast.dismiss(title);
 }
+
+// One place for the success toast: same id rule as the failure toast,
+// so a repeat success replaces the old toast instead of stacking.
+// toast.success renders a check icon in the Toaster's brand styling
+// (richColors stays off); use it only where success is otherwise
+// silent, never where the page already shows the result inline.
+export function showSuccessToast(title: string) {
+  toast.success(title, { id: title });
+}

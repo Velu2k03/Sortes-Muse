@@ -7,9 +7,11 @@ import path from "path";
 // failure paths fires a toast with the same title and a Retry action.
 
 const toastMock = vi.fn();
+const successMock = vi.fn();
 const dismissMock = vi.fn();
 vi.mock("sonner", () => ({
   toast: Object.assign((...a: unknown[]) => toastMock(...a), {
+    success: (...a: unknown[]) => successMock(...a),
     dismiss: (...a: unknown[]) => dismissMock(...a),
   }),
 }));
@@ -65,6 +67,7 @@ describe("SwipeToast is gone", () => {
 describe("showFailureToast", () => {
   beforeEach(() => {
     toastMock.mockClear();
+    successMock.mockClear();
     dismissMock.mockClear();
   });
 
@@ -85,6 +88,66 @@ describe("showFailureToast", () => {
     showFailureToast("Report failed", () => {});
     dismissFailureToast("Report failed");
     expect(dismissMock).toHaveBeenCalledWith(toastMock.mock.calls[0][1].id);
+  });
+});
+
+describe("showSuccessToast", () => {
+  beforeEach(() => {
+    toastMock.mockClear();
+    successMock.mockClear();
+    dismissMock.mockClear();
+  });
+
+  // Sonner full use (2026-11-17): success toasts exist only where
+  // success is otherwise silent (the two image exports). They use
+  // toast.success with the title as id, the same dedupe rule as the
+  // failure toast, and no richColors (the Toaster's brand styling).
+  it("fires toast.success with the title as id", async () => {
+    const { showSuccessToast } = await import("@/lib/failure-toast");
+    showSuccessToast("Chart image saved");
+    expect(successMock).toHaveBeenCalledTimes(1);
+    const [title, opts] = successMock.mock.calls[0];
+    expect(title).toBe("Chart image saved");
+    expect(opts.id).toBe("Chart image saved");
+    expect(toastMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("new toast paths (Sonner full use)", () => {
+  // Checkout failure: PricingClient only set inline error text.
+  it("Checkout failed: PricingClient fires a Retry toast and dismisses on a new attempt", () => {
+    const c = src("src/components/PricingClient.tsx");
+    expect(c).toContain('"Checkout failed"');
+    expect(c).toContain("showFailureToast(");
+    expect(c).toContain("dismissFailureToast(");
+    expect(c).toContain("checkout(kind, key)");
+  });
+
+  // Chart image export: silent on success, swallowed on failure.
+  it("Chart image saved / failed: useChartsClient toasts both outcomes", () => {
+    const c = src("src/app/charts/useChartsClient.ts");
+    expect(c).toContain('"Chart image saved"');
+    expect(c).toContain('"Chart image failed"');
+    expect(c).toContain("showSuccessToast(");
+    expect(c).toContain("showFailureToast(");
+    expect(c).toContain("onShareChart()");
+  });
+
+  // Story image export: silent on success, unhandled throw on failure.
+  it("Story image saved / failed: ShareReading toasts both outcomes", () => {
+    const c = src("src/components/ShareReading.tsx");
+    expect(c).toContain('"Story image saved"');
+    expect(c).toContain('"Story image failed"');
+    expect(c).toContain("showSuccessToast(");
+    expect(c).toContain("showFailureToast(");
+    expect(c).toContain("void share()");
+  });
+
+  // Dismissing the native share sheet is not a failure: the inner
+  // catch still swallows it, the download already happened.
+  it("ShareReading still treats a dismissed share sheet as success", () => {
+    const c = src("src/components/ShareReading.tsx");
+    expect(c).toContain("user dismissed the share sheet; download already happened");
   });
 });
 

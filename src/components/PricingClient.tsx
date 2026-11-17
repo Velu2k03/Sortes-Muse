@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { showFailureToast, dismissFailureToast } from "@/lib/failure-toast";
 import { Card } from "@astryxdesign/core/Card";
 import { Badge } from "@astryxdesign/core/Badge";
 import { Button } from "@astryxdesign/core/Button";
@@ -111,6 +112,13 @@ const TOPUPS = [
   { credits: 3000, price: 24.99 },
 ];
 
+// Sonner full use (2026-11-17): checkout is the one async flow with
+// no failure toast yet, it only set inline error text. A genuine
+// checkout failure gets the same title-plus-Retry toast as the other
+// four failure paths. A 401 is not a failure, it redirects to the
+// account page, so it gets no toast.
+const CHECKOUT_FAILED = "Checkout failed";
+
 export default function PricingClient({
   subscriptionsEnabled = false,
   topupsEnabled = false,
@@ -123,11 +131,17 @@ export default function PricingClient({
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
+  // Sonner full use (2026-11-17): see CHECKOUT_FAILED above.
+  // The toast outlives the page (one app-wide Toaster): leaving the
+  // page drops it so its Retry cannot run against an unmounted page.
+  useEffect(() => () => dismissFailureToast(CHECKOUT_FAILED), []);
+
   // Phase 2 batch 3: one checkout call for a tier or a top-up.
   // 401 means the visitor is not signed in — send them to the
   // account page (the sign-in entry point) instead of failing.
   const checkout = async (kind: "subscription" | "topup", key: string) => {
     setError(null);
+    dismissFailureToast(CHECKOUT_FAILED);
     setProcessing(key);
     try {
       const res = await fetch("/api/checkout/subscription", {
@@ -145,6 +159,7 @@ export default function PricingClient({
       window.location.assign(data.url);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Checkout failed.");
+      showFailureToast(CHECKOUT_FAILED, () => void checkout(kind, key));
     } finally {
       setProcessing(null);
     }
