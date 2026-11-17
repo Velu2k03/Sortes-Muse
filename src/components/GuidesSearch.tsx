@@ -32,6 +32,7 @@ export default function GuidesSearch({
             Search guides
           </label>
           <input
+            name="search"
             id="guides-search"
             type="search"
             value={query}

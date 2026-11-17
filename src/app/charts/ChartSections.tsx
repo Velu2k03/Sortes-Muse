@@ -230,7 +230,7 @@ export function BirthForm({ prefs, form, s }: { prefs: ChartPrefs; form: ChartFo
           Birth time
         </label>
         <label className="flex items-center gap-2 text-sm text-cream/80">
-          <input type="checkbox" checked={unknownTime} onChange={(e) => setUnknownTime(e.target.checked)} />
+          <input name="unknown-time" type="checkbox" checked={unknownTime} onChange={(e) => setUnknownTime(e.target.checked)} />
           I do not know the birth time
         </label>
         {/* Phase 4B (4.2): the hour/minute dials are gone. A plain
@@ -238,6 +238,7 @@ export function BirthForm({ prefs, form, s }: { prefs: ChartPrefs; form: ChartFo
             motion, and cannot drift off by a stray drag. The
             date stays on the themed picker beside it. */}
         <input
+          name="time"
           id="chart-time"
           type="time"
           disabled={unknownTime}
@@ -255,6 +256,7 @@ export function BirthForm({ prefs, form, s }: { prefs: ChartPrefs; form: ChartFo
         </label>
         <div className="flex gap-2">
           <input
+            name="place-search"
             id="chart-place-search"
             type="text"
             value={placeSearch}
@@ -282,6 +284,7 @@ export function BirthForm({ prefs, form, s }: { prefs: ChartPrefs; form: ChartFo
         <span className={labelClass}>Birthplace</span>
         {reducedMotion ? (
           <select
+            name="place"
             id="chart-place"
             value={preset}
             onChange={(e) => {
@@ -360,19 +363,20 @@ export function BirthForm({ prefs, form, s }: { prefs: ChartPrefs; form: ChartFo
         <label htmlFor="chart-lat" className={labelClass}>
           Latitude
         </label>
-        <input id="chart-lat" type="number" step="any" value={latitude} onChange={(e) => setLatitude(e.target.value)} className={inputClass} />
+        <input name="latitude" id="chart-lat" type="number" step="any" value={latitude} onChange={(e) => setLatitude(e.target.value)} className={inputClass} />
       </div>
       <div>
         <label htmlFor="chart-lon" className={labelClass}>
           Longitude
         </label>
-        <input id="chart-lon" type="number" step="any" value={longitude} onChange={(e) => setLongitude(e.target.value)} className={inputClass} />
+        <input name="longitude" id="chart-lon" type="number" step="any" value={longitude} onChange={(e) => setLongitude(e.target.value)} className={inputClass} />
       </div>
       <div className="sm:col-span-2">
         <label htmlFor="chart-timezone" className={labelClass}>
           Timezone (optional, only if the chart names the wrong one)
         </label>
         <input
+          name="timezone"
           id="chart-timezone"
           type="text"
           value={timeZoneOverride}
@@ -507,7 +511,7 @@ export function ZiweiControls({ prefs, s, result }: { prefs: ChartPrefs; s: Char
         ))}
       </FieldGroup>
       <label className="mt-3 flex items-center gap-2 text-sm text-cream/80">
-        <input type="checkbox" checked={showGlosses} onChange={(e) => setShowGlosses(e.target.checked)} />
+        <input name="show-glosses" type="checkbox" checked={showGlosses} onChange={(e) => setShowGlosses(e.target.checked)} />
         Show Chinese glosses (default off in English, on in Chinese)
       </label>
       <div className="mt-3 flex flex-wrap gap-3">
@@ -776,7 +780,7 @@ export function InterpretationPanel({ prefs, s, result }: { prefs: ChartPrefs; s
         <label htmlFor="chart-question" className={labelClass}>
           Your question (optional)
         </label>
-        <input id="chart-question" type="text" maxLength={300} value={question} onChange={(e) => setQuestion(e.target.value)} placeholder="What would you like clarity on?" className={inputClass} />
+        <input name="question" id="chart-question" type="text" maxLength={300} value={question} onChange={(e) => setQuestion(e.target.value)} placeholder="What would you like clarity on?" className={inputClass} />
       </div>
     </div>
     {interpError && (

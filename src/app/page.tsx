@@ -246,6 +246,7 @@ export default function Home() {
               What&apos;s on your mind?
             </label>
             <input
+              name="question"
               id="hero-question"
               ref={questionRef}
               type="text"

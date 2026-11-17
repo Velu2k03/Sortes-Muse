@@ -110,6 +110,7 @@ export default function ZiweiStacks({
       </p>
       <div className="mt-4 flex flex-col gap-3 sm:flex-row">
         <input
+          name="stack-year"
           type="number"
           value={year}
           onChange={(e) => setYear(Number(e.target.value))}

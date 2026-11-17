@@ -339,6 +339,7 @@ export function NextStepPanel({ field }: { field: ReadingField }) {
       </p>
       <div className="mt-4 flex flex-col gap-3 sm:flex-row">
         <input
+          name="next-step"
           type="text"
           value={field.input}
           onChange={(e) => field.onChange(e.target.value)}
@@ -378,6 +379,7 @@ export function NotePanel({ reading, field }: { reading: Reading; field: Reading
       </p>
       <div className="mt-4 flex flex-col gap-3">
         <textarea
+          name="note"
           value={field.input}
           onChange={(e) => field.onChange(e.target.value)}
           placeholder="e.g. This landed the day I decided to apply"
@@ -440,6 +442,7 @@ export function RevisitPanel({ reading, field }: { reading: Reading; field: Read
             the same one used to write it the first time. */}
         <div className="mt-4 flex flex-col gap-3">
           <textarea
+            name="revisit-note"
             value={field.input}
             onChange={(e) => field.onChange(e.target.value)}
             placeholder="e.g. I took the step, and the reply came faster than I feared"
@@ -492,6 +495,7 @@ export function RevisitPanel({ reading, field }: { reading: Reading; field: Read
       </p>
       <div className="mt-4 flex flex-col gap-3">
         <textarea
+          name="revisit-note"
           value={field.input}
           onChange={(e) => field.onChange(e.target.value)}
           placeholder="e.g. I took the step, and the reply came faster than I feared"
@@ -632,13 +636,14 @@ export function FollowUpThread({
         <div className="w-full space-y-3">
           <div className="flex flex-col gap-3 sm:flex-row">
             <input
+              name="follow-up-question"
               type="text"
               value={f.followUpQ}
               onChange={(e) => {
                 f.setFollowUpQ(e.target.value);
                 f.setFollowUpError(null);
               }}
-              placeholder="Ask a follow-up about this reading..."
+              placeholder="Ask a follow-up about this reading…"
               maxLength={300}
               aria-label="Follow-up question"
               className="w-full flex-1 rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"

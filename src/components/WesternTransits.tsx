@@ -89,6 +89,7 @@ export default function WesternTransits({
       </p>
       <div className="mt-4 flex flex-col gap-3 sm:flex-row">
         <input
+          name="transit-date"
           type="date"
           value={date}
           onChange={(e) => setDate(e.target.value)}

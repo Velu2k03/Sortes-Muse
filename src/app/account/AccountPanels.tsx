@@ -215,6 +215,7 @@ export function NotificationsPanel({ n }: { n: AccountSettings["notifications"] 
       </p>
       <label className="mt-4 flex min-h-11 cursor-pointer items-center gap-3 text-base text-cream">
         <input
+          name="winback-opted-out"
           type="checkbox"
           checked={n.winbackOptedOut}
           disabled={n.notifBusy}
@@ -246,6 +247,7 @@ export function PasswordPanel({ p }: { p: AccountSettings["password"] }) {
             Current password <span className="font-normal text-mist">(only if you already have one)</span>
           </label>
           <input
+            name="current-password"
             id="acct-current-password"
             type="password"
             value={p.currentPassword}
@@ -259,6 +261,7 @@ export function PasswordPanel({ p }: { p: AccountSettings["password"] }) {
             New password
           </label>
           <input
+            name="new-password"
             id="acct-new-password"
             type="password"
             required
@@ -345,6 +348,7 @@ export function DataPanel({
             Account password
           </label>
           <input
+            name="delete-password"
             id="delete-password"
             type="password"
             autoComplete="current-password"
@@ -359,6 +363,7 @@ export function DataPanel({
                 Or a fresh sign-in code
               </label>
               <input
+                name="delete-code"
                 id="delete-code"
                 type="text"
                 inputMode="numeric"

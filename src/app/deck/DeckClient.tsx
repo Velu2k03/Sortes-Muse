@@ -167,6 +167,7 @@ export default function DeckClient({
             Search cards
           </label>
           <input
+            name="search"
             id="deck-search"
             type="search"
             value={query}

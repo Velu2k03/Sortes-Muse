@@ -702,6 +702,7 @@ export default function HistoryPage() {
             <div className="flex-1">
               <label htmlFor="journal-search" className="mb-1.5 block text-sm font-medium text-cream">Search your journal</label>
               <input
+                name="search"
                 id="journal-search"
                 type="search"
                 value={search}
@@ -713,6 +714,7 @@ export default function HistoryPage() {
             <div>
               <label htmlFor="journal-sort" className="mb-1.5 block text-sm font-medium text-cream">Sort</label>
               <select
+                name="sort"
                 id="journal-sort"
                 value={sortOrder}
                 onChange={(e) => setSortOrder(e.target.value as "newest" | "oldest")}

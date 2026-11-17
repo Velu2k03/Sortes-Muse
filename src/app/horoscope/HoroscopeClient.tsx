@@ -184,6 +184,7 @@ export default function HoroscopeClient({
           </span>
           {reducedMotion ? (
             <select
+              name="sign"
               id="horoscope-sign"
               value={sign}
               onChange={(e) => changeSign(e.target.value as SunSign)}
