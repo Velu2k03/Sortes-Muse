@@ -38,8 +38,13 @@ describe("F11: tap targets are at least 44px", () => {
 
   it("pricing Monthly/Annual toggle is 44px", () => {
     const pricing = src("src/components/PricingClient.tsx");
-    expect(pricing).toContain("min-h-11 rounded-l-full border px-5 py-2");
-    expect(pricing).toContain("min-h-11 rounded-r-full border px-5 py-2");
+    // Sliding pill (2026-11-17): both buttons share one base
+    // string now, so the count locks min-h-11 on both of them.
+    expect(
+      pricing.match(
+        /relative z-1 min-h-11 rounded-full bg-transparent px-5 py-2/g,
+      )?.length,
+    ).toBe(2);
   });
 
   it("pricing tier and top-up buttons are 44px", () => {

@@ -403,6 +403,34 @@ body {
   transform: translateY(0);
 }
 
+/* Pricing Monthly/Annual sliding pill (transitions.dev
+   16-tabs-sliding, 2026-11-17): the gold pill slides between
+   Monthly and Annual instead of the active button jumping its
+   background. JS in PricingClient writes the active button's
+   offsetLeft/offsetWidth onto the pill; CSS owns the tween.
+   250ms is the transitions.dev tabs sliding token
+   (--duration-fast), inside the site's 150-250ms band; the
+   easing is --ease-smooth-out. Reduced motion: the global
+   reduced-motion block below zeroes every transition
+   duration, so the pill snaps instead of sliding for users
+   who prefer reduced motion. */
+.billing-toggle-pill {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 0;
+  width: 0;
+  background: var(--color-gold);
+  border-radius: 9999px;
+  transform: translateX(0);
+  transition:
+    transform 250ms cubic-bezier(0.22, 1, 0.36, 1),
+    width 250ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform, width;
+  z-index: 0;
+  pointer-events: none;
+}
+
 /* Secondary filled button: Audit 3 found outline Buy buttons on
    /credits much dimmer than the solid popular pack in dark mode.
    This uses the panel background with cream text (about 14:1 in
