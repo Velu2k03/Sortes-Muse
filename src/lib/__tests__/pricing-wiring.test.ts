@@ -93,7 +93,7 @@ describe("Pricing tiers: Velu's exact numbers", () => {
     );
     expect(starCredits).not.toBeNull();
     expect((starCredits as RegExpMatchArray)[1]).toContain(
-      "{star.credits.toLocaleString()}"
+      "{star.credits.toLocaleString(CREDITS_LOCALE)}"
     );
     expect((starCredits as RegExpMatchArray)[1]).toContain("Oracles a month");
     // Spark and Moon are quiet rows: their price comes from the
@@ -109,7 +109,7 @@ describe("Pricing tiers: Velu's exact numbers", () => {
     expect((rowPrice as RegExpMatchArray)[1]).toContain(
       '{billing === "monthly" ? " / month" : " / year"}'
     );
-    expect(c).toContain("{tier.credits.toLocaleString()} Oracles a month");
+    expect(c).toContain("{tier.credits.toLocaleString(CREDITS_LOCALE)} Oracles a month");
   });
 });
 
@@ -222,7 +222,7 @@ describe("Pricing video formula: one badge, one highlighted tier, one primary bu
     // a single badge above the grid — a disabled tier button reads
     // "Not yet open", never "Coming soon".
     expect(tierButton).toContain('"Not yet open"');
-    const topUpButton = buttons.find((b) => b.includes("Top up ${topup.credits.toLocaleString()}"));
+    const topUpButton = buttons.find((b) => b.includes("Top up ${topup.credits.toLocaleString(CREDITS_LOCALE)}"));
     expect(topUpButton).toBeDefined();
     expect(topUpButton).toContain('variant="secondary"');
     expect(topUpButton).toContain("isDisabled={!topupsEnabled}");

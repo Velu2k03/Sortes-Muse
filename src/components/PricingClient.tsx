@@ -31,6 +31,13 @@ const NUMBERFLOW_TIMING = { duration: 500, easing: "cubic-bezier(0.215, 0.61, 0.
 const NUMBERFLOW_FORMAT = { useGrouping: false };
 const NUMBERFLOW_LOCALES = "en-US";
 
+// fa-IR hydration fix (all-pages follow-up, 2026-11-17): a bare
+// toLocaleString call uses the runtime default locale, so the server
+// renders "1,000" while a fa-IR client renders Persian digits and
+// React throws #418 on hydration. Pin en-US so server and client
+// agree; visible formatting for Latin-locale users is unchanged.
+const CREDITS_LOCALE = "en-US";
+
 // Astryx scoped pilot (pricing page only, Velu 2026-11-14). UI only
 // until Phase 2 batch 3: the tier buttons were disabled
 // placeholders. Now the buttons wire to checkout when the Lemon
@@ -324,7 +331,7 @@ export default function PricingClient({
               </p>
               <p className="mt-2 text-base text-cream lining-nums tabular-nums">
                 <span className="font-display text-xl">
-                  {star.credits.toLocaleString()}
+                  {star.credits.toLocaleString(CREDITS_LOCALE)}
                 </span>{" "}
                 Oracles a month
               </p>
@@ -366,7 +373,7 @@ export default function PricingClient({
                   </p>
                 </HStack>
                 <p className="mt-2 text-sm text-cream/75">
-                  {tier.credits.toLocaleString()} Oracles a month
+                  {tier.credits.toLocaleString(CREDITS_LOCALE)} Oracles a month
                 </p>
                 {billing === "annual" && (
                   <p className="mt-1 text-sm font-semibold text-goldbright lining-nums tabular-nums">
@@ -431,7 +438,7 @@ export default function PricingClient({
                 </p>
                 <p className="mt-2 text-base text-cream lining-nums tabular-nums">
                   <span className="font-display text-xl">
-                    {topup.credits.toLocaleString()}
+                    {topup.credits.toLocaleString(CREDITS_LOCALE)}
                   </span>{" "}
                   Oracles
                 </p>
@@ -442,7 +449,7 @@ export default function PricingClient({
                       ? "Starting checkout…"
                       : !topupsEnabled
                         ? "Not yet open"
-                        : `Top up ${topup.credits.toLocaleString()} Oracles`
+                        : `Top up ${topup.credits.toLocaleString(CREDITS_LOCALE)} Oracles`
                   }
                   variant="secondary"
                   isDisabled={!topupsEnabled}

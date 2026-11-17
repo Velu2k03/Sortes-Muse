@@ -12,6 +12,13 @@ import { CREDIT_COSTS_ENABLED, TOPUPS } from "@/lib/subscription-tiers";
 // purchase buttons stay disabled until the credit flag is ON and
 // the Lemon Squeezy top-up variants are configured, same as the
 // pricing page top-ups.
+//
+// fa-IR hydration fix (all-pages follow-up, 2026-11-17): a bare
+// toLocaleString call uses the runtime default locale, so this server
+// page renders "1,000" while a fa-IR client hydrates Persian digits
+// and React throws #418. Pin en-US so server and client agree;
+// visible formatting for Latin-locale users is unchanged.
+const CREDITS_LOCALE = "en-US";
 export const metadata = {
   title: "Top up Oracles",
   description:
@@ -49,7 +56,7 @@ export default function Credits() {
             brand: { "@type": "Brand", name: "Sortes" },
             offers: TOPUPS.map((t) => ({
               "@type": "Offer",
-              name: `${t.credits.toLocaleString()} Oracles`,
+              name: `${t.credits.toLocaleString(CREDITS_LOCALE)} Oracles`,
               price: t.price.toFixed(2),
               priceCurrency: "USD",
               availability: topupsEnabled
@@ -84,7 +91,7 @@ export default function Credits() {
           >
             <div className="flex h-full flex-col text-center">
               <h2 className="font-display text-xl text-cream">
-                {t.credits.toLocaleString()} Oracles
+                {t.credits.toLocaleString(CREDITS_LOCALE)} Oracles
               </h2>
               <div className="mt-1 flex h-6 items-center justify-center" />
               <p className="mt-3 font-display text-[40px] font-bold leading-none text-goldbright lining-nums tabular-nums">
@@ -96,7 +103,7 @@ export default function Credits() {
               <div className="mt-auto pt-4">
                 <TopUpBuyButton
                   topUpId={t.id}
-                  label={`Buy ${t.credits.toLocaleString()} for $${t.price.toFixed(2)}`}
+                  label={`Buy ${t.credits.toLocaleString(CREDITS_LOCALE)} for $${t.price.toFixed(2)}`}
                   enabled={topupsEnabled}
                 />
               </div>
