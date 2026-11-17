@@ -20,8 +20,10 @@ describe("F31 about says it once", () => {
     // The founder story wraps across source lines, so compare on
     // whitespace-collapsed text.
     const flat = about.replace(/\s+/g, " ");
-    expect(flat).toContain("the cards speak to your story, not plain card meanings.");
-    expect(flat).toContain("The readings are written by AI.");
+    // Phase 7 (7.3): the origin story is shortened per the cut list.
+    expect(flat).toContain("the cards to speak to your story, not plain card meanings.");
+    // Phase 7 (7.3): "The readings are written by AI." is cut here,
+    // the site says it elsewhere (the sample reading spec).
     expect(about).not.toContain("through OpenRouter");
     expect(about).not.toContain("OpenRouter");
     expect(about).not.toContain("the client says their story and the cards speak to it");
@@ -33,7 +35,8 @@ describe("F31 about says it once", () => {
   it("the duplicate disclaimer section is gone; the founder story stays", () => {
     const about = src("src/app/about/page.tsx");
     expect(about).not.toContain("Reflection, not prediction</h2>");
-    expect(about).toContain("My Filipino friend gave me the idea for this.");
+    // Phase 7 (7.3): the origin story is shortened, same meaning.
+    expect(about).toContain("A friend&apos;s tarot business gave me the idea.");
     expect(about).toContain("Why I built it</h2>");
     expect(about).toContain("Who runs Sortes</h2>");
     expect(about).toContain("What Sortes offers</h2>");

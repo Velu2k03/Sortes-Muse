@@ -15,8 +15,9 @@ function src(rel: string): string {
 describe("F25 journal subhead is one paragraph", () => {
   it("the guest subhead carries the warning and the sync call in one paragraph", () => {
     const journal = src("src/app/journal/HistoryClient.tsx");
+    // Phase 7 (7.3): shortened, the daily-card sentence is cut.
     expect(journal).toContain(
-      "Every full reading and saved chart interpretation you complete is kept here on this device. If you clear your browser data, they are gone. Sign in to sync your journal across devices."
+      "Readings and chart interpretations are kept here on this device. Clear your browser data and they are gone. Sign in to sync across devices."
     );
     expect(journal).not.toContain("Guest entries live only on this device");
     expect(journal).not.toContain("Sign in to keep them.");

@@ -23,6 +23,7 @@ import Icon from "@/components/Icon";
 import GlideSelect from "@/components/GlideSelect";
 import { readingToPlainText } from "@/lib/readingMarkdown";
 import ReadingText from "@/components/ReadingText";
+import InfoHint from "@/components/InfoHint";
 import SplitText from "@/components/SplitText";
 import AnimatedContent from "@/components/AnimatedContent";
 import SwipeToast from "@/components/SwipeToast";
@@ -60,14 +61,17 @@ export function ChartsIntro() {
   <div className="text-center">
     <PageHeader eyebrow="Birth Charts" title="Cast a birth chart" titleClassName="sm:text-6xl" />
     <p className="mx-auto mt-4 max-w-xl text-cream/75">
-      Ziwei, Western, and Vedic charts. Calculation is free. Your
-      first interpretation in each system is free; after that, 1 Oracle.
+      Ziwei, Western, and Vedic charts. Calculation is free. First
+      interpretation per system is free, then 1 Oracle.
     </p>
     <p className="mx-auto mt-2 max-w-xl text-sm text-cream/80">
-      Birth data is used for this calculation and, after a
-      successful calculation, remembered on this device so you do
-      not re-enter it next time. AI gets only chart positions,
-      never birth data.
+      {/* Phase 7 (7.3): privacy detail, not needed to start a
+          calculation, so it sits behind an info icon. */}
+      <InfoHint label="About your birth data">
+        Birth data is used for this calculation and, after a successful
+        calculation, remembered on this device so you do not re-enter it
+        next time. AI gets only chart positions, never birth data.
+      </InfoHint>
     </p>
     {/* Audit 6: this long block used to sit above the form, so a
         first-time user had to scroll to the system tabs and the
@@ -80,8 +84,8 @@ export function ChartsIntro() {
       <ul className="mt-2 list-disc space-y-1 pl-5">
         <li>Gender: Ziwei only. Western and Vedic do not use it.</li>
         <li>Birthplace: sets the rising sign and houses for Western and Vedic, and the local time for Ziwei.</li>
-        <li>Birth time: clock time at the birthplace. The chart names the timezone it used, so you can correct it if it is wrong. If no timezone can be found for the place, the chart falls back to a rough estimate from longitude and says so. Unknown time uses noon for planets and withholds Rising, Midheaven, and houses. Ziwei needs a birth hour.</li>
-        <li>Near a boundary: for times near a sign or palace boundary, a fallback estimate can fall on either side, so treat borderline placements as approximate. The full time rules are on the Methodology page.</li>
+        <li>Birth time: clock time at the birthplace. The chart names the timezone it used, so you can correct it. Unknown time uses noon for planets and withholds Rising, Midheaven, and houses. Ziwei needs a birth hour.</li>
+        <li>Near a boundary, a fallback estimate can fall either side. Treat borderline placements as approximate.</li>
       </ul>
     </details>
   </div>
@@ -265,8 +269,14 @@ export function BirthForm({ prefs, form, s }: { prefs: ChartPrefs; form: ChartFo
         </div>
         {placeStatus && <p className="mt-2 text-sm text-cream/75">{placeStatus}</p>}
         <p className="mt-1 text-xs text-cream/80">
-          The place name is used only for this lookup. Only its coordinates are kept for the calculation, and the
-          place name is never stored and never sent to AI. Calculate chart also resolves a typed place first.
+          {/* Phase 7 (7.3): privacy detail, not needed to fill the
+              field, so it sits behind an info icon. */}
+          <InfoHint label="About the place name">
+            The place name is used only for this lookup. Only its
+            coordinates are kept for the calculation, and the place name
+            is never stored and never sent to AI. Calculate chart also
+            resolves a typed place first.
+          </InfoHint>
         </p>
       </div>
       <div>
@@ -375,9 +385,9 @@ export function BirthForm({ prefs, form, s }: { prefs: ChartPrefs; form: ChartFo
           className={inputClass}
         />
         <p className="mt-1 text-xs text-cream/80">
-          Left blank, the timezone is looked up from the birthplace coordinates, with daylight saving for the
-          birth date, and the chart below names the zone it used. If that zone is wrong, type the IANA name
-          here (for example America/New_York) and recalculate.
+          Left blank, the timezone is looked up from the birthplace. If
+          the chart names the wrong zone, type the IANA name here and
+          recalculate.
         </p>
       </div>
         </div>

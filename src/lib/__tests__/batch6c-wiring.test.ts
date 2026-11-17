@@ -49,13 +49,12 @@ describe("Batch 6c wiring (layout)", () => {
     const cta = flow.indexOf("{isFreeAvailable ? (");
     const positions = flow.indexOf("The positions");
     const includes = flow.indexOf("What your reading includes");
-    const disclaimer = flow.indexOf("Readings are for self-reflection");
     expect(cta).toBeGreaterThan(-1);
     expect(positions).toBeGreaterThan(-1);
     expect(includes).toBeGreaterThan(-1);
-    // CTA first, then the disclaimer, then the details below it.
-    expect(cta).toBeLessThan(disclaimer);
-    expect(disclaimer).toBeLessThan(positions);
+    // Phase 7 (7.3): the reflection disclaimer is cut, it duplicates
+    // the footer on every page. CTA first, then the details below it.
+    expect(cta).toBeLessThan(positions);
     expect(positions).toBeLessThan(includes);
     // The gate logic did not move with the layout.
     expect(flow).toContain("!authLoading &&");
@@ -163,16 +162,18 @@ describe("Batch 6c wiring (layout)", () => {
     expect(page).toContain("MethodologyHashOpener");
   });
 
-  it("the FAQ groups all 16 questions under four section headings", () => {
+  it("the FAQ groups all 15 questions under four section headings", () => {
     const faq = src("src/app/faq/page.tsx");
     const groups = faq.match(/group: "([^"]+)"/g) ?? [];
-    expect(groups).toHaveLength(16);
+    expect(groups).toHaveLength(15);
     const count = (name: string) =>
       groups.filter((g) => g === `group: "${name}"`).length;
     expect(count("Pricing and Oracles")).toBe(8);
     expect(count("Readings and Charts")).toBe(3);
     expect(count("Privacy and Data")).toBe(3);
-    expect(count("Account")).toBe(2);
+    // Phase 7 (7.3): the "Who runs Sortes" question is cut, it
+    // duplicates the About page and the footer. Account has 1 left.
+    expect(count("Account")).toBe(1);
 
     const list = src("src/components/FaqList.tsx");
     // The sections render in a fixed order, and the jump nav groups

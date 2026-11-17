@@ -24,21 +24,17 @@ export default function AboutPage() {
         <section>
           <h2 className="font-display text-3xl text-goldbright">Why I built it</h2>
           <p className="mt-3">
-            My Filipino friend gave me the idea for this. Their tarot
-            business runs an intake flow: the client picks a category,
-            tells their story, and the cards answer. I wanted it
-            personal: the cards speak to your story, not plain card
-            meanings. The readings are written by AI.
+            A friend&apos;s tarot business gave me the idea. Their clients
+            pick a category, tell their story, and the cards answer. I
+            wanted the cards to speak to your story, not plain card
+            meanings.
           </p>
         </section>
         <section>
           <h2 className="font-display text-3xl text-goldbright">What Sortes offers</h2>
           <p className="mt-3">
-            A free daily card, all 78 Rider-Waite card meanings, six spreads,
-            a daily sun-sign reflection, and three birth chart systems
-            (Ziwei, Western, Vedic). First Quick Insight and first chart
-            interpretation per system are free; later readings cost 1 Oracle
-            each, topped up through Lemon Squeezy.
+            A free daily card, all 78 card meanings, six spreads, a
+            daily sun-sign reflection, and three birth chart systems.
           </p>
         </section>
         {/* UX audit Phase 2, F31: a "Reflection, not prediction"
@@ -50,12 +46,9 @@ export default function AboutPage() {
         <section>
           <h2 className="font-display text-3xl text-goldbright">How your data is handled</h2>
           <p className="mt-3">
-            As a guest, your daily cards, balance, and history live in your
-            browser. Your story goes to the AI for one reading only and is
-            not saved. Your question, first name, and category are saved in
-            your journal until you delete them. For charts, only calculated
-            positions are stored, never raw birth data, and raw birth data is
-            never sent to AI. Full details are in the Privacy Policy.
+            As a guest, your cards, balance, and history live in your
+            browser. Your story goes to the AI for one reading only.
+            Full details in the Privacy Policy.
           </p>
         </section>
       </div>

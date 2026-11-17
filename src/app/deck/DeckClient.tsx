@@ -8,7 +8,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "motion/react";
 import {
   CARDS,
-  SUITS,
   suitLabel,
   cardSlug,
   DEFAULT_DECK_VIEW,
@@ -18,6 +17,7 @@ import {
   type DeckView,
 } from "@/lib/cards";
 import type { TarotCard } from "@/lib/types";
+import InfoHint from "@/components/InfoHint";
 // Phase 4C (4.8a): the spiral gallery is code-split. It renders only
 // when the seeker opts into the spiral view (list is the default), so
 // it is a separate chunk loaded on demand instead of first-paint
@@ -116,8 +116,8 @@ export default function DeckClient({
             : `${cards.length} ${cards.length === 1 ? "card" : "cards"}`}
         </h1>
         <p className="mx-auto mt-3 max-w-xl text-sm text-cream/75">
-          The complete Rider-Waite deck with upright and reversed meanings.
-          Free forever. Tap any card to read its story.
+          The complete Rider-Waite deck. Free forever. Tap any card to read
+          its story.
         </p>
         <Link href="/daily" className="mt-2 inline-block text-sm font-semibold text-goldbright underline underline-offset-4">
           Draw today&apos;s card
@@ -409,8 +409,12 @@ export default function DeckClient({
       )}
 
       <p className="mt-10 text-center text-xs text-mist">
-        Card imagery: the public-domain Rider-Waite deck (1909). Meanings are
-        original to {SUITS.length ? "Sortes" : ""} and written for reflection.
+        {/* Phase 7 (7.3): the imagery credit is attribution, not needed
+            on first paint, so it sits behind an info icon. */}
+        <InfoHint label="About the card imagery">
+          Card imagery: the public-domain Rider-Waite deck (1909). Meanings
+          are original to Sortes and written for reflection.
+        </InfoHint>
       </p>
     </div>
   );
