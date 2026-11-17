@@ -104,9 +104,9 @@ export default function HistoryPage() {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6">
-      <div className="text-center">
+      <div className="text-left">
         <PageHeader eyebrow="Journal" title="Your readings" titleClassName="sm:text-6xl" />
-        <p className="mx-auto mt-4 max-w-xl text-cream/75">
+        <p className="mt-4 max-w-xl text-cream/75">
           {user
             ? "Readings and chart interpretations are kept here and synced to your account, so your journal follows you across devices."
             : // UX audit Phase 2, F25: the guest subhead used to be
