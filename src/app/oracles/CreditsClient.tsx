@@ -98,8 +98,7 @@ export default function CreditsPage() {
           {user && <p className="mt-1 text-sm text-mist">Signed in as {user.email}</p>}
         </div>
         <p className="max-w-md text-sm text-cream/75">
-          1 Oracle = 1 full reading.
-          An Oracle opens a reading, not a prediction or promise.{" "}
+          1 Oracle = 1 full reading.{" "}
           <Link href="/faq#what-are-the-five-oracle-rules" className="text-goldbright underline">
             See all five Oracle rules
           </Link>
@@ -159,9 +158,10 @@ export default function CreditsPage() {
         )}
       </div>
 
-      <p className="mx-auto mt-6 max-w-md text-center text-xs leading-relaxed text-mist">
-        Secure checkout is powered by Lemon Squeezy. There are no hidden fees.
-      </p>
+      {/* Phase 7 (7.2): the "Secure checkout is powered by Lemon
+          Squeezy. There are no hidden fees." line is cut. The
+          checkout itself shows the full amount, and the Lemon
+          Squeezy name is already at checkout. */}
 
       {/* Phase E (item 9): the same full sample reading as the home
           page, so visitors weighing a top-up see exactly what a reading

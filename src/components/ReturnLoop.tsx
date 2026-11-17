@@ -141,9 +141,7 @@ export default function ReturnLoop() {
             ) : (
               <>
                 <p className="mt-2 text-cream/90">
-                  {freeAvailable
-                    ? "No readings saved yet. Your first Quick Insight is free."
-                    : "No readings saved yet."}
+                  No readings saved yet.
                 </p>
                 <Link href="/spreads/quick-insight" className="mt-3 inline-flex min-h-11 items-center font-semibold text-goldbright underline underline-offset-4">
                   {freeAvailable ? "Start my free reading" : "Start a reading"}

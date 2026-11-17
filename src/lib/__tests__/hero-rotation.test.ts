@@ -38,7 +38,7 @@ describe("hero rotation: the four variants (Velu's words, verbatim)", () => {
   it("variant B is Find New Clarity About Your Life", () => {
     expect(HERO_VARIANTS[1]).toEqual({
       h1: "Sortes – Find New Clarity About Your Life",
-      h2: "Get personal insights to help you explore love, relationships, and life's biggest questions.",
+      h2: "Love, relationships, and the questions that matter.",
       primaryCta: "Find Your Clarity",
       secondaryCta: "Discover Readings",
     });
@@ -47,7 +47,7 @@ describe("hero rotation: the four variants (Velu's words, verbatim)", () => {
   it("variant C is Find Clarity When Life Feels Uncertain", () => {
     expect(HERO_VARIANTS[2]).toEqual({
       h1: "Sortes – Find Clarity When Life Feels Uncertain",
-      h2: "Get personal insights into love, life, and the choices ahead.",
+      h2: "Love, life, and the choices ahead.",
       primaryCta: "Begin Your Reading",
       secondaryCta: "Explore Your Options",
     });
@@ -56,7 +56,7 @@ describe("hero rotation: the four variants (Velu's words, verbatim)", () => {
   it("variant D is Discover What Your Future Could Hold", () => {
     expect(HERO_VARIANTS[3]).toEqual({
       h1: "Sortes – Discover What Your Future Could Hold",
-      h2: "Explore personal insights into love, life, relationships, and the choices ahead.",
+      h2: "Love, life, relationships, and the choices ahead.",
       primaryCta: "Discover Your Future",
       secondaryCta: "Explore Readings",
     });

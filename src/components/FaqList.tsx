@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 
-export type FaqItem = { q: string; a: string; bullets?: string[]; group: string };
+export type FaqItem = { q: string; a?: string; bullets?: string[]; group: string };
 
 /**
  * Batch 6c: the 16 questions are grouped under four section
@@ -136,7 +136,9 @@ export default function FaqList({ faqs }: { faqs: FaqItem[] }) {
                       ))}
                     </ul>
                   ) : null}
-                  <p className="mt-3 whitespace-pre-line leading-relaxed text-cream/85">{f.a}</p>
+                  {f.a ? (
+                    <p className="mt-3 whitespace-pre-line leading-relaxed text-cream/85">{f.a}</p>
+                  ) : null}
                 </details>
               ))}
             </div>

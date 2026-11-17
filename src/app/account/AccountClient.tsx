@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
+import InfoHint from "@/components/InfoHint";
 import { getSupabaseBrowser } from "@/lib/supabase-browser";
 import { fetchWithTimeout, withTimeout } from "@/lib/fetch-timeout";
 import { authErrorMessage, reasonFromSupabaseError } from "@/lib/auth-callback";
@@ -336,8 +337,13 @@ function SignInPanel({ s }: { s: ReturnType<typeof useSignIn> }) {
       </h2>
       <p className="mt-2 text-sm leading-relaxed text-cream/75">
         {mode === "signin"
-          ? "Your guest Oracles and journal move into your account automatically, then follow you across devices. You stay signed in for 30 days."
-          : "One account keeps your Oracles, journal, and reports synced across devices. Sign in with Google, an email link, or a password."}
+          ? "Your guest Oracles and journal move into your account and follow you across devices."
+          : "One account keeps your Oracles, journal, and reports synced across devices. Sign in with Google, an email link, or a password."}{" "}
+        {mode === "signin" ? (
+          <InfoHint label="About your sign-in session">
+            You stay signed in for 30 days.
+          </InfoHint>
+        ) : null}
       </p>
 
       {/* Phase 3 (3.6): two equal paths. */}

@@ -120,8 +120,9 @@ describe("Remodel hero: rotating H1, question box, example questions", () => {
     // Sonnet review: "for this reading only" read as "not stored",
     // but the question is saved with the reading in the journal
     // (local for guests, server history when signed in).
+    // Phase 7 (7.2): shortened to the same promise, one line.
     expect(page).toContain(
-      "Your reading is written just for you and saved in your journal."
+      "Written just for you, saved in your journal."
     );
   });
 
