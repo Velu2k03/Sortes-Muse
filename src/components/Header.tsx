@@ -5,11 +5,22 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
-import CountUp from "@/components/CountUp";
+import NumberFlow from "@number-flow/react";
 import Icon from "@/components/Icon";
 import BranchedMenu, { type BranchedMenuItem } from "@/components/BranchedMenu";
 import { APP_SHORT } from "@/lib/site";
 import { BRAND } from "@/lib/brand";
+
+// All-pages fix 6 (NumberFlow swap, 2026-11-17): NumberFlow replaces
+// the in-house CountUp here. 500ms is CountUp's transitions.dev
+// number pop-in token (--duration-very-slow); the easing is
+// easeOutCubic, the same curve CountUp used (1 - (1 - p)^3).
+// useGrouping: false keeps CountUp's ungrouped rendering ("2500",
+// not "2,500"). respectMotionPreference defaults to true in
+// NumberFlow, the same reduced-motion skip CountUp had. NumberFlow's
+// own default is 900ms, so the 500ms must stay explicit.
+const NUMBERFLOW_TIMING = { duration: 500, easing: "cubic-bezier(0.215, 0.61, 0.355, 1)" };
+const NUMBERFLOW_FORMAT = { useGrouping: false };
 
 // Header grouping, 2026-11-05: the desktop bar shows four groups
 // (Tarot, Astrology, Learn, Journal) instead of nine links plus a
@@ -342,7 +353,11 @@ export default function Header() {
                 <span className="inline-block h-4 w-6 animate-pulse rounded bg-gold/30 motion-reduce:animate-none" aria-hidden="true" />
               ) : (
                 <span className="num">
-                  <CountUp value={credits} />
+                  <NumberFlow
+                    value={credits}
+                    format={NUMBERFLOW_FORMAT}
+                    transformTiming={NUMBERFLOW_TIMING}
+                  />
                 </span>
               )}
               {/* Phase 6 (D3): the word "Oracles" hides below 420px so the

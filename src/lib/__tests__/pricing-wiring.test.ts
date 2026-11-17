@@ -244,12 +244,18 @@ describe("Pricing toggle, savings, top-ups, credit costs", () => {
       /<p className="mt-1 text-sm font-semibold text-goldbright[^>]*>([\s\S]*?)<\/p>/g
     )].map((m) => m[1]);
     expect(savings).toHaveLength(2);
-    expect(savings[0]).toContain(
-      "Save $<CountUp value={star.savings} /> a year"
-    );
-    expect(savings[1]).toContain(
-      "Save $<CountUp value={tier.savings} /> a year"
-    );
+    expect(savings[0]).toContain("Save $");
+    expect(savings[0]).toContain("<NumberFlow");
+    expect(savings[0]).toContain("value={star.savings}");
+    expect(savings[0]).toContain("format={NUMBERFLOW_FORMAT}");
+    expect(savings[0]).toContain("transformTiming={NUMBERFLOW_TIMING}");
+    expect(savings[0]).toContain("a year");
+    expect(savings[1]).toContain("Save $");
+    expect(savings[1]).toContain("<NumberFlow");
+    expect(savings[1]).toContain("value={tier.savings}");
+    expect(savings[1]).toContain("format={NUMBERFLOW_FORMAT}");
+    expect(savings[1]).toContain("transformTiming={NUMBERFLOW_TIMING}");
+    expect(savings[1]).toContain("a year");
     expect(c).toContain('{billing === "annual" && (');
   });
 
@@ -472,12 +478,12 @@ describe("Pricing page: Astryx pilot wiring", () => {
     expect(p).not.toContain("coming soon");
   });
 
-  it("renders tiers with Astryx Card / Badge / Button, CountUp, no StarBorder", () => {
+  it("renders tiers with Astryx Card / Badge / Button, NumberFlow, no StarBorder", () => {
     const c = client();
     expect(c).toContain('import { Card } from "@astryxdesign/core/Card";');
     expect(c).toContain('import { Badge } from "@astryxdesign/core/Badge";');
     expect(c).toContain('import { Button } from "@astryxdesign/core/Button";');
-    expect(c).toContain('import CountUp from "@/components/CountUp";');
+    expect(c).toContain('import NumberFlow from "@number-flow/react";');
     expect(c).toContain("<Card");
     // Velu 2026-11-17: the animated StarBorder frame is gone
     // with the equal-cards grid. Star is marked by its panel

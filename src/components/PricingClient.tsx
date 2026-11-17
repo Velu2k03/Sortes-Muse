@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { showFailureToast, dismissFailureToast } from "@/lib/failure-toast";
+import NumberFlow from "@number-flow/react";
 import { Card } from "@astryxdesign/core/Card";
 import { Badge } from "@astryxdesign/core/Badge";
 import { Button } from "@astryxdesign/core/Button";
@@ -11,7 +12,17 @@ import { Section } from "@astryxdesign/core/Section";
 import { VStack } from "@astryxdesign/core/VStack";
 import { HStack } from "@astryxdesign/core/HStack";
 import { Grid } from "@astryxdesign/core/Grid";
-import CountUp from "@/components/CountUp";
+
+// All-pages fix 6 (NumberFlow swap, 2026-11-17): NumberFlow replaces
+// the in-house CountUp here. 500ms is CountUp's transitions.dev
+// number pop-in token (--duration-very-slow); the easing is
+// easeOutCubic, the same curve CountUp used (1 - (1 - p)^3).
+// useGrouping: false keeps CountUp's ungrouped rendering ("2500",
+// not "2,500"). respectMotionPreference defaults to true in
+// NumberFlow, the same reduced-motion skip CountUp had. NumberFlow's
+// own default is 900ms, so the 500ms must stay explicit.
+const NUMBERFLOW_TIMING = { duration: 500, easing: "cubic-bezier(0.215, 0.61, 0.355, 1)" };
+const NUMBERFLOW_FORMAT = { useGrouping: false };
 
 // Astryx scoped pilot (pricing page only, Velu 2026-11-14). UI only
 // until Phase 2 batch 3: the tier buttons were disabled
@@ -312,7 +323,13 @@ export default function PricingClient({
               </p>
               {billing === "annual" && (
                 <p className="mt-1 text-sm font-semibold text-goldbright lining-nums tabular-nums">
-                  Save $<CountUp value={star.savings} /> a year
+                  Save $
+                  <NumberFlow
+                    value={star.savings}
+                    format={NUMBERFLOW_FORMAT}
+                    transformTiming={NUMBERFLOW_TIMING}
+                  />{" "}
+                  a year
                 </p>
               )}
               <ul className="mt-4 space-y-2 text-left text-sm text-cream/85">
@@ -345,7 +362,13 @@ export default function PricingClient({
                 </p>
                 {billing === "annual" && (
                   <p className="mt-1 text-sm font-semibold text-goldbright lining-nums tabular-nums">
-                    Save $<CountUp value={tier.savings} /> a year
+                    Save $
+                    <NumberFlow
+                      value={tier.savings}
+                      format={NUMBERFLOW_FORMAT}
+                      transformTiming={NUMBERFLOW_TIMING}
+                    />{" "}
+                    a year
                   </p>
                 )}
                 <ul className="mt-4 space-y-2 text-left text-sm text-cream/85">
