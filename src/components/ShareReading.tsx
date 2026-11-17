@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { toPng } from "html-to-image";
 import { getCard } from "@/lib/cards";
@@ -10,6 +10,16 @@ import { readingToPlainText } from "@/lib/readingMarkdown";
 import type { DrawnCard } from "@/lib/types";
 import { BRAND } from "@/lib/brand";
 import { APP_SHORT, TAGLINE } from "@/lib/site";
+import { showFailureToast, dismissFailureToast, showSuccessToast } from "@/lib/failure-toast";
+
+// Sonner full use (2026-11-17): exporting the story image was
+// silent on success (the button just stopped spinning) and a failed
+// export threw with no catch at all. Success gets a toast because a
+// download on mobile may not be visible; failure gets the same
+// title-plus-Retry toast as the other failure paths. Dismissing the
+// native share sheet is not a failure: the download already happened.
+const STORY_IMAGE_SAVED = "Story image saved";
+const STORY_IMAGE_FAILED = "Story image failed";
 
 /**
  * Phase 5 (5.5): shareable 9:16 story cards (1080x1920). The drawn
@@ -32,9 +42,15 @@ export default function ShareReading({
   const ref = useRef<HTMLDivElement>(null);
   const [busy, setBusy] = useState(false);
 
+  // The toast outlives the page (one app-wide Toaster): leaving the
+  // page drops it so its Retry cannot run against an unmounted page.
+  useEffect(() => () => dismissFailureToast(STORY_IMAGE_FAILED), []);
+
   const share = async () => {
     if (!ref.current || busy) return;
     setBusy(true);
+    // A new attempt clears the previous failure UI.
+    dismissFailureToast(STORY_IMAGE_FAILED);
     try {
       const dataUrl = await toPng(ref.current, {
         cacheBust: true,
@@ -65,6 +81,9 @@ export default function ShareReading({
           /* user dismissed the share sheet; download already happened */
         }
       }
+      showSuccessToast(STORY_IMAGE_SAVED);
+    } catch {
+      showFailureToast(STORY_IMAGE_FAILED, () => void share());
     } finally {
       setBusy(false);
     }
