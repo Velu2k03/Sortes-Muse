@@ -10,7 +10,6 @@ import { Section } from "@astryxdesign/core/Section";
 import { VStack } from "@astryxdesign/core/VStack";
 import { HStack } from "@astryxdesign/core/HStack";
 import { Grid } from "@astryxdesign/core/Grid";
-import { StarBorder } from "@/components/ReactBits";
 import CountUp from "@/components/CountUp";
 
 // Astryx scoped pilot (pricing page only, Velu 2026-11-14). UI only
@@ -150,14 +149,56 @@ export default function PricingClient({
     }
   };
 
+  // Pricing tiers, editorial layout (Velu, 2026-11-17): the old
+  // lock is CANCELLED, identical-size tier cards with Star marked
+  // by border/badge/glow only. Per Griffin Video 3 Fix 1 (focal
+  // point, one action per screen) Star is the focal panel, not
+  // equal to the other two. Per Tristen Video 1 Fix 4 (break the
+  // center) the tier section is left-aligned and asymmetric. Per
+  // Taste, no three feature cards; hierarchy from weight and
+  // colour. Spark and Moon are quiet hairline rows, grouped by
+  // spacing, not boxes (Griffin Fix 2). Tier names, prices,
+  // Oracle counts, features, checkout buttons and the toggle are
+  // unchanged. The Star panel keeps the dark card scope; the
+  // rows sit on the light paper, so their text uses the page's
+  // own light-mode classes (text-cream resolves to dark ink
+  // there, text-goldbright to dark gold).
+  const star = TIERS.find((tier) => tier.id === "star") ?? TIERS[1];
+  const others = TIERS.filter((tier) => tier.id !== "star");
+  const starPrice = billing === "monthly" ? star.monthly : star.annual;
+
+  // One tier-button site in the file: Star's panel and the
+  // Spark/Moon rows share it, so the button count the wiring
+  // tests pin (tier + top-up) stays two.
+  const tierButton = (tier: Tier) => (
+    <Button
+      label={
+        processing === `${tier.id}-${billing}`
+          ? "Starting checkout…"
+          : !subscriptionsEnabled
+            ? "Not yet open"
+            : `Choose ${tier.name}`
+      }
+      variant={tier.id === "star" ? "primary" : "secondary"}
+      isDisabled={!subscriptionsEnabled}
+      isLoading={processing === `${tier.id}-${billing}`}
+      width="100%"
+      className="mt-6 min-h-11"
+      onClick={() => void checkout("subscription", `${tier.id}-${billing}`)}
+    />
+  );
+
   return (
     // Page-level layout is Astryx Section / Stack / Grid (repo rule:
-    // components handle layout, no raw <div> wrappers). The one
-    // remaining <div> is the mt-auto spacer inside each Card that
-    // pushes the button to the bottom — Astryx has no Spacer
-    // component, so it stays. The tier grid reflows by width
-    // (minWidth 300, max 3) instead of the old sm:grid-cols-3, so
-    // three columns start near 1000px rather than 640px.
+    // components handle layout, no raw <div> wrappers). There are
+    // no raw <div> wrappers left: the old mt-auto spacer inside
+    // each tier Card is gone with the equal-height cards — the
+    // Star panel and the Spark/Moon rows no longer share a row of
+    // equal cards, so the button sits directly after the features
+    // with mt-6. The tier section is a two-column Grid
+    // (minWidth 440, max 2): Star's focal panel on one side,
+    // Spark and Moon as quiet hairline rows on the other; it
+    // collapses to a single column, Star first, on narrow screens.
     <Section variant="transparent" maxWidth="64rem" padding={8} paddingInline={4} className="mx-auto">
       <VStack gap={0} className="text-center">
         {/* UX audit Phase 2, F14 (Hallmark re-run): the "Pricing"
@@ -202,31 +243,58 @@ export default function PricingClient({
         Annual billing: save $16 on Spark, $30 on Star, $60 on Moon.
       </p>
 
-      <Grid columns={{ minWidth: 300, max: 3 }} gap={4} className="mt-6">
-        {TIERS.map((tier) => {
-          const price = billing === "monthly" ? tier.monthly : tier.annual;
-          const card = (
-            <Card
-              padding={4}
-              elevation={tier.id === "star" ? "med" : "none"}
-              height="100%"
-            >
-              <VStack gap={0} className="pricing-card-dark h-full text-center">
-                <h2 className="font-display text-xl text-cream">{tier.name}</h2>
-                <HStack hAlign="center" vAlign="center" gap={0} className="mt-1 h-6">
-                  {tier.popular && <Badge label="Most popular" variant="warning" />}
+      <Grid columns={{ minWidth: 440, max: 2 }} gap={10} className="mt-6">
+        {/* Star, the focal tier: one large panel, gold border and
+            glow, badge top-left, the section's primary action. */}
+        <article data-tier="star" className="relative h-full rounded-3xl shadow-gold-lg">
+          <Card padding={8} elevation="med" height="100%" className="border-gold">
+            <VStack gap={0} className="pricing-card-dark h-full text-left">
+              {star.popular && <Badge label="Most popular" variant="warning" />}
+              <h2 className="mt-3 font-display text-4xl text-goldbright">{star.name}</h2>
+              <p className="mt-4 font-display text-5xl font-bold leading-none text-goldbright lining-nums tabular-nums">
+                ${starPrice.toFixed(2)}
+              </p>
+              <p className="mt-2 text-sm text-cream/75">
+                {billing === "monthly" ? "per month" : "per year"}
+              </p>
+              <p className="mt-2 text-base text-cream lining-nums tabular-nums">
+                <span className="font-display text-xl">
+                  {star.credits.toLocaleString()}
+                </span>{" "}
+                Oracles a month
+              </p>
+              {billing === "annual" && (
+                <p className="mt-1 text-sm font-semibold text-goldbright lining-nums tabular-nums">
+                  Save $<CountUp value={star.savings} /> a year
+                </p>
+              )}
+              <ul className="mt-4 space-y-2 text-left text-sm text-cream/85">
+                {star.features.map((feature) => (
+                  <li key={feature}>{feature}</li>
+                ))}
+              </ul>
+              {tierButton(star)}
+            </VStack>
+          </Card>
+        </article>
+        {/* Spark and Moon, quiet supporting rows: no boxes, no
+            backgrounds, separated by hairline rules only. */}
+        <VStack gap={0} className="divide-y divide-gold/25">
+          {others.map((tier) => {
+            const price = billing === "monthly" ? tier.monthly : tier.annual;
+            return (
+              <VStack key={tier.id} gap={0} className="py-6 first:pt-0 last:pb-0">
+                <HStack hAlign="between" gap={4} className="items-baseline">
+                  <h3 className="font-display text-2xl text-goldbright">{tier.name}</h3>
+                  <p className="shrink-0 font-display text-2xl font-bold text-cream lining-nums tabular-nums">
+                    ${price.toFixed(2)}
+                    <span className="text-sm font-normal text-mist">
+                      {billing === "monthly" ? " / month" : " / year"}
+                    </span>
+                  </p>
                 </HStack>
-                <p className="mt-3 font-display text-[40px] font-bold leading-none text-goldbright lining-nums tabular-nums">
-                  ${price.toFixed(2)}
-                </p>
                 <p className="mt-2 text-sm text-cream/75">
-                  {billing === "monthly" ? "per month" : "per year"}
-                </p>
-                <p className="mt-2 text-base text-cream lining-nums tabular-nums">
-                  <span className="font-display text-xl">
-                    {tier.credits.toLocaleString()}
-                  </span>{" "}
-                  Oracles a month
+                  {tier.credits.toLocaleString()} Oracles a month
                 </p>
                 {billing === "annual" && (
                   <p className="mt-1 text-sm font-semibold text-goldbright lining-nums tabular-nums">
@@ -238,44 +306,11 @@ export default function PricingClient({
                     <li key={feature}>{feature}</li>
                   ))}
                 </ul>
-                <div className="mt-auto pt-6">
-                  <Button
-                    label={
-                      processing === `${tier.id}-${billing}`
-                        ? "Starting checkout…"
-                        : !subscriptionsEnabled
-                          ? "Not yet open"
-                          : `Choose ${tier.name}`
-                    }
-                    variant={tier.id === "star" ? "primary" : "secondary"}
-                    isDisabled={!subscriptionsEnabled}
-                    isLoading={processing === `${tier.id}-${billing}`}
-                    width="100%"
-                    className="min-h-11"
-                    onClick={() => void checkout("subscription", `${tier.id}-${billing}`)}
-                  />
-                </div>
+                {tierButton(tier)}
               </VStack>
-            </Card>
-          );
-          return (
-            <article
-              key={tier.id}
-              data-tier={tier.id}
-              className={`relative h-full rounded-3xl ${
-                tier.id === "star" ? "shadow-gold-lg" : ""
-              }`}
-            >
-              {tier.id === "star" ? (
-                <StarBorder radius="1.5rem" className="star-border-frame--block h-full" animated>
-                  {card}
-                </StarBorder>
-              ) : (
-                card
-              )}
-            </article>
-          );
-        })}
+            );
+          })}
+        </VStack>
       </Grid>
 
       {error && (

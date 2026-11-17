@@ -78,23 +78,38 @@ describe("Pricing tiers: Velu's exact numbers", () => {
 
   it("renders the price from the tier data, monthly and annual", () => {
     const c = client();
+    // Star is the focal panel: its price comes from starPrice.
+    expect(c).toContain(
+      'const starPrice = billing === "monthly" ? star.monthly : star.annual;'
+    );
+    const starPrice = c.match(
+      /<p className="mt-4 font-display text-5xl[^>]*>([\s\S]*?)<\/p>/
+    );
+    expect(starPrice).not.toBeNull();
+    expect((starPrice as RegExpMatchArray)[1]).toContain("${starPrice.toFixed(2)}");
+    expect(c).toContain('{billing === "monthly" ? "per month" : "per year"}');
+    const starCredits = c.match(
+      /<p className="mt-2 text-base text-cream[^>]*>([\s\S]*?)<\/p>/
+    );
+    expect(starCredits).not.toBeNull();
+    expect((starCredits as RegExpMatchArray)[1]).toContain(
+      "{star.credits.toLocaleString()}"
+    );
+    expect((starCredits as RegExpMatchArray)[1]).toContain("Oracles a month");
+    // Spark and Moon are quiet rows: their price comes from the
+    // per-row price, same monthly/annual rule.
     expect(c).toContain(
       'const price = billing === "monthly" ? tier.monthly : tier.annual;'
     );
-    const price = c.match(
-      /<p className="mt-3 font-display text-\[40px\][^>]*>([\s\S]*?)<\/p>/
+    const rowPrice = c.match(
+      /<p className="shrink-0 font-display text-2xl[^>]*>([\s\S]*?)<\/p>/
     );
-    expect(price).not.toBeNull();
-    expect((price as RegExpMatchArray)[1]).toContain("${price.toFixed(2)}");
-    expect(c).toContain('{billing === "monthly" ? "per month" : "per year"}');
-    const credits = c.match(
-      /<p className="mt-2 text-base text-cream[^>]*>([\s\S]*?)<\/p>/
+    expect(rowPrice).not.toBeNull();
+    expect((rowPrice as RegExpMatchArray)[1]).toContain("${price.toFixed(2)}");
+    expect((rowPrice as RegExpMatchArray)[1]).toContain(
+      '{billing === "monthly" ? " / month" : " / year"}'
     );
-    expect(credits).not.toBeNull();
-    expect((credits as RegExpMatchArray)[1]).toContain(
-      "{tier.credits.toLocaleString()}"
-    );
-    expect((credits as RegExpMatchArray)[1]).toContain("Oracles a month");
+    expect(c).toContain("{tier.credits.toLocaleString()} Oracles a month");
   });
 });
 
@@ -150,23 +165,43 @@ describe("Pricing video formula: one badge, one highlighted tier, one primary bu
     // ("Not yet open" while the checkout is gated).
     expect(badges.filter((b) => b.includes('label="Coming soon"'))).toHaveLength(0);
     expect(c).not.toContain('label="Coming soon"');
-    expect(c).toContain("{tier.popular && <Badge");
+    expect(c).toContain("{star.popular && <Badge");
     expect([...c.matchAll(/popular: true,/g)].length).toBe(1);
   });
 
-  it("marks Star by badge, border, and glow, never by a lift (F08)", () => {
+  it("marks Star as the focal panel, Spark and Moon as quiet rows (F08, Velu 2026-11-17)", () => {
     const c = client();
-    // UX audit Phase 2, F08: the popular tier is marked by colour,
-    // border, and badge, not height. The -translate-y-4 lift is
-    // gone: it made Star's card and button sit 16px higher than
-    // the others. The glow is the shadow-gold-lg token (F17).
+    // UX audit Phase 2, F08, as re-decided by Velu 2026-11-17:
+    // the old lock is CANCELLED, identical-size tier cards with
+    // Star marked by border/badge/glow only. Star is now the one
+    // large focal panel (gold border, glow, badge, larger type);
+    // Spark and Moon are quiet hairline rows, no boxes, no
+    // backgrounds. The -translate-y-4 lift is still gone: it made Star's card and button sit 16px higher than
+    // the others. The glow is the shadow-gold-lg token (F17),
+    // now on the Star article, and the animated StarBorder frame
+    // is gone with the equal-cards grid.
     expect(c).not.toContain("-translate-y-4");
     expect(c).not.toContain("translate-y");
-    expect(c).toContain('tier.id === "star" ? "shadow-gold-lg" : ""');
-    expect([...c.matchAll(/<StarBorder/g)].length).toBe(1);
-    expect(c).toContain('{tier.id === "star" ? (');
-    expect(c).toContain("<StarBorder");
-    expect(c).toContain('radius="1.5rem"');
+    expect(c).not.toContain("StarBorder");
+    expect(c).not.toContain('columns={{ minWidth: 300, max: 3 }}');
+    // The tier section is a two-column Grid: Star's panel on one
+    // side, the Spark/Moon rows on the other.
+    expect(c).toContain('columns={{ minWidth: 440, max: 2 }}');
+    expect(c).toContain('data-tier="star"');
+    expect(c).toContain('className="relative h-full rounded-3xl shadow-gold-lg"');
+    // Gold border only, no bg-gold/10 on the Card: the Card's navy
+    // background IS the panel, and a Tailwind bg utility overrides
+    // the theme card background, which left the panel light while
+    // the dark scope still made the text light (unreadable in the
+    // browser check, 2026-11-17). The border, glow, badge and
+    // larger type mark Star instead.
+    expect(c).toContain('className="border-gold"');
+    expect(c).not.toContain('className="border-gold bg-gold/10"');
+    // The rows are grouped by hairline rules, not boxes: one
+    // divide-y parent, no Card around Spark or Moon. Two <Card
+    // sites in the file: Star's panel and the top-up cards.
+    expect(c).toContain('className="divide-y divide-gold/25"');
+    expect([...c.matchAll(/<Card/g)].length).toBe(2);
   });
 
   it("has one primary button (Star) and outlined secondary on Spark/Moon, plus a secondary top-up button", () => {
@@ -202,11 +237,17 @@ describe("Pricing toggle, savings, top-ups, credit costs", () => {
     expect(c).toContain(
       "Annual billing: save $16 on Spark, $30 on Star, $60 on Moon."
     );
-    const savings = c.match(
-      /<p className="mt-1 text-sm font-semibold text-goldbright[^>]*>([\s\S]*?)<\/p>/
+    // Velu 2026-11-17: the savings line exists twice now, once
+    // in Star's panel (star.savings) and once in the Spark/Moon
+    // rows (tier.savings). Both must say the same thing.
+    const savings = [...c.matchAll(
+      /<p className="mt-1 text-sm font-semibold text-goldbright[^>]*>([\s\S]*?)<\/p>/g
+    )].map((m) => m[1]);
+    expect(savings).toHaveLength(2);
+    expect(savings[0]).toContain(
+      "Save $<CountUp value={star.savings} /> a year"
     );
-    expect(savings).not.toBeNull();
-    expect((savings as RegExpMatchArray)[1]).toContain(
+    expect(savings[1]).toContain(
       "Save $<CountUp value={tier.savings} /> a year"
     );
     expect(c).toContain('{billing === "annual" && (');
@@ -352,8 +393,11 @@ describe("Pricing card contrast: dark islands on the light page", () => {
 
   it("applies the dark scope inside the tier Cards and the top-up Cards, nowhere else", () => {
     const c = client();
-    // One occurrence in the tier map, one in the top-up map.
+    // One occurrence in the Star panel, one in the top-up map.
     // (Packs retired, Velu 2026-11-16 D1: the packs Cards are gone.)
+    // Spark and Moon are quiet rows on the light paper now, so
+    // they carry no dark scope: only Star's panel and the top-up
+    // Cards do.
     expect([...c.matchAll(/pricing-card-dark/g)].length).toBe(2);
     // The {0} in gap={0} must be escaped: unescaped, {0} is a
     // regex quantifier (zero of the preceding token), so the
@@ -364,11 +408,11 @@ describe("Pricing card contrast: dark islands on the light page", () => {
     // test checks. A nested close is never followed by </Card>,
     // so the lazy match skips it and lands on the real close.
     const tierStack = c.match(
-      /<VStack gap=\{0\} className="pricing-card-dark h-full text-center">([\s\S]*?)<\/VStack>\s*<\/Card>/
+      /<VStack gap=\{0\} className="pricing-card-dark h-full text-left">([\s\S]*?)<\/VStack>\s*<\/Card>/
     );
     expect(tierStack).not.toBeNull();
-    expect((tierStack as RegExpMatchArray)[1]).toContain("{tier.name}");
-    expect((tierStack as RegExpMatchArray)[1]).toContain("${price.toFixed(2)}");
+    expect((tierStack as RegExpMatchArray)[1]).toContain("{star.name}");
+    expect((tierStack as RegExpMatchArray)[1]).toContain("${starPrice.toFixed(2)}");
     const topupStack = c.match(
       /<VStack gap=\{0\} className="pricing-card-dark text-center">([\s\S]*?)<\/VStack>\s*<\/Card>/
     );
@@ -387,9 +431,12 @@ describe("Pricing card contrast: dark islands on the light page", () => {
     // uses text-cream / text-cream/75 / text-cream/85 /
     // text-goldbright, which now resolve to the dark stops inside
     // the scope. No hex, no arbitrary var() colour, no new class.
+    // Velu 2026-11-17: Star's panel is larger now, name text-4xl
+    // and price text-5xl; the Spark/Moon rows use text-2xl names.
     const c = client();
-    expect(c).toContain('className="font-display text-xl text-cream"');
-    expect(c).toContain('className="mt-3 font-display text-[40px] font-bold leading-none text-goldbright');
+    expect(c).toContain('className="mt-3 font-display text-4xl text-goldbright"');
+    expect(c).toContain('className="mt-4 font-display text-5xl font-bold leading-none text-goldbright');
+    expect(c).toContain('className="font-display text-2xl text-goldbright"');
     expect(c).toContain('className="mt-4 space-y-2 text-left text-sm text-cream/85"');
     expect(c).not.toContain("text-[var(--color-text-primary)]");
     expect(c).not.toContain("text-[var(--color-text-accent)]");
@@ -425,14 +472,18 @@ describe("Pricing page: Astryx pilot wiring", () => {
     expect(p).not.toContain("coming soon");
   });
 
-  it("renders tiers with Astryx Card / Badge / Button, StarBorder, CountUp", () => {
+  it("renders tiers with Astryx Card / Badge / Button, CountUp, no StarBorder", () => {
     const c = client();
     expect(c).toContain('import { Card } from "@astryxdesign/core/Card";');
     expect(c).toContain('import { Badge } from "@astryxdesign/core/Badge";');
     expect(c).toContain('import { Button } from "@astryxdesign/core/Button";');
-    expect(c).toContain('import { StarBorder } from "@/components/ReactBits";');
     expect(c).toContain('import CountUp from "@/components/CountUp";');
     expect(c).toContain("<Card");
+    // Velu 2026-11-17: the animated StarBorder frame is gone
+    // with the equal-cards grid. Star is marked by its panel
+    // (gold border, gold tint, glow, badge, larger type) instead.
+    expect(c).not.toContain("StarBorder");
+    expect(c).not.toContain('from "@/components/ReactBits"');
     expect(existsSync(path.resolve(process.cwd(), "src/themes/sortes/sortesTheme.ts"))).toBe(true);
     expect(existsSync(path.resolve(process.cwd(), "src/themes/sortes/sortes.css"))).toBe(true);
     expect(existsSync(path.resolve(process.cwd(), "src/astryx-themes.ts"))).toBe(true);
@@ -448,14 +499,15 @@ describe("Pricing page: Astryx pilot wiring", () => {
     expect(c).toContain("<VStack");
     expect(c).toContain("<HStack");
     expect(c).toContain("<Grid");
-    // One raw <div> left: the mt-auto spacer inside each tier Card
-    // that pushes the button to the bottom — Astryx has no Spacer
-    // component. The top-up button's mt-4 wrapper is gone (Codex
-    // P1): the margin now lives on the Button's own className.
-    // Count JSX divs only: the file's comments mention <div> twice,
-    // so match the className form.
-    expect([...c.matchAll(/<div className="/g)].length).toBe(1);
-    expect(c).toContain('<div className="mt-auto pt-6">');
+    // No raw <div> left: the mt-auto spacer inside each tier Card
+    // is gone with the equal-height cards (Velu, 2026-11-17) —
+    // the Star panel and the Spark/Moon rows no longer share a
+    // row of equal cards, so the button sits directly after the
+    // features with mt-6. Count JSX divs only: the file's
+    // comments mention <div> without the className form, so
+    // match the className form.
+    expect([...c.matchAll(/<div className="/g)].length).toBe(0);
+    expect(c).not.toContain('<div className="mt-auto pt-6">');
     expect(c).not.toContain('<div className="mt-4">');
   });
 
