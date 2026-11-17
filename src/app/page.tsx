@@ -297,7 +297,7 @@ export default function Home() {
             <HeroScene />
           </div>
           {/* AF-034: the pricing line and the charts line stay off
-              the hero. Pricing lives on /oracles; charts have their
+              the hero. Pricing lives on /pricing; charts have their
               own nav entry. */}
         </div>
       </section>

@@ -513,7 +513,7 @@ export function ConfirmStep({ f, category }: { f: IntakeState; category: IntakeC
           {(error.startsWith("You are out of Oracles") || error.startsWith("You need 1 Oracle")) && (
             <>
               {" "}
-              <Link href="/oracles" className="font-semibold text-goldbright underline underline-offset-4">
+              <Link href="/pricing" className="font-semibold text-goldbright underline underline-offset-4">
                 Get Oracles
               </Link>
             </>
@@ -622,7 +622,7 @@ export function ImpressionStep({ f, drawnCards }: { f: IntakeState; drawnCards: 
           {(error.startsWith("You are out of Oracles") || error.startsWith("You need 1 Oracle")) && (
             <>
               {" "}
-              <Link href="/oracles" className="font-semibold text-goldbright underline underline-offset-4">
+              <Link href="/pricing" className="font-semibold text-goldbright underline underline-offset-4">
                 Get Oracles
               </Link>
             </>

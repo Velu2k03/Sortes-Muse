@@ -229,7 +229,7 @@ describe("Pricing toggle, savings, top-ups, credit costs", () => {
     expect(c).not.toContain("anyone can buy them");
   });
 
-  it("shows no Oracle packs: they are retired, with a link to /oracles for top-ups", () => {
+  it("shows no Oracle packs: they are retired, with a link to the top-ups section", () => {
     // Packs retired (Velu, 2026-11-16, D1): the pricing page
     // shows subscriptions and top-ups only. No pack section, no
     // pack data, no packsEnabled prop anywhere on the page.
@@ -271,7 +271,7 @@ describe("Pricing honesty: gated CTAs, packs link, checkout wiring", () => {
     expect(c).not.toContain("Coming soon");
     expect(c).toContain("See top-ups");
     const link = c.match(
-      /<Link href="\/oracles"[^>]*>([\s\S]*?)<\/Link>/
+      /<Link href="#topups-heading"[^>]*>([\s\S]*?)<\/Link>/
     );
     expect(link).not.toBeNull();
     expect((link as RegExpMatchArray)[1]).toContain("See top-ups");

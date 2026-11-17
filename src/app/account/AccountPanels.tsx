@@ -70,7 +70,7 @@ export function AccountSummary({
       <div className="rule-gold my-6" />
       <div className="flex flex-wrap gap-3">
         <Link
-          href="/oracles"
+          href="/pricing"
           className="btn-gold rounded-xl px-6 py-3 font-bold"
         >
           Get Oracles

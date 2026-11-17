@@ -321,14 +321,14 @@ export default function Header() {
           </button>
           {/* Phase 4A (4.1): one Oracle pill, not two controls. The
               balance and the Top up action are a single link to
-              /oracles; the separate Top up button is gone.
+              /pricing; the separate Top up button is gone.
               P0-1: while credits is null the balance is unknown, so
               the pill shows a skeleton, never 0, and the aria-label
               says loading instead of "0 Oracles". */}
           {/* UX audit Phase 2, F05 (2026-11-16): the Oracle pill is a balance display for signed-in users. Guests do not see it: for them it was a second free-reading action competing with the hero gold button. The header keeps Sign in only for guests. */}
           {user && (
             <Link
-              href="/oracles"
+              href="/pricing"
               className="flex min-h-11 items-center gap-1.5 rounded-full border border-gold/40 bg-gold/10 px-2.5 py-2.5 text-sm font-semibold text-goldbright"
               aria-label={
                 credits === null
@@ -437,7 +437,7 @@ export default function Header() {
             className="sortes-bm"
           />
           <Link
-            href="/oracles"
+            href="/pricing"
             onClick={() => setMobileOpen(false)}
             className="btn-gold mt-3 block rounded-xl px-3 py-2.5 text-center text-base font-bold"
           >

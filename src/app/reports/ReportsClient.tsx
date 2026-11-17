@@ -575,7 +575,7 @@ export default function ReportsClient() {
       {outOfOracles && (
         <div className="mt-6 rounded-2xl border border-gold/25 bg-panel/70 p-4 text-center text-sm text-cream">
           You are out of Oracles. Reports cost 1 Oracle each.{" "}
-          <Link href="/oracles" className="font-semibold text-goldbright underline">
+          <Link href="/pricing" className="font-semibold text-goldbright underline">
             Get Oracles
           </Link>
         </div>
@@ -584,7 +584,7 @@ export default function ReportsClient() {
         <div className="mt-6 rounded-2xl border border-danger/40 bg-panel/70 p-4 text-center text-sm text-danger">
           {error}{" "}
           {error.includes("1 Oracle") && (
-            <Link href="/oracles" className="font-semibold underline">
+            <Link href="/pricing" className="font-semibold underline">
               Get Oracles
             </Link>
           )}

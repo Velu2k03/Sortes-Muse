@@ -76,8 +76,8 @@ export default function ReadingFlow({ slug }: { slug: string }) {
         signedIn={!!user}
         credits={credits ?? 0}
         // Packs retired (Velu, 2026-11-16, D1): out-of-Oracles
-        // goes to /oracles (top-ups) instead of the pack modal.
-        onTopUp={() => router.push("/oracles")}
+        // goes to /pricing (packs first, top-ups below) instead of the pack modal.
+        onTopUp={() => router.push("/pricing")}
       />
     </div>
   );
