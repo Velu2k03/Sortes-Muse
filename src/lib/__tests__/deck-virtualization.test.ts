@@ -74,7 +74,8 @@ describe("Deck virtualization", () => {
     // and replay their entrance animation on every scroll.
     expect(deck).not.toContain("VirtuosoGrid");
     // The grid tiles and their entrance are otherwise unchanged.
-    expect(deck).toContain("duration: 0.4");
+    // transitions.dev retiming (all-pages fix 2): was 0.4s, now 0.25s.
+    expect(deck).toContain("duration: 0.25");
     expect(deck).toContain('aria-label={`View meaning of ${c.name}`}');
   });
 

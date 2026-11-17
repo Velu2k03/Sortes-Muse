@@ -201,7 +201,11 @@ export function CardRow({
             key={d.positionKey}
             initial={reduceMotion ? false : { opacity: 0, y: -48, scale: 1.12, rotate: ((i * 7) % 11) - 5 }}
             animate={{ opacity: 1, y: 0, scale: 1, rotate: 0 }}
-            transition={{ duration: 0.5, delay: reduceMotion ? 0 : i * 0.1, ease: "easeOut" }}
+            // transitions.dev 150-250ms band: was duration 0.5s with
+            // stagger 0.1s per card, so the last card finished at 1.4s on a
+            // 10-card spread. Now 0.25s, stagger 0.04s capped at 0.2s,
+            // last card done by 0.45s.
+            transition={{ duration: 0.25, delay: reduceMotion ? 0 : Math.min(i * 0.04, 0.2), ease: "easeOut" }}
           >
             <TarotCard
               cardId={d.cardId}

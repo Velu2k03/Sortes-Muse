@@ -36,7 +36,9 @@ describe("Batch 7: magical effects", () => {
     const sections = src("src/app/reading/[id]/ReadingSections.tsx");
     expect(sections).toContain("useReducedMotion");
     expect(sections).toContain("reading.cards.map((d, i) =>");
-    expect(sections).toContain("delay: reduceMotion ? 0 : i * 0.1");
+    // transitions.dev retiming (all-pages fix 2): stagger was i * 0.1,
+    // now 0.04s capped at 0.2s. The deal-in wiring is unchanged.
+    expect(sections).toContain("delay: reduceMotion ? 0 : Math.min(i * 0.04, 0.2)");
     expect(sections).toContain("initial={reduceMotion ? false : { opacity: 0, y: -48, scale: 1.12, rotate: ((i * 7) % 11) - 5 }}");
     expect(sections).toContain("animate={{ opacity: 1, y: 0, scale: 1, rotate: 0 }}");
   });
@@ -44,7 +46,9 @@ describe("Batch 7: magical effects", () => {
   it("the intake impression step deals the cards in with a stagger (Batch 8 enhanced it)", () => {
     const steps = src("src/app/intake/[slug]/IntakeSteps.tsx");
     expect(steps).toContain("drawnCards.map((d, i) =>");
-    expect(steps).toContain("delay: reduceMotion ? 0 : i * 0.1");
+    // transitions.dev retiming (all-pages fix 2): stagger was i * 0.1,
+    // now 0.04s capped at 0.2s. The deal-in wiring is unchanged.
+    expect(steps).toContain("delay: reduceMotion ? 0 : Math.min(i * 0.04, 0.2)");
     expect(steps).toContain("initial={reduceMotion ? false : { opacity: 0, y: -48, scale: 1.12, rotate: ((i * 7) % 11) - 5 }}");
     expect(steps).toContain("animate={{ opacity: 1, y: 0, scale: 1, rotate: 0 }}");
   });

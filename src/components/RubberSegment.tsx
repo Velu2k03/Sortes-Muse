@@ -44,6 +44,10 @@ type Drag = {
 
 const EASE_OUT: [number, number, number, number] = [0.23, 1, 0.32, 1];
 const SPRING_UI = { type: 'spring' as const, duration: 0.3, bounce: 0 };
+// SPRING_MOMENTUM is 0.4s on purpose: it is interactive drag physics,
+// not a reveal. The duration is the spring's settle cap while the thumb
+// follows a flick; shortening it would make the thumb stop dead instead
+// of gliding. Left above the transitions.dev 150-250ms band deliberately.
 const SPRING_MOMENTUM = { type: 'spring' as const, duration: 0.4, bounce: 0.2 };
 const SPRING_RELAX = { type: 'spring' as const, duration: 0.16, bounce: 0 };
 const DILATE = 0.19;

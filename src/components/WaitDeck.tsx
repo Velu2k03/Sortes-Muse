@@ -47,8 +47,13 @@ export default function WaitDeck({ drawnCards }: { drawnCards: DrawnCard[] }) {
           }
           animate={{ opacity: 1, y: 0, scale: 1, rotate: 0 }}
           transition={{
-            duration: 0.5,
-            delay: reduceMotion ? 0 : i * 0.1,
+            // transitions.dev 150-250ms band: was duration 0.5s with
+            // stagger i * 0.1, the same deal-in as ReadingSections
+            // and IntakeSteps. Now 0.25s, stagger 0.04s capped at
+            // 0.2s, last card done by 0.45s. The 4s float above is
+            // ambient, not a reveal, and stays.
+            duration: 0.25,
+            delay: reduceMotion ? 0 : Math.min(i * 0.04, 0.2),
             ease: "easeOut",
           }}
         >

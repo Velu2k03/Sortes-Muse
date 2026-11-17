@@ -211,6 +211,11 @@ const SlideCommit: React.FC<SlideCommitProps> = ({
     else {
       animate(x, 0, commitSpring);
       if (!viaKey && landingDip > 0) {
+        // Deliberate emphasis, NOT a reveal: the 0.46s landing dip
+        // is the settle after a slide-to-commit, and the 0.45s shake
+        // below is the error signal. At 0.25s neither reads — the dip
+        // would vanish and the shake would look like a jitter. Both
+        // stay above the transitions.dev 150-250ms band on purpose.
         animate(pulse, [1, 1 - landingDip, 1], { duration: 0.46, times: [0, 0.62, 1], ease: EASE_OUT, delay: 0.1 });
       }
     }
