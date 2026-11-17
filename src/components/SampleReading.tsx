@@ -51,7 +51,7 @@ export default function SampleReading({ collapsed = false }: { collapsed?: boole
       initial={hide ? { opacity: 0, y: 24 } : false}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-60px" }}
-      transition={{ duration: 0.6, ease: "easeOut", delay: 0.1 }}
+      transition={{ duration: 0.25, ease: "easeOut" }}
       className={
         collapsed
           ? "overflow-hidden border-t border-gold/15 bg-panel/70"
@@ -124,7 +124,7 @@ export default function SampleReading({ collapsed = false }: { collapsed?: boole
           initial={hide ? { opacity: 0, y: 24 } : false}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-60px" }}
-          transition={{ duration: 0.6, ease: "easeOut" }}
+          transition={{ duration: 0.25, ease: "easeOut" }}
           className="text-center"
         >
           <p className="text-sm text-gold">
