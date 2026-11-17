@@ -231,7 +231,7 @@ export default function Home() {
               fade left the first frame almost empty behind the moon
               image), and the example questions stay visible as
               tappable chips instead of rotating one at a time. */}
-          <h1 className="mt-6 max-w-4xl text-balance font-display text-4xl leading-tight text-goldbright sm:text-5xl">
+          <h1 className="mb-2 mt-12 max-w-2xl text-balance font-display text-5xl leading-[1.05] text-goldbright sm:text-6xl">
             {variant.h1}
           </h1>
           <p className="mt-4 max-w-xl text-base leading-relaxed text-cream/80">
