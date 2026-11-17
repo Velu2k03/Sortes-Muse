@@ -36,7 +36,10 @@ describe("F11: tap targets are at least 44px", () => {
     const pricing = src("src/components/PricingClient.tsx");
     // The Astryx Button takes className through to the <button>,
     // and min-height wins over its 32px default when larger.
-    expect(pricing).toContain('className="min-h-11"');
+    // Velu 2026-11-17: the tier button now carries mt-6 as well,
+    // because the old mt-auto spacer is gone with the equal-height
+    // cards; it is still min-h-11, still 44px.
+    expect(pricing).toContain('className="mt-6 min-h-11"');
     expect(pricing).toContain('className="mt-4 min-h-11"');
   });
 
