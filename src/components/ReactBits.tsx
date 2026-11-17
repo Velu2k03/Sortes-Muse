@@ -56,7 +56,7 @@ export function ClickSpark({
   };
 
   return (
-    <span className={`click-spark ${className}`} onClick={spark}>
+    <span className={clsx("click-spark", className)} onClick={spark}>
       {children}
       {bursts.map((burst) => (
         <span

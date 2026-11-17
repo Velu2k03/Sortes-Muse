@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, type CSSProperties, type ReactNode } from "react";
+import clsx from "clsx";
 import { usePathname } from "next/navigation";
 import { motion } from "motion/react";
 
@@ -69,7 +70,7 @@ export function SpotlightCard({
       ref={ref}
       onPointerMove={onMove}
       onPointerLeave={onLeave}
-      className={`relative overflow-hidden ${className}`}
+      className={clsx("relative overflow-hidden", className)}
       style={
         {
           "--spot-x": "50%",
@@ -115,7 +116,7 @@ export function GlareHover({
       ref={ref}
       onPointerMove={onMove}
       onPointerLeave={onLeave}
-      className={`relative inline-block overflow-hidden ${className}`}
+      className={clsx("relative inline-block overflow-hidden", className)}
       style={
         {
           "--glare-x": "50%",
@@ -206,7 +207,7 @@ export function Orb({
     <div
       ref={ref}
       aria-hidden="true"
-      className={`pointer-events-none absolute inset-0 overflow-hidden ${className}`}
+      className={clsx("pointer-events-none absolute inset-0 overflow-hidden", className)}
     >
       <motion.div
         className="absolute left-1/4 top-1/4 h-72 w-72 rounded-full opacity-25 blur-3xl"

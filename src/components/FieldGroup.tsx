@@ -1,3 +1,4 @@
+import clsx from "clsx";
 import type { ReactNode } from "react";
 
 // A labelled group of related controls (e.g. a row of toggle buttons).
@@ -15,7 +16,7 @@ export default function FieldGroup({
   children: ReactNode;
 }) {
   return (
-    <fieldset aria-label={ariaLabel} className={`m-0 min-w-0 border-0 p-0 ${className}`}>
+    <fieldset aria-label={ariaLabel} className={clsx("m-0 min-w-0 border-0 p-0", className)}>
       {children}
     </fieldset>
   );

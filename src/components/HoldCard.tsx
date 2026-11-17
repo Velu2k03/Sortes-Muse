@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useId, useRef, useState } from "react";
+import clsx from "clsx";
 import Image from "next/image";
 import { CARD_BACK } from "@/lib/tarot";
 
@@ -172,7 +173,7 @@ export default function HoldCard({ holdTime = 1200, onHold, className = "" }: Ho
   const percent = Math.round(progress * 100);
 
   return (
-    <div className={`flex flex-col items-center ${className}`}>
+    <div className={clsx("flex flex-col items-center", className)}>
       <button
         ref={buttonRef}
         type="button"
