@@ -9,13 +9,22 @@ import { BRAND } from "@/lib/brand";
  * (or a purchase completes, with a bigger count/spread).
  * Pure decoration: pointer-events-none, unmounts itself via AnimatePresence
  * from the parent.
+ *
+ * Duration is 0.85s by default (ring 0.9s), a deliberate delight
+ * moment — a shower, not a flash. A page on the transitions.dev
+ * 150-250ms band passes `duration` in instead: /daily passes 0.25.
+ * Do not lower the default globally without a separate all-pages
+ * decision; CardBurst is shared by TarotCard (deck, intake,
+ * reading, WaitDeck) and by charts.
  */
 export default function CardBurst({
   count = 16,
   distance = 88,
+  duration = 0.85,
 }: {
   count?: number;
   distance?: number;
+  duration?: number;
 }) {
   // Deterministic spark layout: a sin-hash of the index gives varied
   // angles, distances, sizes and delays without Math.random, so the
@@ -59,7 +68,7 @@ export default function CardBurst({
           }}
           initial={{ x: 0, y: 0, opacity: 1, scale: 1 }}
           animate={{ x: s.x, y: s.y, opacity: 0, scale: 0.4 }}
-          transition={{ duration: 0.85, delay: s.delay, ease: "easeOut" }}
+          transition={{ duration, delay: s.delay, ease: "easeOut" }}
         />
       ))}
       {/* Soft expanding ring */}
@@ -68,7 +77,7 @@ export default function CardBurst({
         style={{ width: 24, height: 24 }}
         initial={{ scale: 0.4, opacity: 0.9 }}
         animate={{ scale: 4.2, opacity: 0 }}
-        transition={{ duration: 0.9, ease: "easeOut" }}
+        transition={{ duration: duration + 0.05, ease: "easeOut" }}
       />
     </div>
   );

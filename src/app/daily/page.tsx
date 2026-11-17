@@ -184,7 +184,26 @@ export default function DailyPage() {
                 animate={{ rotate: [0, -4, 4, -3, 3, 0], y: [0, -10, 0] }}
                 transition={{ duration: 1.3, ease: "easeInOut" }}
               >
-                <TarotCard cardId={null} size="lg" disabled />
+                {/* transitions.dev: the 1.3s shuffle shake is deliberate,
+                    not a reveal — it spans the 1400ms ritual pause
+                    before the card appears (draw timer below). Retime
+                    it and the shake would finish long before the card
+                    lands. Left alone by the /daily timing fix. */}
+                <TarotCard
+                  cardId={null}
+                  size="lg"
+                  disabled
+                  // transitions.dev 150-250ms band, scoped to /daily:
+                  // the flip (0.55s) and burst (0.85/0.9s) live in the
+                  // shared TarotCard/CardBurst, used by deck, intake,
+                  // reading and charts too, so they are retimed here
+                  // via props only. Other pages keep their defaults.
+                  // On /daily this card never flips (face-down
+                  // shuffling placeholder); the visible reveal is the
+                  // HoloCard flip below.
+                  flipDuration={0.25}
+                  burstDuration={0.25}
+                />
               </motion.div>
               <p className="mt-8 font-display text-2xl italic text-goldbright">
                 The lots are being cast…
@@ -207,7 +226,10 @@ export default function DailyPage() {
                 style={{ perspective: 800, width: 220 }}
                 initial={reduceMotion ? false : { opacity: 0, rotateY: -90, scale: 0.98 }}
                 animate={{ opacity: 1, rotateY: 0, scale: 1 }}
-                transition={{ duration: 0.8, ease: "easeOut" }}
+                // transitions.dev 150-250ms band: was 0.8s, the slowest
+                // reveal in the app. 0.25s keeps the flip readable
+                // without leaving the first frame almost empty.
+                transition={{ duration: 0.25, ease: "easeOut" }}
               >
                 <button
                   type="button"
@@ -241,7 +263,10 @@ export default function DailyPage() {
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.6, duration: 0.6 }}
+                // transitions.dev 150-250ms band: was delay 0.6s +
+                // duration 0.6s, so the meaning panel arrived over a
+                // second after the card. 0.1s delay, 0.25s duration.
+                transition={{ delay: 0.1, duration: 0.25 }}
                 className="mt-8 w-full rounded-3xl border border-gold/25 bg-panel/70 p-6 text-center sm:p-8"
               >
                 <h2 className="font-display text-4xl text-goldbright">
@@ -266,7 +291,8 @@ export default function DailyPage() {
                 <motion.p
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, ease: "easeOut" }}
+                  // transitions.dev 150-250ms band: was 0.6s.
+                  transition={{ duration: 0.25, ease: "easeOut" }}
                   className="mx-auto mt-5 max-w-lg leading-relaxed text-cream/90"
                 >
                   {orientationMeaning(card, daily.reversed)}
