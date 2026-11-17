@@ -350,9 +350,9 @@ const HoldButton: React.FC<HoldButtonProps> = ({
         className="hb-pulse pointer-events-none absolute inset-0 z-0 opacity-0 [border-radius:var(--hb-radius)] group-data-[glow=true]:group-data-[phase=done]:[animation:hb-pulse_600ms_var(--hb-ease-out)_forwards]"
         aria-hidden="true"
       />
-      <span className="hb-label relative z-[2] grid place-items-center">{labels}</span>
+      <span className="hb-label relative z-2 grid place-items-center">{labels}</span>
       <span
-        className="pointer-events-none absolute inset-0 z-[3] [clip-path:inset(0_round_var(--hb-radius))]"
+        className="pointer-events-none absolute inset-0 z-3 [clip-path:inset(0_round_var(--hb-radius))]"
         aria-hidden="true"
       >
         <span className="hb-fill absolute inset-0 grid place-items-center [background:var(--hb-fill)] [color:var(--hb-fill-text)]">

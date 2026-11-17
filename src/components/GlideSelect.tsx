@@ -170,7 +170,7 @@ const GlideSelect: React.FC<GlideSelectProps> = ({
                   <Select.Item
                     key={it.value}
                     value={it.value}
-                    className="relative z-[1] flex cursor-pointer items-center gap-2 pr-2 pl-2.5 select-none [-webkit-tap-highlight-color:transparent] [height:var(--gs-row)] [border-radius:var(--gs-inner-radius)] [color:var(--gs-text)] [font-size:var(--gs-font)] [transition:background-color_150ms_ease] data-[highlighted]:[background:var(--gs-highlight)] data-[selected]:font-medium"
+                    className="relative z-1 flex cursor-pointer items-center gap-2 pr-2 pl-2.5 select-none [-webkit-tap-highlight-color:transparent] [height:var(--gs-row)] [border-radius:var(--gs-inner-radius)] [color:var(--gs-text)] [font-size:var(--gs-font)] [transition:background-color_150ms_ease] data-[highlighted]:[background:var(--gs-highlight)] data-[selected]:font-medium"
                   >
                     <Select.ItemText className="min-w-0 flex-1 truncate font-medium">
                       {it.label}
