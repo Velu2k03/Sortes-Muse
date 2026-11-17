@@ -10,19 +10,19 @@ import path from "path";
 // in production: the server page reads searchParams, validates the
 // value, and passes it in as an initial prop (SSR-correct first
 // paint, no hydration mismatch); the client writes the param back
-// with router.replace on change (replace, not push, so Back leaves
-// the page instead of stepping through states) and reads it back
-// in an effect so Back/forward restores the state. Two exceptions
-// use window.history.replaceState instead, for the same reason:
-// /horoscope (its client mounts with key={sign}, a router
-// navigation would remount it) and the pricing toggle (PR #152
-// fix: a router navigation re-rendered the page mid-toggle and
-// the searchParams effect read the stale param and flipped
-// billing back, so the pill flickered instead of sliding).
-// Defaults are
-// omitted, so the URL stays clean. /oracles is untouched: it
-// already syncs (purchase=success), and its checkout return must
-// keep working exactly as it does.
+// on change and reads it back in an effect so Back/forward
+// restores the state. Defaults are omitted, so the URL stays clean.
+// Most pages write with router.replace (replace, not push, so Back
+// leaves the page instead of stepping through states). Two pages
+// are exceptions and use window.history.replaceState instead: the
+// pricing toggle and /horoscope. A router navigation would
+// re-render the page mid-interaction there (the pricing pill
+// flickered, the horoscope client remounts on key={sign}), so
+// replaceState writes the URL with no navigation and no re-render;
+// Back/forward still navigates, so the effect still corrects the
+// state then. /oracles is untouched: it already syncs
+// (purchase=success), and its checkout return must keep working
+// exactly as it does.
 //
 // Deliberately NOT synced, with reasons (audit: "sync ... or
 // document why not"):
