@@ -8,7 +8,7 @@ import { chartFreeUsed, clearPendingAttemptId, makeReading, pendingAttemptId, ty
 import { unconfirmedMessage } from "@/lib/generate-failure";
 import { chartInterpretationCost } from "@/lib/chart-pricing";
 import { BRAND } from "@/lib/brand";
-import { showFailureToast, dismissFailureToast } from "@/lib/failure-toast";
+import { showFailureToast, dismissFailureToast, showSuccessToast } from "@/lib/failure-toast";
 import { buildStaticChartInterpretation } from "@/lib/chart-fallback";
 import {
   FOCUS_AREAS,
@@ -32,6 +32,14 @@ import {
 class ServerError extends Error {}
 
 const INTERPRETATION_FAILED = "Interpretation failed";
+
+// Sonner full use (2026-11-17): exporting the chart image was
+// silent on success (the button just stopped spinning) and a failed
+// export was swallowed with no catch at all. Success gets a toast
+// because a download on mobile may not be visible; failure gets the
+// same title-plus-Retry toast as the other failure paths.
+const CHART_IMAGE_SAVED = "Chart image saved";
+const CHART_IMAGE_FAILED = "Chart image failed";
 
 export function useChartPrefs() {
   const [reducedMotion, setReducedMotion] = useState(false);
@@ -493,7 +501,13 @@ export function useChartSession(form: ChartForm, prefs: ChartPrefs) {
   });
   // The toast outlives the page (one app-wide Toaster): leaving the
   // page drops it so its Retry cannot run against an unmounted page.
-  useEffect(() => () => dismissFailureToast(INTERPRETATION_FAILED), []);
+  useEffect(
+    () => () => {
+      dismissFailureToast(INTERPRETATION_FAILED);
+      dismissFailureToast(CHART_IMAGE_FAILED);
+    },
+    []
+  );
 
   async function onSaveChart() {
     if (!result || !interpretation) return;
@@ -519,6 +533,8 @@ export function useChartSession(form: ChartForm, prefs: ChartPrefs) {
   async function onShareChart() {
     if (!shareRef.current || shareBusy) return;
     setShareBusy(true);
+    // A new attempt clears the previous failure UI.
+    dismissFailureToast(CHART_IMAGE_FAILED);
     try {
       // Phase 4C (4.8a): html-to-image loads only when the seeker
       // actually exports a chart image, not on first paint.
@@ -528,6 +544,9 @@ export function useChartSession(form: ChartForm, prefs: ChartPrefs) {
       a.download = "sortes-chart.png";
       a.href = dataUrl;
       a.click();
+      showSuccessToast(CHART_IMAGE_SAVED);
+    } catch {
+      showFailureToast(CHART_IMAGE_FAILED, () => void onShareChart());
     } finally {
       setShareBusy(false);
     }
