@@ -142,14 +142,14 @@ export default function DeckClient({
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
-      <div className="text-center">
+      <div className="text-left">
         <p className="text-sm text-gold">The deck</p>
         <h1 className="mt-2 font-display text-4xl text-goldbright sm:text-5xl">
           {filter === "all" && !query.trim()
             ? "All 78 cards"
             : `${cards.length} ${cards.length === 1 ? "card" : "cards"}`}
         </h1>
-        <p className="mx-auto mt-3 max-w-xl text-sm text-cream/75">
+        <p className="mt-3 max-w-xl text-left text-sm text-cream/75">
           The complete Rider-Waite deck. Free forever. Tap any card to read
           its story.
         </p>
@@ -246,7 +246,7 @@ export default function DeckClient({
               Spiral gallery
             </button>
           </fieldset>
-          <p className="w-full text-center text-xs text-mist sm:w-auto" aria-live="polite">
+          <p className="w-full text-left text-xs text-mist sm:w-auto" aria-live="polite">
             {cards.length} {cards.length === 1 ? "card" : "cards"}
             {filter !== "all" && filter !== "major" && ` · ${suitLabel(filter)}`}
             {reducedMotion && " · reduced motion"}
@@ -256,8 +256,8 @@ export default function DeckClient({
 
       {effectiveView === "spiral" ? (
         <div className="mt-6">
-          <p className="mb-3 text-center text-sm text-mist">Spiral is a visual browse. To browse cards by keyboard, switch to List above.</p>
-          <p className="text-center text-sm text-cream/75">
+          <p className="mb-3 text-left text-sm text-mist">Spiral is a visual browse. To browse cards by keyboard, switch to List above.</p>
+          <p className="text-left text-sm text-cream/75">
             Drag to spin, tap a card to read it.
           </p>
           <div
@@ -461,7 +461,7 @@ export default function DeckClient({
       </>
       )}
 
-      <p className="mt-10 text-center text-xs text-mist">
+      <p className="mt-10 text-left text-xs text-mist">
         {/* Phase 7 (7.3): the imagery credit is attribution, not needed
             on first paint, so it sits behind an info icon. */}
         <InfoHint label="About the card imagery">
