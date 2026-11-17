@@ -429,10 +429,10 @@ export default function Home() {
                 >
                   {String(i + 1).padStart(2, "0")}
                 </span>
-                <div>
-                  <p className="font-display text-2xl text-cream">{s.title}</p>
+                <hgroup>
+                  <h4 className="font-display text-2xl text-cream">{s.title}</h4>
                   <p className="mt-2 text-sm leading-relaxed text-cream/80">{s.text}</p>
-                </div>
+                </hgroup>
               </li>
             ))}
           </ol>
