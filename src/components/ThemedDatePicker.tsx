@@ -1,5 +1,15 @@
 "use client";
 
+/**
+ * All-pages fix 5 (base-ui refactor, 2026-11-17): LEFT HAND-BUILT,
+ * deliberately. Base-ui has no calendar or date-picker primitive,
+ * so there is nothing to swap this to. The calendar grid, the
+ * month/year jump (AF-047: 1900 to this year in one tap), the
+ * typed-date input with MM/DD/YYYY parsing, and the Clear/Today
+ * actions are all bespoke. Its trigger is a real button with
+ * aria-expanded / aria-haspopup="dialog", Escape closes, and day
+ * buttons are real buttons with full date labels.
+ */
 import { useEffect, useRef, useState } from "react";
 import Icon from "@/components/Icon";
 import AnimatedContent from "@/components/AnimatedContent";

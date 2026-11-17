@@ -1,5 +1,16 @@
 'use client';
 
+/**
+ * All-pages fix 5 (base-ui refactor, 2026-11-17): LEFT HAND-BUILT,
+ * deliberately. Base-ui has no tree-view primitive: this is not a
+ * generic menu, it is a bespoke branched nav, section headings
+ * with SVG branch lines drawn to each child, a draw-on animation,
+ * and a marker that glides to the active section. Swapping it to
+ * base-ui Menu would delete the branched visual identity, which
+ * is the component. It is used only by the Header mobile drawer.
+ * Its buttons already carry aria-expanded / aria-current, and the
+ * closed sections keep their children tabIndex -1.
+ */
 import React, { isValidElement, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { HugeiconsIcon, type IconSvgElement } from '@hugeicons/react';
 import {

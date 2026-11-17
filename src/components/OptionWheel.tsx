@@ -1,5 +1,16 @@
 'use client';
 
+/**
+ * All-pages fix 5 (base-ui refactor, 2026-11-17): LEFT HAND-BUILT,
+ * deliberately. Base-ui has no curved wheel-picker primitive: this
+ * is a bespoke drag/wheel picker, options laid out along a circle
+ * by a rAF loop with exponential smoothing, tilt/curve/blur/fade
+ * per distance from the selected row, optional looping, an
+ * optional tick sound, and arrow-key stepping. No base-ui
+ * component models that interaction. It is a listbox (role,
+ * aria-activedescendant, arrow keys) already, used only by the
+ * horoscope sun-sign wheel.
+ */
 import { useId, useRef, useState, useCallback, useEffect, type CSSProperties } from 'react';
 
 type Side = 'left' | 'right';

@@ -64,9 +64,23 @@ describe("all-pages fix 9: touch-action + overscroll", () => {
   });
 
   it("does not change the CardModal dialog contract", () => {
+    // All-pages fix 5 (base-ui refactor): the dialog shell is
+    // base-ui Dialog, which renders role="dialog" and
+    // aria-modal="true" at runtime, so the source no longer carries
+    // those literal strings. The contract is now the base-ui parts
+    // plus the panel classes the old test locked.
     const modal = src("src/components/CardModal.tsx");
-    expect(modal).toContain('role="dialog"');
-    expect(modal).toContain('aria-modal="true"');
+    expect(modal).toContain("Dialog.Root");
+    expect(modal).toContain("Dialog.Portal");
+    expect(modal).toContain("Dialog.Backdrop");
+    expect(modal).toContain("Dialog.Viewport");
+    expect(modal).toContain("Dialog.Popup");
+    expect(modal).toContain("Dialog.Title");
+    expect(modal).toContain("Dialog.Close");
     expect(modal).toContain("max-h-[92vh]");
+    // Asserted on the import line, not on the word: the header
+    // comment names the old hook in prose.
+    expect(modal).not.toContain("@/components/useFocusTrap");
+    expect(modal).not.toMatch(/<AnimatePresence/);
   });
 });
