@@ -8,7 +8,7 @@
 
 Art direction rules for every asset:
 - Color field: deep navy `#0A0E1A` / `#1A1F2E`, never flat black. Gold linework
-  `#D4AF37`. Secondary accent mystic purple `#8B5CF6` only as glow/shadow.
+  `#D4AF37`. Gold only as the accent; no purple in user-facing UI.
 - Motifs: crescent moons, star fields, sun rays, fine filigree borders,
   celestial charts, card-spread geometry. Casting-lots motif for the logo
   (dice/runes/stones feel via stars and dots).

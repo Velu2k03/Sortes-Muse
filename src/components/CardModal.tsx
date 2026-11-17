@@ -105,7 +105,7 @@ export default function CardModal({ cardId, onClose }: Props) {
                   <div>
                     {/* Was text-violet: 4.33:1 on navydeep, below WCAG AA 4.5:1.
                         Cream is 14.74:1 on the same background. The reversed
-                        chips below keep their violet border and tint. */}
+                        chips below use a gold border and tint, not violet. */}
                     <p className="text-sm text-cream">
                       Reversed
                     </p>
@@ -113,7 +113,7 @@ export default function CardModal({ cardId, onClose }: Props) {
                       {card.keywords.reversed.map((k) => (
                         <span
                           key={k}
-                          className="rounded-full border border-violet/40 bg-violet/10 px-3 py-1 text-xs text-cream"
+                          className="rounded-full border border-gold/40 bg-gold/10 px-3 py-1 text-xs text-cream"
                         >
                           {k}
                         </span>
