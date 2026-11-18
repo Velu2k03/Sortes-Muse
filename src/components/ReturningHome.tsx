@@ -199,7 +199,7 @@ export default function ReturningHome() {
             <p className="text-sm text-gold">
               Today&apos;s card
             </p>
-            <h2 className="mt-2 font-display text-3xl text-goldbright sm:text-4xl">
+            <h2 className="mt-2 font-display text-3xl text-cream sm:text-4xl">
               {card.name}
               {daily.reversed ? " (Reversed)" : ""}
             </h2>
@@ -258,7 +258,7 @@ export default function ReturningHome() {
       {/* Your thread: the last reading, and the cards that keep
           appearing. Day 1 (no readings) and day 2 (one reading, a
           1-day streak) get plain sentences, not empty boxes. */}
-      <h2 className="mt-12 font-display text-3xl text-goldbright sm:text-4xl">
+      <h2 className="mt-12 font-display text-3xl text-cream sm:text-4xl">
         Your thread
       </h2>
       <div className="mt-6 grid gap-4 sm:grid-cols-2">

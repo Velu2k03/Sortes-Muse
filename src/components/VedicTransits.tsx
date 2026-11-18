@@ -88,7 +88,7 @@ export default function VedicTransits({
 
   return (
     <section className="mt-10 scroll-mt-24 rounded-3xl border border-gold/25 bg-panel/70 p-6" aria-label="Gochara and panchanga">
-      <h3 className="font-display text-2xl text-goldbright">Gochara and panchanga</h3>
+      <h3 className="font-display text-2xl text-cream">Gochara and panchanga</h3>
       <p className="mt-2 text-sm leading-relaxed text-cream/75">
         Transit planets for the date below, counted in signs from your natal Moon, with the
         sign-based aspects they cast on your natal planets. This is the Vedic transit view:

@@ -117,7 +117,8 @@ describe("browser-verify CHECK items: skip link, daily hold, intake focus", () =
 describe("browser-verify CHECK items: FAQ accordion", () => {
   it("FAQ group headings are h2s", () => {
     const faq = src("src/components/FaqList.tsx");
-    expect(faq).toContain('<h2 className="font-display text-3xl text-goldbright">{g.name}</h2>');
+    // Gold rationing (Velu 2026-11-18): FAQ group h2s are cream.
+    expect(faq).toContain('<h2 className="font-display text-3xl text-cream">{g.name}</h2>');
   });
 
   it("FAQ summary carries aria-expanded synced by onToggle, and a chevron that flips", () => {

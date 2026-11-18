@@ -448,7 +448,7 @@ export default function PricingClient({
           <Card padding={8} elevation="med" height="100%" className="border-gold">
             <VStack gap={0} className="pricing-card-dark h-full text-left">
               {star.popular && <Badge label="Most popular" variant="warning" />}
-              <h2 className="mt-3 font-display text-4xl text-goldbright">{star.name}</h2>
+              <h2 className="mt-3 font-display text-4xl text-cream">{star.name}</h2>
               <p className="mt-4 font-display text-5xl font-bold leading-none text-goldbright lining-nums tabular-nums">
                 ${starPrice.toFixed(2)}
               </p>
@@ -490,7 +490,7 @@ export default function PricingClient({
             return (
               <VStack key={tier.id} gap={0} className="py-6 first:pt-0 last:pb-0">
                 <HStack hAlign="between" gap={4} className="items-baseline">
-                  <h3 className="font-display text-2xl text-goldbright">{tier.name}</h3>
+                  <h3 className="font-display text-2xl text-cream">{tier.name}</h3>
                   <p className="shrink-0 font-display text-2xl font-bold text-cream lining-nums tabular-nums">
                     ${price.toFixed(2)}
                     <span className="text-sm font-normal text-mist">
@@ -548,7 +548,7 @@ export default function PricingClient({
       </p>
 
       <section className="mt-12" aria-labelledby="topups-heading">
-        <h2 id="topups-heading" className="text-center font-display text-3xl text-goldbright">
+        <h2 id="topups-heading" className="text-center font-display text-3xl text-cream">
           Top up any time
         </h2>
         <p className="mx-auto mt-2 max-w-xl text-center text-sm text-cream/75">

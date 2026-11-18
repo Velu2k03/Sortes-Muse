@@ -284,7 +284,7 @@ export default function DailyPage() {
                 transition={{ delay: 0.1, duration: 0.25 }}
                 className="mt-8 w-full rounded-3xl border border-gold/25 bg-panel/70 p-6 text-center sm:p-8"
               >
-                <h2 className="font-display text-4xl text-goldbright">
+                <h2 className="font-display text-4xl text-cream">
                   {card.name}
                 </h2>
                 <div className="mt-4 flex flex-wrap justify-center gap-1.5">

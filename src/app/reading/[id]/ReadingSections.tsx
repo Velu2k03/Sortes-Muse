@@ -59,7 +59,7 @@ export function ReadingHeader({ reading }: { reading: Reading }) {
 export function GuestKeepNotice() {
   return (
     <section className="mx-auto mt-6 max-w-xl rounded-2xl border border-gold/40 bg-panel/70 p-5 text-center">
-      <h2 className="font-display text-xl text-goldbright">Keep this reading</h2>
+      <h2 className="font-display text-xl text-cream">Keep this reading</h2>
       <p className="mt-2 text-sm text-cream/80">
         Right now this reading lives only on this device. Sign in to save it to your account, so it stays in your Journal and future readings are kept there too.
       </p>
@@ -84,7 +84,7 @@ export function GuestKeepNotice() {
 export function ThreeCardNudge() {
   return (
     <section className="mx-auto mt-6 max-w-xl rounded-2xl border border-gold/40 bg-panel/70 p-5 text-center">
-      <h2 className="font-display text-xl text-goldbright">Go deeper with three cards</h2>
+      <h2 className="font-display text-xl text-cream">Go deeper with three cards</h2>
       <p className="mt-2 text-sm text-cream/80">
         Past, present, and future: three cards tracing where you have been, where you stand, and where the path leads.
       </p>

@@ -81,7 +81,7 @@ export default function WesternTransits({
 
   return (
     <section className="mt-10 scroll-mt-24 rounded-3xl border border-gold/25 bg-panel/70 p-6" aria-label="Today's transits">
-      <h3 className="font-display text-2xl text-goldbright">Today&apos;s transits to this chart</h3>
+      <h3 className="font-display text-2xl text-cream">Today&apos;s transits to this chart</h3>
       <p className="mt-2 text-sm leading-relaxed text-cream/75">
         Real planetary positions for the date below, matched against your natal planets by
         aspect. This is a transit-to-natal reading, not sun-sign copy: it changes as the

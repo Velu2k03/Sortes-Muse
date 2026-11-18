@@ -311,7 +311,7 @@ export default function ZiweiChartBoard({ result, lang = "en", view = "ring", sh
           transition={{ duration: reduce ? 0 : 0.25, ease: "easeOut" }}
           className={`mx-auto mt-4 max-w-xl rounded-2xl border p-5 ${current.isLifePalace ? "border-gold/60 bg-gold/10" : "border-gold/25 bg-panel/70"}`}
         >
-          <h3 className="font-display text-xl text-goldbright">
+          <h3 className="font-display text-xl text-cream">
             {en ? current.name : current.chineseName}{" "}
             {glosses && <span className="text-base text-cream/75">({en ? current.chineseName : current.name})</span>}
             {/* Life palace needs only the star marker: its name already

@@ -90,7 +90,7 @@ export function AccountSummary({
 export function PurchaseHistory({ transactions }: { transactions: ServerTx[] | null }) {
   return (
     <div className="mt-6 rounded-3xl border border-gold/20 bg-panel/60 p-6 sm:p-8">
-      <h2 className="font-display text-2xl text-goldbright">Purchase history</h2>
+      <h2 className="font-display text-2xl text-cream">Purchase history</h2>
       {transactions === null ? (
         <p className="mt-2 text-sm text-mist">Loading…</p>
       ) : transactions.length === 0 ? (
@@ -148,7 +148,7 @@ export function SubscriptionPanel({ subscription }: { subscription: Subscription
   const renews = sub?.renewsAt ?? sub?.currentPeriodEnd;
   return (
     <div className="mt-6 rounded-3xl border border-gold/20 bg-panel/60 p-6 sm:p-8">
-      <h2 className="font-display text-2xl text-goldbright">Subscription</h2>
+      <h2 className="font-display text-2xl text-cream">Subscription</h2>
       {subscription === null ? (
         <p className="mt-2 text-sm text-mist">Loading…</p>
       ) : !sub ? (

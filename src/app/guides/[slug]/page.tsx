@@ -133,7 +133,7 @@ export default async function GuidePage({
             id={s.heading.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}
             className="scroll-mt-24"
           >
-            <h2 className="font-display text-3xl text-goldbright">{s.heading}</h2>
+            <h2 className="font-display text-3xl text-cream">{s.heading}</h2>
             {s.paragraphs.map((p, i) => (
               <p key={i} className="mt-3">
                 {p}

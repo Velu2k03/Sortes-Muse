@@ -20,7 +20,7 @@ export default function TermsPage() {
 
       <div className="mt-8 space-y-8 text-[15px] leading-relaxed text-cream/85">
         <section>
-          <h2 className="font-display text-2xl text-goldbright">1. The service</h2>
+          <h2 className="font-display text-2xl text-cream">1. The service</h2>
           <p className="mt-2">
             {APP_SHORT} provides digital tarot readings, card meaning
             reference, and personalized AI-generated interpretations, sold
@@ -30,7 +30,7 @@ export default function TermsPage() {
         </section>
 
         <section>
-          <h2 className="font-display text-2xl text-goldbright">2. Readings are for reflection only</h2>
+          <h2 className="font-display text-2xl text-cream">2. Readings are for reflection only</h2>
           <p className="mt-2">
             All readings, including AI-personalized interpretations, are
             provided for <strong>reflection, perspective, and entertainment
@@ -48,7 +48,7 @@ export default function TermsPage() {
         </section>
 
         <section>
-          <h2 className="font-display text-2xl text-goldbright">3. Oracles and payments</h2>
+          <h2 className="font-display text-2xl text-cream">3. Oracles and payments</h2>
           <ul className="mt-2 list-disc space-y-2 pl-5">
             <li>1 Oracle pays for 1 full reading of any spread.</li>
             <li>
@@ -69,7 +69,7 @@ export default function TermsPage() {
         </section>
 
         <section>
-          <h2 className="font-display text-2xl text-goldbright">4. Acceptable use</h2>
+          <h2 className="font-display text-2xl text-cream">4. Acceptable use</h2>
           <p className="mt-2">
             You agree not to misuse the service, attempt to disrupt it, or use
             readings to harass, deceive, or harm others. You must be at least
@@ -78,7 +78,7 @@ export default function TermsPage() {
         </section>
 
         <section>
-          <h2 className="font-display text-2xl text-goldbright">5. Intellectual property</h2>
+          <h2 className="font-display text-2xl text-cream">5. Intellectual property</h2>
           <p className="mt-2">
             Card imagery uses the public-domain Rider-Waite deck (1909).
             Card meanings, interpretations, artwork, and site design are the
@@ -88,7 +88,7 @@ export default function TermsPage() {
         </section>
 
         <section>
-          <h2 className="font-display text-2xl text-goldbright">6. Limitation of liability</h2>
+          <h2 className="font-display text-2xl text-cream">6. Limitation of liability</h2>
           <p className="mt-2">
             To the maximum extent permitted by law, Resonant Atlas is not
             liable for decisions you make based on readings, or for any
@@ -97,7 +97,7 @@ export default function TermsPage() {
         </section>
 
         <section>
-          <h2 className="font-display text-2xl text-goldbright">7. Changes and contact</h2>
+          <h2 className="font-display text-2xl text-cream">7. Changes and contact</h2>
           <p className="mt-2">
             We may update these terms; continued use after changes means you
             accept them. Contact:{" "}

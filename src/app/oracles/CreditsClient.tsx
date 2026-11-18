@@ -107,7 +107,7 @@ export default function CreditsPage() {
 
 
       <div className="mt-6 rounded-2xl border border-gold/20 bg-panel/50 p-4">
-        <h2 className="font-display text-xl text-goldbright">Purchase history</h2>
+        <h2 className="font-display text-xl text-cream">Purchase history</h2>
         {user ? (
           serverTx === null ? (
             <p className="mt-2 text-sm text-mist">Loading…</p>

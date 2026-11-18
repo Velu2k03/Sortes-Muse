@@ -49,7 +49,7 @@ export default function GuidesSearch({
             href={`/guides/${g.slug}`}
             className="block rounded-3xl border border-gold/25 bg-panel/70 p-6 hover:border-gold/60"
           >
-            <h2 className="font-display text-3xl text-balance text-goldbright">{g.title}</h2>
+            <h2 className="font-display text-3xl text-balance text-cream">{g.title}</h2>
             {/* Phase 7 (7.3): the description paragraph is cut from the
                 index, it repeats the link text. The description stays
                 in the data for search and for the guide page itself. */}
