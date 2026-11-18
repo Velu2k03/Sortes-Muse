@@ -81,6 +81,13 @@ const DeckListItem = (props: ItemProps<TarotCard>) => {
 // transform, flat. The flag comes from DeckClient's existing
 // matchMedia state, no second subscription.
 //
+// Codex P2 (PR #169): the tilt also stays off until that preference
+// has been read. reducedMotion starts false and matchMedia is only
+// read in an effect, so without motionKnown a mouse move between
+// hydration and the effect could tilt a tile for a reduced-motion
+// seeker. motionKnown starts false on the server and the first client
+// render alike (both tilt-off), so there is no hydration mismatch.
+//
 // AGENTS.md self-check exception (same reasoning as the pricing pill
 // span, PR #152, and the password meter, PR #168): the wrapper is a
 // raw motion.div, not an Astryx component. It carries no content,
@@ -91,11 +98,15 @@ const DECK_TILT_MAX_DEG = 7;
 
 function DeckTileTilt({
   reducedMotion,
+  motionKnown,
   children,
 }: {
   reducedMotion: boolean;
+  motionKnown: boolean;
   children: React.ReactNode;
 }) {
+  // Off until the preference is known, and off under reduced motion.
+  const tiltOff = !motionKnown || reducedMotion;
   const tiltX = useMotionValue(0);
   const tiltY = useMotionValue(0);
   const rotateX = useSpring(tiltY, { stiffness: 260, damping: 22 });
@@ -124,10 +135,10 @@ function DeckTileTilt({
 
   return (
     <motion.div
-      onPointerMove={reducedMotion ? undefined : handleMove}
+      onPointerMove={tiltOff ? undefined : handleMove}
       onPointerLeave={handleLeave}
       style={
-        reducedMotion
+        tiltOff
           ? undefined
           : { rotateX, rotateY, transformPerspective: 900 }
       }
@@ -157,6 +168,9 @@ export default function DeckClient({
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [view, setView] = useState<DeckView>(DEFAULT_DECK_VIEW);
   const [reducedMotion, setReducedMotion] = useState(false);
+  // False until the matchMedia effect has read the preference; the
+  // grid tilt stays off until then (Codex P2, PR #169).
+  const [motionKnown, setMotionKnown] = useState(false);
   // The spiral sets pointer capture on press, so a real tap's click event
   // is retargeted to the spiral root and never lands on a card. Detect
   // taps ourselves on press and release instead, and look the card up
@@ -166,7 +180,10 @@ export default function DeckClient({
 
   useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const sync = () => setReducedMotion(mq.matches);
+    const sync = () => {
+      setReducedMotion(mq.matches);
+      setMotionKnown(true);
+    };
     sync();
     mq.addEventListener("change", sync);
     return () => mq.removeEventListener("change", sync);
@@ -486,7 +503,7 @@ export default function DeckClient({
             // scrollbar stays stable.
             style={{ contentVisibility: "auto", containIntrinsicSize: "auto 320px" }}
           >
-          <DeckTileTilt reducedMotion={reducedMotion}>
+          <DeckTileTilt reducedMotion={reducedMotion} motionKnown={motionKnown}>
           <Link
             href={`/deck/${cardSlug(c.name)}`}
             className="group block overflow-hidden rounded-xl border border-gold/20 bg-panel/50 transition hover:-translate-y-1 hover:border-gold/60 hover:shadow-gold-sm"

@@ -12,6 +12,10 @@
  * DeckClient's existing matchMedia state, passed down, so there is
  * still exactly one subscription in the file.
  *
+ * Codex P2 (PR #169): the tilt stays off until that preference has
+ * been read (motionKnown), so a mouse move between hydration and the
+ * matchMedia effect cannot tilt a tile for a reduced-motion seeker.
+ *
  * Source-inspection tests, same convention as
  * reduced-motion-followups.test.ts. TarotCard and the spiral are
  * out of scope and must stay as they are.
@@ -92,9 +96,16 @@ describe("deck grid tile tilt", () => {
 
   it("reduced motion disables the tilt entirely", () => {
     const tilt = tiltComponent();
-    // No move handler, no rotate style.
-    expect(tilt).toContain("onPointerMove={reducedMotion ? undefined : handleMove}");
+    // No move handler, no rotate style, gated on reduced motion (and
+    // on the preference being known).
+    expect(tilt).toContain("const tiltOff = !motionKnown || reducedMotion;");
+    expect(tilt).toContain("onPointerMove={tiltOff ? undefined : handleMove}");
     expect(tilt).toMatch(
+      /tiltOff\s*\?\s*undefined\s*:\s*\{ rotateX, rotateY, transformPerspective: 900 \}/,
+    );
+    // The old reducedMotion-only gates are gone.
+    expect(tilt).not.toContain("onPointerMove={reducedMotion ? undefined : handleMove}");
+    expect(tilt).not.toMatch(
       /reducedMotion\s*\?\s*undefined\s*:\s*\{ rotateX, rotateY, transformPerspective: 900 \}/,
     );
     // Switched on mid-session: snap flat without a spring.
@@ -103,7 +114,47 @@ describe("deck grid tile tilt", () => {
     // The flag is DeckClient's existing state, passed down: still
     // exactly one matchMedia subscription in the file.
     expect(deck.match(/matchMedia\(/g) ?? []).toHaveLength(1);
-    expect(gridBlock()).toContain("<DeckTileTilt reducedMotion={reducedMotion}>");
+    expect(gridBlock()).toContain(
+      "<DeckTileTilt reducedMotion={reducedMotion} motionKnown={motionKnown}>",
+    );
+  });
+
+  it("tilt stays off until the motion preference is known (Codex P2, PR #169)", () => {
+    // Both flags start false, so the server render and the first
+    // client render are identical (tilt off): no hydration mismatch.
+    expect(deck).toContain("const [reducedMotion, setReducedMotion] = useState(false);");
+    expect(deck).toContain("const [motionKnown, setMotionKnown] = useState(false);");
+    // matchMedia is read only inside the effect, never in a state
+    // initializer (that would render tilt-on on the server and
+    // tilt-off on a reduced-motion client).
+    expect(deck).not.toMatch(/useState\([^;]*matchMedia/);
+    // The existing matchMedia effect marks the preference known inside
+    // sync(), right after applying it; the effect body only calls sync()
+    // (react-hooks/set-state-in-effect forbids a bare setState there).
+    const effectStart = deck.indexOf(
+      'const mq = window.matchMedia("(prefers-reduced-motion: reduce)");',
+    );
+    const effectEnd = deck.indexOf(
+      'return () => mq.removeEventListener("change", sync);',
+      effectStart,
+    );
+    expect(effectStart).toBeGreaterThan(-1);
+    expect(effectEnd).toBeGreaterThan(effectStart);
+    const effect = deck.slice(effectStart, effectEnd);
+    expect(effect).toMatch(
+      /const sync = \(\) => \{\s*setReducedMotion\(mq\.matches\);\s*setMotionKnown\(true\);\s*\};/,
+    );
+    expect(effect).toMatch(/\};\s*sync\(\);\s*mq\.addEventListener\("change", sync\);/);
+    // The change listener is still sync alone; setMotionKnown has one call site.
+    expect(effect).toContain('mq.addEventListener("change", sync);');
+    expect(deck.match(/setMotionKnown\(/g) ?? []).toHaveLength(1);
+    // The grid passes it down and the wrapper gates on it.
+    expect(gridBlock()).toContain("motionKnown={motionKnown}");
+    const tilt = tiltComponent();
+    expect(tilt).toContain("motionKnown: boolean;");
+    expect(tilt).toContain("const tiltOff = !motionKnown || reducedMotion;");
+    expect(tilt).toContain("onPointerMove={tiltOff ? undefined : handleMove}");
+    expect(tilt).toMatch(/style=\{\s*tiltOff\s*\?\s*undefined/);
   });
 
   it("tilt wraps the Link, not the entrance motion.div", () => {
