@@ -55,14 +55,18 @@ describe("Intake fields restoration (Velu, 2026-11-17)", () => {
 });
 
 describe("Batch 3b: the light theme fix", () => {
-  it("the dark hero image is hidden in light theme", () => {
+  it("the dark hero video background is hidden in light theme", () => {
+    // The dark hero background used to be a photo (.hero-img,
+    // hidden in light theme, Batch 3b); the video background
+    // replaces it (Velu, 2026-11-18: video as background, not a
+    // section), and the same light-theme rule hides the whole
+    // layer, so the light hero stays clean paper.
     const css = src("src/app/globals.css");
     const rule = css.match(
-      /html\[data-theme="light"\] \.hero-img \{[^}]*\}/
+      /html\[data-theme="light"\] \.hero-video-bg \{[^}]*\}/
     );
     expect(rule).not.toBeNull();
-    expect(rule![0]).toContain("opacity: 0;");
-    expect(rule![0]).not.toContain("opacity: 0.3");
+    expect(rule![0]).toContain("display: none");
   });
 
   it("the wait screen uses theme gold, never hardcoded bright gold", () => {

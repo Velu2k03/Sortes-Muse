@@ -2,9 +2,10 @@ import { describe, it, expect } from "vitest";
 import { readFileSync, existsSync, statSync } from "fs";
 import path from "path";
 
-// Hero video (Velu decided 2026-11-18, "Go" 2026-11-18): his
-// own Flow deck-shuffle loop is the hero visual on the homepage
-// hero and on /daily. File is his velu-shared-video.mp4,
+// Hero video (Velu decided 2026-11-18, "Go" 2026-11-18,
+// revised 2026-11-18: background, not a section): his own
+// Flow deck-shuffle loop plays behind the hero content on the
+// homepage hero and on /daily. File is his velu-shared-video.mp4,
 // shipped as-is, only re-encoded for size (8.96 MB to 2.56 MB,
 // libx264 CRF 26, 1280x720 kept, audio stripped, the source is
 // silent), plus a poster still from its 1s frame. No new
@@ -70,15 +71,62 @@ describe("hero video", () => {
   it("falls back to the static fan if the video fails to load", () => {
     const text = video();
     expect(text).toContain("onError={() => setFailed(true)}");
-    expect(text).toContain("if (failed) return <HeroFanStatic />");
+    expect(text).toContain("if (failed) {");
+    // The fallback is centred inside the same background layer,
+    // under the same scrim, so the hero never shows an empty box
+    // and the text above it stays readable.
+    expect(text).toContain("hero-video-bg absolute inset-0 overflow-hidden bg-navydeep");
+    expect(text).toContain("<HeroFanStatic />");
     expect(text).toContain("import HeroFanStatic from \"./HeroFanStatic\"");
   });
 
-  it("is the homepage hero visual, in place of the 3D fan", () => {
+  it("is a background layer behind the hero content, not a section block", () => {
+    const text = video();
+    // The component IS the absolute full-bleed background layer:
+    // video or poster object-cover, scrim on top of the video,
+    // hero content in a relative sibling above it. The old
+    // section-box shape (aspect-video, rounded border box, width
+    // cap) is gone.
+    expect(text).toContain("hero-video-bg absolute inset-0 overflow-hidden");
+    expect(text).toContain("hero-video-scrim absolute inset-0");
+    expect(text).toContain("absolute inset-0 h-full w-full object-cover");
+    expect(text).not.toContain("aspect-video");
+    expect(text).not.toContain("rounded-2xl");
+    expect(text).not.toContain("max-w-4xl");
+  });
+
+  it("lays a strong dark scrim between video and content, and hides the layer in light theme", () => {
+    const text = video();
+    expect(text).toContain("hero-video-scrim");
+    const cssText = css();
+    // Strong on purpose: the busiest mid-shuffle frames carry
+    // bright cream and yellow cards, and bright gold text on
+    // bright yellow is unreadable. 0.78 top, 0.85 through the
+    // middle where the form and chips sit, 0.94 at the bottom.
+    expect(cssText).toContain(".hero-video-scrim");
+    expect(cssText).toContain("rgb(10 14 26 / 0.78)");
+    expect(cssText).toContain("rgb(10 14 26 / 0.85)");
+    expect(cssText).toContain("rgb(10 14 26 / 0.94)");
+    // Light-theme text is dark gold and dark navy on paper, and
+    // no dark scrim can save that over a dark navy video, so the
+    // whole layer hides there, same pattern as the old hero photo.
+    expect(cssText).toContain('html[data-theme="light"] .hero-video-bg');
+    const lightRule = cssText.split('html[data-theme="light"] .hero-video-bg')[1];
+    expect(lightRule).toContain("display: none");
+  });
+
+  it("is the homepage hero background, behind the question box, in place of the 3D fan", () => {
     const text = home();
     expect(text).toContain("<HeroVideo");
     expect(text).toContain("import HeroVideo from \"@/components/HeroVideo\"");
     expect(text).not.toContain("HeroScene");
+    // The old hero photo is gone: the video is the background now.
+    expect(text).not.toContain("hero-bg.jpg");
+    // The background layer renders before the hero content in the
+    // file, so the headline, form, chips and free line sit above
+    // it; and the old section block below the question box is gone.
+    expect(text.indexOf("<HeroVideo")).toBeLessThan(text.indexOf('id="hero-question"'));
+    expect(text).not.toContain('<div className="mt-6 w-full">');
     // The question box, the free-availability line, and the
     // sections below the hero are untouched by the swap.
     expect(text).toContain("hero-question");
@@ -86,16 +134,21 @@ describe("hero video", () => {
     expect(text).toContain("What&apos;s on your mind?");
   });
 
-  it("sits on /daily above the ritual, never inside the draw flow", () => {
+  it("sits behind the /daily heading, above the ritual, never inside the draw flow", () => {
     const text = daily();
     expect(text).toContain("<HeroVideo />");
     expect(text).toContain("import HeroVideo from \"@/components/HeroVideo\"");
-    // The video renders before the draw container in the file,
-    // and the draw flow is untouched: same hold time, same
-    // 1400ms ritual pause, same draw function.
+    // The video renders before the heading in the file (it sits
+    // behind it in the hero panel), and the hero panel sits
+    // above the draw container.
+    expect(text.indexOf("<HeroVideo />")).toBeLessThan(
+      text.indexOf("Your Daily Card"),
+    );
     expect(text.indexOf("<HeroVideo />")).toBeLessThan(
       text.indexOf("min-h-[24rem]"),
     );
+    // The draw flow is untouched: same hold time, same
+    // 1400ms ritual pause, same draw function.
     expect(text).toContain("holdTime={1200}");
     expect(text).toContain("}, 1400)");
     expect(text).toContain("const draw = () => {");

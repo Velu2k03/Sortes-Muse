@@ -132,31 +132,36 @@ export default function DailyPage() {
 
   return (
     <div className="mx-auto flex max-w-2xl flex-col items-center px-4 py-12 sm:px-6">
-      <h1 className="mt-3 text-center font-display text-5xl text-goldbright sm:text-6xl">
-        Your Daily Card
-      </h1>
-      <p className="mt-4 max-w-md text-center text-cream/75">
-        One card, free forever, to think about today.
-      </p>
-      {practice.total >= 1 && (
-        <motion.p
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="mt-4 inline-flex items-center gap-2 rounded-full border border-gold/40 bg-gold/10 px-4 py-1.5 text-sm font-semibold text-goldbright"
-        >
-          Practiced {practice.total} {practice.total === 1 ? "day" : "days"}
-          {practice.last30 !== practice.total && ` · ${practice.last30} in the last 30 days`}
-        </motion.p>
-      )}
-
-      {/* Hero video (Velu, 2026-11-18): his own Flow deck-shuffle
-          loop sits in the intro area, above the ritual, never
-          inside the draw flow, so it cannot touch the draw, the
-          hold, or the PR #131 timing. Reduced-motion visitors
-          get the poster still, never an autoplaying video. */}
-      <div className="mt-8 w-full">
+      {/* Hero video background (Velu, 2026-11-18, revised
+          2026-11-18: "make the video as bg, not as a section"):
+          his own Flow deck-shuffle loop plays behind the heading
+          and intro, with its own dark scrim between the video and
+          the text, so the heading stays readable even on the
+          bright mid-shuffle frames. The hold-to-draw card below
+          stays outside this hero area and untouched. Reduced-
+          motion visitors get the poster still, never an
+          autoplaying video. */}
+      <section className="relative w-full overflow-hidden rounded-3xl border border-gold/25">
         <HeroVideo />
-      </div>
+        <div className="relative flex flex-col items-center px-4 py-10 sm:py-12">
+          <h1 className="mt-3 text-center font-display text-5xl text-goldbright sm:text-6xl">
+            Your Daily Card
+          </h1>
+          <p className="mt-4 max-w-md text-center text-cream/75">
+            One card, free forever, to think about today.
+          </p>
+          {practice.total >= 1 && (
+            <motion.p
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="mt-4 inline-flex items-center gap-2 rounded-full border border-gold/40 bg-gold/10 px-4 py-1.5 text-sm font-semibold text-goldbright"
+            >
+              Practiced {practice.total} {practice.total === 1 ? "day" : "days"}
+              {practice.last30 !== practice.total && ` · ${practice.last30} in the last 30 days`}
+            </motion.p>
+          )}
+        </div>
+      </section>
 
       <div className="mt-10 flex min-h-[24rem] w-full flex-col items-center justify-center">
         <AnimatePresence mode="wait">
