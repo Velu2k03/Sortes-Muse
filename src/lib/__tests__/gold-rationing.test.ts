@@ -13,7 +13,7 @@ import path from "path";
 // sheet's ink.
 //
 // Out of scope and deliberately not guarded here: the wordmark
-// gradient, the scroll-progress bar, the hero video scrim, gold
+// (solid gold since 2026-11-19, locked by solid-gold-wordmark.test.ts),
 // borders (the pricing Star panel), gold eyebrows, chips and links.
 // The rule is about heading text colour.
 //

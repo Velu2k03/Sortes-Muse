@@ -175,22 +175,16 @@ summary,
 
 /* Header logo (Velu, 2026-11-15): the logo is FIXED, no rotation.
    The old logo-turn-once spin is removed. The SORTES wordmark keeps
-   the Cinzel display face with a gold gradient and a
-   soft glow, so the word itself carries the brand. Dark theme uses
-   his gold #d4af37 to a lighter tint; light theme uses dark gold so
-   the word stays readable on cream. */
+   the Cinzel display face in solid gold (no gradient, Velu
+   2026-11-18) with a soft glow, so the word itself carries the
+   brand. Dark theme uses his gold token #d4af37; light theme uses
+   dark gold #7c5e00 so the word stays readable on cream. */
 .wordmark {
-  background: linear-gradient(180deg, #f4d03f 0%, #d4af37 55%, #b8962e 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: var(--color-gold);
   filter: drop-shadow(0 1px 6px rgba(212, 175, 55, 0.35));
 }
 html[data-theme="light"] .wordmark {
-  background: linear-gradient(180deg, #7c5e00 0%, #7c5e00 60%, #6b5200 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: #7c5e00;
   filter: drop-shadow(0 1px 4px rgba(124, 94, 0, 0.25));
 }
 
