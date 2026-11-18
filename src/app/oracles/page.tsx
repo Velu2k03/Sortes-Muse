@@ -71,7 +71,7 @@ export default function Credits() {
           the H1 is in the initial HTML. It used to live in the
           client component, which suspends on useSearchParams, so
           crawlers saw no H1 at all. */}
-      <div className="text-center">
+      <div className="text-left">
         <h1 className="mt-3 font-display text-5xl text-goldbright sm:text-6xl">
           Top up Oracles
         </h1>
