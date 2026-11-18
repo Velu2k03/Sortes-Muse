@@ -617,6 +617,17 @@ html[data-theme="light"] {
   .scroll-progress-bar {
     display: none !important;
   }
+  /* Hero video (2026-11-18): the component renders the poster
+     until its matchMedia effect runs, but JS runs after first
+     paint, and the first render is server-identical (not
+     mounted), so the video would not be in the SSR HTML anyway.
+     This is defence in depth for the mid-session case: if a
+     reduced-motion visitor toggles the setting after the video
+     mounted, the video hides before the effect swaps it back
+     to the poster. */
+  .hero-video video {
+    display: none !important;
+  }
 }
 
 /* Phase 5 (5.4a): Heirloom print export. The heirloom sheet is

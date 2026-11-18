@@ -18,7 +18,7 @@ import TodaySample from "@/components/TodaySample";
 import ReturnLoop from "@/components/ReturnLoop";
 import AccountDeletedNotice from "@/components/AccountDeletedNotice";
 import { Orb } from "@/components/ReactBitsNew";
-import HeroScene from "@/components/HeroScene";
+import HeroVideo from "@/components/HeroVideo";
 
 // AF-042: the audit's "12 simultaneous animations" is stale — Phase
 // 4C had already removed the gimmicks. Counted at fix time, the
@@ -290,12 +290,15 @@ export default function Home() {
           <p className="mt-2 text-xs text-mist/80">
             Written just for you, saved in your journal.
           </p>
-          {/* Phase 2 3D hero (Velu's choice 5): the fan of 3D tarot
-              cards with the gold moon behind, below the question
-              box. The question box stays first and usable before the
-              3D loads; the scene is the centrepiece, not a splash. */}
+          {/* Hero video (Velu, 2026-11-18): his own Flow
+              deck-shuffle loop is the hero visual now, in place
+              of the 3D card fan. The question box stays first
+              and usable before the video loads; the video is the
+              centrepiece, not a splash. Reduced-motion visitors
+              get the poster still, never an autoplaying video;
+              a load failure falls back to the static fan. */}
           <div className="mt-6 w-full">
-            <HeroScene />
+            <HeroVideo className="max-w-4xl" />
           </div>
           {/* AF-034: the pricing line and the charts line stay off
               the hero. Pricing lives on /pricing; charts have their

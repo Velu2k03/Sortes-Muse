@@ -18,6 +18,7 @@ import CardModal from "@/components/CardModal";
 import { trackDailyCardDrawn } from "@/components/Analytics";
 import HoldCard from "@/components/HoldCard";
 import HoloCard from "@/components/HoloCard";
+import HeroVideo from "@/components/HeroVideo";
 import Link from "next/link";
 
 type Phase = "idle" | "shuffling" | "revealed";
@@ -147,6 +148,15 @@ export default function DailyPage() {
           {practice.last30 !== practice.total && ` · ${practice.last30} in the last 30 days`}
         </motion.p>
       )}
+
+      {/* Hero video (Velu, 2026-11-18): his own Flow deck-shuffle
+          loop sits in the intro area, above the ritual, never
+          inside the draw flow, so it cannot touch the draw, the
+          hold, or the PR #131 timing. Reduced-motion visitors
+          get the poster still, never an autoplaying video. */}
+      <div className="mt-8 w-full">
+        <HeroVideo />
+      </div>
 
       <div className="mt-10 flex min-h-[24rem] w-full flex-col items-center justify-center">
         <AnimatePresence mode="wait">
