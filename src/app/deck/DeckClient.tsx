@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useEffect, useMemo, useRef, useState, forwardRef } from "react";
 import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
-import { motion } from "motion/react";
+import { motion, useMotionValue, useSpring } from "motion/react";
 import { Virtuoso, type ItemProps, type ListProps } from "react-virtuoso";
 import {
   CARDS,
@@ -69,6 +69,73 @@ const DeckListItem = (props: ItemProps<TarotCard>) => {
     </li>
   );
 };
+
+// Grid tile tilt (Velu 2026-11-19): a quiet mouse-follow tilt, the
+// same pattern as TarotCard's (useMotionValue + useSpring, stiffness
+// 260, damping 22, perspective 900) but half the angle, max 7 degrees
+// per axis. It sits on its own wrapper between the entrance
+// motion.div and the Link, so the entrance (opacity/y) and the tilt
+// never write the same transform, and the Link keeps its CSS hover
+// lift, border and shadow. Mouse pointers only (pen and touch are
+// ignored, so tapping is unchanged). Reduced motion: no handlers, no
+// transform, flat. The flag comes from DeckClient's existing
+// matchMedia state, no second subscription.
+//
+// AGENTS.md self-check exception (same reasoning as the pricing pill
+// span, PR #152, and the password meter, PR #168): the wrapper is a
+// raw motion.div, not an Astryx component. It carries no content,
+// semantics or focus (the Link inside stays the only focus and click
+// target); it only takes pointer events and Motion style writes, and
+// the grid around it is already raw motion.div tiles.
+const DECK_TILT_MAX_DEG = 7;
+
+function DeckTileTilt({
+  reducedMotion,
+  children,
+}: {
+  reducedMotion: boolean;
+  children: React.ReactNode;
+}) {
+  const tiltX = useMotionValue(0);
+  const tiltY = useMotionValue(0);
+  const rotateX = useSpring(tiltY, { stiffness: 260, damping: 22 });
+  const rotateY = useSpring(tiltX, { stiffness: 260, damping: 22 });
+
+  const handleMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.pointerType !== "mouse" || reducedMotion) return;
+    const r = e.currentTarget.getBoundingClientRect();
+    // (0..1 - 0.5) * 2 * max: the edges reach exactly ±7 degrees.
+    tiltX.set(((e.clientX - r.left) / r.width - 0.5) * 2 * DECK_TILT_MAX_DEG);
+    tiltY.set(-((e.clientY - r.top) / r.height - 0.5) * 2 * DECK_TILT_MAX_DEG);
+  };
+  const handleLeave = () => {
+    tiltX.set(0);
+    tiltY.set(0);
+  };
+  // Reduced motion switched on mid-session: snap flat, no spring, so
+  // no stale tilt is left on a tile when the style is dropped.
+  useEffect(() => {
+    if (!reducedMotion) return;
+    tiltX.jump(0);
+    tiltY.jump(0);
+    rotateX.jump(0);
+    rotateY.jump(0);
+  }, [reducedMotion, tiltX, tiltY, rotateX, rotateY]);
+
+  return (
+    <motion.div
+      onPointerMove={reducedMotion ? undefined : handleMove}
+      onPointerLeave={handleLeave}
+      style={
+        reducedMotion
+          ? undefined
+          : { rotateX, rotateY, transformPerspective: 900 }
+      }
+    >
+      {children}
+    </motion.div>
+  );
+}
 
 // Phase 4A (4.4): the list is the default view (Batch 5: one text
 // row per card, the most keyboard- and screen-reader-friendly view);
@@ -419,6 +486,7 @@ export default function DeckClient({
             // scrollbar stays stable.
             style={{ contentVisibility: "auto", containIntrinsicSize: "auto 320px" }}
           >
+          <DeckTileTilt reducedMotion={reducedMotion}>
           <Link
             href={`/deck/${cardSlug(c.name)}`}
             className="group block overflow-hidden rounded-xl border border-gold/20 bg-panel/50 transition hover:-translate-y-1 hover:border-gold/60 hover:shadow-gold-sm"
@@ -444,6 +512,7 @@ export default function DeckClient({
               {c.name}
             </span>
           </Link>
+          </DeckTileTilt>
           </motion.div>
         ))}
       </div>
