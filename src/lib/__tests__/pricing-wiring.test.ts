@@ -429,7 +429,9 @@ describe("Pricing card contrast: dark islands on the light page", () => {
     // count of 2 above plus the two VStack regexes already pin
     // placement; no whitespace-fragile negative assertion is
     // needed (Sonnet nit, PR #88).
-    expect(c).toContain('<VStack gap={0} className="text-center">');
+    // Left-aligned h1s (Velu 2026-11-19): the hero block is
+    // text-left now, locked in left-aligned-h1s.test.ts.
+    expect(c).toContain('<VStack gap={0} className="text-left">');
   });
 
   it("keeps the card text on the existing Tailwind classes (no new colours invented)", () => {

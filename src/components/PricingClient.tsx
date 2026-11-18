@@ -374,14 +374,14 @@ export default function PricingClient({
       // globals.css.
       data-astryx-theme="sortes"
     >
-      <VStack gap={0} className="text-center">
+      <VStack gap={0} className="text-left">
         {/* UX audit Phase 2, F14 (Hallmark re-run): the "Pricing"
             eyebrow above the H1 is gone. The H1 already says what
             the page is, and Hallmark gate 54 is never an eyebrow. */}
         <h1 className="mt-3 font-display text-5xl text-goldbright sm:text-6xl">
           Choose your plan
         </h1>
-        <p className="mx-auto mt-4 max-w-xl text-sm text-cream/75">
+        <p className="mt-4 max-w-xl text-sm text-cream/75">
           Monthly Oracles for readings, charts, and reports. Top-ups
           are one-time purchases, separate from subscriptions.
         </p>

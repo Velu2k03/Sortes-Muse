@@ -143,11 +143,11 @@ export default function DailyPage() {
           autoplaying video. */}
       <section className="relative w-full overflow-hidden rounded-3xl border border-gold/25">
         <HeroVideo />
-        <div className="relative flex flex-col items-center px-4 py-10 sm:py-12">
-          <h1 className="mt-3 text-center font-display text-5xl text-goldbright sm:text-6xl">
+        <div className="relative flex flex-col items-start px-4 py-10 sm:py-12">
+          <h1 className="mt-3 text-left font-display text-5xl text-goldbright sm:text-6xl">
             Your Daily Card
           </h1>
-          <p className="mt-4 max-w-md text-center text-cream/75">
+          <p className="mt-4 max-w-md text-left text-cream/75">
             One card, free forever, to think about today.
           </p>
           {practice.total >= 1 && (
