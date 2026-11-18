@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Cormorant_Garamond, Manrope } from "next/font/google";
+import { Cinzel, Jost } from "next/font/google";
 import Script from "next/script";
 import { headers } from "next/headers";
 import "./globals.css";
@@ -29,19 +29,28 @@ import { serializeJsonLd } from "@/lib/json-ld";
 // The only external origin this layout actually fetches from is
 // Plausible (the analytics script below), so that is the one
 // origin that gets a preconnect, and only when it is configured.
-const display = Cormorant_Garamond({
+//
+// Fonts F2 (Velu, 2026-11-19): Cinzel (display) + Jost (body)
+// replace the earlier display serif + body sans. Both are SIL OFL
+// 1.1 on Google Fonts. Only the weights the site uses are loaded:
+// display 400 (default), 600 (Astryx h3-h6 semibold) and 700
+// (font-bold, Astryx h1/h2 bold); body 200 (OptionWheel
+// font-extralight), 400, 500, 600, 700 (no font-light in src/).
+// Cinzel ships no italic, so no italic style is requested, and the
+// display text that asked for italic is set upright instead of
+// getting a browser faux slant.
+const display = Cinzel({
   variable: "--font-display",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  style: ["normal", "italic"],
+  weight: ["400", "600", "700"],
   display: "swap",
   preload: true,
 });
 
-const body = Manrope({
+const body = Jost({
   variable: "--font-body",
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
+  weight: ["200", "400", "500", "600", "700"],
   display: "swap",
   preload: true,
 });

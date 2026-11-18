@@ -451,7 +451,7 @@ export function ResultHeader({ prefs, s, result }: { prefs: ChartPrefs; s: Chart
         card and the button below exist for every result, before
         interpretation, reusing chartSummaryText. */}
     <div aria-hidden="true" style={{ position: "fixed", left: "-10000px", top: 0, width: 1200, height: 630 }}>
-      <div ref={shareRef} style={{ width: 1200, height: 630, background: BRAND.navyDeep, color: BRAND.cream, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 60, fontFamily: "Cormorant Garamond, Georgia, serif", border: `2px solid ${BRAND.gold}` }}>
+      <div ref={shareRef} style={{ width: 1200, height: 630, background: BRAND.navyDeep, color: BRAND.cream, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 60, fontFamily: "Cinzel, Georgia, serif", border: `2px solid ${BRAND.gold}` }}>
         <div style={{ fontSize: 28, letterSpacing: 8, color: BRAND.gold }}>SORTES</div>
         <div style={{ fontSize: 48, marginTop: 12 }}>{result.system === "ziwei" ? "Ziwei chart" : result.system === "vedic" ? "Vedic chart" : "Western chart"}</div>
         <div style={{ fontSize: 24, marginTop: 24, maxWidth: 900, textAlign: "center" }}>{chartSummaryText(result, ziweiLang)}</div>

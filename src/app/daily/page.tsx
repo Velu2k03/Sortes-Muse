@@ -220,7 +220,7 @@ export default function DailyPage() {
                   burstDuration={0.25}
                 />
               </motion.div>
-              <p className="mt-8 font-display text-2xl italic text-goldbright">
+              <p className="mt-8 font-display text-2xl text-goldbright">
                 The lots are being cast…
               </p>
             </motion.div>

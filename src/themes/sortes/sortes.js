@@ -92,8 +92,8 @@ export const sortesTheme = {
     "--_astryx-pre-tempo-duration-slow": "700ms",
     "--_astryx-pre-tempo-duration-slow-max": "935ms",
     "--_astryx-motion-tempo": "1",
-    "--font-family-body": "Manrope, system-ui, -apple-system, \"Segoe UI\", sans-serif",
-    "--font-family-heading": "\"Cormorant Garamond\", \"Times New Roman\", Georgia, serif",
+    "--font-family-body": "Jost, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+    "--font-family-heading": "Cinzel, \"Times New Roman\", Georgia, serif",
     "--font-family-code": "ui-monospace, \"SF Mono\", Monaco, Consolas, \"Liberation Mono\", \"Courier New\", monospace",
     "--color-syntax-keyword": "light-dark(#6b187c, #efa8ff)",
     "--color-syntax-string": "light-dark(#0b5615, #a4d6a3)",
@@ -485,11 +485,11 @@ export const sortesTheme = {
         "ratio": 1.2
       },
       "body": {
-        "family": "Manrope",
+        "family": "Jost",
         "fallbacks": "system-ui, -apple-system, \"Segoe UI\", sans-serif"
       },
       "heading": {
-        "family": "Cormorant Garamond",
+        "family": "Cinzel",
         "fallbacks": "\"Times New Roman\", Georgia, serif",
         "weights": {
           "1": "bold",
