@@ -100,7 +100,7 @@ export default function ReturnLoop() {
   return (
     <section className="mx-auto max-w-6xl px-4 py-8 sm:px-6" aria-label="Your return">
       <div className="rounded-3xl border border-gold/25 bg-panel/60 p-6 sm:p-8">
-        <p className="text-center font-display text-2xl italic text-goldbright">&ldquo;{quote}&rdquo;</p>
+        <p className="text-center font-display text-2xl text-goldbright">&ldquo;{quote}&rdquo;</p>
         <div className="mt-6 grid gap-4 sm:grid-cols-2">
           <div className="rounded-2xl border border-gold/20 bg-ink/40 p-4">
             {/* UX audit Phase 2, F14 (2026-11-16): sentence-case label,

@@ -4,7 +4,7 @@ import type { CSSProperties } from "react";
 import { Toaster } from "sonner";
 
 // The one app-wide toast host. Brand tokens only (panel, cream, gold);
-// fonts are inherited from the page (Cormorant Garamond + Manrope).
+// fonts are inherited from the page (Cinzel + Jost).
 // mobileOffset keeps failure toasts above the iOS home indicator:
 // layout.tsx sets viewportFit "cover", so the bottom safe-area inset
 // must be added to Sonner's 16px mobile bottom offset (the deleted

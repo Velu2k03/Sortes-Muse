@@ -4,7 +4,8 @@ import { neutralTheme } from "@astryxdesign/theme-neutral";
 // Sortes navy+gold theme for the Astryx scoped pilot (pricing page
 // only, Velu 2026-11-14). Extends the neutral theme and overrides
 // only the semantic tokens that carry the brand: navy surfaces,
-// cream text, gold accent, Cormorant Garamond display, Manrope body.
+// cream text, gold accent, Cinzel display, Jost body (Fonts F2,
+// Velu 2026-11-19).
 // Brand lock (Velu, 2026-11-16): Navy #141b2e, Gold #d4af37,
 // Cream #ede6d6. Replaces the 2026-11-15 bronze lock. The fonts are
 // already loaded by next/font in the
@@ -21,11 +22,11 @@ export const sortesTheme = defineTheme({
   typography: {
     scale: { base: 16, ratio: 1.2 },
     body: {
-      family: "Manrope",
+      family: "Jost",
       fallbacks: 'system-ui, -apple-system, "Segoe UI", sans-serif',
     },
     heading: {
-      family: "Cormorant Garamond",
+      family: "Cinzel",
       fallbacks: '"Times New Roman", Georgia, serif',
       weight: "semibold",
       weights: { 1: "bold", 2: "bold" },

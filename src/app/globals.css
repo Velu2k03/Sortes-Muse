@@ -52,9 +52,9 @@
   --shadow-card-gold: 0 8px 30px rgb(0 0 0 / 0.6), 0 0 24px rgb(212 175 55 / 0.15);
   --shadow-toast: 0 1px 2px rgb(0 0 0 / 0.05), 0 4px 12px rgb(0 0 0 / 0.1);
 
-  --font-display: "Cormorant Garamond", "Times New Roman", Georgia, serif;
-  --font-body: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-number: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: "Cinzel", "Times New Roman", Georgia, serif;
+  --font-body: "Jost", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-number: "Jost", system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
 /* Light theme, Expansion 1: Tailwind v4 utilities read var(--color-*),
@@ -130,7 +130,7 @@ html[data-theme="light"] {
 [data-astryx-theme="sortes"] {
   color-scheme: dark;
 }
-/* Numbers: genjutsu paint method, distinct readable numerals. Manrope
+/* Numbers: genjutsu paint method, distinct readable numerals. Jost
    with tabular figures, so prices, credits, degrees and counts line
    up and never inherit the display serif. Applied via .num and the
    font-number utility in both dark and light themes. */
@@ -175,7 +175,7 @@ summary,
 
 /* Header logo (Velu, 2026-11-15): the logo is FIXED, no rotation.
    The old logo-turn-once spin is removed. The SORTES wordmark keeps
-   the Cormorant Garamond display face with a gold gradient and a
+   the Cinzel display face with a gold gradient and a
    soft glow, so the word itself carries the brand. Dark theme uses
    his gold #d4af37 to a lighter tint; light theme uses dark gold so
    the word stays readable on cream. */
@@ -631,10 +631,11 @@ html[data-theme="light"] {
 
 /* Phase 5 (5.4a): Heirloom print export. The heirloom sheet is
    hidden on screen; in print, everything else is hidden and only
-   the sheet prints, typeset on light paper in Cormorant Garamond
-   (the brand display face) with Celestial Indigo ink and a gold
-   rule. Real text, not an image, so the saved PDF stays selectable
-   and searchable. */
+   the sheet prints, typeset on light paper in Cinzel (the brand
+   display face) with Celestial Indigo ink and a gold rule. Real
+   text, not an image, so the saved PDF stays selectable and
+   searchable. Cinzel ships no italic, so the subtitle and footer
+   print upright (Fonts F2, 2026-11-19). */
 .heirloom-print-sheet,
 .journal-print-sheet {
   display: none;
@@ -659,7 +660,7 @@ html[data-theme="light"] {
     inset: 0;
     color: #1a2340;
     background: #ffffff;
-    font-family: "Cormorant Garamond", "Times New Roman", Georgia, serif;
+    font-family: "Cinzel", "Times New Roman", Georgia, serif;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
@@ -679,7 +680,6 @@ html[data-theme="light"] {
   }
   .heirloom-subtitle {
     font-size: 13pt;
-    font-style: italic;
     text-align: center;
     color: #3d4666;
     margin: 6pt 0 0;
@@ -718,7 +718,6 @@ html[data-theme="light"] {
   }
   .heirloom-footer {
     font-size: 10pt;
-    font-style: italic;
     text-align: center;
     color: #3d4666;
     margin: 0;

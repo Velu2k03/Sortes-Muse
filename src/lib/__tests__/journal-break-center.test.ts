@@ -32,9 +32,10 @@
  * with class heirloom-title (HistoryClient.tsx:581) lives inside
  * the .journal-print-sheet, which is display: none on screen and
  * only shows in print (globals.css). Its only CSS rule is inside
- * @media print, where it inherits Cormorant Garamond from the
- * print sheet's font-family (globals.css:553), so it is Cormorant
- * Garamond in print, not a third font, and it is not the visible
+ * @media print, where it inherits Cinzel (the display face since
+ * Fonts F2, 2026-11-19) from the print sheet's font-family
+ * (globals.css), so it is Cinzel in print, not a third font, and
+ * it is not the visible
  * page h1 at all. No change needed, and this branch does not
  * touch it.
  *
@@ -70,16 +71,16 @@ describe("break the center, /journal: headings and intro left-aligned", () => {
     );
   });
 
-  it("heirloom-title h1 is print-only Cormorant, untouched", () => {
+  it("heirloom-title h1 is print-only Cinzel, untouched", () => {
     const journal = src("src/app/journal/HistoryClient.tsx");
     expect(journal).toContain('<h1 className="heirloom-title">Sortes journal</h1>');
     // The print sheet is hidden on screen; the h1 stays inside it.
     expect(journal).toContain('<div className="journal-print-sheet">');
     const css = src("src/app/globals.css");
     // The only heirloom-title rule is inside @media print, where
-    // it inherits Cormorant Garamond from the print sheet.
+    // it inherits Cinzel from the print sheet.
     expect(css).toContain(
-      'font-family: "Cormorant Garamond", "Times New Roman", Georgia, serif;',
+      'font-family: "Cinzel", "Times New Roman", Georgia, serif;',
     );
   });
 

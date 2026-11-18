@@ -22,7 +22,8 @@
   color: var(--color-mist);
   font-family: var(--font-display);
   font-size: 1.35rem;
-  font-style: italic;
+  /* Fonts F2 (2026-11-19): Cinzel ships no italic, so the step text
+     is upright Cinzel, not a browser faux slant. */
   transition: color 180ms ease, opacity 180ms ease;
 }
 

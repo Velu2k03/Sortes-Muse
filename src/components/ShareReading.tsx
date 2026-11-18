@@ -142,7 +142,7 @@ export default function ShareReading({
             flexDirection: "column",
             alignItems: "center",
             padding: "110px 80px 70px",
-            fontFamily: "Cormorant Garamond, Georgia, serif",
+            fontFamily: "Cinzel, Georgia, serif",
             border: `3px solid ${BRAND.gold}`,
             boxSizing: "border-box",
           }}
@@ -208,7 +208,6 @@ export default function ShareReading({
             <div
               style={{
                 fontSize: 30,
-                fontStyle: "italic",
                 lineHeight: 1.5,
                 marginTop: 64,
                 textAlign: "center",
@@ -219,7 +218,7 @@ export default function ShareReading({
             </div>
           )}
           <div style={{ flex: 1 }} />
-          <div style={{ fontSize: 22, fontStyle: "italic", color: BRAND.mist, textAlign: "center" }}>
+          <div style={{ fontSize: 22, color: BRAND.mist, textAlign: "center" }}>
             {TAGLINE}
           </div>
           <div style={{ fontSize: 20, letterSpacing: 3, color: BRAND.gold, marginTop: 12 }}>

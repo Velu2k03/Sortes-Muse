@@ -2,14 +2,14 @@
 
 /**
  * Phase 5 (5.4a): Heirloom export — a beautifully typeset keepsake
- * of a reading, chart, or report, in Cormorant Garamond + Celestial
+ * of a reading, chart, or report, in Cinzel + Celestial
  * Indigo, that the user can download, print, and keep.
  *
  * DECISION (documented, no new dependency): this is a dedicated
  * print stylesheet + window.print(), not a PDF library. No PDF
  * library exists in the repo today, and the candidates (jspdf,
  * pdf-lib, both MIT) would need hand-built layout code plus embedded
- * font files for Cormorant Garamond, for a worse result than the
+ * font files for Cinzel, for a worse result than the
  * browser's own typesetting of the real loaded fonts. Print-to-PDF
  * keeps real selectable text, the brand fonts already on the page,
  * zero bundle cost, and zero new-dependency risk. AF-049: the button

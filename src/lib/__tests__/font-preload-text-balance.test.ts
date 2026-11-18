@@ -33,8 +33,10 @@ describe("font preload + preconnect (all-pages fix 8)", () => {
   const layout = src("src/app/layout.tsx");
 
   it("preloads both fonts explicitly through next/font/google", () => {
-    expect(layout).toContain("Cormorant_Garamond({");
-    expect(layout).toContain("Manrope({");
+    // Fonts F2 (Velu, 2026-11-19): Cinzel display + Jost body.
+    expect(layout).toContain('import { Cinzel, Jost } from "next/font/google";');
+    expect(layout).toContain("Cinzel({");
+    expect(layout).toContain("Jost({");
     // One preload: true per loader, both of them.
     expect(layout.match(/preload: true/g)?.length).toBe(2);
   });
@@ -67,8 +69,11 @@ describe("text-balance on h1/h2 (all-pages fix 8)", () => {
   });
 
   it("does not add a third font or change the brand font stacks", () => {
-    expect(css).toContain('"Cormorant Garamond"');
-    expect(css).toContain('"Manrope"');
+    // Fonts F2 (Velu, 2026-11-19): the brand stacks are Cinzel
+    // (display) and Jost (body and numbers).
+    expect(css).toContain('--font-display: "Cinzel", "Times New Roman", Georgia, serif;');
+    expect(css).toContain('--font-body: "Jost", system-ui, -apple-system, "Segoe UI", sans-serif;');
+    expect(css).toContain('--font-number: "Jost", system-ui, -apple-system, "Segoe UI", sans-serif;');
     expect(css).not.toContain('"Inter"');
   });
 
