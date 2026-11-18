@@ -39,7 +39,20 @@ import HeroFanStatic from "./HeroFanStatic";
  * theme too). Light-theme text is dark gold and dark navy on
  * paper, and no dark scrim can save that over a dark navy
  * video, so the light hero stays clean paper plus the Orb
- * glow, exactly as before the video.
+ * glow, exactly as before the video. AND the JS does not
+ * autoplay a hidden video in light theme (Codex P2, PR #163):
+ * the component tracks the live theme from
+ * documentElement.dataset.theme, subscribing to the
+ * sortes-theme-change window event the Header toggle
+ * dispatches and to a MutationObserver on data-theme, which
+ * also catches the Header's OS-following path that sets the
+ * attribute without dispatching the event. In light theme the
+ * component renders nothing at all, so no video element
+ * mounts, no 2.5 MB is downloaded or decoded, and no poster
+ * is fetched either; the CSS hide rule stays as a first-paint
+ * belt-and-braces for the server HTML. Toggling theme
+ * mid-session mounts the video when going light to dark and
+ * unmounts it when going dark to light.
  *
  * Behaviour: muted, autoplay, loop, playsInline,
  * preload="metadata". Reduced motion: the server renders the
@@ -61,6 +74,7 @@ const POSTER_SRC = "/videos/hero-deck-shuffle-poster.jpg";
 export default function HeroVideo() {
   const [mounted, setMounted] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
+  const [isDark, setIsDark] = useState(false);
   const [failed, setFailed] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -78,6 +92,32 @@ export default function HeroVideo() {
     return () => mq.removeEventListener("change", sync);
   }, []);
 
+  // Live theme, same mount-then-sync pattern so there is no
+  // hydration mismatch: the server renders the poster, the
+  // client syncs from documentElement.dataset.theme, which the
+  // layout inline script already set before paint. Two
+  // subscriptions because the Header has two writers: the
+  // toggle sets the attribute AND dispatches
+  // sortes-theme-change, while the OS-following path sets the
+  // attribute without dispatching, so the MutationObserver on
+  // data-theme catches that one too.
+  useEffect(() => {
+    const syncTheme = () => {
+      setIsDark(document.documentElement.dataset.theme !== "light");
+    };
+    syncTheme();
+    window.addEventListener("sortes-theme-change", syncTheme);
+    const observer = new MutationObserver(syncTheme);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-theme"],
+    });
+    return () => {
+      window.removeEventListener("sortes-theme-change", syncTheme);
+      observer.disconnect();
+    };
+  }, []);
+
   // Autoplay needs the muted property set, not just the
   // attribute: React's muted attribute does not reliably stick
   // on <video> across browsers, and an unmuted video will not
@@ -90,7 +130,16 @@ export default function HeroVideo() {
       el.muted = true;
       void el.play().catch(() => {});
     }
-  }, [mounted, reducedMotion, failed]);
+  }, [mounted, reducedMotion, isDark, failed]);
+
+  // Light theme: render nothing. The layer is hidden by CSS
+  // anyway, and mounting a video here would autoplay, download
+  // and decode 2.5 MB nobody sees (Codex P2, PR #163). The
+  // server still renders the poster below, so first paint is
+  // unchanged; this only takes effect after hydration.
+  if (mounted && !isDark) {
+    return null;
+  }
 
   if (failed) {
     return (
@@ -106,7 +155,7 @@ export default function HeroVideo() {
     );
   }
 
-  const showVideo = mounted && !reducedMotion;
+  const showVideo = mounted && !reducedMotion && isDark;
   return (
     <div
       className="hero-video hero-video-bg absolute inset-0 overflow-hidden"

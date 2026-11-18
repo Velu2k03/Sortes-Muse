@@ -60,12 +60,41 @@ describe("hero video", () => {
     expect(text).toContain("addEventListener(\"change\"");
     expect(text).toContain("!reducedMotion");
     expect(text).not.toContain("useReducedMotion");
-    expect(text).toContain("showVideo = mounted && !reducedMotion");
+    expect(text).toContain("showVideo = mounted && !reducedMotion && isDark");
     // First-paint / mid-session CSS guard (PR #154 pattern):
     // reduced-motion users never see a playing video element.
     const reduceBlock = css().split("@media (prefers-reduced-motion: reduce)")[1];
     expect(reduceBlock).toContain(".hero-video video");
     expect(reduceBlock).toContain("display: none !important");
+  });
+
+  it("does not mount or autoplay a hidden video in light theme, and follows theme toggles", () => {
+    const text = video();
+    // Codex P2, PR #163: on light-theme visits the CSS hides
+    // .hero-video-bg, but the component still mounted an
+    // autoplaying video and called play() on it, downloading
+    // and decoding 2.5 MB it never displayed. Now the
+    // component tracks the live theme and renders nothing in
+    // light theme, so no <video> mounts at all.
+    expect(text).toContain("document.documentElement.dataset.theme");
+    expect(text).toContain("isDark");
+    expect(text).toContain("showVideo = mounted && !reducedMotion && isDark");
+    expect(text).toContain("if (mounted && !isDark) {");
+    expect(text).toContain("return null;");
+    // Two subscriptions, because the Header has two writers:
+    // the toggle sets the attribute AND dispatches
+    // sortes-theme-change, while the OS-following path sets
+    // the attribute without dispatching, so a MutationObserver
+    // on data-theme catches that one too. Toggling dark to
+    // light unmounts the video (isDark flips false, the early
+    // return fires); light to dark mounts it again.
+    expect(text).toContain('addEventListener("sortes-theme-change"');
+    expect(text).toContain("new MutationObserver(");
+    expect(text).toContain('attributeFilter: ["data-theme"]');
+    expect(text).toContain("observer.disconnect()");
+    // The play effect re-runs when the theme flips, so a
+    // light-to-dark toggle actually starts the video.
+    expect(text).toContain("[mounted, reducedMotion, isDark, failed]");
   });
 
   it("falls back to the static fan if the video fails to load", () => {
