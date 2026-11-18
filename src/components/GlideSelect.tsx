@@ -2,7 +2,7 @@
 
 import React, { type CSSProperties, type ReactNode } from 'react';
 import clsx from 'clsx';
-import { Select } from '@base-ui-components/react/select';
+import { Select } from '@base-ui/react/select';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { ArrowDown01Icon, Tick02Icon } from '@hugeicons/core-free-icons';
 

@@ -30,9 +30,7 @@ describe("all-pages fix 5: base-ui refactor", () => {
     const pkg = JSON.parse(src("package.json")) as {
       dependencies: Record<string, string>;
     };
-    expect(pkg.dependencies["@base-ui-components/react"]).toMatch(
-      /^[\^~]?1\.0\.0-rc\.0$/,
-    );
+    expect(pkg.dependencies["@base-ui/react"]).toMatch(/^[\^~]?1\.0\.0$/);
   });
 
   it("CardModal is base-ui Dialog and keeps the panel contract", () => {
@@ -148,21 +146,21 @@ describe("all-pages fix 5: base-ui refactor", () => {
 
   it("BranchedMenu stays hand-built: no tree-view primitive exists", () => {
     const menu = src("src/components/BranchedMenu.tsx");
-    expect(menu).not.toContain("@base-ui-components/react");
+    expect(menu).not.toContain("@base-ui/react");
     expect(menu).toContain("LEFT HAND-BUILT");
     expect(menu).toContain("no tree-view primitive");
   });
 
   it("ThemedDatePicker stays hand-built: no calendar primitive exists", () => {
     const picker = src("src/components/ThemedDatePicker.tsx");
-    expect(picker).not.toContain("@base-ui-components/react");
+    expect(picker).not.toContain("@base-ui/react");
     expect(picker).toContain("LEFT HAND-BUILT");
     expect(picker).toContain("no calendar");
   });
 
   it("OptionWheel stays hand-built: no wheel-picker primitive exists", () => {
     const wheel = src("src/components/OptionWheel.tsx");
-    expect(wheel).not.toContain("@base-ui-components/react");
+    expect(wheel).not.toContain("@base-ui/react");
     expect(wheel).toContain("LEFT HAND-BUILT");
     expect(wheel).toContain("no curved wheel-picker primitive");
   });

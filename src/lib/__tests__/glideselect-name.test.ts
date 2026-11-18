@@ -6,7 +6,7 @@ import path from "path";
 // 2026-11-18): base-ui Select renders a visually-hidden
 // value-holder input (tabIndex -1, aria-hidden, 1px
 // clipped) and puts Select.Root's `name` on it -- see
-// node_modules/@base-ui-components/react/esm/select/root/
+// node_modules/@base-ui/react/esm/select/root/
 // SelectRoot.js, `name: multiple ? undefined : name` on
 // the hidden input. /charts had 2 such inputs with no
 // name in the live DOM (system picker, birthplace preset
