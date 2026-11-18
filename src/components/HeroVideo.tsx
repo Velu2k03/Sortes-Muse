@@ -156,7 +156,7 @@ export default function HeroVideo() {
   }
 
   const showVideo = mounted && !reducedMotion && isDark;
-  // AGENTS.md self-check exception (PR #163, Codex P2):
+  // AGENTS.md self-check exception (PR #163, Codex P1):
   // the layer wrapper is deliberately a raw <div>, not an
   // Astryx component. No Astryx primitive fits this plain
   // decorative background layer and its gradient scrim: it is
