@@ -11,6 +11,7 @@ import SonnerToaster from "@/components/SonnerToaster";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 import { AuthProvider } from "@/components/AuthProvider";
 import MotionProvider from "@/components/MotionProvider";
+import ScrollProgressBar from "@/components/ScrollProgressBar";
 import { BRAND } from "@/lib/brand";
 import { PageTransition } from "@/components/ReactBitsNew";
 import { APP_NAME, APP_SHORT, TITLE_DEFAULT, SITE_URL, CONTACT_EMAIL } from "@/lib/site";
@@ -174,6 +175,12 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           <ServiceWorkerRegister />
           <Starfield />
           <Header />
+          {/* Scroll-progress bar in quiet gold (S-36b, 2026-11-18):
+              site-wide in the layout, a 2px gold hairline at the
+              very top edge, above the sticky Header, so it never
+              covers content. On short pages it stays at scaleX 0,
+              invisible. */}
+          <ScrollProgressBar />
           <main id="main-content" tabIndex={-1} className="flex-1 outline-none"><PageTransition>{children}</PageTransition></main>
           <Footer />
           <InstallBanner />

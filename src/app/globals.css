@@ -606,6 +606,17 @@ html[data-theme="light"] {
     opacity: 1 !important;
     transform: none !important;
   }
+  /* Scroll-progress bar (S-36b, 2026-11-18): the component
+     returns null for reduced-motion users once its
+     matchMedia effect runs, but JS runs after first paint,
+     and the first render is server-identical (reduced
+     false), so the bar would be in the SSR HTML. CSS can
+     hide it before first paint (same PR #154 pattern as
+     .animated-list-item): reduced-motion users never see
+     the bar, moving or not. */
+  .scroll-progress-bar {
+    display: none !important;
+  }
 }
 
 /* Phase 5 (5.4a): Heirloom print export. The heirloom sheet is
