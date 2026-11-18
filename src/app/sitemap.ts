@@ -68,6 +68,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
 // Each canonical path maps to the file that renders it; card pages
 // share the [slug] page. Unmapped paths fall back to now.
+//
+// Build-time only: /sitemap.xml is prerendered (nothing here reads
+// request data), so statSync runs once during `next build`, when the
+// source files exist. The turbopackIgnore markers tell Turbopack not
+// to trace the whole project into the server output for this fs call
+// (build warning: "Dynamic filesystem access causes tracing of the
+// whole project"). The files are not needed at runtime, so excluding
+// them from the trace is correct, and per-page lastmod (AF-070) stays.
 function lastModifiedFor(path: string): Date {
   const file =
     path === "/"
@@ -80,11 +88,13 @@ function lastModifiedFor(path: string): Date {
             ? "src/app/guides/[slug]/page.tsx"
             : `src/app${path}/page.tsx`;
   try {
-    return statSync(join(process.cwd(), file)).mtime;
+    return statSync(join(/*turbopackIgnore: true*/ process.cwd(), file)).mtime;
   } catch {
     try {
       // Layout-routed pages (daily, deck index, horoscope, birth-card).
-      return statSync(join(process.cwd(), `src/app${path}/layout.tsx`)).mtime;
+      return statSync(
+        join(/*turbopackIgnore: true*/ process.cwd(), `src/app${path}/layout.tsx`),
+      ).mtime;
     } catch {
       return new Date();
     }

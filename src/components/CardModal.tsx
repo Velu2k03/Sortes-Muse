@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Dialog } from "@base-ui-components/react/dialog";
+import { Dialog } from "@base-ui/react/dialog";
 import { getCard, suitLabel } from "@/lib/cards";
 import HoloCard from "@/components/HoloCard";
 import AnimatedContent from "@/components/AnimatedContent";
