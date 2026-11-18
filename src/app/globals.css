@@ -222,14 +222,41 @@ html[data-theme="light"] select option {
 
 /* Phase 2 subtle texture: a faint grain over the hero so flat
    colour does not look cheap (#84). Very low opacity, never
-   behind body text at full strength. */
-.hero-texture::after {
+   behind body text at full strength.
+   Site-wide paper grain (Velu 2026-11-18): the same static SVG
+   feTurbulence tile now also sits on body::before, so every page
+   gets the hero's grain. One data URI, shared by both selectors
+   below, so there is no second noise generator to drift out of
+   sync. Static: no JS, no canvas, no animation, no transform.
+   Opacity 0.04, the hero's own value: the tile's rect is already
+   at 0.5, so the effective alpha is about 0.02, invisible as a
+   pattern at normal zoom, and the hero and the rest of the page
+   read as one surface with no seam. */
+.hero-texture::after,
+body::before {
   content: "";
-  position: absolute;
-  inset: 0;
   pointer-events: none;
   opacity: 0.04;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+}
+.hero-texture::after {
+  position: absolute;
+  inset: 0;
+}
+/* Site-wide layer: fixed to the viewport, z-index -1. body is not
+   a stacking context (no position, z-index, opacity, filter or
+   transform on it), so -1 places the grain in the root stacking
+   context: above the page's flat ink background and the Starfield
+   canvas (-z-10, the same mechanism, one step lower), and below
+   every in-flow element. Text, cards, the hero video, the /daily
+   hold-to-draw card, the sticky Header (z-40), the scroll-progress
+   bar, CardModal and InstallBanner (all z-50) paint above it, so
+   it can never cover content, change contrast, or take a click
+   (pointer-events none on top of that). */
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
 }
 
 html {
