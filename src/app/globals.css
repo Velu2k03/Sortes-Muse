@@ -501,33 +501,32 @@ html[data-theme="light"] .alert-error-text {
   height: 1px;
 }
 
-/* Homepage hero scrim (AF-031): a dark gradient in dark theme. In
-   light theme a paper wash that lightens toward full paper. The
-   hero image itself is HIDDEN in light theme (.hero-img opacity
-   0): even dimmed to 0.3 the dark starfield photo read as a muddy
-   grey wash over cream (browser light-theme check 2026-11-11,
-   Batch 3b), with the washed-out moon behind the headline and the
-   star dots reading as dust. The light hero is clean paper plus
-   the Orb glow. The scrim is paper-coloured, so over paper it is
-   effectively invisible. */
-.hero-scrim {
+/* Hero video background scrim (Velu, 2026-11-18: the video is
+   the hero background, not a section). It replaces the old
+   .hero-scrim over the hero photo: the photo is gone, the
+   video is the background now. Strong on purpose: the
+   busiest mid-shuffle frames carry bright cream and yellow
+   cards (The Sun), and bright gold text on bright yellow is
+   unreadable, so it runs 0.78 at the top, 0.85 through the
+   middle where the form and chips sit, 0.94 at the bottom. The
+   video reads as moving navy and gold through it, never as
+   bare cards. */
+.hero-video-scrim {
   background: linear-gradient(
     to bottom,
-    rgb(10 14 26 / 0.6),
-    rgb(10 14 26 / 0.75),
-    rgb(10 14 26)
+    rgb(10 14 26 / 0.78),
+    rgb(10 14 26 / 0.85) 45%,
+    rgb(10 14 26 / 0.94)
   );
 }
-html[data-theme="light"] .hero-scrim {
-  background: linear-gradient(
-    to bottom,
-    rgb(237 230 214 / 0.25),
-    rgb(237 230 214 / 0.45),
-    rgb(237 230 214)
-  );
-}
-html[data-theme="light"] .hero-img {
-  opacity: 0;
+/* Light theme: the video background layer is hidden, the same
+   pattern the old hero photo used (it hid in light theme too).
+   Light-theme text is dark gold and dark navy on paper, and no
+   dark scrim can save that over a dark navy video, so the
+   light hero stays clean paper plus the Orb glow, exactly as
+   before the video. */
+html[data-theme="light"] .hero-video-bg {
+  display: none;
 }
 
 /* Batch 9: native pickers that remain (birth time) must follow the
@@ -615,6 +614,17 @@ html[data-theme="light"] {
      .animated-list-item): reduced-motion users never see
      the bar, moving or not. */
   .scroll-progress-bar {
+    display: none !important;
+  }
+  /* Hero video (2026-11-18): the component renders the poster
+     until its matchMedia effect runs, but JS runs after first
+     paint, and the first render is server-identical (not
+     mounted), so the video would not be in the SSR HTML anyway.
+     This is defence in depth for the mid-session case: if a
+     reduced-motion visitor toggles the setting after the video
+     mounted, the video hides before the effect swaps it back
+     to the poster. */
+  .hero-video video {
     display: none !important;
   }
 }

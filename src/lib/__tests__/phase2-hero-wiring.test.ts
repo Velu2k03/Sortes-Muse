@@ -4,16 +4,26 @@ import { describe, expect, it } from "vitest";
 
 const src = (rel: string) => readFileSync(path.resolve(process.cwd(), rel), "utf8");
 
-describe("Phase 2 3D hero and pricing preview", () => {
-  it("wires the 3D hero scene into the homepage hero, below the question box", () => {
+describe("Hero visual and pricing preview", () => {
+  it("wires the hero video as the background of the homepage hero, behind the question box", () => {
+    // Hero video (Velu, 2026-11-18, revised 2026-11-18: "make
+    // the video as bg, not as a section"): his own Flow
+    // deck-shuffle loop plays behind the hero content, full-
+    // bleed, in place of the Phase 2 3D fan and the old hero
+    // photo. The 3D scene files stay on disk for now, unwired;
+    // removing them is a follow-up, not this change.
     const page = src("src/app/page.tsx");
-    expect(page).toContain('import HeroScene from "@/components/HeroScene"');
-    expect(page).toContain("<HeroScene />");
-    // Below the question form and the example chips, not above them:
-    // the question box stays first and usable before the 3D loads.
-    const heroSceneAt = page.indexOf("<HeroScene />");
-    expect(heroSceneAt).toBeGreaterThan(page.indexOf('id="hero-question"'));
-    expect(heroSceneAt).toBeGreaterThan(page.indexOf("Example questions"));
+    expect(page).toContain('import HeroVideo from "@/components/HeroVideo"');
+    expect(page).toContain("<HeroVideo");
+    expect(page).not.toContain("HeroScene");
+    expect(page).not.toContain("hero-bg.jpg");
+    // The background layer renders before the hero content in
+    // the file, so the headline, form, chips and free line sit
+    // above it; the old section block below the question box is
+    // gone.
+    const heroVideoAt = page.indexOf("<HeroVideo");
+    expect(heroVideoAt).toBeLessThan(page.indexOf('id="hero-question"'));
+    expect(page).not.toContain('<div className="mt-6 w-full">');
   });
 
   it("renders the fan of three real cards with a gold moon behind", () => {
@@ -28,11 +38,17 @@ describe("Phase 2 3D hero and pricing preview", () => {
     expect(hero).not.toContain("Math.PI * 2");
   });
 
-  it("falls back to a static fan for reduced motion and while the 3D chunk loads", () => {
-    const scene = src("src/components/HeroScene.tsx");
-    expect(scene).toContain("prefers-reduced-motion");
-    expect(scene).toContain("HeroFanStatic");
-    expect(scene).toContain('ssr: false');
+  it("falls back to a static fan for reduced motion and on video load failure", () => {
+    // Hero video (Velu, 2026-11-18): reduced-motion visitors
+    // get the poster still, never an autoplaying video, and a
+    // load failure falls back to the static fan. The Phase 2
+    // HeroScene 3D loader is no longer wired; the static fan
+    // itself stays, as the video's fallback.
+    const video = src("src/components/HeroVideo.tsx");
+    expect(video).toContain("prefers-reduced-motion");
+    expect(video).toContain("HeroFanStatic");
+    expect(video).toContain("hero-deck-shuffle-poster.jpg");
+    expect(video).toContain("onError");
     const fallback = src("src/components/HeroFanStatic.tsx");
     expect(fallback).toContain("/cards/major-00-fool.jpg");
     expect(fallback).toContain("/cards/major-01-magician.jpg");

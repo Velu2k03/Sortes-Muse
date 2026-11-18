@@ -18,7 +18,7 @@ import TodaySample from "@/components/TodaySample";
 import ReturnLoop from "@/components/ReturnLoop";
 import AccountDeletedNotice from "@/components/AccountDeletedNotice";
 import { Orb } from "@/components/ReactBitsNew";
-import HeroScene from "@/components/HeroScene";
+import HeroVideo from "@/components/HeroVideo";
 
 // AF-042: the audit's "12 simultaneous animations" is stale — Phase
 // 4C had already removed the gimmicks. Counted at fix time, the
@@ -188,15 +188,17 @@ export default function Home() {
       {/* HERO */}
       <section className="hero-texture relative overflow-hidden">
         <div className="absolute inset-0" aria-hidden="true">
-          <Image
-            src="/brand/hero-bg.jpg"
-            alt=""
-            fill
-            priority
-            sizes="100vw"
-            className="hero-img object-cover opacity-70"
-          />
-          <div className="hero-scrim absolute inset-0" />
+          {/* Hero video background (Velu, 2026-11-18, revised
+              2026-11-18: "make the video as bg, not as a
+              section"): his own Flow deck-shuffle loop plays
+              behind the hero content, full-bleed, with its own
+              dark scrim between the video and the text, so the
+              headline and question box stay readable even on
+              the bright mid-shuffle frames. The old hero photo
+              is gone; the video is the background now. In light
+              theme the video layer hides and the hero stays
+              clean paper, same as the old photo did. */}
+          <HeroVideo />
           {/* Deep UX Batch A2, doc item 11: Orb hero background, app gold only. */}
           <Orb />
           {/* Batch 10 slop fix: the violet nebula was the classic AI
@@ -290,13 +292,12 @@ export default function Home() {
           <p className="mt-2 text-xs text-mist/80">
             Written just for you, saved in your journal.
           </p>
-          {/* Phase 2 3D hero (Velu's choice 5): the fan of 3D tarot
-              cards with the gold moon behind, below the question
-              box. The question box stays first and usable before the
-              3D loads; the scene is the centrepiece, not a splash. */}
-          <div className="mt-6 w-full">
-            <HeroScene />
-          </div>
+          {/* The hero video is the background now (Velu,
+              2026-11-18), behind this content, not a section
+              below it. The question box stays first and usable
+              before the video loads. Reduced-motion visitors
+              get the poster still, never an autoplaying video;
+              a load failure falls back to the static fan. */}
           {/* AF-034: the pricing line and the charts line stay off
               the hero. Pricing lives on /pricing; charts have their
               own nav entry. */}
