@@ -7,8 +7,9 @@ import path from "path";
 // H2 and H3 renders cream (text-cream, the token the site already
 // used for its non-gold headings), never text-gold / text-goldbright.
 // The audit found every H1, H2 and H3 gold; this branch moved 64 H2s
-// and 17 H3s plus the ChartSections SplitText h2 to cream, and the
-// print heirloom section heading (an h2) off dark gold to the print
+// and 17 H3s plus the ChartSections SplitText h2 and the CardModal
+// Dialog.Title h2 to cream (83 headings, up from 82), and the print
+// heirloom section heading (an h2) off dark gold to the print
 // sheet's ink.
 //
 // Out of scope and deliberately not guarded here: the wordmark
@@ -58,20 +59,24 @@ function tagEnd(s: string, from: number): number {
   return -1;
 }
 
+// Components that always render a fixed heading level.
+// Dialog.Title (@base-ui/react/dialog) renders an h2 by default.
+const COMPONENT_HEADINGS: Record<string, string> = { "Dialog.Title": "h2" };
+
 // Every literal <h1>/<h2>/<h3> opening tag, plus SplitText with a
 // tag="hN" prop (SplitText renders that tag; a literal-tag grep
-// misses it).
+// misses it), plus the components in COMPONENT_HEADINGS.
 function headings(): Heading[] {
   const out: Heading[] = [];
   for (const file of FILES) {
     const s = readFileSync(file, "utf8");
-    const open = /<(h[1-3]|SplitText)\b/g;
+    const open = /<(h[1-3]|SplitText|Dialog\.Title)\b/g;
     let m: RegExpExecArray | null;
     while ((m = open.exec(s))) {
       const end = tagEnd(s, m.index + 1);
       if (end < 0) continue;
       const tag = s.slice(m.index, end + 1);
-      let level: string | undefined = m[1];
+      let level: string | undefined = COMPONENT_HEADINGS[m[1]] ?? m[1];
       if (level === "SplitText") level = (tag.match(/\btag="(h[1-6])"/) || [])[1];
       if (!level || !/^h[1-3]$/.test(level)) continue;
       out.push({
@@ -112,6 +117,13 @@ describe("gold rationing: H2 and H3 are cream, never gold", () => {
     const chart = src("src/app/charts/ChartSections.tsx");
     expect(chart).toMatch(/tag="h2"\s+text=\{[^}]*\}\s+className="font-display text-3xl text-cream"/);
     expect(src("src/components/ReadingText.tsx")).toMatch(/<h3 key=\{i\} className="[^"]*\btext-cream\b[^"]*"/);
+  });
+
+  it("the scan finds exactly one Dialog.Title, in CardModal.tsx, as a cream h2", () => {
+    const titles = ALL.filter((h) => h.tag.startsWith("<Dialog.Title"));
+    expect(titles.map((h) => h.file)).toEqual(["src/components/CardModal.tsx"]);
+    expect(titles[0].level).toBe("h2");
+    expect(titles[0].tag).toMatch(/\btext-cream\b/);
   });
 
   it("globals.css sets no gold colour on H2/H3 rules or the print section heading", () => {

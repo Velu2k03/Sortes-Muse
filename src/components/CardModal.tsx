@@ -97,7 +97,7 @@ export default function CardModal({ cardId, onClose }: Props) {
                            carries the arcana and suit instead. */
                           `Minor Arcana, ${card.suit ? suitLabel(card.suit) : ""}`}
                     </p>
-                    <Dialog.Title className="mt-1 font-display text-4xl text-goldbright">
+                    <Dialog.Title className="mt-1 font-display text-4xl text-cream">
                       {card.name}
                     </Dialog.Title>
 
