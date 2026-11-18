@@ -87,7 +87,7 @@ export default function BirthCardPage() {
               <p className="text-sm text-gold">
                 Personality card, {personalityCard.name}
               </p>
-              <h2 className="mt-3 font-display text-4xl text-goldbright">{personalityCard.name}</h2>
+              <h2 className="mt-3 font-display text-4xl text-cream">{personalityCard.name}</h2>
               <p className="mt-2 text-sm leading-relaxed text-cream/75">
                 The Personality card describes how you
                 meet the world: the lesson you work with in daily life.
@@ -101,7 +101,7 @@ export default function BirthCardPage() {
               <p className="text-sm text-gold">
                 Soul card, {soulCard.name}
               </p>
-              <h2 className="mt-3 font-display text-4xl text-goldbright">{soulCard.name}</h2>
+              <h2 className="mt-3 font-display text-4xl text-cream">{soulCard.name}</h2>
               <p className="mt-2 text-sm leading-relaxed text-cream/75">
                 The Soul card describes the inner lesson behind it: what
                 your life keeps teaching you, underneath the day to day.

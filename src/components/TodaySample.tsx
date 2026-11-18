@@ -56,7 +56,7 @@ export default function TodaySample() {
       <p className="text-sm text-gold">
         Sample reading
       </p>
-      <h2 className="mt-4 font-display text-4xl text-goldbright sm:text-5xl">
+      <h2 className="mt-4 font-display text-4xl text-cream sm:text-5xl">
         Today&apos;s card
       </h2>
       <p className="mx-auto mt-4 max-w-lg text-cream/75">

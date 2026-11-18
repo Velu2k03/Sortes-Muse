@@ -465,7 +465,7 @@ export function ResultHeader({ prefs, s, result }: { prefs: ChartPrefs; s: Chart
       key={result.system}
       tag="h2"
       text={result.system === "ziwei" ? "Ziwei chart" : result.system === "vedic" ? "Vedic chart" : "Western chart"}
-      className="font-display text-3xl text-goldbright"
+      className="font-display text-3xl text-cream"
     />
     <p className="mt-3 rounded-2xl border border-gold/25 bg-panel/70 px-4 py-3 text-sm leading-relaxed text-cream/90">
       <strong className="text-goldbright">Your chart in one line: </strong>
@@ -655,7 +655,7 @@ export function ChartLegend({ prefs, result }: { prefs: ChartPrefs; result: Char
   const { ziweiLang } = prefs;
   return (
   <section className="mt-10 scroll-mt-24 rounded-3xl border border-gold/20 bg-panel/50 p-6" aria-label="Chart legend">
-    <h3 className="font-display text-2xl text-goldbright">{result.system === "ziwei" && ziweiLang === "zh" ? "如何读这张星盘" : "How to read this chart"}</h3>
+    <h3 className="font-display text-2xl text-cream">{result.system === "ziwei" && ziweiLang === "zh" ? "如何读这张星盘" : "How to read this chart"}</h3>
     <p className="mt-2 text-sm text-cream/75">
       {result.system === "ziwei" && ziweiLang === "zh"
         ? ZIWEI_LEGEND_ZH.intro
@@ -750,7 +750,7 @@ export function InterpretationPanel({ prefs, s, result }: { prefs: ChartPrefs; s
   const { focus, setFocus, question, setQuestion, interpretation, interpFallback, interpModel, interpLoading, interpError, interpFailed, interpFree, interpSignInNeeded, user, saved, shareBusy, displayFree, onInterpret, onSaveChart, onShareChart } = s;
   return (
   <section id="chart-interpretation" className="mt-10 scroll-mt-24 rounded-3xl border border-gold/25 bg-panel/70 p-6" aria-label="Chart interpretation">
-    <h3 className="font-display text-2xl text-goldbright">{result.system === "ziwei" && ziweiLang === "zh" ? "解读" : "Interpretation"}</h3>
+    <h3 className="font-display text-2xl text-cream">{result.system === "ziwei" && ziweiLang === "zh" ? "解读" : "Interpretation"}</h3>
     <p className="mt-2 text-sm leading-relaxed text-cream/75">
       In plain words, for your focus and question.
     </p>

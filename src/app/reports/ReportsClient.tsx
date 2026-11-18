@@ -703,7 +703,7 @@ export default function ReportsClient({
         <AnimatedContent trigger="mount" wipe="up" blur={10} distance={60} duration={0.8} scale={0.98} threshold={0.2} stagger={0.08}>
         <div className="mt-8 rounded-3xl border border-gold/25 bg-panel/70 p-6">
           <p className="text-sm text-gold">Your report</p>
-          <h2 className="mt-1 font-display text-3xl text-goldbright">{result.title}</h2>
+          <h2 className="mt-1 font-display text-3xl text-cream">{result.title}</h2>
           <p className="mt-2 text-sm text-mist">
             Saved. Open it any time from your reports below, or{" "}
             <Link href={`/reports/${result.id}`} className="font-semibold text-goldbright underline">
@@ -721,7 +721,7 @@ export default function ReportsClient({
       )}
 
       <div className="mt-12">
-        <h2 className="font-display text-3xl text-goldbright">Your saved reports</h2>
+        <h2 className="font-display text-3xl text-cream">Your saved reports</h2>
         {saved.length === 0 ? (
           <p className="mt-2 text-sm text-mist">
             No saved reports yet.

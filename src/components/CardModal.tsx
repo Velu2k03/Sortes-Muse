@@ -97,7 +97,7 @@ export default function CardModal({ cardId, onClose }: Props) {
                            carries the arcana and suit instead. */
                           `Minor Arcana, ${card.suit ? suitLabel(card.suit) : ""}`}
                     </p>
-                    <Dialog.Title className="mt-1 font-display text-4xl text-goldbright">
+                    <Dialog.Title className="mt-1 font-display text-4xl text-cream">
                       {card.name}
                     </Dialog.Title>
 
@@ -141,13 +141,13 @@ export default function CardModal({ cardId, onClose }: Props) {
 
                 <div className="mt-6 space-y-5 border-t border-gold/20 pt-6">
                   <section>
-                    <h3 className="font-display text-xl text-gold">Upright meaning</h3>
+                    <h3 className="font-display text-xl text-cream">Upright meaning</h3>
                     <p className="mt-2 leading-relaxed text-cream/90">
                       {card.meaning.upright}
                     </p>
                   </section>
                   <section>
-                    <h3 className="font-display text-xl text-gold">Reversed meaning</h3>
+                    <h3 className="font-display text-xl text-cream">Reversed meaning</h3>
                     <p className="mt-2 leading-relaxed text-cream/90">
                       {card.meaning.reversed}
                     </p>

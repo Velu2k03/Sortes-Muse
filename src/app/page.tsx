@@ -312,7 +312,7 @@ export default function Home() {
 
       {/* WHAT'S ON YOUR MIND */}
       <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
-        <h2 className="font-display text-4xl text-goldbright sm:text-5xl">
+        <h2 className="font-display text-4xl text-cream sm:text-5xl">
           What&apos;s on your mind?
         </h2>
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -344,7 +344,7 @@ export default function Home() {
       <section className="border-y border-gold/10 bg-navydeep/40 py-10">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div>
-            <h2 className="font-display text-4xl text-goldbright sm:text-5xl">
+            <h2 className="font-display text-4xl text-cream sm:text-5xl">
               Explore the deck
             </h2>
             <p className="mt-6 max-w-xl text-cream/75">
@@ -386,7 +386,7 @@ export default function Home() {
       <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
         <motion.div key={`${revealKey}-intro`} {...fadeUp}>
           <div className="rule-gold w-24" />
-          <h2 className="mt-6 font-display text-4xl text-goldbright sm:text-5xl">
+          <h2 className="mt-6 font-display text-4xl text-cream sm:text-5xl">
             What is tarot?
           </h2>
           <p className="mt-6 text-base leading-relaxed text-cream/85">
@@ -403,7 +403,7 @@ export default function Home() {
             removed its cursor glow from this page as a gimmick, so
             the existing motion step cards stay. */}
         <motion.div key={`${revealKey}-steps`} {...fadeIn} className="mt-12">
-          <h3 className="font-display text-3xl text-goldbright">
+          <h3 className="font-display text-3xl text-cream">
             How it works
           </h3>
           <ol className="mt-8 grid divide-y divide-gold/25 sm:grid-cols-3 sm:gap-8 sm:divide-y-0 sm:border-t sm:border-gold/25">
@@ -454,7 +454,7 @@ export default function Home() {
       <section className="border-y border-gold/10 bg-navydeep/40 py-10">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <motion.div key={revealKey} {...riseSoft}>
-          <h2 className="mt-4 font-display text-4xl text-goldbright sm:text-5xl">
+          <h2 className="mt-4 font-display text-4xl text-cream sm:text-5xl">
             One card, every morning
           </h2>
           <p className="mt-6 max-w-lg text-cream/75">
@@ -520,7 +520,7 @@ export default function Home() {
           counts and the /pricing link are unchanged. Full
           pricing lives on /pricing. */}
       <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6" aria-label="Pricing preview">
-        <h2 className="mt-4 font-display text-4xl text-goldbright sm:text-5xl">
+        <h2 className="mt-4 font-display text-4xl text-cream sm:text-5xl">
           Simple plans, clear prices
         </h2>
         <p className="mt-6 max-w-lg text-cream/75">
@@ -533,7 +533,7 @@ export default function Home() {
             <span className="absolute -top-3 left-6 rounded-full bg-gold px-3 py-1 text-xs font-bold uppercase tracking-wide text-ink">
               Most popular
             </span>
-            <h3 className="font-display text-4xl text-goldbright">Star</h3>
+            <h3 className="font-display text-4xl text-cream">Star</h3>
             <p className="mt-4 text-5xl font-bold text-cream">
               $19.99
               <span className="text-base font-normal text-mist"> / month</span>
@@ -551,7 +551,7 @@ export default function Home() {
           <ul className="divide-y divide-gold/25 lg:col-span-5">
             <li className="flex items-baseline justify-between gap-4 py-6 first:pt-0">
               <div>
-                <h3 className="font-display text-2xl text-goldbright">Spark</h3>
+                <h3 className="font-display text-2xl text-cream">Spark</h3>
                 <p className="mt-2 text-sm text-cream/75">1,000 Oracles a month</p>
               </div>
               <p className="shrink-0 text-2xl font-bold text-cream">
@@ -561,7 +561,7 @@ export default function Home() {
             </li>
             <li className="flex items-baseline justify-between gap-4 py-6 last:pb-0">
               <div>
-                <h3 className="font-display text-2xl text-goldbright">Moon</h3>
+                <h3 className="font-display text-2xl text-cream">Moon</h3>
                 <p className="mt-2 text-sm text-cream/75">6,000 Oracles a month</p>
               </div>
               <p className="shrink-0 text-2xl font-bold text-cream">

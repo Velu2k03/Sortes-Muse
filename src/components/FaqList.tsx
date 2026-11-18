@@ -170,7 +170,7 @@ export default function FaqList({ faqs }: { faqs: FaqItem[] }) {
       <div ref={listRef} className="mt-10 space-y-10">
         {grouped.map((g) => (
           <section key={g.name} aria-label={g.name}>
-            <h2 className="font-display text-3xl text-goldbright">{g.name}</h2>
+            <h2 className="font-display text-3xl text-cream">{g.name}</h2>
             <div className="mt-4 space-y-4">
               {g.items.map((f) => (
                 <FaqItem key={f.q} f={f} />

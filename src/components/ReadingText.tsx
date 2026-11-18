@@ -51,7 +51,7 @@ export function renderReadingBlocks(blocks: ReadingBlock[], limit = Infinity): R
     closeGroup();
     out.push(
       b.heading ? (
-        <h3 key={i} className="mt-5 font-display text-lg text-goldbright first:mt-0">
+        <h3 key={i} className="mt-5 font-display text-lg text-cream first:mt-0">
           {inner}
         </h3>
       ) : (

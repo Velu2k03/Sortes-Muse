@@ -439,10 +439,12 @@ describe("Pricing card contrast: dark islands on the light page", () => {
     // the scope. No hex, no arbitrary var() colour, no new class.
     // Velu 2026-11-17: Star's panel is larger now, name text-4xl
     // and price text-5xl; the Spark/Moon rows use text-2xl names.
+    // Gold rationing (Velu 2026-11-18): the Star name (h2) and the
+    // Spark/Moon names (h3) are cream now; the price stays gold.
     const c = client();
-    expect(c).toContain('className="mt-3 font-display text-4xl text-goldbright"');
+    expect(c).toContain('className="mt-3 font-display text-4xl text-cream"');
     expect(c).toContain('className="mt-4 font-display text-5xl font-bold leading-none text-goldbright');
-    expect(c).toContain('className="font-display text-2xl text-goldbright"');
+    expect(c).toContain('className="font-display text-2xl text-cream"');
     expect(c).toContain('className="mt-4 space-y-2 text-left text-sm text-cream/85"');
     expect(c).not.toContain("text-[var(--color-text-primary)]");
     expect(c).not.toContain("text-[var(--color-text-accent)]");

@@ -50,7 +50,7 @@ export default function WesternWheel({ result }: { result: WesternResult }) {
           <span className="text-goldbright">Polar latitude (inside the Arctic or Antarctic circle): Placidus houses can collapse or distort here, so the house placements are approximate, not exact.</span>
         )}
       </div>
-      <h3 className="mt-6 font-display text-xl text-goldbright">Planet table</h3>
+      <h3 className="mt-6 font-display text-xl text-cream">Planet table</h3>
       <p className="mt-1 text-sm text-cream/80">Exact positions, signs, and houses. The wheel below shows the same positions, with clustered labels staggered and leader lines to their true spots.</p>
       <ScrollableRegion
         label="Planet table, scroll sideways to see all columns"
@@ -149,7 +149,7 @@ export default function WesternWheel({ result }: { result: WesternResult }) {
           planet table above is still the exact reading. */}
       {result.cusps.length > 0 ? (
         <>
-          <h3 className="mt-8 scroll-mt-24 font-display text-xl text-goldbright">Wheel overview</h3>
+          <h3 className="mt-8 scroll-mt-24 font-display text-xl text-cream">Wheel overview</h3>
           <p className="mt-1 text-sm text-cream/80">Visual overview. Clustered labels are staggered on the wheel.</p>
           {/* Batch 4b: the wheel SVG scales to its container (w-full
               h-auto, max-w 640px), so nothing scrolls sideways. The

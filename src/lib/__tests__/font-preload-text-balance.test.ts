@@ -74,6 +74,7 @@ describe("text-balance on h1/h2 (all-pages fix 8)", () => {
 
   it("keeps the two existing text-balance classes (homepage h1, GuidesSearch h2)", () => {
     expect(src("src/app/page.tsx")).toContain("text-balance font-display");
-    expect(src("src/components/GuidesSearch.tsx")).toContain("text-balance text-goldbright");
+    // Gold rationing (Velu 2026-11-18): the GuidesSearch h2 is cream.
+    expect(src("src/components/GuidesSearch.tsx")).toContain("text-balance text-cream");
   });
 });

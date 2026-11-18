@@ -41,7 +41,7 @@ export default function ContactPage() {
         . We aim to reply within two business days.
       </p>
       <section className="mt-10">
-        <h2 className="font-display text-2xl text-goldbright">Before you write</h2>
+        <h2 className="font-display text-2xl text-cream">Before you write</h2>
         <ul className="mt-3 list-disc space-y-2 pl-5 text-[15px] leading-relaxed text-cream/85">
           <li>
             Refunds: unused Oracle top-ups can be refunded within 14 days of

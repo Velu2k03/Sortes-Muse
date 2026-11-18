@@ -127,7 +127,7 @@ export default async function CardPage({
           </p>
 
           <section aria-labelledby="upright-heading" className="mt-8">
-            <h2 id="upright-heading" className="font-display text-2xl text-goldbright">
+            <h2 id="upright-heading" className="font-display text-2xl text-cream">
               Upright
             </h2>
             <p className="mt-2 flex flex-wrap gap-2" aria-label="Upright keywords">
@@ -143,7 +143,7 @@ export default async function CardPage({
           </section>
 
           <section aria-labelledby="reversed-heading" className="mt-8">
-            <h2 id="reversed-heading" className="font-display text-2xl text-goldbright">
+            <h2 id="reversed-heading" className="font-display text-2xl text-cream">
               Reversed
             </h2>
             <p className="mt-2 flex flex-wrap gap-2" aria-label="Reversed keywords">
@@ -159,7 +159,7 @@ export default async function CardPage({
           </section>
 
           <section aria-labelledby="reading-heading" className="mt-10 rounded-3xl border border-gold/20 bg-panel/60 p-6">
-            <h2 id="reading-heading" className="font-display text-2xl text-goldbright">
+            <h2 id="reading-heading" className="font-display text-2xl text-cream">
               Use this card in a reading
             </h2>
             <p className="mt-2 text-sm leading-relaxed text-cream/75">

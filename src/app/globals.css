@@ -699,9 +699,13 @@ html[data-theme="light"] {
     margin: 0 0 14pt;
     break-inside: avoid;
   }
+  /* Gold rationing (Velu 2026-11-18): gold is for H1 and the primary
+     CTA only, so the print section heading (an h2) moves off dark
+     gold to the sheet's own ink, the same #1a2340 as the title and
+     body. Cream would vanish on white paper. */
   .heirloom-heading {
     font-size: 14pt;
-    color: #7c5e00;
+    color: #1a2340;
     margin: 0 0 4pt;
   }
   .heirloom-body {

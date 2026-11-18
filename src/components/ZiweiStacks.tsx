@@ -101,7 +101,7 @@ export default function ZiweiStacks({
 
   return (
     <section className="mt-10 scroll-mt-24 rounded-3xl border border-gold/25 bg-panel/70 p-6" aria-label="Palace activation stacks">
-      <h3 className="font-display text-2xl text-goldbright">Palace activation stacks</h3>
+      <h3 className="font-display text-2xl text-cream">Palace activation stacks</h3>
       <p className="mt-2 text-sm leading-relaxed text-cream/75">
         Three layers over the same twelve palaces: your natal stars, the decade layer for
         the chosen year, and the annual layer for that year. A palace is activated when a

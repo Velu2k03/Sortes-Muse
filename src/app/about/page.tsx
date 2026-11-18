@@ -16,13 +16,13 @@ export default function AboutPage() {
       <PageHeader title="About Sortes" />
       <div className="mt-8 space-y-8 text-[15px] leading-relaxed text-cream/85">
         <section>
-          <h2 className="font-display text-3xl text-goldbright">Who runs Sortes</h2>
+          <h2 className="font-display text-3xl text-cream">Who runs Sortes</h2>
           <p className="mt-3">
             Sortes is run by Resonant Atlas. Founder: Velu Murugan. Contact: support@resonantatlas.com. Location: Philippines.
           </p>
         </section>
         <section>
-          <h2 className="font-display text-3xl text-goldbright">Why I built it</h2>
+          <h2 className="font-display text-3xl text-cream">Why I built it</h2>
           <p className="mt-3">
             A friend&apos;s tarot business gave me the idea. Their clients
             pick a category, tell their story, and the cards answer. I
@@ -31,7 +31,7 @@ export default function AboutPage() {
           </p>
         </section>
         <section>
-          <h2 className="font-display text-3xl text-goldbright">What Sortes offers</h2>
+          <h2 className="font-display text-3xl text-cream">What Sortes offers</h2>
           <p className="mt-3">
             A free daily card, all 78 card meanings, six spreads, a
             daily sun-sign reflection, and three birth chart systems.
@@ -44,7 +44,7 @@ export default function AboutPage() {
             here replaces professional advice."). One disclaimer per
             page; the footer carries it. */}
         <section>
-          <h2 className="font-display text-3xl text-goldbright">How your data is handled</h2>
+          <h2 className="font-display text-3xl text-cream">How your data is handled</h2>
           <p className="mt-3">
             As a guest, your cards, balance, and history live in your
             browser. Your story goes to the AI for one reading only.

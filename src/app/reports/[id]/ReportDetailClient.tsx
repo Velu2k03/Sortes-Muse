@@ -143,7 +143,7 @@ export default function ReportDetailClient() {
         {data.kind === "transit" && (
           <>
             <section>
-              <h2 className="font-display text-3xl text-goldbright">Western transits on {data.targetDate}</h2>
+              <h2 className="font-display text-3xl text-cream">Western transits on {data.targetDate}</h2>
               <p className="mt-1 text-sm text-mist">
                 Natal Sun {data.sunSign}, natal Moon {data.moonSign}, transit Moon in {data.transits.moonSign}.
               </p>
@@ -177,7 +177,7 @@ export default function ReportDetailClient() {
               )}
             </section>
             <section>
-              <h2 className="font-display text-3xl text-goldbright">Vedic Gochara</h2>
+              <h2 className="font-display text-3xl text-cream">Vedic Gochara</h2>
               <p className="mt-1 text-sm text-mist">
                 Panchanga: {data.gochara.panchanga.tithi}, {data.gochara.panchanga.nakshatra},{" "}
                 {data.gochara.panchanga.yoga}, {data.gochara.panchanga.vara}, {data.gochara.panchanga.karana}.
@@ -215,7 +215,7 @@ export default function ReportDetailClient() {
         {data.kind === "year-ahead" && (
           <>
             <section>
-              <h2 className="font-display text-3xl text-goldbright">Monthly themes for {data.year}</h2>
+              <h2 className="font-display text-3xl text-cream">Monthly themes for {data.year}</h2>
               <p className="mt-1 text-sm text-mist">
                 Natal Sun {data.sunSign}, natal Moon {data.moonSign}. Snapshots are 1st-of-month positions, so
                 same-day Moon aspects are approximate.
@@ -242,7 +242,7 @@ export default function ReportDetailClient() {
               </div>
             </section>
             <section>
-              <h2 className="font-display text-3xl text-goldbright">Dasha outlook</h2>
+              <h2 className="font-display text-3xl text-cream">Dasha outlook</h2>
               <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-cream/85">
                 {data.dasha.periods
                   .filter((p) => p.end >= `${data.year}-01-01` && p.start <= `${data.year}-12-31`)
@@ -258,7 +258,7 @@ export default function ReportDetailClient() {
               </p>
             </section>
             <section>
-              <h2 className="font-display text-3xl text-goldbright">Ziwei annual layer</h2>
+              <h2 className="font-display text-3xl text-cream">Ziwei annual layer</h2>
               {data.ziwei ? (
                 <p className="mt-2 text-sm text-cream/85">
                   Decade palace {data.ziwei.decade.palaceName} ({data.ziwei.decade.heavenlyStem}
@@ -277,14 +277,14 @@ export default function ReportDetailClient() {
         {data.kind === "comparison" && (
           <>
             <section>
-              <h2 className="font-display text-3xl text-goldbright">The two charts</h2>
+              <h2 className="font-display text-3xl text-cream">The two charts</h2>
               <p className="mt-2 text-sm text-cream/85">
                 Chart A: Sun {data.sunSignA}, Moon {data.moonSignA}. Chart B: Sun {data.sunSignB}, Moon{" "}
                 {data.moonSignB}.
               </p>
             </section>
             <section>
-              <h2 className="font-display text-3xl text-goldbright">Cross-aspects</h2>
+              <h2 className="font-display text-3xl text-cream">Cross-aspects</h2>
               <ScrollableRegion label="Cross-aspects table, scroll sideways to see all columns">
                 <table className="w-full min-w-[520px] text-left text-sm text-cream/90">
                   <thead>

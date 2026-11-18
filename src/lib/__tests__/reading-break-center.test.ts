@@ -95,11 +95,12 @@ describe("break the center, /reading/[id]: headings and intros left-aligned", ()
     expect(sections.match(/text-center/g) ?? []).toHaveLength(3);
     expect(client.match(/text-center/g) ?? []).toHaveLength(2);
     // The two kept panels are the bordered notice/callout boxes.
+    // Gold rationing (Velu 2026-11-18): their h2s are cream.
     expect(sections).toContain(
-      '<h2 className="font-display text-xl text-goldbright">Keep this reading</h2>',
+      '<h2 className="font-display text-xl text-cream">Keep this reading</h2>',
     );
     expect(sections).toContain(
-      '<h2 className="font-display text-xl text-goldbright">Go deeper with three cards</h2>',
+      '<h2 className="font-display text-xl text-cream">Go deeper with three cards</h2>',
     );
     // The kept caption sits under the centered card row.
     expect(sections).toContain(

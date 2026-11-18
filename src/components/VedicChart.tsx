@@ -68,7 +68,7 @@ export default function VedicChart({ result }: { result: VedicResult }) {
           unknown: the diamond is drawn around the Lagna and houses. */}
       {result.ascendantSign ? (
         <>
-          <h3 className="mt-8 font-display text-xl text-goldbright">Diamond chart</h3>
+          <h3 className="mt-8 font-display text-xl text-cream">Diamond chart</h3>
           <p className="mt-1 text-sm text-cream/80">
             North Indian diamond: the Lagna is the top diamond, marked Lg, and houses run counter-clockwise from it.
             Planets are listed by house; the table above is the exact list.
