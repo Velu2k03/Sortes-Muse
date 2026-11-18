@@ -156,6 +156,18 @@ export default function HeroVideo() {
   }
 
   const showVideo = mounted && !reducedMotion && isDark;
+  // AGENTS.md self-check exception (PR #163, Codex P2):
+  // the layer wrapper is deliberately a raw <div>, not an
+  // Astryx component. No Astryx primitive fits this plain
+  // decorative background layer and its gradient scrim: it is
+  // an absolute inset-0 layer holding the video/poster plus
+  // an aria-hidden gradient scrim, and it carries no content,
+  // no semantics beyond the layer's aria-label, and no
+  // interaction. Astryx Overlay was checked and does not fit:
+  // it requires a content prop, offers only a preset scrim,
+  // has no positioning prop, and its root is a div. Raw divs
+  // are the established pattern for background layers here
+  // (page.tsx Orb glow, HeroFanStatic).
   return (
     <div
       className="hero-video hero-video-bg absolute inset-0 overflow-hidden"
