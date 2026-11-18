@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useEffect, useMemo, useRef, useState, forwardRef } from "react";
 import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
-import { motion } from "motion/react";
+import { motion, useMotionValue, useSpring } from "motion/react";
 import { Virtuoso, type ItemProps, type ListProps } from "react-virtuoso";
 import {
   CARDS,
@@ -70,6 +70,84 @@ const DeckListItem = (props: ItemProps<TarotCard>) => {
   );
 };
 
+// Grid tile tilt (Velu 2026-11-19): a quiet mouse-follow tilt, the
+// same pattern as TarotCard's (useMotionValue + useSpring, stiffness
+// 260, damping 22, perspective 900) but half the angle, max 7 degrees
+// per axis. It sits on its own wrapper between the entrance
+// motion.div and the Link, so the entrance (opacity/y) and the tilt
+// never write the same transform, and the Link keeps its CSS hover
+// lift, border and shadow. Mouse pointers only (pen and touch are
+// ignored, so tapping is unchanged). Reduced motion: no handlers, no
+// transform, flat. The flag comes from DeckClient's existing
+// matchMedia state, no second subscription.
+//
+// Codex P2 (PR #169): the tilt also stays off until that preference
+// has been read. reducedMotion starts false and matchMedia is only
+// read in an effect, so without motionKnown a mouse move between
+// hydration and the effect could tilt a tile for a reduced-motion
+// seeker. motionKnown starts false on the server and the first client
+// render alike (both tilt-off), so there is no hydration mismatch.
+//
+// AGENTS.md self-check exception (same reasoning as the pricing pill
+// span, PR #152, and the password meter, PR #168): the wrapper is a
+// raw motion.div, not an Astryx component. It carries no content,
+// semantics or focus (the Link inside stays the only focus and click
+// target); it only takes pointer events and Motion style writes, and
+// the grid around it is already raw motion.div tiles.
+const DECK_TILT_MAX_DEG = 7;
+
+function DeckTileTilt({
+  reducedMotion,
+  motionKnown,
+  children,
+}: {
+  reducedMotion: boolean;
+  motionKnown: boolean;
+  children: React.ReactNode;
+}) {
+  // Off until the preference is known, and off under reduced motion.
+  const tiltOff = !motionKnown || reducedMotion;
+  const tiltX = useMotionValue(0);
+  const tiltY = useMotionValue(0);
+  const rotateX = useSpring(tiltY, { stiffness: 260, damping: 22 });
+  const rotateY = useSpring(tiltX, { stiffness: 260, damping: 22 });
+
+  const handleMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.pointerType !== "mouse" || reducedMotion) return;
+    const r = e.currentTarget.getBoundingClientRect();
+    // (0..1 - 0.5) * 2 * max: the edges reach exactly ±7 degrees.
+    tiltX.set(((e.clientX - r.left) / r.width - 0.5) * 2 * DECK_TILT_MAX_DEG);
+    tiltY.set(-((e.clientY - r.top) / r.height - 0.5) * 2 * DECK_TILT_MAX_DEG);
+  };
+  const handleLeave = () => {
+    tiltX.set(0);
+    tiltY.set(0);
+  };
+  // Reduced motion switched on mid-session: snap flat, no spring, so
+  // no stale tilt is left on a tile when the style is dropped.
+  useEffect(() => {
+    if (!reducedMotion) return;
+    tiltX.jump(0);
+    tiltY.jump(0);
+    rotateX.jump(0);
+    rotateY.jump(0);
+  }, [reducedMotion, tiltX, tiltY, rotateX, rotateY]);
+
+  return (
+    <motion.div
+      onPointerMove={tiltOff ? undefined : handleMove}
+      onPointerLeave={handleLeave}
+      style={
+        tiltOff
+          ? undefined
+          : { rotateX, rotateY, transformPerspective: 900 }
+      }
+    >
+      {children}
+    </motion.div>
+  );
+}
+
 // Phase 4A (4.4): the list is the default view (Batch 5: one text
 // row per card, the most keyboard- and screen-reader-friendly view);
 // the card grid and the spiral are opt-ins. Every card is a link to
@@ -90,6 +168,9 @@ export default function DeckClient({
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [view, setView] = useState<DeckView>(DEFAULT_DECK_VIEW);
   const [reducedMotion, setReducedMotion] = useState(false);
+  // False until the matchMedia effect has read the preference; the
+  // grid tilt stays off until then (Codex P2, PR #169).
+  const [motionKnown, setMotionKnown] = useState(false);
   // The spiral sets pointer capture on press, so a real tap's click event
   // is retargeted to the spiral root and never lands on a card. Detect
   // taps ourselves on press and release instead, and look the card up
@@ -99,7 +180,10 @@ export default function DeckClient({
 
   useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const sync = () => setReducedMotion(mq.matches);
+    const sync = () => {
+      setReducedMotion(mq.matches);
+      setMotionKnown(true);
+    };
     sync();
     mq.addEventListener("change", sync);
     return () => mq.removeEventListener("change", sync);
@@ -419,6 +503,7 @@ export default function DeckClient({
             // scrollbar stays stable.
             style={{ contentVisibility: "auto", containIntrinsicSize: "auto 320px" }}
           >
+          <DeckTileTilt reducedMotion={reducedMotion} motionKnown={motionKnown}>
           <Link
             href={`/deck/${cardSlug(c.name)}`}
             className="group block overflow-hidden rounded-xl border border-gold/20 bg-panel/50 transition hover:-translate-y-1 hover:border-gold/60 hover:shadow-gold-sm"
@@ -444,6 +529,7 @@ export default function DeckClient({
               {c.name}
             </span>
           </Link>
+          </DeckTileTilt>
           </motion.div>
         ))}
       </div>
