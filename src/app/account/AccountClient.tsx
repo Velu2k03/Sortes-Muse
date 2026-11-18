@@ -20,6 +20,7 @@ import {
   SubscriptionPanel,
   type SubscriptionStatus,
 } from "./AccountPanels";
+import PasswordStrengthMeter, { PASSWORD_STRENGTH_ID } from "./PasswordStrengthMeter";
 
 type AuthStep = "email" | "sent" | "code";
 
@@ -445,6 +446,7 @@ function SignInPanel({ s }: { s: ReturnType<typeof useSignIn> }) {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder={mode === "signup" ? "At least 8 characters" : "Your password"}
                 autoComplete={mode === "signup" ? "new-password" : "current-password"}
+                aria-describedby={mode === "signup" ? PASSWORD_STRENGTH_ID : undefined}
                 className="w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 pr-16 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
               />
               {/* Batch 3.5 (#35): show or hide the typed password.
@@ -460,6 +462,10 @@ function SignInPanel({ s }: { s: ReturnType<typeof useSignIn> }) {
                 {showPassword ? "Hide" : "Show"}
               </button>
             </div>
+            {/* Velu 2026-11-18: strength feedback on signup only,
+                live from the password state. Feedback, not a rule:
+                minLength and the signup route stay the checks. */}
+            {mode === "signup" && <PasswordStrengthMeter password={password} />}
           </div>
           {mode === "signin" && (
             <p className="text-left text-sm">
