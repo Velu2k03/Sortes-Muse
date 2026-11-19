@@ -695,6 +695,140 @@ export function ImpressionStep({ f, drawnCards }: { f: IntakeState; drawnCards: 
   );
 }
 
+// Wait-screen auto-follow (Velu 2026-11-18): while the reading
+// streams in, the page follows the newest line so it stays in view,
+// hand-built, no dependency. The page itself scrolls (window), not
+// an inner box, and the footer sits below the text, so "the bottom"
+// means the end of the streamed text block, not the document end.
+//
+// - Quiet: it only scrolls when the newest line has gone below the
+//   viewport, and only by the distance needed to bring it back to
+//   just above the viewport bottom (FOLLOW_MARGIN_PX). Text flushes
+//   every 150ms (useIntakeFlow), so each move is a line or two.
+// - Respects the user: any upward scroll while the newest line is
+//   out of view pauses following (our own scrolls only ever go
+//   down, so they never pause it). Following resumes once the
+//   newest line is back in view, by scrolling down to it or by the
+//   text arriving where they are (e.g. a retry clears the text).
+// - Reduced motion: the same live matchMedia check the charts
+//   result scroll uses (useChartsClient.ts), read at each scroll so
+//   a mid-session change applies. Reduced motion gets "auto", and
+//   globals.css sets html scroll-behavior: auto under
+//   prefers-reduced-motion: reduce, so the move is instant, never
+//   smooth. Nothing in the rendered tree branches on it.
+export const FOLLOW_MARGIN_PX = 24;
+
+/** Is the end of the streamed text in view (with a little slack)? */
+export function isFollowEndInView(endBottom: number, viewportHeight: number): boolean {
+  return endBottom <= viewportHeight + FOLLOW_MARGIN_PX;
+}
+
+/** On a scroll event: keep following, pause, or resume.
+ * Direction-aware: an upward scroll never resumes following, even
+ * with the end still in the slack, so the first scroll events of a
+ * wheel-up cannot undo the wheel listener's pause mid-gesture. */
+export function nextFollowing(
+  following: boolean,
+  endBottom: number,
+  viewportHeight: number,
+  scrollY: number,
+  lastScrollY: number,
+): boolean {
+  const inView = isFollowEndInView(endBottom, viewportHeight);
+  if (scrollY < lastScrollY) return inView ? following : false;
+  if (inView) return true;
+  return following;
+}
+
+/** Pixels to scroll so the newest line sits just above the
+ * viewport bottom; 0 when it is already there. */
+export function followScrollDelta(endBottom: number, viewportHeight: number): number {
+  const delta = endBottom - (viewportHeight - FOLLOW_MARGIN_PX);
+  return delta > 0 ? Math.ceil(delta) : 0;
+}
+
+export function followScrollBehavior(reduce: boolean): ScrollBehavior {
+  return reduce ? "auto" : "smooth";
+}
+
+// How long after the user's last upward input the follow stays
+// hands-off (no resume, no scroll), so a smooth wheel/touch scroll up
+// is never cancelled by a follow scrollBy mid-gesture.
+const FOLLOW_PAUSE_MS = 400;
+
+export function useWaitAutoFollow<T extends HTMLElement>(streamedText: string) {
+  const endRef = useRef<T>(null);
+  const followingRef = useRef(true);
+  // Time of the user's last upward input (wheel up, touch drag down,
+  // or any upward scroll: the follow's own scrolls only go down).
+  const lastUpAtRef = useRef(0);
+  useEffect(() => {
+    let lastY = window.scrollY;
+    const onScroll = () => {
+      const y = window.scrollY;
+      if (y < lastY) lastUpAtRef.current = Date.now();
+      const el = endRef.current;
+      if (el) {
+        followingRef.current = nextFollowing(
+          followingRef.current,
+          el.getBoundingClientRect().bottom,
+          window.innerHeight,
+          y,
+          lastY,
+        );
+      }
+      lastY = y;
+    };
+    // Pause on the user's input itself, not only on scrollY after the
+    // fact. html has scroll-behavior: smooth (globals.css), so a wheel
+    // or touch scroll up is a smooth animation, and the next follow
+    // scrollBy (every 150ms text flush) cancels it before the page
+    // moves up: the scroll listener then only sees scrollY growing and
+    // never pauses. So the pause must register on the input event,
+    // synchronously, before the next text flush. The scroll listener
+    // above stays as the backstop (keyboard, scrollbar drags).
+    const onWheel = (e: WheelEvent) => {
+      if (e.deltaY < 0) followingRef.current = false;
+      if (e.deltaY < 0) lastUpAtRef.current = Date.now();
+    };
+    let touchStartY = 0;
+    const onTouchStart = (e: TouchEvent) => {
+      touchStartY = e.touches[0]?.clientY ?? 0;
+    };
+    const onTouchMove = (e: TouchEvent) => {
+      const y = e.touches[0]?.clientY;
+      // Finger moving down = page scrolling up.
+      if (y !== undefined && y - touchStartY > 8) followingRef.current = false;
+      if (y !== undefined && y - touchStartY > 8) lastUpAtRef.current = Date.now();
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("wheel", onWheel, { passive: true });
+    window.addEventListener("touchstart", onTouchStart, { passive: true });
+    window.addEventListener("touchmove", onTouchMove, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("wheel", onWheel);
+      window.removeEventListener("touchstart", onTouchStart);
+      window.removeEventListener("touchmove", onTouchMove);
+    };
+  }, []);
+  useEffect(() => {
+    // The user just scrolled up: do not resume and do not scroll, or
+    // a follow scrollBy cancels their smooth scroll mid-gesture.
+    if (Date.now() - lastUpAtRef.current < FOLLOW_PAUSE_MS) return;
+    const el = endRef.current;
+    if (!el) return;
+    const endBottom = el.getBoundingClientRect().bottom;
+    if (isFollowEndInView(endBottom, window.innerHeight)) followingRef.current = true;
+    if (!followingRef.current) return;
+    const delta = followScrollDelta(endBottom, window.innerHeight);
+    if (delta === 0) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    window.scrollBy({ top: delta, behavior: followScrollBehavior(reduce) });
+  }, [streamedText]);
+  return endRef;
+}
+
 /** The wait screen, as its own component so it mounts after the
  * previous step exits (AnimatePresence mode="wait") and the focus
  * hook fires at the right moment. An effect in IntakeFlow keyed on
@@ -709,16 +843,19 @@ export function ImpressionStep({ f, drawnCards }: { f: IntakeState; drawnCards: 
  * no reveal on reopen). Until the first text arrives it shows the
  * rotating status lines. Nothing here claims the reading is saved:
  * the `done` event is the save confirmation, and only then does the
- * flow navigate to the reading page. */
+ * flow navigate to the reading page.
+ * Auto-follow (2026-11-18): useWaitAutoFollow keeps the newest
+ * streamed line in view; see the comment above it. */
 export function ProcessingStage({ activeStep, complete, streamedText, drawnCards }: { activeStep: number; complete: boolean; streamedText: string; drawnCards?: DrawnCard[] | null }) {
   const ref = useStepFocus<HTMLDivElement>();
+  const followRef = useWaitAutoFollow<HTMLDivElement>(streamedText);
   return (
     <div ref={ref} tabIndex={-1} aria-label="Creating your reading" className="flex min-h-[55vh] scroll-mt-32 flex-col items-center justify-center text-center outline-none!">
       <ReadingWait activeStep={activeStep} complete={complete} drawnCards={drawnCards} />
       {streamedText.length > 0 && (
         <div className="mt-8 w-full text-left">
           <p className="text-sm text-gold">Writing your reading</p>
-          <div className="mt-3">
+          <div ref={followRef} className="mt-3">
             <ReadingText text={streamedText} />
           </div>
         </div>
