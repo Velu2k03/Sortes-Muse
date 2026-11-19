@@ -90,6 +90,13 @@ describe("auto-follow: following the newest line", () => {
     expect(isFollowEndInView(VH + FOLLOW_MARGIN_PX, VH)).toBe(true);
     expect(isFollowEndInView(VH + FOLLOW_MARGIN_PX + 1, VH)).toBe(false);
   });
+
+  it("an end above the viewport (reader scrolled past it) is not in view (Codex P2 2026-11-19)", () => {
+    expect(isFollowEndInView(-50, VH)).toBe(false);
+    expect(isFollowEndInView(-1, VH)).toBe(false);
+    // The viewport top edge itself still counts as in view.
+    expect(isFollowEndInView(0, VH)).toBe(true);
+  });
 });
 
 describe("auto-follow: scroll-up pause", () => {
@@ -130,6 +137,20 @@ describe("auto-follow: scroll-up pause", () => {
   it("still resumes on a downward scroll to the newest line", () => {
     expect(nextFollowing(false, VH - 10, VH, 1010, 1000)).toBe(true);
     expect(nextFollowing(false, VH + FOLLOW_MARGIN_PX, VH, 1010, 1000)).toBe(true);
+  });
+
+  it("an upward scroll with the end above the viewport (from the footer) pauses following", () => {
+    // Keyboard or scrollbar scroll up from below the text: the
+    // backstop listener must pause, or a later flush pulls them down.
+    expect(nextFollowing(true, -50, VH, 990, 1000)).toBe(false);
+    expect(nextFollowing(true, -1, VH, 990, 1000)).toBe(false);
+  });
+
+  it("after a pause from the footer, scrolling back down to the end resumes", () => {
+    // Paused from the footer, the reader scrolls up into earlier
+    // lines; scrolling back down until the end is in view resumes.
+    expect(nextFollowing(true, -50, VH, 990, 1000)).toBe(false);
+    expect(nextFollowing(false, VH - 10, VH, 1010, 1000)).toBe(true);
   });
 
   it("the follow effect stands down right after upward input, before resuming or scrolling", () => {

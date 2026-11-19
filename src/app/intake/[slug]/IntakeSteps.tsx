@@ -718,9 +718,12 @@ export function ImpressionStep({ f, drawnCards }: { f: IntakeState; drawnCards: 
 //   smooth. Nothing in the rendered tree branches on it.
 export const FOLLOW_MARGIN_PX = 24;
 
-/** Is the end of the streamed text in view (with a little slack)? */
+/** Is the end of the streamed text in view (with a little slack
+ * below the fold)? An end above the viewport (the reader has scrolled
+ * past it, into the footer) is not in view, so an upward keyboard or
+ * scrollbar scroll from there pauses following (Codex P2 2026-11-19). */
 export function isFollowEndInView(endBottom: number, viewportHeight: number): boolean {
-  return endBottom <= viewportHeight + FOLLOW_MARGIN_PX;
+  return endBottom >= 0 && endBottom <= viewportHeight + FOLLOW_MARGIN_PX;
 }
 
 /** On a scroll event: keep following, pause, or resume.
