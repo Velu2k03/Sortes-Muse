@@ -524,7 +524,7 @@ export default function Home() {
           Simple plans, clear prices
         </h2>
         <p className="mt-6 max-w-lg text-cream/75">
-          Start free with one card a day.
+          First reading free.
         </p>
         <div className="mt-8 grid gap-10 lg:grid-cols-12 lg:gap-12">
           {/* Star, the focal tier: the one large panel, gold
