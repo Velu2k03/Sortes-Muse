@@ -858,6 +858,19 @@ export function ProcessingStage({ activeStep, complete, streamedText, drawnCards
       {streamedText.length > 0 && (
         <div className="mt-8 w-full text-left">
           <p className="text-sm text-gold">Writing your reading</p>
+          {/* AGENTS.md self-check exception (same reasoning as the
+              pricing pill span, PR #152; Codex P1 on PR #171): the
+              follow wrapper is deliberately a raw <div>, not an
+              Astryx component. It is pre-existing (main had
+              <div className="mt-3"> here); this PR only adds the
+              ref. No Astryx primitive fits a ref-hosting plain block
+              wrapper: VStack forwards a ref, but every Stack is a
+              flex container, which makes ReadingText's root a flex
+              item with its own formatting context, so a leading or
+              trailing "---" rule's my-4 margin stops collapsing
+              through the wrapper and its measured bottom edge moves.
+              useWaitAutoFollow reads getBoundingClientRect().bottom
+              on this real DOM node, so it must stay a plain block. */}
           <div ref={followRef} className="mt-3">
             <ReadingText text={streamedText} />
           </div>
