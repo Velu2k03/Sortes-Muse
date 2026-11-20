@@ -3,7 +3,7 @@ import { spawnSync } from "node:child_process";
 import path from "node:path";
 import postgres from "postgres";
 import { pgTestUrl } from "./pg-test-url";
-import { ORACLE_TO_CREDITS } from "@/lib/subscription-tiers";
+import { CREDIT_COSTS_ENABLED, ORACLE_TO_CREDITS } from "@/lib/subscription-tiers";
 
 /**
  * Cutover prep (2026-11-20): end-to-end tests for the conversion
@@ -21,9 +21,10 @@ import { ORACLE_TO_CREDITS } from "@/lib/subscription-tiers";
  * locally and is the superuser in CI). Fresh each run, so the totals
  * below are exact.
  *
- * The flag stays OFF in this checkout, so --live runs here set
- * SORTES_CONVERT_ALLOW_FLAG_OFF=1 (refused on production URLs; that
- * refusal is tested below too).
+ * --live runs here set SORTES_CONVERT_ALLOW_FLAG_OFF=1 so the suite
+ * also runs on a flag-OFF checkout (the override is refused on
+ * production URLs; that refusal is tested below while the flag is OFF).
+ * Since the credit cutover the flag is ON, so the override is unused.
  */
 const LEDGERS_URL = pgTestUrl("SORTES_TEST_DATABASE_URL_LEDGERS");
 const SKIP = !LEDGERS_URL;
@@ -114,6 +115,11 @@ describe.skipIf(SKIP)("Oracle conversion runner + census on real Postgres (local
     //    migration-008 backfill) -> converts 7 -> 2,100.
     const a = await db.createUser("convert-a@example.com");
     await db.addUserCredits(a.id, 7);
+    // Credit cutover: the flag is ON in this checkout now, and a pack
+    // fulfilled through the default "oracles" unit would be granted
+    // x300. These seeds reproduce the pre-cutover state (the pack's
+    // Oracle count stored as-is), so they pass grantUnit "credits",
+    // which grants the given amount unchanged.
     // C: bought a pack AFTER the flip -> refused (already credits).
     const c = await db.createUser("convert-c@example.com");
     await db.fulfillOrder({
@@ -123,6 +129,7 @@ describe.skipIf(SKIP)("Oracle conversion runner + census on real Postgres (local
       amount: 3.99,
       readings: 5,
       orderId: "order-convert-c",
+      grantUnit: "credits",
     });
     // D: bought a pack BEFORE the flip -> converts 12 -> 3,600.
     const d = await db.createUser("convert-d@example.com");
@@ -133,6 +140,7 @@ describe.skipIf(SKIP)("Oracle conversion runner + census on real Postgres (local
       amount: 7.99,
       readings: 12,
       orderId: "order-convert-d",
+      grantUnit: "credits",
     });
     await raw`UPDATE transactions SET created_at = '2025-06-01T00:00:00Z' WHERE order_id = 'order-convert-d'`;
     // Z: zero balance -> not in the population at all.
@@ -225,7 +233,11 @@ describe.skipIf(SKIP)("Oracle conversion runner + census on real Postgres (local
     expect(await balances(ids.a)).toEqual({ monthly: 0, purchased: 7, total: 7 });
   });
 
-  it("--live refuses while CREDIT_COSTS_ENABLED is false unless the local-only override is set", async () => {
+  // Credit cutover: the flag is ON in this checkout now, so the runner's
+  // flag-OFF refusal cannot be reached from here. The check stays in the
+  // runner (a rollback to flag OFF re-arms it) and this test runs again
+  // on any flag-OFF checkout.
+  it.skipIf(CREDIT_COSTS_ENABLED)("--live refuses while CREDIT_COSTS_ENABLED is false unless the local-only override is set", async () => {
     const r = run(RUNNER, ["--live", "--flag-flipped-at", FLIP]);
     expect(r.status).toBe(2);
     expect(r.stderr).toMatch(/CREDIT_COSTS_ENABLED is false/);
@@ -241,7 +253,11 @@ describe.skipIf(SKIP)("Oracle conversion runner + census on real Postgres (local
     expect(census.status).toBe(2);
     expect(census.stderr).toMatch(/SORTES_CENSUS_PRODUCTION=1/);
     // Even with the production flag, the flag-OFF override is refused
-    // on a production URL (exits before connecting).
+    // on a production URL (exits before connecting). Only reachable
+    // while the flag is OFF: with it ON (the cutover), the runner would
+    // go on to connect, so this part is skipped rather than letting a
+    // test dial the fake production host.
+    if (CREDIT_COSTS_ENABLED) return;
     const override = run(RUNNER, ["--live", "--flag-flipped-at", FLIP], {
       POSTGRES_URL: prod,
       SORTES_CONVERT_PRODUCTION: "1",

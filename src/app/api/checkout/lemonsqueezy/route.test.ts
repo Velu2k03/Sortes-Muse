@@ -13,10 +13,25 @@ vi.mock("@/lib/lemonsqueezy", () => ({
   lemonConfigured: () => true,
   createCheckout: vi.fn(async () => "https://lemonsqueezy.test/checkout"),
 }));
+// Credit cutover: the first suite covers the legacy pack path, which
+// only runs while the credit-cost flag is OFF (a rollback), so it pins
+// the flag OFF. The second suite pins it ON (the shipped value, asserted
+// against the real module in batch-b-billing.test.ts) and checks the
+// pack refusal. The getter lets each suite choose.
+const flag = vi.hoisted(() => ({ on: false }));
+vi.mock("@/lib/subscription-tiers", async (importOriginal) => {
+  const orig = await importOriginal<typeof import("@/lib/subscription-tiers")>();
+  return {
+    ...orig,
+    get CREDIT_COSTS_ENABLED() {
+      return flag.on;
+    },
+  };
+});
 
 const mockedCreateCheckout = vi.mocked(createCheckout);
 
-import { POST } from "@/app/api/checkout/lemonsqueezy/route";
+import { GET, POST } from "@/app/api/checkout/lemonsqueezy/route";
 import { getSession } from "@/lib/auth";
 import { getUserById } from "@/lib/db";
 
@@ -37,6 +52,7 @@ describe("POST /api/checkout/lemonsqueezy", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     resetRateLimits();
+    flag.on = false;
     errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     mockedCreateCheckout.mockResolvedValue("https://lemonsqueezy.test/checkout");
   });
@@ -127,5 +143,40 @@ describe("POST /api/checkout/lemonsqueezy", () => {
     const res = await POST(req(null));
     expect(res.status).toBe(400);
     expect(await res.json()).toEqual({ error: "Invalid request." });
+  });
+});
+
+// Credit cutover (audit §5.2, runbook Verification 6): once the flag is
+// ON, a pack checkout attempt is refused.
+describe("POST /api/checkout/lemonsqueezy, credit flag ON", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    resetRateLimits();
+    flag.on = true;
+  });
+
+  it.each(["pack5", "pack12", "pack30"])("refuses a %s checkout with 410 and never calls Lemon Squeezy", async (packId) => {
+    const res = await POST(req({ packId, email: "buyer@example.com" }));
+    expect(res.status).toBe(410);
+    expect((await res.json()).error).toMatch(/no longer sold/);
+    expect(mockedCreateCheckout).not.toHaveBeenCalled();
+  });
+
+  it("refuses before any session or account lookup", async () => {
+    mockedGetSession.mockResolvedValueOnce({ userId: "u-1", email: "s@example.com" });
+    const res = await POST(req({ packId: "pack5" }));
+    expect(res.status).toBe(410);
+    expect(mockedGetSession).not.toHaveBeenCalled();
+    expect(mockedGetUserById).not.toHaveBeenCalled();
+  });
+
+  it("refuses a malformed body the same way (no pack path is reachable)", async () => {
+    const res = await POST(req(null));
+    expect(res.status).toBe(410);
+  });
+
+  it("GET reports the pack checkout as disabled", async () => {
+    const res = await GET();
+    expect(await res.json()).toEqual({ enabled: false });
   });
 });

@@ -68,11 +68,12 @@ export function grantableMonthly(currentMonthly: number, tier: SubscriptionTier)
  *
  * CUTOVER (see docs/CREDIT-CUTOVER-RUNBOOK.md): flip this to true
  * ONLY as part of the cutover — deploy flag-ON first, then run the
- * Oracle conversion for all holders, then verify. The flag ships
- * OFF in this batch; flipping it is a deliberate, reviewed change,
- * never a drive-by. Do NOT flip it without the runbook.
+ * Oracle conversion for all holders, then verify. The flag shipped
+ * OFF until the cutover; flipping it was a deliberate, reviewed change
+ * (credit cutover PR, 2026-11-20). Do NOT flip it back without the
+ * runbook's rollback section: converted balances stay converted.
  */
-export const CREDIT_COSTS_ENABLED = false;
+export const CREDIT_COSTS_ENABLED = true;
 
 /** Credit cost of one reading/report/follow-up, once the flag is ON. */
 export const READING_CREDIT_COSTS = {
@@ -88,6 +89,28 @@ export const READING_CREDIT_COSTS = {
   /** One follow-up question. */
   followUp: 50,
 } as const;
+
+/**
+ * A credit amount as UI copy: "1 credit", "300 credits", "1,000
+ * credits". en-US grouping on purpose (the same fixed locale the
+ * pricing page uses), so server and client render the same text.
+ */
+export function creditsLabel(n: number): string {
+  return n === 1 ? "1 credit" : `${n.toLocaleString("en-US")} credits`;
+}
+
+/**
+ * The amount on a purchase-history row. Rows for the retired Oracle
+ * packs (pack_type "pack5 ...", "pack12 ...", "pack30 ...") were
+ * bought and recorded in Oracles before the cutover, so they keep
+ * that unit; calling a 5-Oracle pack "5 credits" would misstate what
+ * the buyer got. Every other row (top-ups, the conversion, test
+ * grants) is recorded in credits.
+ */
+export function purchaseAmountLabel(amount: number, packType: string): string {
+  if (/^pack(5|12|30)\b/.test(packType)) return amount === 1 ? "1 Oracle" : `${amount} Oracles`;
+  return creditsLabel(amount);
+}
 
 /**
  * Credit cost of a tarot reading by spread size, once the flag is

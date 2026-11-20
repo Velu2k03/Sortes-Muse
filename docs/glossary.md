@@ -13,37 +13,39 @@ words below appear in the four money-flow UI files.
 - **Card**: one of the 78 tarot cards. A card is drawn, not generated.
 - **Spread**: the set of cards a reading uses. The free reading is the
   1-card Quick Insight spread.
-- **Oracle**: the unit a reading costs. One reading costs **1 Oracle**.
-  Oracles are bought in top-ups (1,000 for $9.99, 3,000 for $24.99) or
-  come with a monthly plan. Purchased Oracles never expire. Monthly plan
-  Oracles roll over up to two months of the plan, then stop.
+- **Credits**: the unit a reading costs (since the credit cutover,
+  2026-11-20). A 1-card reading costs 100 credits, a 3-card reading 200,
+  a Celtic Cross, a chart interpretation, or a report 300, a follow-up 50.
+  Credits are bought in top-ups (1,000 for $9.99, 3,000 for $24.99) or
+  come with a monthly plan. Purchased credits never expire. Monthly plan
+  credits roll over up to two months of the plan, then stop.
 - **Follow-up**: a question asked after a reading, in the same thread.
-  The first follow-up is free, then 1 Oracle each, up to 3.
+  The first follow-up is free, then 50 credits each, up to 3.
 - **Sign in**: the action of entering an existing account. Always "Sign
   in", two words, capital S.
 - **Sign up**: the action of making a new account. Always "Sign
   up", two words, capital S. (Velu's wording decision, 2026-11-16:
   "Sign up" and "Sign in".)
-- **Get Oracles**: the action of buying Oracles. The button that
+- **Get credits**: the action of buying credits. The button that
   opens checkout.
-- **Top up**: the action of adding Oracles to an existing balance. Used in
+- **Top up**: the action of adding credits to an existing balance. Used in
   the header pill and the account page.
 
 ## The one cost phrase
 
-A reading costs **1 Oracle**. Say it exactly that way everywhere the cost
-is stated: buttons ("Personalize and begin · 1 Oracle"), helper text
-("This reading uses 1 Oracle."), and the purchase confirmer. Never write
-"1 credit", "1 Oracle per reading", "costs one Oracle", or any other
-variant. The rate is implied by the phrase: one reading, one Oracle.
+State a cost as "N credits", with the number from the price table:
+buttons ("Personalize and begin · 200 credits"), helper text ("This
+reading uses 200 credits."), and the purchase confirmer. In code, build
+it with `creditsLabel(...)` from `src/lib/subscription-tiers.ts`, so the
+singular reads "1 credit" and large amounts read "1,000 credits".
 
 ## Words we never use
 
-- **credit / credits**: the old word for the currency. The site runs on
-  Oracles. Code identifiers (`credits` variable, `CREDIT_PACKS`,
-  `sortes:credits-changed`, `/api/credits/*`) are internal only and are
-  not user-facing copy. The test allows those identifiers; it fails on the
-  standalone word "credit" in UI strings.
+- **Oracle / Oracles** as a unit: the old word for the currency, retired
+  at the credit cutover. The `/oracles` URL stays (inbound links, SEO),
+  and code identifiers (`preCheckOracleBalance`, `ORACLE_TO_CREDITS`)
+  are internal only. The one exception in UI copy is a purchase-history
+  row for a retired Oracle pack, which keeps the unit it was bought in.
 - **Log in**: always "Sign in".
 - **Register**: always "Sign up".
 - **Login / Signup** (one word): always "Sign in" / "Sign up".

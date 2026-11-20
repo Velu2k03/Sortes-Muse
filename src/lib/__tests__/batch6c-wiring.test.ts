@@ -168,7 +168,7 @@ describe("Batch 6c wiring (layout)", () => {
     expect(groups).toHaveLength(15);
     const count = (name: string) =>
       groups.filter((g) => g === `group: "${name}"`).length;
-    expect(count("Pricing and Oracles")).toBe(8);
+    expect(count("Pricing and credits")).toBe(8);
     expect(count("Readings and Charts")).toBe(3);
     expect(count("Privacy and Data")).toBe(3);
     // Phase 7 (7.3): the "Who runs Sortes" question is cut, it
@@ -178,7 +178,7 @@ describe("Batch 6c wiring (layout)", () => {
     const list = src("src/components/FaqList.tsx");
     // The sections render in a fixed order, and the jump nav groups
     // the links under the same headings.
-    expect(list).toContain('"Pricing and Oracles"');
+    expect(list).toContain('"Pricing and credits"');
     expect(list).toContain('"Readings and Charts"');
     expect(list).toContain('"Privacy and Data"');
     expect(list).toContain('"Account"');
@@ -186,5 +186,21 @@ describe("Batch 6c wiring (layout)", () => {
     // The details ids (slug of the question) did not change, so
     // existing anchors still work.
     expect(list).toContain("id={slug(f.q)}");
+  });
+
+  it("credit cutover: the FAQ prices every product in a cost table", () => {
+    const faq = src("src/app/faq/page.tsx");
+    expect(faq).toContain('q: "What does each reading cost?"');
+    expect(faq).not.toContain("five Oracle rules");
+    for (const key of ["oneCard", "threeCard", "chart", "report", "followUp"]) {
+      expect(faq).toContain(`credits(READING_CREDIT_COSTS.${key})`);
+    }
+    expect(faq).toContain('cost: "Free"');
+    const list = src("src/components/FaqList.tsx");
+    expect(list).toContain("{f.table ? (");
+    expect(list).toContain('<th scope="col"');
+    // The old anchor is replaced everywhere it was linked from.
+    expect(src("src/app/spreads/SpreadsClient.tsx")).toContain("/faq#what-does-each-reading-cost");
+    expect(src("src/app/oracles/CreditsClient.tsx")).toContain("/faq#what-does-each-reading-cost");
   });
 });

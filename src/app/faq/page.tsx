@@ -3,35 +3,40 @@ import { pageSocial } from "@/lib/seo";
 import { APP_NAME, CONTACT_EMAIL } from "@/lib/site";
 import FaqList, { type FaqItem } from "@/components/FaqList";
 import PageHeader from "@/components/PageHeader";
+import { READING_CREDIT_COSTS, creditsLabel } from "@/lib/subscription-tiers";
 
 export const metadata = {
   title: "Frequently asked questions",
   description:
-    "Sortes answers: what is free, how Oracles work, whether readings are predictions, how birth data is handled, how sign-in works, and refunds.",
+    "Sortes answers: what is free, how credits work, whether readings are predictions, how birth data is handled, how sign-in works, and refunds.",
   alternates: { canonical: "/faq" },
-  ...pageSocial({ title: "Frequently asked questions", description: "Sortes answers: what is free, how Oracles work, whether readings are predictions, how birth data is handled, how sign-in works, and refunds.", path: "/faq" }),
+  ...pageSocial({ title: "Frequently asked questions", description: "Sortes answers: what is free, how credits work, whether readings are predictions, how birth data is handled, how sign-in works, and refunds.", path: "/faq" }),
 };
+
+const credits = creditsLabel;
 
 export const FAQS: FaqItem[] = [
   {
-    group: "Pricing and Oracles",
+    group: "Pricing and credits",
     q: "What is free in Sortes?",
     a: "The daily card, the deck browser, and chart calculation are free, no account needed. Your first Quick Insight reading and your first chart interpretation per system are free too, but chart interpretations need you to sign in.",
   },
   {
-    group: "Pricing and Oracles",
-    q: "How do Oracles work?",
-    a: "One Oracle opens one full reading, any spread, or one chart interpretation after the first free one per system. Oracles never expire; top-ups are 1,000 for $9.99 or 3,000 for $24.99.",
+    group: "Pricing and credits",
+    q: "How do credits work?",
+    a: `Readings, chart interpretations, reports, and follow-up questions are paid in credits. A one-card reading is ${credits(READING_CREDIT_COSTS.oneCard)} and a three-card reading is ${credits(READING_CREDIT_COSTS.threeCard)}. Purchased credits never expire; top-ups are 1,000 for $9.99 or 3,000 for $24.99. Subscriptions add credits every month.`,
   },
   {
-    group: "Pricing and Oracles",
-    q: "What are the five Oracle rules?",
-    bullets: [
-      "Your first Quick Insight reading is free, once per device as a guest and once per account when signed in.",
-      "A chart interpretation is free the first time per system, Ziwei, Western, and Vedic separately, then 1 Oracle each.",
-      "Each report costs 1 Oracle.",
-      "A reading follow-up is free the first time per reading, then 1 Oracle each, up to 3 per reading.",
-      "The daily card is always free and never uses an Oracle.",
+    group: "Pricing and credits",
+    q: "What does each reading cost?",
+    table: [
+      { item: "Quick Insight (1 card)", cost: credits(READING_CREDIT_COSTS.oneCard), note: "Your first one is free, once per device as a guest and once per account" },
+      { item: "Three-card spread", cost: credits(READING_CREDIT_COSTS.threeCard) },
+      { item: "Celtic Cross (10 cards)", cost: credits(READING_CREDIT_COSTS.chart) },
+      { item: "Chart interpretation", cost: credits(READING_CREDIT_COSTS.chart), note: "First one free per system: Ziwei, Western, and Vedic" },
+      { item: "Report", cost: credits(READING_CREDIT_COSTS.report) },
+      { item: "Follow-up question", cost: credits(READING_CREDIT_COSTS.followUp), note: "First one free per reading, up to 3 per reading" },
+      { item: "Daily card", cost: "Free", note: "Always free, never uses credits" },
     ],
   },
   {
@@ -52,12 +57,12 @@ export const FAQS: FaqItem[] = [
   {
     group: "Account",
     q: "How do I sign in?",
-    a: "On the account page, choose Continue with Google, Email link, or Password. After you sign in, your guest Oracles and journal move into your account.",
+    a: "On the account page, choose Continue with Google, Email link, or Password. After you sign in, your guest credits and journal move into your account.",
   },
   {
-    group: "Pricing and Oracles",
-    q: "What if I bought Oracles with a different email?",
-    a: "Sign in with that email and the Oracles merge in. If you used a different email by mistake, sign out and sign in again with the checkout email.",
+    group: "Pricing and credits",
+    q: "What if I bought credits with a different email?",
+    a: "Sign in with that email and the credits merge in. If you used a different email by mistake, sign out and sign in again with the checkout email.",
   },
   {
     group: "Readings and Charts",
@@ -65,19 +70,19 @@ export const FAQS: FaqItem[] = [
     a: "A spread answers one question in the moment. A birth chart maps a birth moment, and does not change with your question.",
   },
   {
-    group: "Pricing and Oracles",
+    group: "Pricing and credits",
     q: "Can I get a refund?",
     a: "Unused top-ups may be refunded within 14 days of purchase. Readings already delivered are non-refundable.",
   },
   {
-    group: "Pricing and Oracles",
-    q: "How do I pay for Oracles?",
+    group: "Pricing and credits",
+    q: "How do I pay for credits?",
     a: "Top-ups are paid through a secure checkout powered by Lemon Squeezy, by card, PayPal, Apple Pay, or Google Pay. Checkout shows the full amount, including taxes and fees, before you pay.",
   },
   {
-    group: "Pricing and Oracles",
+    group: "Pricing and credits",
     q: "What if a payment fails?",
-    a: "If a payment fails, no Oracles are added. Try again from the Oracles page. If you were charged and no Oracles appeared, email " + CONTACT_EMAIL + ".",
+    a: "If a payment fails, no credits are added. Try again from the Credits page. If you were charged and no credits appeared, email " + CONTACT_EMAIL + ".",
   },
   {
     group: "Readings and Charts",
@@ -90,9 +95,9 @@ export const FAQS: FaqItem[] = [
     a: "Delete saved readings and journal entries yourself, and your account from the account page. For export or deletion by email, write to " + CONTACT_EMAIL + ".",
   },
   {
-    group: "Pricing and Oracles",
+    group: "Pricing and credits",
     q: "How much does a reading cost?",
-    a: "Daily card free. First reading free. After that, 1 Oracle. Top-ups are 1,000 for $9.99 or 3,000 for $24.99, in US dollars. Oracles never expire.",
+    a: `Daily card free. First reading free. After that, ${credits(READING_CREDIT_COSTS.oneCard)} for one card, ${credits(READING_CREDIT_COSTS.threeCard)} for three cards. Top-ups are 1,000 credits for $9.99 or 3,000 for $24.99, in US dollars. Purchased credits never expire.`,
   },
 ];
 
@@ -110,9 +115,11 @@ export default function FaqPage() {
               name: f.q,
               acceptedAnswer: {
                 "@type": "Answer",
-                text: f.bullets
-                  ? [...f.bullets, ...(f.a ? [f.a] : [])].join("\n")
-                  : (f.a ?? ""),
+                text: f.table
+                  ? f.table.map((r) => `${r.item}: ${r.cost}${r.note ? ` (${r.note})` : ""}`).join("\n")
+                  : f.bullets
+                    ? [...f.bullets, ...(f.a ? [f.a] : [])].join("\n")
+                    : (f.a ?? ""),
               },
             })),
           }),

@@ -382,7 +382,7 @@ export default function PricingClient({
           Choose your plan
         </h1>
         <p className="mt-4 max-w-xl text-sm text-cream/75">
-          Monthly Oracles for readings, charts, and reports. Top-ups
+          Monthly credits for readings, charts, and reports. Top-ups
           are one-time purchases, separate from subscriptions.
         </p>
       </VStack>
@@ -459,7 +459,7 @@ export default function PricingClient({
                 <span className="font-display text-xl">
                   {star.credits.toLocaleString(CREDITS_LOCALE)}
                 </span>{" "}
-                Oracles a month
+                credits a month
               </p>
               {billing === "annual" && (
                 <p className="mt-1 text-sm font-semibold text-goldbright lining-nums tabular-nums">
@@ -499,7 +499,7 @@ export default function PricingClient({
                   </p>
                 </HStack>
                 <p className="mt-2 text-sm text-cream/75">
-                  {tier.credits.toLocaleString(CREDITS_LOCALE)} Oracles a month
+                  {tier.credits.toLocaleString(CREDITS_LOCALE)} credits a month
                 </p>
                 {billing === "annual" && (
                   <p className="mt-1 text-sm font-semibold text-goldbright lining-nums tabular-nums">
@@ -552,7 +552,7 @@ export default function PricingClient({
           Top up any time
         </h2>
         <p className="mx-auto mt-2 max-w-xl text-center text-sm text-cream/75">
-          1,000 Oracles for $9.99 and 3,000 for $24.99. Purchased Oracles
+          1,000 credits for $9.99 and 3,000 for $24.99. Purchased credits
           never expire.
         </p>
         <Grid columns={{ minWidth: 280, max: 2 }} gap={4} maxWidth="42rem" className="mx-auto mt-6">
@@ -566,7 +566,7 @@ export default function PricingClient({
                   <span className="font-display text-xl">
                     {topup.credits.toLocaleString(CREDITS_LOCALE)}
                   </span>{" "}
-                  Oracles
+                  credits
                 </p>
                 <p className="mt-1 text-sm text-cream/75">Never expires</p>
                 <Button
@@ -575,7 +575,7 @@ export default function PricingClient({
                       ? "Starting checkout…"
                       : !topupsEnabled
                         ? "Not yet open"
-                        : `Top up ${topup.credits.toLocaleString(CREDITS_LOCALE)} Oracles`
+                        : `Top up ${topup.credits.toLocaleString(CREDITS_LOCALE)} credits`
                   }
                   variant="secondary"
                   isDisabled={!topupsEnabled}

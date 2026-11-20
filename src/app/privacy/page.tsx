@@ -19,7 +19,7 @@ export default function PrivacyPage() {
       <p className="mt-2 text-sm text-mist">Last updated: {UPDATED}</p>
 
       <p className="mt-4 rounded-lg border border-gold/30 p-4 text-[15px] leading-relaxed text-cream/85">
-        <strong>In short:</strong> we keep your account email, your Oracle
+        <strong>In short:</strong> we keep your account email, your credit
         balance, purchase records, and the readings you save. Birth date, time,
         and place are used in memory for a chart and are never stored. A small
         set of service providers help us run the site; they are listed in
@@ -42,7 +42,7 @@ export default function PrivacyPage() {
           <ul className="mt-2 list-disc space-y-2 pl-5">
             <li>
               <strong>Account data:</strong> if you create an account, your
-              email address and Oracle balance.
+              email address and credit balance.
             </li>
             <li>
               <strong>Purchase data:</strong> for every transaction we store
@@ -56,7 +56,7 @@ export default function PrivacyPage() {
               revisit it in your journal.
             </li>
             <li>
-              <strong>On-device data:</strong> for guests, daily cards, Oracle
+              <strong>On-device data:</strong> for guests, daily cards, credit
               balance, and reading history are stored in your browser&apos;s
               local storage and never leave your device until you create an
               account. Birth profiles (up to 20) are stored on your device
@@ -175,7 +175,7 @@ export default function PrivacyPage() {
                 </tr>
                 <tr className="border-b border-gold/10">
                   <td className="py-2 pr-4">Lemon Squeezy</td>
-                  <td className="py-2">Payments for Oracle top-ups and subscriptions</td>
+                  <td className="py-2">Payments for credit top-ups and subscriptions</td>
                 </tr>
                 <tr className="border-b border-gold/10">
                   <td className="py-2 pr-4">Google</td>

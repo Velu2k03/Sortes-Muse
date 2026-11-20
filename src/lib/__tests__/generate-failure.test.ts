@@ -9,22 +9,23 @@ const CLIENTS = [
 ];
 
 describe("Point 1: honest failure copy", () => {
-  it("client-side failure copy never claims the Oracle was not spent", () => {
+  it("client-side failure copy never claims the credits were not spent", () => {
     for (const noun of ["reading", "report", "interpretation"] as const) {
       const m = unconfirmedMessage(noun, "your journal");
       expect(m).toMatch(/may have been saved/);
-      expect(m).toMatch(/without spending another Oracle/);
-      expect(m).not.toMatch(/not spent|No Oracle was spent/i);
+      expect(m).toMatch(/without spending more credits/);
+      expect(m).not.toMatch(/not spent|No credits were spent|No Oracle was spent/i);
+      expect(m).not.toMatch(/Oracle/);
     }
   });
 
   it("no client file hard-codes 'not spent' text or appends it to server errors", () => {
     for (const f of CLIENTS) {
       const src = readFileSync(f, "utf8");
-      expect(src, f).not.toMatch(/Oracle was not spent/);
-      expect(src, f).not.toMatch(/`\$\{msg\} No Oracle was spent/);
-      expect(src, f).not.toMatch(/`\$\{message\} No Oracle was spent/);
-      expect(src, f).not.toMatch(/(Could not|could not) [^"]*No Oracle was spent/);
+      expect(src, f).not.toMatch(/(Oracle was|credits were) not spent/);
+      expect(src, f).not.toMatch(/`\$\{msg\} No (Oracle was|credits were) spent/);
+      expect(src, f).not.toMatch(/`\$\{message\} No (Oracle was|credits were) spent/);
+      expect(src, f).not.toMatch(/(Could not|could not) [^"]*No (Oracle was|credits were) spent/);
     }
   });
 

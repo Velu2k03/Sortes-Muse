@@ -141,9 +141,10 @@ describe("Batch 6a wiring", () => {
     expect(src("src/app/birth-card/page.tsx")).not.toContain("Start a free reading");
   });
 
-  it("purchase history shows Oracles and a friendly test-grant label", () => {
+  it("purchase history shows the unit per row and a friendly test-grant label", () => {
     const panels = src("src/app/account/AccountPanels.tsx");
-    expect(panels).toContain("{t.readings} Oracles");
+    // Credit cutover: credits, except retired Oracle pack rows.
+    expect(panels).toContain("{purchaseAmountLabel(t.readings, t.pack_type)}");
     expect(panels).toContain('"Test grant"');
     expect(panels).not.toContain("{t.readings} readings");
   });

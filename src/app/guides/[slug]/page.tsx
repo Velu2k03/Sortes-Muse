@@ -72,24 +72,24 @@ export default async function GuidePage({
       {/* Personal Phase 4: cost warnings, Decision 15. These three
           guides point at paid things, so the cost is stated up front
           in the guide itself, not only on the spreads, charts, or
-          Oracles pages. Wording matches the confirmed pricing: every
-          full reading is 1 Oracle, chart calculation is free and
-          your first interpretation in each system is free, then
-          1 Oracle. */}
+          Credits pages. Wording matches the credit pricing: 1 card
+          100, 3 cards 200, Celtic Cross 300; chart calculation is
+          free and your first interpretation in each system is free,
+          then 300 credits. */}
       {(() => {
         const notices: Record<string, { text: string; href: string; label: string }> = {
           "celtic-cross-explained": {
-            text: "Trying the Celtic Cross spread costs 1 Oracle, like every full reading, after your first free Quick Insight reading.",
+            text: "Trying the Celtic Cross spread costs 300 credits. Your first Quick Insight reading is free.",
             href: "/spreads/celtic-cross",
             label: "Try the Celtic Cross spread",
           },
           "tarot-and-birth-charts": {
-            text: "Chart calculation is free. A chart interpretation costs 1 Oracle, with the first interpretation per system free. A tarot reading costs 1 Oracle, after your first free Quick Insight reading.",
+            text: "Chart calculation is free. A chart interpretation costs 300 credits, with the first interpretation per system free. A tarot reading costs 100 to 300 credits by spread, after your first free Quick Insight reading.",
             href: "/charts",
             label: "Cast a birth chart",
           },
           "topic-spreads-love-career-week": {
-            text: "Love Insight, Career Path, and Weekly Outlook each cost 1 Oracle, like every full reading, after your first free Quick Insight reading.",
+            text: "Love Insight, Career Path, and Weekly Outlook each cost 200 credits, like every three-card reading. Your first Quick Insight reading is free.",
             href: "/spreads",
             label: "Choose a topic spread",
           },

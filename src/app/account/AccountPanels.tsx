@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import type { AccountSettings, ServerTx } from "./useAccountSettings";
+import { purchaseAmountLabel } from "@/lib/subscription-tiers";
 
 /** AF-012: a skeleton, not a bare "Loading…" line. */
 export function AccountLoading() {
@@ -60,7 +61,7 @@ export function AccountSummary({
         </div>
         <div className="text-right">
           <p className="text-sm text-mist">
-            Oracle balance
+            Credit balance
           </p>
           <p className="mt-1 font-display text-3xl text-goldbright">
             {credits ?? 0}
@@ -73,7 +74,7 @@ export function AccountSummary({
           href="/pricing"
           className="btn-gold rounded-xl px-6 py-3 font-bold"
         >
-          Get Oracles
+          Get credits
         </Link>
         <button
           type="button"
@@ -106,7 +107,7 @@ export function PurchaseHistory({ transactions }: { transactions: ServerTx[] | n
               className="flex items-center justify-between gap-3 rounded-xl border border-gold/15 bg-panel/40 px-4 py-3 text-sm"
             >
               <span className="text-cream">
-                {t.readings} Oracles · {t.pack_type === "admin-test-grant" ? "Test grant" : t.pack_type}
+                {purchaseAmountLabel(t.readings, t.pack_type)} · {t.pack_type === "admin-test-grant" ? "Test grant" : t.pack_type}
               </span>
               <span className="shrink-0 text-mist">
                 ${Number(t.amount).toFixed(2)} ·{" "}
@@ -165,14 +166,14 @@ export function SubscriptionPanel({ subscription }: { subscription: Subscription
           </p>
           {sub.cancelAtPeriodEnd && sub.endsAt ? (
             <p className="mt-1 text-sm text-mist">
-              Ends {new Date(sub.endsAt).toLocaleDateString()}. Monthly Oracles left are removed then.
+              Ends {new Date(sub.endsAt).toLocaleDateString()}. Monthly credits left are removed then.
             </p>
           ) : renews ? (
             <p className="mt-1 text-sm text-mist">Renews {new Date(renews).toLocaleDateString()}.</p>
           ) : null}
           {subscription.monthlyCredits !== null ? (
             <p className="mt-1 text-sm text-mist">
-              Monthly Oracles: {subscription.monthlyCredits} · Purchased Oracles: {subscription.purchasedCredits ?? 0}
+              Monthly credits: {subscription.monthlyCredits} · Purchased credits: {subscription.purchasedCredits ?? 0}
             </p>
           ) : null}
           {subscription.portalUrl ? (
@@ -292,9 +293,9 @@ export function PasswordPanel({ p }: { p: AccountSettings["password"] }) {
 
 /**
  * Phase 3 (3.6): self-serve export and deletion. Export
- * downloads the account's Oracle balance, purchase history,
+ * downloads the account's credit balance, purchase history,
  * journal readings, and reports as one JSON file. Delete is
- * permanent: account, Oracles, journal, reports, and
+ * permanent: account, credits, journal, reports, and
  * purchase history, including the copies on this device.
  */
 export function DataPanel({
@@ -336,7 +337,7 @@ export function DataPanel({
       {d.deleteArmed && !d.deleting && (
         <div role="alert" className="mt-3">
           <p className="text-sm text-danger">
-            This permanently deletes your account, Oracles, journal,
+            This permanently deletes your account, credits, journal,
             reports, and purchase history, including the copies on
             this device. This cannot be undone.
           </p>

@@ -95,7 +95,7 @@ describe("Pricing tiers: Velu's exact numbers", () => {
     expect((starCredits as RegExpMatchArray)[1]).toContain(
       "{star.credits.toLocaleString(CREDITS_LOCALE)}"
     );
-    expect((starCredits as RegExpMatchArray)[1]).toContain("Oracles a month");
+    expect((starCredits as RegExpMatchArray)[1]).toContain("credits a month");
     // Spark and Moon are quiet rows: their price comes from the
     // per-row price, same monthly/annual rule.
     expect(c).toContain(
@@ -109,7 +109,11 @@ describe("Pricing tiers: Velu's exact numbers", () => {
     expect((rowPrice as RegExpMatchArray)[1]).toContain(
       '{billing === "monthly" ? " / month" : " / year"}'
     );
-    expect(c).toContain("{tier.credits.toLocaleString(CREDITS_LOCALE)} Oracles a month");
+    expect(c).toContain("{tier.credits.toLocaleString(CREDITS_LOCALE)} credits a month");
+    // Credit cutover: no "Oracles" left in the pricing copy or metadata.
+    expect(c).not.toMatch(/>\s*Oracles|Oracles a month|Oracles for \$|Top up .* Oracles/);
+    expect(src("src/app/pricing/page.tsx")).toContain("Spark $9.99 a month for 1,000 credits,");
+    expect(src("src/app/pricing/page.tsx")).not.toContain("1,000 Oracles");
   });
 });
 
@@ -345,7 +349,7 @@ describe("Pricing honesty: gated CTAs, packs link, checkout wiring", () => {
 
   it("leaves /oracles selling top-ups only: the packs are retired there too", () => {
     const oracles = src("src/app/oracles/page.tsx");
-    expect(oracles).toContain("Top up Oracles");
+    expect(oracles).toContain("Top up credits");
     expect(oracles).toContain("TOPUPS.map");
     expect(oracles).toContain("TopUpBuyButton");
     expect(oracles).not.toContain("Oracle packs");

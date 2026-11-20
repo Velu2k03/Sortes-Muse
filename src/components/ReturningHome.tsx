@@ -232,19 +232,19 @@ export default function ReturningHome() {
       )}
 
       {/* One button, cost labelled. The free reading stays 1-card
-          Quick Insight only; the paid cost is 1 Oracle. */}
+          Quick Insight only; the paid cost is 100 credits. */}
       <Link
         href="/intake/quick-insight"
         className="btn-gold mt-8 inline-block rounded-2xl px-8 py-4 text-base font-bold sm:text-lg"
       >
-        {freeAvailable ? "Ask today's question, free" : "Ask today's question · 1 Oracle"}
+        {freeAvailable ? "Ask today's question, free" : "Ask today's question · 100 credits"}
       </Link>
       <p className="mt-3 text-sm text-mist">
         {credits === null ? (
           "Your balance is loading."
         ) : (
           <>
-            Your balance: {credits} {credits === 1 ? "Oracle" : "Oracles"} ·{" "}
+            Your balance: {credits} {credits === 1 ? "credit" : "credits"} ·{" "}
             <Link
               href="/pricing"
               className="font-semibold text-goldbright underline underline-offset-4"

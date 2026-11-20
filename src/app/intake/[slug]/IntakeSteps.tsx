@@ -11,7 +11,13 @@ import { INTAKE_CATEGORIES, SENSITIVE_KEYS, getCategory } from "@/lib/intake";
 import { BRAND } from "@/lib/brand";
 import { peekHeroQuestion } from "@/lib/storage";
 import type { DrawnCard } from "@/lib/types";
-import type { IntakeState, Step } from "./useIntakeFlow";
+import { OUT_OF_CREDITS_MESSAGE, type IntakeState, type Step } from "./useIntakeFlow";
+import { creditsLabel, readingCostForSpreadCards } from "@/lib/subscription-tiers";
+
+/** A balance stop (client-side or the server 402) gets a "Get credits" link. */
+function isBalanceStop(error: string): boolean {
+  return error.startsWith(OUT_OF_CREDITS_MESSAGE) || error.startsWith("You need ");
+}
 
 type IntakeCategory = NonNullable<ReturnType<typeof getCategory>>;
 
@@ -94,8 +100,8 @@ export function SignInGate({ f }: { f: IntakeState }) {
       </p>
       {hasDeviceOracles && (
         <p className="mx-auto mt-3 max-w-md text-sm text-cream/80">
-          You have {credits} {credits === 1 ? "Oracle" : "Oracles"} on this device. Device
-          Oracles can no longer be used for paid readings while signed out. When you
+          You have {credits} {credits === 1 ? "credit" : "credits"} on this device. Device
+          credits can no longer be used for paid readings while signed out. When you
           sign in, they move to your account.
         </p>
       )}
@@ -464,8 +470,8 @@ export function ConfirmStep({ f, category }: { f: IntakeState; category: IntakeC
             <dt className="text-sm text-mist">Cost</dt>
             <dd className="mt-1 text-cream">
               {isFreeAvailable
-                ? "Free · your first Quick Insight, no Oracle needed"
-                : "1 Oracle · personalized AI interpretation"}
+                ? "Free · your first Quick Insight, no credits needed"
+                : `${creditsLabel(readingCostForSpreadCards(spread.cards))} · personalized AI interpretation`}
             </dd>
           </div>
         </dl>
@@ -513,14 +519,14 @@ export function ConfirmStep({ f, category }: { f: IntakeState; category: IntakeC
           {error}
           {/* Batch 3.1 (dead end): a zero-Oracle user gets a way
               forward, not just a stop sign. Matches both the
-              client-side message and the server 402 ("You need 1
-              Oracle for this reading..."), which fires when the
+              client-side message and the server 402 ("You need 200
+              credits for this reading..."), which fires when the
               client balance is stale or unknown. */}
-          {(error.startsWith("You are out of Oracles") || error.startsWith("You need 1 Oracle")) && (
+          {isBalanceStop(error) && (
             <>
               {" "}
               <Link href="/pricing" className="font-semibold text-goldbright underline underline-offset-4">
-                Get Oracles
+                Get credits
               </Link>
             </>
           )}
@@ -627,14 +633,14 @@ export function ImpressionStep({ f, drawnCards }: { f: IntakeState; drawnCards: 
           {error}
           {/* Batch 3.1 (dead end): a zero-Oracle user gets a way
               forward, not just a stop sign. Matches both the
-              client-side message and the server 402 ("You need 1
-              Oracle for this reading..."), which fires when the
+              client-side message and the server 402 ("You need 200
+              credits for this reading..."), which fires when the
               client balance is stale or unknown. */}
-          {(error.startsWith("You are out of Oracles") || error.startsWith("You need 1 Oracle")) && (
+          {isBalanceStop(error) && (
             <>
               {" "}
               <Link href="/pricing" className="font-semibold text-goldbright underline underline-offset-4">
-                Get Oracles
+                Get credits
               </Link>
             </>
           )}
@@ -672,7 +678,7 @@ export function ImpressionStep({ f, drawnCards }: { f: IntakeState; drawnCards: 
           <output className="mb-2 block text-center text-sm text-cream/85">
             {isFreeAvailable
               ? "Free · your first Quick Insight"
-              : "1 Oracle · only charged when your reading is ready"}
+              : `${creditsLabel(readingCostForSpreadCards(f.spread.cards))} · only charged when your reading is ready`}
           </output>
           {/* Batch 3.2: brand hex values, not the old gold.
               These are real hex, not CSS variables, because

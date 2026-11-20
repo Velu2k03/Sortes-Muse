@@ -5,12 +5,12 @@ import PageHeader from "@/components/PageHeader";
 export const metadata = {
   title: "Terms of Service",
   description:
-    "The terms governing your use of Sortes: readings for reflection only, how Oracles and refunds work, and acceptable use of the site. Please read before use.",
+    "The terms governing your use of Sortes: readings for reflection only, how credits and refunds work, and acceptable use of the site. Please read before use.",
   alternates: { canonical: "/terms" },
-  ...pageSocial({ title: "Terms of Service", description: "The terms governing your use of Sortes: readings for reflection only, how Oracles and refunds work, and acceptable use of the site. Please read before use.", path: "/terms" }),
+  ...pageSocial({ title: "Terms of Service", description: "The terms governing your use of Sortes: readings for reflection only, how credits and refunds work, and acceptable use of the site. Please read before use.", path: "/terms" }),
 };
 
-const UPDATED = "November 9, 2026";
+const UPDATED = "November 20, 2026";
 
 export default function TermsPage() {
   return (
@@ -24,8 +24,8 @@ export default function TermsPage() {
           <p className="mt-2">
             {APP_SHORT} provides digital tarot readings, card meaning
             reference, and personalized AI-generated interpretations, sold
-            pay-per-reading via Oracle top-ups, with optional monthly
-            subscriptions for Oracles.
+            pay-per-reading via credit top-ups, with optional monthly
+            subscriptions for credits.
           </p>
         </section>
 
@@ -48,12 +48,16 @@ export default function TermsPage() {
         </section>
 
         <section>
-          <h2 className="font-display text-2xl text-cream">3. Oracles and payments</h2>
+          <h2 className="font-display text-2xl text-cream">3. Credits and payments</h2>
           <ul className="mt-2 list-disc space-y-2 pl-5">
-            <li>1 Oracle pays for 1 full reading of any spread.</li>
             <li>
-              Purchased Oracles never expire and are non-transferable.
-              Monthly subscription Oracles roll over for up to two months
+              Readings are paid in credits: 100 for a one-card reading, 200
+              for a three-card reading, 300 for a Celtic Cross, a chart
+              interpretation, or a report, and 50 for a follow-up question.
+            </li>
+            <li>
+              Purchased credits never expire and are non-transferable.
+              Monthly subscription credits roll over for up to two months
               of the plan and are removed when the subscription ends.
             </li>
             <li>
@@ -61,8 +65,8 @@ export default function TermsPage() {
               or store your card details.
             </li>
             <li>
-              Refunds: unused Oracle top-ups will be refunded within 14 days of
-              purchase by emailing {CONTACT_EMAIL}. Oracles already spent on
+              Refunds: unused credit top-ups will be refunded within 14 days of
+              purchase by emailing {CONTACT_EMAIL}. Credits already spent on
               readings are non-refundable.
             </li>
           </ul>

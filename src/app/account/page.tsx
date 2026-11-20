@@ -2,7 +2,7 @@ import AccountPage from "./AccountClient";
 import { pageSocial } from "@/lib/seo";
 
 const DESCRIPTION =
-  "Your Sortes account: your Oracle balance, your purchase history, and your sign-in settings, in one place.";
+  "Your Sortes account: your credit balance, your purchase history, and your sign-in settings, in one place.";
 
 export const metadata = {
   title: "Account",

@@ -107,7 +107,7 @@ export default function SampleReading({ collapsed = false }: { collapsed?: boole
           href="/spreads/past-present-future"
           className="btn-gold mt-4 inline-block rounded-2xl px-8 py-3.5 font-bold"
         >
-          Get my reading · 1 Oracle
+          Get my reading · 200 credits
         </Link>
         <p className="mt-1 text-xs text-mist">
           AI-written from your cards and question. 300-600 words, about 3

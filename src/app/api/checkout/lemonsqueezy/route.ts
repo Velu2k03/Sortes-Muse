@@ -3,11 +3,29 @@ import { getSession } from "@/lib/auth";
 import { createCheckout, lemonConfigured } from "@/lib/lemonsqueezy";
 import { getUserById } from "@/lib/db";
 import { checkRateLimit, clientIp, ipLimitKey, rateLimitExceeded, RATE_LIMITS } from "@/lib/rateLimit";
+import { CREDIT_COSTS_ENABLED } from "@/lib/subscription-tiers";
 
 export const dynamic = "force-dynamic";
 
-/** Creates a real Lemon Squeezy checkout. 503 when not configured. */
+/**
+ * Credit cutover (runbook Verification 6, audit §5.2): Oracle packs
+ * stopped selling when CREDIT_COSTS_ENABLED flipped. Every request to
+ * this pack-only route is refused with 410 before any config, session,
+ * or Lemon Squeezy call, so a direct POST can no longer create a pack
+ * checkout. Top-ups and subscriptions use their own routes.
+ */
+function packsRetired(): NextResponse | null {
+  if (!CREDIT_COSTS_ENABLED) return null;
+  return NextResponse.json(
+    { error: "Oracle packs are no longer sold. Credit top-ups and subscriptions are on the pricing page." },
+    { status: 410 }
+  );
+}
+
+/** Creates a real Lemon Squeezy checkout. 503 when not configured. 410 once packs are retired. */
 export async function POST(req: NextRequest) {
+  const retired = packsRetired();
+  if (retired) return retired;
   if (!lemonConfigured()) {
     return NextResponse.json({ error: "Checkout not configured." }, { status: 503 });
   }
@@ -69,7 +87,7 @@ export async function POST(req: NextRequest) {
   // address and it becomes their account on sign-in.
   if (!email) {
     return NextResponse.json(
-      { error: "An email is required so your Oracles reach your account." },
+      { error: "An email is required so your purchase reaches your account." },
       { status: 400 }
     );
   }
@@ -107,5 +125,5 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET() {
-  return NextResponse.json({ enabled: lemonConfigured() });
+  return NextResponse.json({ enabled: !CREDIT_COSTS_ENABLED && lemonConfigured() });
 }

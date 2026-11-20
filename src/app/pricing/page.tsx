@@ -17,12 +17,12 @@ export const dynamic = "force-dynamic";
 export const metadata = {
   title: "Pricing",
   description:
-    "Sortes subscriptions: Spark $9.99 a month for 1,000 Oracles, Star $19.99 for 2,500, Moon $39.99 for 6,000. Annual billing saves $16, $30, or $60 a year. Top-ups from $9.99, never expire.",
+    "Sortes subscriptions: Spark $9.99 a month for 1,000 credits, Star $19.99 for 2,500, Moon $39.99 for 6,000. Annual billing saves $16, $30, or $60 a year. Top-ups from $9.99, never expire.",
   alternates: { canonical: "/pricing" },
   ...pageSocial({
     title: "Pricing",
     description:
-      "Sortes subscriptions: Spark $9.99 a month for 1,000 Oracles, Star $19.99 for 2,500, Moon $39.99 for 6,000. Annual billing saves $16, $30, or $60 a year. Top-ups from $9.99, never expire.",
+      "Sortes subscriptions: Spark $9.99 a month for 1,000 credits, Star $19.99 for 2,500, Moon $39.99 for 6,000. Annual billing saves $16, $30, or $60 a year. Top-ups from $9.99, never expire.",
     path: "/pricing",
   }),
 };

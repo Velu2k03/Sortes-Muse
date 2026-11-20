@@ -22,7 +22,10 @@ describe("F37 oracles says never expire once", () => {
     // snippet; that is a different surface, not page copy.)
     const subhead = page.match(/<p className="mt-2 text-sm font-semibold text-goldbright">([\s\S]*?)<\/p>/);
     expect(subhead).not.toBeNull();
-    expect((subhead as RegExpMatchArray)[1]).toContain("One reading costs 1 Oracle.");
+    // Credit cutover: the subhead states the credit cost.
+    expect((subhead as RegExpMatchArray)[1]).toContain(
+      "A one-card reading costs {creditsLabel(READING_CREDIT_COSTS.oneCard)}, a three-card reading{\" \"} {creditsLabel(READING_CREDIT_COSTS.threeCard)}."
+    );
     expect((subhead as RegExpMatchArray)[1]).not.toContain("never expire");
     const client = src("src/app/oracles/CreditsClient.tsx").replace(/\s+/g, " ");
     expect(client).not.toContain("never expire");

@@ -9,7 +9,13 @@ import {
   expectedCentsForSubscription,
   expectedCentsForTopUp,
   isTopUpId,
+  ORACLE_TO_CREDITS,
+  SUBSCRIPTION_TIERS,
+  TOPUPS,
+  creditsLabel,
+  purchaseAmountLabel,
 } from "@/lib/subscription-tiers";
+import { grantedCreditsForOrder } from "@/lib/db/orders";
 import {
   variantIdForSubscriptionKey,
   subscriptionVariantForId,
@@ -31,14 +37,14 @@ import {
 } from "@/app/api/cron/subscription-drip/route";
 
 // Phase 2 batch 3: billing rules + checkout/webhook wiring.
-// The credit-cost flag ships OFF, so every cost helper returns 1
-// (the old Oracle unit) until the cutover flips it. These tests pin
-// that behaviour, the variant maps, the top-up verify rules, the
+// Credit cutover (2026-11-20): the credit-cost flag is ON, so every
+// cost helper returns its credit price. These tests pin that
+// behaviour, the variant maps, the top-up verify rules, the
 // subscription verify rules, and the drip month math.
 
-describe("credit costs (flag OFF)", () => {
-  it("the flag ships OFF", () => {
-    expect(CREDIT_COSTS_ENABLED).toBe(false);
+describe("credit costs (flag ON)", () => {
+  it("the flag is ON after the cutover", () => {
+    expect(CREDIT_COSTS_ENABLED).toBe(true);
   });
 
   it("the plan numbers are Velu's exact values", () => {
@@ -51,13 +57,61 @@ describe("credit costs (flag OFF)", () => {
     });
   });
 
-  it("every cost helper returns 1 while the flag is OFF", () => {
-    expect(readingCostForSpreadCards(1)).toBe(1);
-    expect(readingCostForSpreadCards(3)).toBe(1);
-    expect(readingCostForSpreadCards(10)).toBe(1);
-    expect(chartCost()).toBe(1);
-    expect(reportCost()).toBe(1);
-    expect(followUpCost()).toBe(1);
+  it("every cost helper returns the credit price while the flag is ON", () => {
+    expect(readingCostForSpreadCards(1)).toBe(100);
+    expect(readingCostForSpreadCards(3)).toBe(200);
+    expect(readingCostForSpreadCards(10)).toBe(300);
+    expect(chartCost()).toBe(300);
+    expect(reportCost()).toBe(300);
+    expect(followUpCost()).toBe(50);
+  });
+
+  it("the prices and top-ups match Velu's pricing config", () => {
+    expect(ORACLE_TO_CREDITS).toBe(300);
+    expect(TOPUPS).toEqual([
+      { id: "topup-1000", credits: 1000, price: 9.99 },
+      { id: "topup-3000", credits: 3000, price: 24.99 },
+    ]);
+    expect(SUBSCRIPTION_TIERS.spark.monthlyCredits).toBe(1000);
+    expect(SUBSCRIPTION_TIERS.star.monthlyCredits).toBe(2500);
+    expect(SUBSCRIPTION_TIERS.moon.monthlyCredits).toBe(6000);
+    expect(expectedCentsForSubscription("spark", "monthly")).toBe(999);
+    expect(expectedCentsForSubscription("star", "monthly")).toBe(1999);
+    expect(expectedCentsForSubscription("moon", "monthly")).toBe(3999);
+    expect(expectedCentsForSubscription("spark", "annual")).toBe(10388);
+    expect(expectedCentsForSubscription("star", "annual")).toBe(20988);
+    expect(expectedCentsForSubscription("moon", "annual")).toBe(41988);
+  });
+
+  it("credit copy: singular and plural, en-US grouping", () => {
+    expect(creditsLabel(1)).toBe("1 credit");
+    expect(creditsLabel(50)).toBe("50 credits");
+    expect(creditsLabel(1000)).toBe("1,000 credits");
+  });
+
+  it("purchase history keeps the Oracle unit for retired pack rows only", () => {
+    expect(purchaseAmountLabel(5, "pack5 (lemonsqueezy:1)")).toBe("5 Oracles");
+    expect(purchaseAmountLabel(30, "pack30")).toBe("30 Oracles");
+    expect(purchaseAmountLabel(1000, "topup-1000 (lemonsqueezy:2)")).toBe("1,000 credits");
+    expect(purchaseAmountLabel(2100, "oracle-conversion")).toBe("2,100 credits");
+    expect(purchaseAmountLabel(1, "admin-test-grant")).toBe("1 credit");
+  });
+});
+
+// Credit cutover (audit §5.1): the webhook passes grantUnit "oracles"
+// for every pack (it used to pass "credits" once the flag was ON, which
+// granted 5 credits for a $3.99 pack). With the flag ON, "oracles"
+// converts the pack's Oracle count x300; top-ups stay as-is.
+describe("pack grant after the flip (no under-grant)", () => {
+  it("packs grant 1,500 / 3,600 / 9,000 credits", () => {
+    expect(grantedCreditsForOrder(5, "oracles")).toBe(1500);
+    expect(grantedCreditsForOrder(12, "oracles")).toBe(3600);
+    expect(grantedCreditsForOrder(30, "oracles")).toBe(9000);
+  });
+
+  it("top-ups grant their credits as-is", () => {
+    expect(grantedCreditsForOrder(1000, "credits")).toBe(1000);
+    expect(grantedCreditsForOrder(3000, "credits")).toBe(3000);
   });
 });
 

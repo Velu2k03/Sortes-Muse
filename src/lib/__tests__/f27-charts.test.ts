@@ -37,8 +37,11 @@ describe("F27 charts speak plainly", () => {
     const flat = charts.replace(/\s+/g, " ");
     // Phase 7 (7.3): shortened to one line.
     expect(flat).toContain(
-      "First interpretation per system is free, then 1 Oracle."
+      "First interpretation per system is free, then {CHART_COST}."
     );
     expect(charts).not.toContain("first per system free");
+    // Credit cutover: the price is the chart credit cost, not an Oracle.
+    expect(charts).toContain("const CHART_COST = creditsLabel(READING_CREDIT_COSTS.chart);");
+    expect(charts).not.toContain("1 Oracle");
   });
 });

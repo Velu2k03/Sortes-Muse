@@ -9,7 +9,7 @@ import type { FollowUp } from "@/lib/types";
 import { isUuid } from "@/lib/ids";
 import cardsData from "@/data/cards.json";
 import { generateChat } from "@/lib/ai";
-import { preCheckOracleBalance } from "@/lib/credit-precheck";
+import { insufficientBalanceMessage, nothingSpent, preCheckOracleBalance } from "@/lib/credit-precheck";
 import { followUpCost } from "@/lib/subscription-tiers";
 import { validateFollowUpText } from "@/lib/output-validation";
 import { logGuestGeneration } from "@/lib/guestLogging";
@@ -269,7 +269,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         error:
-          "AI generation is not configured on this server right now. No Oracle was spent. Please try again later.",
+          `AI generation is not configured on this server right now. ${nothingSpent()} Please try again later.`,
         fallback: true,
       },
       { status: 503 }
@@ -345,7 +345,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         error:
-          "The follow-up could not be generated just now. No Oracle was spent. Please try again in a moment.",
+          `The follow-up could not be generated just now. ${nothingSpent()} Please try again in a moment.`,
         fallback: true,
       },
       { status: 503 }
@@ -403,7 +403,7 @@ export async function POST(req: NextRequest) {
       }
       if (appended.reason === "insufficient") {
         return NextResponse.json(
-          { error: "You need 1 Oracle for this follow-up. No Oracle was spent." },
+          { error: insufficientBalanceMessage(followUpCost(), "follow-up") },
           { status: 402 }
         );
       }

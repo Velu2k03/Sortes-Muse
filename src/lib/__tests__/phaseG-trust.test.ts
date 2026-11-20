@@ -131,7 +131,7 @@ describe("trust: no self-grant of credits", () => {
     vi.clearAllMocks();
     resetRateLimits();
     mockedGetSession.mockResolvedValue(null);
-    mockedGetUserById.mockResolvedValue({ id: "u-1", email: "a@example.com", credits: 5, created_at: "" });
+    mockedGetUserById.mockResolvedValue({ id: "u-1", email: "a@example.com", credits: 500, created_at: "" });
     mockedSpend.mockResolvedValue(true);
     mockedHasUsedFree.mockResolvedValue(false);
   });
@@ -168,7 +168,7 @@ describe("trust: no cross-account access", () => {
     vi.clearAllMocks();
     resetRateLimits();
     mockedGetSession.mockResolvedValue({ userId: "u-1", email: "a@example.com" });
-    mockedGetUserById.mockResolvedValue({ id: "u-1", email: "a@example.com", credits: 5, created_at: "" });
+    mockedGetUserById.mockResolvedValue({ id: "u-1", email: "a@example.com", credits: 500, created_at: "" });
   });
 
   afterEach(() => {
@@ -212,7 +212,7 @@ describe("trust: no charge for failed results", () => {
     resetRateLimits();
     process.env.OPENROUTER_API_KEY = "test-key";
     mockedGetSession.mockResolvedValue({ userId: "u-1", email: "a@example.com" });
-    mockedGetUserById.mockResolvedValue({ id: "u-1", email: "a@example.com", credits: 5, created_at: "" });
+    mockedGetUserById.mockResolvedValue({ id: "u-1", email: "a@example.com", credits: 500, created_at: "" });
     mockedSpend.mockResolvedValue(true);
     mockedHasUsedFree.mockResolvedValue(false);
     mockedHasUsedFreeInterp.mockResolvedValue(true);
@@ -241,7 +241,7 @@ describe("trust: no charge for failed results", () => {
     const { done, error } = await readRouteSse(res);
     expect(done).toBeNull();
     expect(error?.status).toBe(503);
-    expect(error?.error).toContain("No Oracle was spent");
+    expect(error?.error).toContain("No credits were spent");
     expect(mockedSpend).not.toHaveBeenCalled();
   }, 30_000);
 
@@ -249,21 +249,21 @@ describe("trust: no charge for failed results", () => {
     mockedGetReading.mockResolvedValue({ ...GUEST_READING, followUps: [{ question: "First?", answer: "First answer.", createdAt: "2026-11-05T00:00:00.000Z", free: true }] });
     const res = await followUpPOST(req("http://localhost/api/reading/follow-up", { question: "And now?", readingId: "r-1" }, "10.1.0.6"));
     expect(res.status).toBe(503);
-    expect((await res.json()).error).toContain("No Oracle was spent");
+    expect((await res.json()).error).toContain("No credits were spent");
     expect(mockedAppend).not.toHaveBeenCalled();
   }, 30_000);
 
   it("a failed chart interpretation returns 503 and spends nothing", async () => {
     const res = await interpretPOST(req("http://localhost/api/chart/interpret", { system: "western", chart: CHART, question: "What stands out?" }, "10.1.0.7"));
     expect(res.status).toBe(503);
-    expect((await res.json()).error).toContain("No Oracle was spent");
+    expect((await res.json()).error).toContain("No credits were spent");
     expect(mockedSpend).not.toHaveBeenCalled();
   }, 30_000);
 
   it("a failed report generation returns 503 and spends nothing", async () => {
     const res = await reportsGeneratePOST(req("http://localhost/api/reports/generate", { type: "transit", birth: REPORT_BIRTH, targetDate: "2026-11-07" }, "10.1.0.8"));
     expect(res.status).toBe(503);
-    expect((await res.json()).error).toContain("No Oracle was spent");
+    expect((await res.json()).error).toContain("No credits were spent");
     expect(mockedSpend).not.toHaveBeenCalled();
   }, 30_000);
 });

@@ -23,6 +23,10 @@ import {
 } from "@/lib/storage";
 import { unconfirmedMessage, requireSavedReading } from "@/lib/generate-failure";
 import { intakeGate } from "@/lib/intake-gate";
+import { readingCostForSpreadCards } from "@/lib/subscription-tiers";
+
+/** Client-side stop when the known balance cannot cover this spread. IntakeSteps matches its prefix. */
+export const OUT_OF_CREDITS_MESSAGE = "You do not have enough credits for this reading. Please top up to continue.";
 import { useAuth, deviceHeldSession } from "@/components/AuthProvider";
 import { isFreeAvailableFor } from "@/lib/free-reading";
 import { trackReadingStarted, trackReadingCompleted } from "@/components/Analytics";
@@ -283,8 +287,8 @@ export function useIntakeFlow(slug: string) {
     // Review pushback: while the balance is unknown (credits null) do
     // not block with "out of Oracles". The server enforces the spend
     // and answers 402 with a clear message.
-    if (!isFreeAvailable && freeStatusKnown && credits !== null && credits < 1) {
-      setError("You are out of Oracles. Please top up to continue.");
+    if (!isFreeAvailable && freeStatusKnown && credits !== null && credits < readingCostForSpreadCards(spread.cards)) {
+      setError(OUT_OF_CREDITS_MESSAGE);
       return;
     }
     setError(null);
@@ -299,8 +303,8 @@ export function useIntakeFlow(slug: string) {
     // Review pushback: while the balance is unknown (credits null) do
     // not block with "out of Oracles". The server enforces the spend
     // and answers 402 with a clear message.
-    if (!isFreeAvailable && freeStatusKnown && credits !== null && credits < 1) {
-      setError("You are out of Oracles. Please top up to continue.");
+    if (!isFreeAvailable && freeStatusKnown && credits !== null && credits < readingCostForSpreadCards(spread.cards)) {
+      setError(OUT_OF_CREDITS_MESSAGE);
       return;
     }
     setBusy(true);

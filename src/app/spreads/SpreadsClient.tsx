@@ -14,6 +14,12 @@ import { freeReadingUsed } from "@/lib/storage";
 import { isFreeAvailableFor } from "@/lib/free-reading";
 import PageHeader from "@/components/PageHeader";
 import FieldGroup from "@/components/FieldGroup";
+import { creditsLabel, readingCostForSpreadCards } from "@/lib/subscription-tiers";
+
+/** The credit cost of a spread, from its card count. */
+function spreadCost(slug: string): number {
+  return readingCostForSpreadCards(SPREADS.find((s) => s.slug === slug)?.cards ?? 1);
+}
 
 /**
  * Spread selection.
@@ -96,8 +102,12 @@ export default function SpreadsPage({
       authFailed,
     });
 
+  // Credit cutover: a spread opens when the balance covers its own
+  // cost (1 card 100, 3 cards 200, Celtic Cross 300), not just 1.
   const canBegin = (slug: string) =>
-    slug === "quick-insight" ? freeAvailable || balance >= 1 : balance >= 1;
+    slug === "quick-insight"
+      ? freeAvailable || balance >= spreadCost(slug)
+      : balance >= spreadCost(slug);
   // AF-013: while the balance is unknown, a balance-gated card is
   // "pending", not locked. It shows a skeleton, never Locked.
   const isPending = (slug: string) =>
@@ -109,8 +119,8 @@ export default function SpreadsPage({
         <PageHeader eyebrow="Readings" title="Choose your spread" titleClassName="sm:text-6xl" />
         <p className="mt-4 max-w-xl text-cream/75">
           {!freeAvailable
-            ? "Each reading uses 1 Oracle, any spread. Oracles never expire."
-            : "First Quick Insight free. After that, 1 Oracle, any spread."}
+            ? "Each reading is paid in credits: 100 for one card, 200 for three, 300 for the Celtic Cross. Purchased credits never expire."
+            : "First Quick Insight free. After that, readings are paid in credits: 100 for one card, 200 for three, 300 for the Celtic Cross."}
         </p>
         {/* Personal Phase 4, Decision 16: reflection disclaimer on
             the spread pages themselves, not only on FAQ. */}
@@ -128,7 +138,7 @@ export default function SpreadsPage({
             Start here, it is free
           </p>
           <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-cream/75">
-            One question. No Oracle, no payment card, no account.
+            One question. No credits, no payment card, no account.
           </p>
           <GlareHover className="mt-4 rounded-xl">
             <Link
@@ -203,7 +213,7 @@ export default function SpreadsPage({
               <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
                 <h2 className="min-w-0 flex-1 break-words font-display text-3xl text-cream">{s.name}</h2>
                 <p className="shrink-0 whitespace-nowrap font-display text-xl text-goldbright">
-                  {s.slug === "quick-insight" && freeAvailable ? "Free" : (<><span className="font-body">1</span> Oracle</>)}
+                  {s.slug === "quick-insight" && freeAvailable ? "Free" : creditsLabel(spreadCost(s.slug))}
                 </p>
               </div>
               <p className="mt-1 text-sm text-mist">
@@ -213,7 +223,7 @@ export default function SpreadsPage({
                 <output
                   className="mt-4 block h-12 animate-pulse rounded-xl bg-gold/20 motion-reduce:animate-none"
                   aria-busy="true"
-                  aria-label="Checking your Oracle balance"
+                  aria-label="Checking your credit balance"
                 />
               ) : locked ? (
                 <>
@@ -221,7 +231,7 @@ export default function SpreadsPage({
                     href="/pricing"
                     className="btn-ghost mt-4 rounded-xl border border-gold/30 px-4 py-3 text-center font-semibold"
                   >
-                    Get Oracles to begin
+                    Get credits to begin
                   </Link>
                   {/* Phase 5: locked cards used to offer only the
                       checkout button, so a spread detail page was
@@ -295,18 +305,18 @@ export default function SpreadsPage({
       </div>
 
       <div className="mx-auto mt-12 max-w-2xl rounded-2xl border border-gold/20 bg-panel/50 p-6 text-center">
-        <h2 className="font-display text-2xl text-cream">Oracles</h2>
+        <h2 className="font-display text-2xl text-cream">Credits</h2>
         <p className="mt-2 text-sm leading-relaxed text-cream/75">
-          Oracles never expire.{" "}
-          <Link href="/faq#what-are-the-five-oracle-rules" className="font-semibold text-goldbright underline underline-offset-4">
-            See all five Oracle rules
+          Purchased credits never expire.{" "}
+          <Link href="/faq#what-does-each-reading-cost" className="font-semibold text-goldbright underline underline-offset-4">
+            See what each reading costs
           </Link>
         </p>
         <Link
           href="/pricing"
           className="btn-ghost mt-4 rounded-xl px-6 py-3 text-sm font-semibold"
         >
-          Top up Oracles
+          Top up credits
         </Link>
       </div>
     </div>

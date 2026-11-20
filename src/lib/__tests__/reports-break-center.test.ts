@@ -61,7 +61,7 @@ describe("break the center, /reports: headings and intros left-aligned", () => {
     const centered = client.match(/text-center/g) ?? [];
     expect(centered.length).toBe(3);
     expect(client).toContain(
-      '<div className="mt-6 rounded-2xl border border-gold/25 bg-panel/70 p-4 text-center text-sm text-cream">\n          You are out of Oracles.',
+      '<div className="mt-6 rounded-2xl border border-gold/25 bg-panel/70 p-4 text-center text-sm text-cream">\n          You do not have enough credits.',
     );
     expect(client).toContain(
       '<div className="mt-6 rounded-2xl border border-danger/40 bg-panel/70 p-4 text-center text-sm text-danger">',

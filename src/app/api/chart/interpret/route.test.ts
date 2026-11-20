@@ -62,7 +62,7 @@ describe("POST /api/chart/interpret", () => {
     mockedGetUserById.mockResolvedValue({
       id: "u1",
       email: "a@b.co",
-      credits: 5,
+      credits: 500,
       created_at: "2026-11-05T00:00:00Z",
     });
     mockedHasUsedFree.mockResolvedValue(false);
@@ -124,7 +124,7 @@ describe("POST /api/chart/interpret", () => {
     expect(data.interpretation).toContain("chart reflection");
     // Free claim and the reading row are one call (one transaction).
     expect(mockedSave).toHaveBeenCalledTimes(1);
-    expect(mockedSave).toHaveBeenCalledWith("u1", expect.objectContaining({ free: true }), true, "western", 1);
+    expect(mockedSave).toHaveBeenCalledWith("u1", expect.objectContaining({ free: true }), true, "western", 300);
   });
 
   // Batch D (B4): the server stores the interpretation and returns it with
@@ -136,7 +136,7 @@ describe("POST /api/chart/interpret", () => {
       req({ system: "western", chart: CHART, category: "general", chartSummary: "Western chart. Sun: Aries." }, "10.0.2.6")
     );
     const data = await res.json();
-    expect(mockedSave).toHaveBeenCalledWith("u1", expect.objectContaining({ free: false }), false, "western", 1);
+    expect(mockedSave).toHaveBeenCalledWith("u1", expect.objectContaining({ free: false }), false, "western", 300);
     const saved = mockedSave.mock.calls[0][1] as unknown as { id: string; interpretation: string; chartSummary: string; spreadSlug: string };
     expect(data.reading.id).toBe(saved.id);
     expect(saved.interpretation).toBe(data.interpretation);
@@ -162,7 +162,7 @@ describe("POST /api/chart/interpret", () => {
     const res = await POST(req({ system: "western", chart: CHART, category: "general" }, "10.0.2.8"));
     expect(res.status).toBe(409);
     const data = await res.json();
-    expect(data.error).toContain("No Oracle was spent");
+    expect(data.error).toContain("No credits were spent");
     expect(data.reading).toBeUndefined();
   });
 
@@ -206,6 +206,6 @@ describe("POST /api/chart/interpret", () => {
     expect(res.status).toBe(200);
     const data = await res.json();
     expect(data.free).toBe(false);
-    expect(mockedSave).toHaveBeenCalledWith("u1", expect.anything(), true, "western", 1);
+    expect(mockedSave).toHaveBeenCalledWith("u1", expect.anything(), true, "western", 300);
   });
 });

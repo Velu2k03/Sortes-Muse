@@ -5,12 +5,12 @@ import PageHeader from "@/components/PageHeader";
 export const metadata: Metadata = {
   title: "Contact Sortes",
   description:
-    "Contact Sortes by email for help with Oracles, readings, or your account. We aim to reply within two business days. Include a few details so we can help.",
+    "Contact Sortes by email for help with credits, readings, or your account. We aim to reply within two business days. Include a few details so we can help.",
   alternates: { canonical: "/contact" },
   openGraph: {
     title: "Contact Sortes",
     description:
-      "Contact Sortes by email for help with Oracles, readings, or your account. We aim to reply within two business days. Include a few details so we can help.",
+      "Contact Sortes by email for help with credits, readings, or your account. We aim to reply within two business days. Include a few details so we can help.",
     url: `${SITE_URL}/contact`,
     images: [{ url: "/og-image.jpg?v=4", width: 1200, height: 630, alt: "Sortes" }],
   },
@@ -18,7 +18,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Contact Sortes",
     description:
-      "Contact Sortes by email for help with Oracles, readings, or your account. We aim to reply within two business days. Include a few details so we can help.",
+      "Contact Sortes by email for help with credits, readings, or your account. We aim to reply within two business days. Include a few details so we can help.",
     images: ["/og-image.jpg?v=4"],
   },
 };
@@ -44,7 +44,7 @@ export default function ContactPage() {
         <h2 className="font-display text-2xl text-cream">Before you write</h2>
         <ul className="mt-3 list-disc space-y-2 pl-5 text-[15px] leading-relaxed text-cream/85">
           <li>
-            Refunds: unused Oracle top-ups can be refunded within 14 days of
+            Refunds: unused credit top-ups can be refunded within 14 days of
             purchase. See the Terms of Service for the full wording.
           </li>
           <li>

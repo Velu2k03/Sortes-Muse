@@ -8,6 +8,7 @@ import PurchaseConfirmer from "@/components/PurchaseConfirmer";
 import SampleReading from "@/components/SampleReading";
 import Counter from "@/components/Counter";
 import { useSearchParams } from "next/navigation";
+import { READING_CREDIT_COSTS, creditsLabel, purchaseAmountLabel } from "@/lib/subscription-tiers";
 
 interface ServerTx {
   id: string;
@@ -59,10 +60,10 @@ export default function CreditsPage() {
             <output
               className="flex items-baseline justify-center gap-2 sm:justify-start"
               aria-busy="true"
-              aria-label="Oracle balance loading"
+              aria-label="Credit balance loading"
             >
               <span className="inline-block h-14 w-20 animate-pulse rounded bg-gold/30 motion-reduce:animate-none" aria-hidden="true" />
-              <span className="font-body text-lg text-mist">Oracles</span>
+              <span className="font-body text-lg text-mist">credits</span>
             </output>
           ) : isGuest ? (
             // Guests have no balance to show; point to the free reading.
@@ -75,7 +76,7 @@ export default function CreditsPage() {
             <p className="num text-6xl font-bold text-cream">
               {credits ?? 0}
               <span className="ml-2 align-middle font-body text-lg text-mist">
-                {(credits ?? 0) === 1 ? "Oracle" : "Oracles"}
+                {(credits ?? 0) === 1 ? "credit" : "credits"}
               </span>
             </p>
           ) : (
@@ -91,16 +92,17 @@ export default function CreditsPage() {
                 fontWeight="bold"
               />
               <span className="font-body text-lg text-mist">
-                {(credits ?? 0) === 1 ? "Oracle" : "Oracles"}
+                {(credits ?? 0) === 1 ? "credit" : "credits"}
               </span>
             </div>
           )}
           {user && <p className="mt-1 text-sm text-mist">Signed in as {user.email}</p>}
         </div>
         <p className="max-w-md text-sm text-cream/75">
-          1 Oracle = 1 full reading.{" "}
-          <Link href="/faq#what-are-the-five-oracle-rules" className="text-goldbright underline">
-            See all five Oracle rules
+          A reading costs {creditsLabel(READING_CREDIT_COSTS.oneCard)} for one card,{" "}
+          {creditsLabel(READING_CREDIT_COSTS.threeCard)} for three.{" "}
+          <Link href="/faq#what-does-each-reading-cost" className="text-goldbright underline">
+            See what each reading costs
           </Link>
         </p>
       </div>
@@ -121,7 +123,7 @@ export default function CreditsPage() {
                   className="flex items-center justify-between gap-3 rounded-xl border border-gold/15 bg-panel/40 px-3 py-2 text-sm"
                 >
                   <span className="text-cream">
-                    {t.readings} Oracles · {t.pack_type}
+                    {purchaseAmountLabel(t.readings, t.pack_type)} · {t.pack_type}
                   </span>
                   <span className="shrink-0 text-mist">
                     ${Number(t.amount).toFixed(2)} ·{" "}
@@ -147,7 +149,7 @@ export default function CreditsPage() {
                 className="flex items-center justify-between gap-3 rounded-xl border border-gold/15 bg-panel/40 px-3 py-2 text-sm"
               >
                 <span className="text-cream">
-                  {p.readings} Oracles · {p.packId}
+                  {purchaseAmountLabel(p.readings, p.packId)} · {p.packId}
                 </span>
                 <span className="shrink-0 text-mist">
                   ${p.price.toFixed(2)} · {new Date(p.date).toLocaleDateString()}

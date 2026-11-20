@@ -161,15 +161,15 @@ describe("ReturningHome: greeting, today's card, cost-labelled button, balance",
     expect(home).toContain("isFreeAvailableFor({");
     expect(home).toContain('slug: "quick-insight"');
     expect(home).toContain(
-      'freeAvailable ? "Ask today\'s question, free" : "Ask today\'s question · 1 Oracle"'
+      'freeAvailable ? "Ask today\'s question, free" : "Ask today\'s question · 100 credits"'
     );
     expect(home).toContain('href="/intake/quick-insight"');
   });
 
-  it("shows the Oracle balance with a top-up link", () => {
+  it("shows the credit balance with a top-up link", () => {
     const home = src("src/components/ReturningHome.tsx");
     expect(home).toContain("Your balance:");
-    expect(home).toContain("Oracles");
+    expect(home).toContain('credits === 1 ? "credit" : "credits"');
     expect(home).toContain("Your balance is loading.");
     expect(home).toContain('href="/pricing"');
     expect(home).toContain("Top up");
@@ -252,7 +252,8 @@ describe("Three-card nudge after the first reading", () => {
     );
     expect(link).not.toBeNull();
     const label = (link as RegExpMatchArray)[1].replace(/\s+/g, " ").trim();
-    expect(label).toContain("1 Oracle");
+    // Credit cutover: a 3-card reading costs 200 credits.
+    expect(label).toContain("creditsLabel(READING_CREDIT_COSTS.threeCard)");
     expect(label).not.toContain("free");
     expect(label).toContain("Past, Present, Future");
   });

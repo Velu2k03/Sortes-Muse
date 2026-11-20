@@ -161,7 +161,7 @@ export function useFollowUp(reading: Reading | null | undefined, setReading: Set
     // Guests get no follow-ups (the route returns 401): say so up front
     // instead of spending from the device wallet and refunding.
     if (!user) {
-      setFollowUpError("Sign in to ask a follow-up. No Oracle was spent.");
+      setFollowUpError("Sign in to ask a follow-up. No credits were spent.");
       setFollowUpLoading(false);
       return;
     }
@@ -181,7 +181,7 @@ export function useFollowUp(reading: Reading | null | undefined, setReading: Set
         // retry. A 401 is an expired session. Both are definitive.
         if (res.status === 402 || res.status === 401) {
           const msg = data.error || "Something went wrong. Please try again.";
-          setFollowUpError(msg.includes("spent") ? msg : `${msg} No Oracle was spent.`);
+          setFollowUpError(msg.includes("spent") ? msg : `${msg} No credits were spent.`);
           setFollowUpLoading(false);
           return;
         }
@@ -225,7 +225,7 @@ export function useFollowUp(reading: Reading | null | undefined, setReading: Set
           return;
         }
         const msg = data.error || "Something went wrong. Please try again.";
-        setFollowUpError(msg.includes("spent") ? msg : `${msg} No Oracle was spent.`);
+        setFollowUpError(msg.includes("spent") ? msg : `${msg} No credits were spent.`);
         setFollowUpFailed(true);
         notifyFailed();
         setFollowUpLoading(false);
