@@ -10,8 +10,8 @@ describe("Hero visual and pricing preview", () => {
     // the video as bg, not as a section"): his own Flow
     // deck-shuffle loop plays behind the hero content, full-
     // bleed, in place of the Phase 2 3D fan and the old hero
-    // photo. The 3D scene files stay on disk for now, unwired;
-    // removing them is a follow-up, not this change.
+    // photo. The 3D scene files (HeroScene, Hero3D) were removed
+    // after being unwired since PR #163.
     const page = src("src/app/page.tsx");
     expect(page).toContain('import HeroVideo from "@/components/HeroVideo"');
     expect(page).toContain("<HeroVideo");
@@ -24,18 +24,6 @@ describe("Hero visual and pricing preview", () => {
     const heroVideoAt = page.indexOf("<HeroVideo");
     expect(heroVideoAt).toBeLessThan(page.indexOf('id="hero-question"'));
     expect(page).not.toContain('<div className="mt-6 w-full">');
-  });
-
-  it("renders the fan of three real cards with a gold moon behind", () => {
-    const hero = src("src/components/Hero3D.tsx");
-    expect(hero).toContain("/cards/major-00-fool.jpg");
-    expect(hero).toContain("/cards/major-01-magician.jpg");
-    expect(hero).toContain("/cards/major-02-high-priestess.jpg");
-    // Gold moon disc behind the cards.
-    expect(hero).toContain("color={BRAND.gold}");
-    // Calm and slow: a gentle sway, never a spin.
-    expect(hero).toContain("Math.sin(t * 0.22)");
-    expect(hero).not.toContain("Math.PI * 2");
   });
 
   it("falls back to a static fan for reduced motion and on video load failure", () => {

@@ -111,7 +111,6 @@ describe("F17: no colour literals outside the token set", () => {
     expect(src("src/app/manifest.ts")).toContain("theme_color: BRAND.navyDeep");
     expect(src("src/components/Header.tsx")).toContain("dark: BRAND.navyDeep, light: BRAND.cream");
     // Three.js materials and the holo foil: tokens.
-    expect(src("src/components/Hero3D.tsx")).toContain("color={BRAND.gold}");
     expect(src("src/components/HoloCard.tsx")).toContain('foilColor = "var(--color-gold)"');
   });
 });
