@@ -100,15 +100,25 @@ emails, so treat it as personal data.
   "database": "host:port/db",
   "takenAt": "ISO timestamp",
   "holders": 3,
+  "unconvertedHolders": 3,
   "totalOracles": 24,
   "totalCreditsAfterConversion": 7200,
   "totalMonthlyCredits": 0,
   "usersWithMonthlyCredits": 0,
   "alreadyConverted": 0,
+  "alreadyConvertedCredits": 0,
   "warnings": [],
-  "users": [{ "id": "...", "email": "...", "purchased_credits": 7, "monthly_credits": 0 }]
+  "users": [{ "id": "...", "email": "...", "purchased_credits": 7, "monthly_credits": 0, "converted": false }]
 }
 ```
+
+`holders` is every user with `purchased_credits > 0`. `totalOracles`
+(and `totalCreditsAfterConversion = totalOracles x 300`) counts only
+the `unconvertedHolders`. A holder that already has a `conversion`
+grant is flagged `converted: true`, counted in `alreadyConverted`, and
+its balance is summed into `alreadyConvertedCredits` (credits, not
+Oracles), so a census taken after a partial conversion still gives the
+remaining Oracle total.
 
 Exit 0 means clean. Exit 1 means the census was taken but a
 pre-cutover invariant is broken: `monthly_credits` total is not 0, or a

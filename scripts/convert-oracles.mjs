@@ -246,53 +246,58 @@ if (dryRun) {
     `DRY RUN on ${database}: ${summary.wouldConvertCount} would convert (${summary.totalOracles} Oracles -> ${summary.totalCredits} credits), ` +
       `${summary.alreadyConverted} already converted. Nothing was changed.`
   );
-  process.exit(0);
-}
-
-// ---- live -----------------------------------------------------------------
-const converted = [];
-const alreadyConvertedUsers = [];
-const refused = [];
-const errors = [];
-for (const h of holders) {
-  try {
-    const r = await ledgers.convertOraclesToCredits(h.id, { flagFlippedAt: flipIso });
-    if (r.converted) {
-      converted.push({ id: h.id, email: h.email, oracles: r.oracles, credits: r.credits, balances: r.balances });
-    } else if (r.alreadyConverted) {
-      alreadyConvertedUsers.push({ id: h.id, email: h.email, credits: r.credits });
-    } else if (r.refused) {
-      refused.push({ id: h.id, email: h.email, oracles: h.purchased_credits, refuseReason: r.refuseReason ?? "refused (no reason given)" });
-    } else {
-      errors.push({ id: h.id, email: h.email, oracles: h.purchased_credits, error: "unexpected result: not converted, not already converted, not refused" });
+  // exitCode instead of process.exit(): let stdout flush the JSON first.
+  // listSql is already closed and dry-run never opens the app pool, so
+  // the process ends once the module finishes (the live branch is skipped).
+  process.exitCode = 0;
+} else {
+  // ---- live ---------------------------------------------------------------
+  const converted = [];
+  const alreadyConvertedUsers = [];
+  const refused = [];
+  const errors = [];
+  for (const h of holders) {
+    try {
+      const r = await ledgers.convertOraclesToCredits(h.id, { flagFlippedAt: flipIso });
+      if (r.converted) {
+        converted.push({ id: h.id, email: h.email, oracles: r.oracles, credits: r.credits, balances: r.balances });
+      } else if (r.alreadyConverted) {
+        alreadyConvertedUsers.push({ id: h.id, email: h.email, credits: r.credits });
+      } else if (r.refused) {
+        refused.push({ id: h.id, email: h.email, oracles: h.purchased_credits, refuseReason: r.refuseReason ?? "refused (no reason given)" });
+      } else {
+        errors.push({ id: h.id, email: h.email, oracles: h.purchased_credits, error: "unexpected result: not converted, not already converted, not refused" });
+      }
+    } catch (err) {
+      errors.push({ id: h.id, email: h.email, oracles: h.purchased_credits, error: err instanceof Error ? err.message : String(err) });
     }
-  } catch (err) {
-    errors.push({ id: h.id, email: h.email, oracles: h.purchased_credits, error: err instanceof Error ? err.message : String(err) });
   }
-}
-if (client?.pg) await client.pg.end();
+  if (client?.pg) await client.pg.end();
 
-const summary = {
-  mode: "live",
-  database,
-  flagFlippedAt: flipIso,
-  holders: holders.length,
-  usersConverted: converted.length,
-  alreadyConverted: alreadyConvertedUsers.length,
-  refusedCount: refused.length,
-  errorCount: errors.length,
-  totalOracles: converted.reduce((s, u) => s + u.oracles, 0),
-  totalCredits: converted.reduce((s, u) => s + u.credits, 0),
-  converted,
-  alreadyConvertedUsers,
-  refused,
-  errors,
-};
-emitSummary(summary);
-console.error(
-  `LIVE on ${database}: ${summary.usersConverted} converted (${summary.totalOracles} Oracles -> ${summary.totalCredits} credits), ` +
-    `${summary.alreadyConverted} already converted, ${summary.refusedCount} refused, ${summary.errorCount} errored.`
-);
-for (const r of refused) console.error(`  REFUSED ${r.id} ${r.email} oracles=${r.oracles}: ${r.refuseReason} (manual handling, see runbook)`);
-for (const e of errors) console.error(`  ERROR ${e.id} ${e.email} oracles=${e.oracles}: ${e.error}`);
-process.exit(errors.length > 0 ? 1 : 0);
+  const summary = {
+    mode: "live",
+    database,
+    flagFlippedAt: flipIso,
+    holders: holders.length,
+    usersConverted: converted.length,
+    alreadyConverted: alreadyConvertedUsers.length,
+    refusedCount: refused.length,
+    errorCount: errors.length,
+    totalOracles: converted.reduce((s, u) => s + u.oracles, 0),
+    totalCredits: converted.reduce((s, u) => s + u.credits, 0),
+    converted,
+    alreadyConvertedUsers,
+    refused,
+    errors,
+  };
+  emitSummary(summary);
+  console.error(
+    `LIVE on ${database}: ${summary.usersConverted} converted (${summary.totalOracles} Oracles -> ${summary.totalCredits} credits), ` +
+      `${summary.alreadyConverted} already converted, ${summary.refusedCount} refused, ${summary.errorCount} errored.`
+  );
+  for (const r of refused) console.error(`  REFUSED ${r.id} ${r.email} oracles=${r.oracles}: ${r.refuseReason} (manual handling, see runbook)`);
+  for (const e of errors) console.error(`  ERROR ${e.id} ${e.email} oracles=${e.oracles}: ${e.error}`);
+  // exitCode instead of process.exit(): let stdout flush the JSON first.
+  // Both pools (listSql, client.pg) are closed above.
+  process.exitCode = errors.length > 0 ? 1 : 0;
+}

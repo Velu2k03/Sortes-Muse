@@ -151,12 +151,14 @@ describe.skipIf(SKIP)("Oracle conversion runner + census on real Postgres (local
     expect(Object.keys(c).sort()).toEqual(
       [
         "alreadyConverted",
+        "alreadyConvertedCredits",
         "database",
         "holders",
         "takenAt",
         "totalCreditsAfterConversion",
         "totalMonthlyCredits",
         "totalOracles",
+        "unconvertedHolders",
         "users",
         "usersWithMonthlyCredits",
         "warnings",
@@ -170,11 +172,13 @@ describe.skipIf(SKIP)("Oracle conversion runner + census on real Postgres (local
     expect(c.totalMonthlyCredits).toBe(0);
     expect(c.usersWithMonthlyCredits).toBe(0);
     expect(c.alreadyConverted).toBe(0);
+    expect(c.alreadyConvertedCredits).toBe(0);
+    expect(c.unconvertedHolders).toBe(3);
     expect(c.warnings).toEqual([]);
     expect(c.users).toEqual([
-      { id: ids.a, email: "convert-a@example.com", purchased_credits: 7, monthly_credits: 0 },
-      { id: ids.c, email: "convert-c@example.com", purchased_credits: 5, monthly_credits: 0 },
-      { id: ids.d, email: "convert-d@example.com", purchased_credits: 12, monthly_credits: 0 },
+      { id: ids.a, email: "convert-a@example.com", purchased_credits: 7, monthly_credits: 0, converted: false },
+      { id: ids.c, email: "convert-c@example.com", purchased_credits: 5, monthly_credits: 0, converted: false },
+      { id: ids.d, email: "convert-d@example.com", purchased_credits: 12, monthly_credits: 0, converted: false },
     ]);
     expect(r.stderr).toMatch(/CENSUS on .*: 3 holder\(s\), 24 Oracles \(= 7200 credits/);
   });
@@ -339,10 +343,24 @@ describe.skipIf(SKIP)("Oracle conversion runner + census on real Postgres (local
     const dry = run(RUNNER, ["--dry-run", "--flag-flipped-at", FLIP]);
     expect(dry.json!.alreadyConverted).toBe(2);
     expect(dry.json!.wouldConvertCount).toBe(2);
-    // And the census warns that converted holders are not Oracles.
+    // And the census warns that converted holders are not Oracles, and
+    // keeps their balances (credits) out of the Oracle totals.
     const census = run(CENSUS, []);
     expect(census.status).toBe(1);
-    expect(census.json!.alreadyConverted).toBe(2);
+    const c = census.json!;
+    expect(c.holders).toBe(4);
+    expect(c.unconvertedHolders).toBe(2);
+    expect(c.totalOracles).toBe(5 + 5); // B and C only
+    expect(c.totalCreditsAfterConversion).toBe(3000);
+    expect(c.alreadyConverted).toBe(2);
+    expect(c.alreadyConvertedCredits).toBe(2100 + 3600);
+    const flags = new Map((c.users as Array<{ id: string; converted: boolean }>).map((u) => [u.id, u.converted]));
+    expect(flags.get(ids.a)).toBe(true);
+    expect(flags.get(ids.d)).toBe(true);
+    expect(flags.get(ids.b)).toBe(false);
+    expect(flags.get(ids.c)).toBe(false);
+    expect((c.warnings as string[]).join(" ")).toMatch(/2 holder\(s\) already have a 'conversion' grant/);
+    expect(census.stderr).toMatch(/WARNING/);
   });
 
   it("post-conversion top-up purchase grants exactly its credits and a refund revokes exactly that", async () => {

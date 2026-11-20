@@ -11,16 +11,22 @@
  *   {
  *     "database": "host:port/db",
  *     "takenAt": ISO timestamp,
- *     "holders": number of users with purchased_credits > 0,
- *     "totalOracles": sum of purchased_credits over holders,
+ *     "holders": number of users with purchased_credits > 0 (the whole
+ *                population, converted or not),
+ *     "unconvertedHolders": holders WITHOUT a 'conversion' grant,
+ *     "totalOracles": sum of purchased_credits over UNCONVERTED holders
+ *                     only (a converted holder's balance is credits),
  *     "totalCreditsAfterConversion": totalOracles x 300,
  *     "totalMonthlyCredits": sum of monthly_credits over ALL users
  *                            (must be 0 before the cutover),
  *     "usersWithMonthlyCredits": count of users with monthly_credits > 0,
  *     "alreadyConverted": holders that already have a 'conversion' grant
  *                         (must be 0 before the cutover),
+ *     "alreadyConvertedCredits": sum of purchased_credits over the
+ *                                already-converted holders (these are
+ *                                credits, NOT Oracles; not in totalOracles),
  *     "warnings": [string, ...],
- *     "users": [{ id, email, purchased_credits, monthly_credits }, ...]
+ *     "users": [{ id, email, purchased_credits, monthly_credits, converted }, ...]
  *   }
  * plus a one-line human summary on stderr.
  *
@@ -82,20 +88,18 @@ try {
   result = await sql.begin("read only", async (tx) => {
     const [{ grants }] = await tx`SELECT to_regclass('public.credit_grants') IS NOT NULL AS grants`;
     if (!grants) throw new Error("credit_grants table is missing: migration 008 is not applied to this database.");
+    // Same converted test as listHolders in scripts/convert-oracles.mjs.
     const users = await tx`
-      SELECT id, email, purchased_credits, monthly_credits
-      FROM users
-      WHERE purchased_credits > 0
-      ORDER BY created_at, id`;
+      SELECT u.id, u.email, u.purchased_credits, u.monthly_credits,
+             EXISTS (SELECT 1 FROM credit_grants g WHERE g.user_id = u.id AND g.kind = 'conversion') AS converted
+      FROM users u
+      WHERE u.purchased_credits > 0
+      ORDER BY u.created_at, u.id`;
     const [monthly] = await tx`
       SELECT COALESCE(SUM(monthly_credits), 0)::bigint AS total,
              COUNT(*) FILTER (WHERE monthly_credits > 0)::int AS users
       FROM users`;
-    const [converted] = await tx`
-      SELECT COUNT(DISTINCT g.user_id)::int AS n
-      FROM credit_grants g JOIN users u ON u.id = g.user_id
-      WHERE g.kind = 'conversion' AND u.purchased_credits > 0`;
-    return { users, monthly, converted };
+    return { users, monthly };
   });
 } catch (err) {
   console.error(`census-oracles: query failed: ${err instanceof Error ? err.message : String(err)}`);
@@ -109,8 +113,14 @@ const users = result.users.map((u) => ({
   email: u.email,
   purchased_credits: u.purchased_credits,
   monthly_credits: u.monthly_credits,
+  converted: u.converted === true,
 }));
-const totalOracles = users.reduce((s, u) => s + u.purchased_credits, 0);
+const unconverted = users.filter((u) => !u.converted);
+const convertedUsers = users.filter((u) => u.converted);
+// Only unconverted balances are Oracles. A converted holder's
+// purchased_credits are already credits and must not be multiplied again.
+const totalOracles = unconverted.reduce((s, u) => s + u.purchased_credits, 0);
+const alreadyConvertedCredits = convertedUsers.reduce((s, u) => s + u.purchased_credits, 0);
 const totalMonthlyCredits = Number(result.monthly.total);
 const warnings = [];
 if (totalMonthlyCredits !== 0) {
@@ -118,9 +128,9 @@ if (totalMonthlyCredits !== 0) {
     `monthly_credits total is ${totalMonthlyCredits} across ${result.monthly.users} user(s); expected 0 before the cutover (no subscriptions should exist yet).`
   );
 }
-if (result.converted.n > 0) {
+if (convertedUsers.length > 0) {
   warnings.push(
-    `${result.converted.n} holder(s) already have a 'conversion' grant: their purchased_credits are credits, not Oracles, and must not be counted as Oracles.`
+    `${convertedUsers.length} holder(s) already have a 'conversion' grant: their purchased_credits are credits, not Oracles, so they are excluded from totalOracles (reported as alreadyConvertedCredits).`
   );
 }
 
@@ -128,18 +138,23 @@ const census = {
   database,
   takenAt: new Date().toISOString(),
   holders: users.length,
+  unconvertedHolders: unconverted.length,
   totalOracles,
   totalCreditsAfterConversion: totalOracles * ORACLE_TO_CREDITS,
   totalMonthlyCredits,
   usersWithMonthlyCredits: result.monthly.users,
-  alreadyConverted: result.converted.n,
+  alreadyConverted: convertedUsers.length,
+  alreadyConvertedCredits,
   warnings,
   users,
 };
 process.stdout.write(`${JSON.stringify(census, null, 2)}\n`);
 console.error(
-  `CENSUS on ${database}: ${census.holders} holder(s), ${census.totalOracles} Oracles (= ${census.totalCreditsAfterConversion} credits at 1:${ORACLE_TO_CREDITS}), ` +
-    `monthly total ${census.totalMonthlyCredits}.`
+  `CENSUS on ${database}: ${census.unconvertedHolders} holder(s), ${census.totalOracles} Oracles (= ${census.totalCreditsAfterConversion} credits at 1:${ORACLE_TO_CREDITS}), ` +
+    `plus ${census.alreadyConverted} already-converted holder(s) holding ${census.alreadyConvertedCredits} credits (not Oracles); ` +
+    `${census.holders} holder(s) in total, monthly total ${census.totalMonthlyCredits}.`
 );
 for (const w of warnings) console.error(`  WARNING: ${w}`);
-process.exit(warnings.length > 0 ? 1 : 0);
+// exitCode instead of process.exit(): let stdout flush the JSON first.
+// The pool is already closed by sql.end() above, so the process ends.
+process.exitCode = warnings.length > 0 ? 1 : 0;
