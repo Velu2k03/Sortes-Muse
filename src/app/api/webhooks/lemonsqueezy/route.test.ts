@@ -21,6 +21,8 @@ vi.mock("@/lib/lemonsqueezy", async (importOriginal) => {
 import { POST } from "@/app/api/webhooks/lemonsqueezy/route";
 import { getUserByEmail, getUserById, createUser, fulfillOrder, revokeOrder } from "@/lib/db";
 import { getOrder } from "@/lib/lemonsqueezy";
+import { CREDIT_COSTS_ENABLED } from "@/lib/subscription-tiers";
+import { grantedCreditsForOrder } from "@/lib/db/orders";
 
 const mockedGetOrder = vi.mocked(getOrder);
 
@@ -155,9 +157,23 @@ describe("POST /api/webhooks/lemonsqueezy", () => {
       amount: 3.99,
       readings: 5,
       orderId: "ord_1",
-      // Phase 2 batch 3: packs grant Oracles while the flag is OFF.
+      // Credit cutover (audit §5.1): packs always pass "oracles", also
+      // with the flag ON, so grantedCreditsForOrder converts 5 to 1,500
+      // credits. Before the fix this was "credits" (5 credits granted).
       grantUnit: "oracles",
     });
+  });
+
+  it("credit cutover: with the flag ON a pack order still grants in Oracles (x300), never 'credits'", async () => {
+    expect(CREDIT_COSTS_ENABLED).toBe(true);
+    mockedGetUserByEmail.mockResolvedValue({ id: "u1", email: "buyer@example.com", credits: 0, created_at: "2026-11-05T00:00:00Z" });
+    mockedFulfill.mockResolvedValue({ transaction: null, credits: 1500, duplicate: false });
+    const res = await POST(signedReq(orderCreated()));
+    expect(res.status).toBe(200);
+    const args = mockedFulfill.mock.calls[0][0];
+    expect(args.readings).toBe(5);
+    expect(args.grantUnit).toBe("oracles");
+    expect(grantedCreditsForOrder(args.readings, args.grantUnit ?? "oracles")).toBe(1500);
   });
 
   // F2: the stored amount (the later proration base) is the order total the

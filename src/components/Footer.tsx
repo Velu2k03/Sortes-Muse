@@ -33,7 +33,7 @@ export default function Footer() {
             <li><Link href="/charts" prefetch={false} className="inline-flex min-h-11 items-center py-2 text-cream/80 hover:text-goldbright">Charts</Link></li>
             <li><Link href="/reports" prefetch={false} className="inline-flex min-h-11 items-center py-2 text-cream/80 hover:text-goldbright">Reports</Link></li>
             <li><Link href="/horoscope" prefetch={false} className="inline-flex min-h-11 items-center py-2 text-cream/80 hover:text-goldbright">Horoscope</Link></li>
-            <li><Link href="/pricing" prefetch={false} className="inline-flex min-h-11 items-center py-2 text-cream/80 hover:text-goldbright">Oracles</Link></li>
+            <li><Link href="/pricing" prefetch={false} className="inline-flex min-h-11 items-center py-2 text-cream/80 hover:text-goldbright">Credits</Link></li>
             <li><Link href="/journal" prefetch={false} className="inline-flex min-h-11 items-center py-2 text-cream/80 hover:text-goldbright">Journal</Link></li>
             <li><Link href="/account" prefetch={false} className="inline-flex min-h-11 items-center py-2 text-cream/80 hover:text-goldbright">Sign in</Link></li>
             <li><Link href="/guides" prefetch={false} className="inline-flex min-h-11 items-center py-2 text-cream/80 hover:text-goldbright">Guides</Link></li>

@@ -14,27 +14,30 @@ const UI_FILES = [
   "src/app/spreads/SpreadsClient.tsx",
 ];
 
+// Credit cutover (2026-11-20): the unit is renamed from "Oracle" to
+// "credits" in the UI (audit §4, Velu's decision). The glossary rule is
+// inverted: these files used to be barred from saying "credit"; now
+// they must not show the old Oracle unit in a label.
 describe("Phase 4 Batch 4.4 money glossary", () => {
-  it("never says 'credit' as a standalone word in UI strings", () => {
+  it("never shows the retired Oracle unit in a user-facing label", () => {
     for (const file of UI_FILES) {
       const text = src(file);
-      // Whole-word "credit" only. This allows the internal identifiers
-      // the code already uses: the `credits` variable, CREDIT_PACKS,
-      // sortes:credits-changed, and /api/credits/*.
-      expect(text).not.toMatch(/\bcredit\b/i);
+      expect(text, file).not.toContain("Get Oracles");
+      expect(text, file).not.toContain("Oracle balance");
+      expect(text, file).not.toContain("Monthly Oracles");
+      expect(text, file).not.toContain("Purchased Oracles");
+      expect(text, file).not.toContain("Top up Oracles");
+      expect(text, file).not.toMatch(/· 1 Oracle|uses 1 Oracle|"Oracle" : "Oracles"/);
     }
   });
 
-  it("never says 'credits' in a user-facing label", () => {
-    // The plural "credits" is a code identifier (the `credits` variable,
-    // monthlyCredits, purchasedCredits), so a bare word check would
-    // false-positive. Pin the actual labels instead.
-    for (const file of UI_FILES) {
-      const text = src(file);
-      expect(text).not.toContain("Monthly credits");
-      expect(text).not.toContain("Purchased credits");
-      expect(text).not.toContain("credits left");
-    }
+  it("names the unit 'credits' in the balance and top-up labels", () => {
+    expect(src("src/components/Header.tsx")).toContain("Get credits");
+    expect(src("src/app/account/AccountPanels.tsx")).toContain("Credit balance");
+    expect(src("src/app/account/AccountPanels.tsx")).toContain("Monthly credits");
+    expect(src("src/app/account/AccountPanels.tsx")).toContain("Purchased credits");
+    expect(src("src/components/PurchaseConfirmer.tsx")).toContain("Your credits are in your balance");
+    expect(src("src/app/spreads/SpreadsClient.tsx")).toContain("Top up credits");
   });
 
   it("never says 'Log in' or 'Register' in UI strings", () => {
@@ -45,17 +48,20 @@ describe("Phase 4 Batch 4.4 money glossary", () => {
     }
   });
 
-  it("states the cost as one phrase: 1 Oracle", () => {
+  it("states the cost as one phrase: this spread's credit price", () => {
     const flow = src("src/components/ReadingFlow.tsx");
-    // Both cost buttons carry the same cost tag.
-    expect(flow).toContain("Personalize and begin · 1 Oracle");
-    expect(flow).toContain("Get Oracles · 1 Oracle");
-    expect(flow).not.toContain("1 Oracle per reading");
-    expect(flow).toContain("This reading uses 1 Oracle.");
-    // The spreads page is another entry point; it must use the same phrase.
+    // Both cost buttons carry the same cost tag, from the spread size.
+    const tag = "{creditsLabel(readingCostForSpreadCards(spread.cards))}";
+    expect(flow).toContain(`Personalize and begin · ${tag}`);
+    expect(flow).toContain(`Get credits · ${tag}`);
+    expect(flow).toContain(`This reading uses ${tag}.`);
+    expect(flow).toContain("credits >= readingCostForSpreadCards(spread.cards)");
+    // The spreads page is another entry point; it prices each spread
+    // from its card count and gates Begin on that price.
     const spreads = src("src/app/spreads/SpreadsClient.tsx");
-    expect(spreads).not.toContain("1 Oracle per reading");
-    expect(spreads).toContain("After that, 1 Oracle, any spread.");
+    expect(spreads).toContain("creditsLabel(spreadCost(s.slug))");
+    expect(spreads).toContain("balance >= spreadCost(slug)");
+    expect(spreads).toContain("100 for one card, 200 for three, 300 for the Celtic Cross");
   });
 
   it("uses 'Sign in' and 'Sign up', not one-word forms", () => {

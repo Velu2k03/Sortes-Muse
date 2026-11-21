@@ -10,8 +10,10 @@ describe("Phase 4 Batch 4.1 Oracles page", () => {
 
   it("sells top-ups only, with brand tokens and no pack copy", () => {
     // Packs retired (Velu, 2026-11-16, D1): the page renders the
-    // two top-ups (1,000 / 3,000 Oracles) and nothing pack-shaped.
-    expect(page).toContain("Top up Oracles");
+    // two top-ups (1,000 / 3,000 credits) and nothing pack-shaped.
+    // Credit cutover: the heading says credits; the URL stays /oracles.
+    expect(page).toContain("Top up credits");
+    expect(page).toContain('alternates: { canonical: "/oracles" }');
     expect(page).toContain("TOPUPS.map");
     expect(page).toContain("TopUpBuyButton");
     expect(page).toContain("text-goldbright");

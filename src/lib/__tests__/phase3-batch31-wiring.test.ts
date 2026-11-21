@@ -36,14 +36,18 @@ describe("Phase 3 Batch 3.1 intake form and no dead end", () => {
     expect(steps).toContain("onClick={() => { setQuestion(ex); setQuestionError(false); }}");
   });
 
-  it("gives a zero-Oracle user a Get Oracles link instead of a dead end", () => {
-    expect(flow).toContain('setError("You are out of Oracles. Please top up to continue.")');
+  it("gives a user short of credits a Get credits link instead of a dead end", () => {
+    // Credit cutover: the client stop compares the balance with the
+    // spread's credit cost, not with 1.
+    expect(flow).toContain('"You do not have enough credits for this reading. Please top up to continue."');
+    expect(flow).toContain("credits < readingCostForSpreadCards(spread.cards)");
+    expect(flow).toContain("setError(OUT_OF_CREDITS_MESSAGE)");
     // The server 402 message also gets the link (client balance can be stale).
     const server = src("src/app/api/reading/generate/route.ts");
-    expect(server).toContain('error: "You need 1 Oracle for this reading. No Oracle was spent."');
-    expect(steps).toContain('error.startsWith("You need 1 Oracle")');
-    // Both error alerts offer the link when the error is an out-of-Oracles one.
-    const links = steps.match(/error\.startsWith\("You need 1 Oracle"\)[\s\S]*?Get Oracles/g) ?? [];
+    expect(server).toContain('error: insufficientBalanceMessage(readingCost, "reading")');
+    expect(steps).toContain('error.startsWith("You need ")');
+    // Both error alerts offer the link when the error is a balance stop.
+    const links = steps.match(/isBalanceStop\(error\)[\s\S]*?Get credits/g) ?? [];
     expect(links.length).toBe(2);
     expect(steps).toContain('href="/pricing"');
   });

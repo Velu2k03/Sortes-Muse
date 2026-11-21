@@ -5,7 +5,7 @@ import TopUpBuyButton from "./TopUpBuyButton";
 import InfoHint from "@/components/InfoHint";
 import { SITE_URL } from "@/lib/site";
 import { topUpsConfigured } from "@/lib/lemonsqueezy";
-import { CREDIT_COSTS_ENABLED, TOPUPS } from "@/lib/subscription-tiers";
+import { CREDIT_COSTS_ENABLED, READING_CREDIT_COSTS, TOPUPS, creditsLabel } from "@/lib/subscription-tiers";
 
 // Packs retired (Velu, 2026-11-16, D1): this page sells top-ups
 // only (1,000 Oracles $9.99, 3,000 $24.99, never expire). The
@@ -19,15 +19,17 @@ import { CREDIT_COSTS_ENABLED, TOPUPS } from "@/lib/subscription-tiers";
 // and React throws #418. Pin en-US so server and client agree;
 // visible formatting for Latin-locale users is unchanged.
 const CREDITS_LOCALE = "en-US";
+// Credit cutover: the unit is "credits" in all copy. The /oracles URL
+// stays (inbound links, sitemap, SEO); only the heading and copy changed.
 export const metadata = {
-  title: "Top up Oracles",
+  title: "Top up credits",
   description:
-    "Top up your Sortes Oracles: 1,000 for $9.99 or 3,000 for $24.99. Purchased Oracles never expire.",
+    "Top up your Sortes credits: 1,000 for $9.99 or 3,000 for $24.99. Purchased credits never expire.",
   alternates: { canonical: "/oracles" },
   ...pageSocial({
-    title: "Top up Oracles",
+    title: "Top up credits",
     description:
-      "Top up your Sortes Oracles: 1,000 for $9.99 or 3,000 for $24.99. Purchased Oracles never expire.",
+      "Top up your Sortes credits: 1,000 for $9.99 or 3,000 for $24.99. Purchased credits never expire.",
     path: "/oracles",
   }),
 };
@@ -50,13 +52,13 @@ export default function Credits() {
           __html: JSON.stringify({
             "@context": "https://schema.org",
             "@type": "Product",
-            name: "Sortes Oracles",
+            name: "Sortes credits",
             description:
-              "Oracle top-ups for Sortes tarot readings. Purchased Oracles never expire.",
+              "Credit top-ups for Sortes tarot readings. Purchased credits never expire.",
             brand: { "@type": "Brand", name: "Sortes" },
             offers: TOPUPS.map((t) => ({
               "@type": "Offer",
-              name: `${t.credits.toLocaleString(CREDITS_LOCALE)} Oracles`,
+              name: `${t.credits.toLocaleString(CREDITS_LOCALE)} credits`,
               price: t.price.toFixed(2),
               priceCurrency: "USD",
               availability: topupsEnabled
@@ -73,13 +75,14 @@ export default function Credits() {
           crawlers saw no H1 at all. */}
       <div className="text-left">
         <h1 className="mt-3 font-display text-5xl text-goldbright sm:text-6xl">
-          Top up Oracles
+          Top up credits
         </h1>
         <p className="mt-4 text-sm text-cream/75">
-          Top up your Oracles for tarot readings, birth charts, and reports.
+          Top up your credits for tarot readings, birth charts, and reports.
         </p>
         <p className="mt-2 text-sm font-semibold text-goldbright">
-          One reading costs 1 Oracle.
+          A one-card reading costs {creditsLabel(READING_CREDIT_COSTS.oneCard)}, a three-card reading{" "}
+          {creditsLabel(READING_CREDIT_COSTS.threeCard)}.
         </p>
       </div>
 
@@ -91,7 +94,7 @@ export default function Credits() {
           >
             <div className="flex h-full flex-col text-center">
               <h2 className="font-display text-xl text-cream">
-                {t.credits.toLocaleString(CREDITS_LOCALE)} Oracles
+                {t.credits.toLocaleString(CREDITS_LOCALE)} credits
               </h2>
               <div className="mt-1 flex h-6 items-center justify-center" />
               <p className="mt-3 font-display text-[40px] font-bold leading-none text-goldbright lining-nums tabular-nums">

@@ -4,7 +4,7 @@
 // after the server committed the spend and the row, so those say "may have
 // been saved". A retry reuses the attempt id and returns the saved row.
 export function unconfirmedMessage(noun: "reading" | "report" | "interpretation", where: string): string {
-  return `We lost the connection before we could confirm your ${noun}. It may have been saved: check ${where}, or try again. A retry returns the saved ${noun === "interpretation" ? "one" : noun} without spending another Oracle.`;
+  return `We lost the connection before we could confirm your ${noun}. It may have been saved: check ${where}, or try again. A retry returns the saved ${noun === "interpretation" ? "one" : noun} without spending more credits.`;
 }
 
 // Point 3: a signed-in generation must come back with the server's saved row.

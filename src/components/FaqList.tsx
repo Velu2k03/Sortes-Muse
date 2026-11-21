@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 
-export type FaqItem = { q: string; a?: string; bullets?: string[]; group: string };
+export type FaqCostRow = { item: string; cost: string; note?: string };
+export type FaqItem = { q: string; a?: string; bullets?: string[]; table?: FaqCostRow[]; group: string };
 
 /**
  * Batch 6c: the 16 questions are grouped under four section
@@ -13,7 +14,7 @@ export type FaqItem = { q: string; a?: string; bullets?: string[]; group: string
  * renders after these, in array order.
  */
 const GROUP_ORDER = [
-  "Pricing and Oracles",
+  "Pricing and credits",
   "Readings and Charts",
   "Privacy and Data",
   "Account",
@@ -64,6 +65,31 @@ function FaqItem({ f }: { f: FaqItem }) {
           <path d="M5 7.5 10 12.5 15 7.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </summary>
+      {/* Credit cutover: the cost table. Documented exception (same
+          precedent as PRs #152, #163, #168, #171): the FAQ is outside
+          the Astryx pricing-page scope, so it uses a native <table>
+          with the same token-backed classes as the privacy page's
+          provider table, not an Astryx Table. */}
+      {f.table ? (
+        <table className="mt-3 w-full border-collapse text-left text-sm text-cream/85">
+          <thead>
+            <tr className="border-b border-gold/30 text-goldbright">
+              <th scope="col" className="py-2 pr-4 font-medium">What you open</th>
+              <th scope="col" className="py-2 pr-4 font-medium">Cost</th>
+              <th scope="col" className="py-2 font-medium">Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            {f.table.map((r) => (
+              <tr key={r.item} className="border-b border-gold/10">
+                <th scope="row" className="py-2 pr-4 font-normal">{r.item}</th>
+                <td className="py-2 pr-4 whitespace-nowrap">{r.cost}</td>
+                <td className="py-2">{r.note ?? ""}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      ) : null}
       {f.bullets ? (
         <ul className="mt-3 list-disc space-y-1.5 pl-5 leading-relaxed text-cream/85">
           {f.bullets.map((b) => (
@@ -113,7 +139,7 @@ export default function FaqList({ faqs }: { faqs: FaqItem[] }) {
 
   // Batch 6c: group the questions under their section headings.
   // The details ids (slug of the question) do not change, so
-  // existing anchors (e.g. /faq#what-are-the-five-oracle-rules
+  // existing anchors (e.g. /faq#what-does-each-reading-cost
   // from /spreads) still work.
   const grouped = [
     ...GROUP_ORDER.map((name) => ({

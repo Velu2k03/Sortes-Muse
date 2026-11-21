@@ -1,8 +1,10 @@
 import type postgres from "postgres";
-import { usePostgres, pg, sql, ensureSchema, txWithSignal } from "./client";
+import { usePostgres, pg, sql, sqlWithLabel, ensureSchema, txWithSignal } from "./client";
 import { readLocal, writeLocal } from "./json-store";
 import { withDbTimeout } from "../db-timeout";
 import {
+  CREDIT_COSTS_ENABLED,
+  ORACLE_TO_CREDITS,
   SUBSCRIPTION_TIERS,
   grantableMonthly,
   isSubscriptionTierId,
@@ -205,6 +207,86 @@ export async function getCreditBalances(userId: string): Promise<CreditBalances 
     purchased: u.purchased_credits ?? 0,
     total: u.credits,
   };
+}
+
+/*
+ * Credit cutover (PR #175, Codex P1): the flag-ON window guard.
+ *
+ * Between the flag-ON deploy and the conversion run, an unconverted
+ * holder's purchased_credits are still Oracles. A flag-aware spend
+ * (100 for a 1-card reading) against that balance would eat 100
+ * Oracles = 30,000 credits of value, and the conversion would then
+ * multiply only what is left. So every paid spend is BLOCKED (not
+ * reconciled) for such a user until the runner has converted them.
+ *
+ * The test is the runner's and census's own (scripts/convert-oracles.mjs
+ * listHolders, scripts/census-oracles.mjs): purchased_credits > 0 and
+ * no credit_grants row with kind 'conversion'. One narrowing, so the
+ * guard cannot lock out users who never held Oracles: a user whose
+ * only purchases were recorded in credits (a top-up, or a pack
+ * fulfilled after the flip, readings >= ORACLE_TO_CREDITS) and who has
+ * no pre-flip Oracle pack row (pack5/12/30 with readings < 300) is not
+ * blocked. Without it, every post-cutover buyer would be refused
+ * forever (the runner refuses post-flag buyers, so no conversion grant
+ * ever lands for them). A mixed user (pre-flip Oracle pack AND a
+ * post-flip credit purchase) stays blocked: the runner refuses them
+ * too and the runbook's manual path must convert them by hand.
+ *
+ * Flag OFF: never blocks (Oracles are still the spend unit).
+ */
+const ORACLE_PACK_RE = /^pack(5|12|30)(?![0-9])/;
+const CREDIT_PURCHASE_RE = /^(pack(5|12|30)(?![0-9])|topup-)/;
+
+type RowsQuery = (strings: TemplateStringsArray, ...values: unknown[]) => Promise<readonly unknown[]>;
+
+async function pendingConversionPostgres(run: RowsQuery, userId: string): Promise<boolean> {
+  const rows = (await run`SELECT (
+      u.purchased_credits > 0
+      AND NOT EXISTS (SELECT 1 FROM credit_grants g WHERE g.user_id = u.id AND g.kind = 'conversion')
+      AND (
+        EXISTS (SELECT 1 FROM transactions t WHERE t.user_id = u.id
+                AND t.pack_type ~ '^pack(5|12|30)([^0-9]|$)' AND t.readings > 0 AND t.readings < ${ORACLE_TO_CREDITS})
+        OR NOT EXISTS (SELECT 1 FROM transactions t WHERE t.user_id = u.id
+                AND t.pack_type ~ '^(pack(5|12|30)([^0-9]|$)|topup-)' AND t.readings >= ${ORACLE_TO_CREDITS})
+      )
+    ) AS blocked
+    FROM users u WHERE u.id = ${userId}`) as Array<{ blocked: boolean }>;
+  return rows[0]?.blocked === true;
+}
+
+/**
+ * True when a paid spend must be refused because the user still holds
+ * an unconverted Oracle balance while CREDIT_COSTS_ENABLED is ON (see
+ * the block comment above). `query` is the open transaction's tag
+ * (the `tx` inside pg.begin) for the in-transaction spend sites; omit
+ * it for the standalone early check. Works on the local JSON store too.
+ */
+export async function isSpendBlockedPendingConversion(
+  userId: string,
+  query?: postgres.ISql
+): Promise<boolean> {
+  if (!CREDIT_COSTS_ENABLED) return false;
+  if (usePostgres) {
+    if (query) {
+      const tag = query as unknown as RowsQuery;
+      return pendingConversionPostgres((s, ...v) => tag(s, ...v), userId);
+    }
+    await ensureSchema();
+    const labelled = sqlWithLabel("pending-conversion");
+    return pendingConversionPostgres(async (s, ...v) => (await labelled(s, ...v)).rows, userId);
+  }
+  const db = await readLocal();
+  const u = db.users.find((x) => x.id === userId);
+  if (!u || (u.purchased_credits ?? 0) <= 0) return false;
+  if ((db.creditGrants ?? []).some((g) => g.user_id === userId && g.kind === "conversion")) return false;
+  const txs = db.transactions.filter((t) => t.user_id === userId);
+  const oraclePack = txs.some(
+    (t) => ORACLE_PACK_RE.test(t.pack_type) && t.readings > 0 && t.readings < ORACLE_TO_CREDITS
+  );
+  const creditPurchase = txs.some(
+    (t) => CREDIT_PURCHASE_RE.test(t.pack_type) && t.readings >= ORACLE_TO_CREDITS
+  );
+  return oraclePack || !creditPurchase;
 }
 
 export async function listCreditGrants(userId: string): Promise<CreditGrant[]> {

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { NextRequest } from "next/server";
 
-vi.mock("@/lib/db", () => ({ getUserById: vi.fn(), saveReportWithSpend: vi.fn() }));
+vi.mock("@/lib/db", () => ({ getUserById: vi.fn(), isSpendBlockedPendingConversion: vi.fn(async () => false),saveReportWithSpend: vi.fn() }));
 vi.mock("@/lib/auth", () => ({ getSession: vi.fn() }));
 // Output validation has its own tests; here the model text is accepted so
 // the route reaches the persist step.
@@ -31,7 +31,7 @@ describe("POST /api/reports/generate — persists with the spend", () => {
     vi.clearAllMocks();
     process.env.OPENROUTER_API_KEY = "test-key";
     vi.mocked(getSession).mockResolvedValue({ userId: "u1", email: "a@b.co" });
-    vi.mocked(getUserById).mockResolvedValue({ id: "u1", email: "a@b.co", credits: 2, created_at: "2026-11-05T00:00:00Z" });
+    vi.mocked(getUserById).mockResolvedValue({ id: "u1", email: "a@b.co", credits: 600, created_at: "2026-11-05T00:00:00Z" });
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue({
@@ -53,6 +53,8 @@ describe("POST /api/reports/generate — persists with the spend", () => {
     expect(saveReportWithSpend).toHaveBeenCalledTimes(1);
     const saved = vi.mocked(saveReportWithSpend).mock.calls[0];
     expect(saved[0]).toBe("u1");
+    // Credit cutover: a report costs 300 credits.
+    expect(saved[2]).toBe(300);
     expect(saved[1].id).toBe(data.report.id);
     expect(saved[1].interpretation).toBe(data.report.interpretation);
   });

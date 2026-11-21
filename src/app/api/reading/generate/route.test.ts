@@ -3,6 +3,7 @@ import { NextRequest } from "next/server";
 
 vi.mock("@/lib/db", () => ({
   getUserById: vi.fn(),
+  isSpendBlockedPendingConversion: vi.fn(async () => false),
   hasUsedFreeReading: vi.fn(),
   saveReadingWithSpend: vi.fn(),
 }));
@@ -77,7 +78,7 @@ describe("POST /api/reading/generate — no provider key (Phase 6 AI fallback)",
     mockedGetUserById.mockResolvedValue({
       id: "u1",
       email: "a@b.co",
-      credits: 5,
+      credits: 500,
       created_at: "2026-11-05T00:00:00Z",
     });
     mockedHasUsedFree.mockResolvedValue(false);
@@ -94,7 +95,7 @@ describe("POST /api/reading/generate — no provider key (Phase 6 AI fallback)",
     expect(res.status).toBe(503);
     const data = await res.json();
     expect(data.fallback).toBe(true);
-    expect(data.error).toContain("No Oracle was spent");
+    expect(data.error).toContain("No credits were spent");
     expect(data.interpretation).toBeUndefined();
     expect(globalThis.fetch).not.toHaveBeenCalled();
     expect(mockedSave).not.toHaveBeenCalled();
@@ -117,7 +118,7 @@ describe("POST /api/reading/generate — first free Quick Insight", () => {
     mockedGetUserById.mockResolvedValue({
       id: "u1",
       email: "a@b.co",
-      credits: 5,
+      credits: 500,
       created_at: "2026-11-05T00:00:00Z",
     });
     mockedHasUsedFree.mockResolvedValue(false);
@@ -145,7 +146,7 @@ describe("POST /api/reading/generate — first free Quick Insight", () => {
     const { done: data } = await readRouteSse(res);
     expect(data?.free).toBe(true);
     expect(data?.interpretation).toContain("The Fool");
-    expect(mockedSave).toHaveBeenCalledWith("u1", expect.objectContaining({ interpretation: expect.stringContaining("The Fool") }), true, undefined, 1);
+    expect(mockedSave).toHaveBeenCalledWith("u1", expect.objectContaining({ interpretation: expect.stringContaining("The Fool") }), true, undefined, 100);
   });
 
   it("charges a signed-in user on the second Quick Insight", async () => {
@@ -154,7 +155,7 @@ describe("POST /api/reading/generate — first free Quick Insight", () => {
     const res = await POST(req(body("quick-insight"), "10.0.0.2"));
     expect(res.status).toBe(200);
     expect((await readRouteSse(res)).done?.free).toBe(false);
-    expect(mockedSave).toHaveBeenCalledWith("u1", expect.objectContaining({ interpretation: expect.stringContaining("The Fool") }), false, undefined, 1);
+    expect(mockedSave).toHaveBeenCalledWith("u1", expect.objectContaining({ interpretation: expect.stringContaining("The Fool") }), false, undefined, 100);
   });
 
   // Phase B (R7): the free claim is atomic. When a concurrent
@@ -169,7 +170,7 @@ describe("POST /api/reading/generate — first free Quick Insight", () => {
     const { done: data } = await readRouteSse(res);
     expect(data?.free).toBe(false);
     expect(data?.interpretation).toContain("The Fool");
-    expect(mockedSave).toHaveBeenCalledWith("u1", expect.objectContaining({ interpretation: expect.stringContaining("The Fool") }), true, undefined, 1);
+    expect(mockedSave).toHaveBeenCalledWith("u1", expect.objectContaining({ interpretation: expect.stringContaining("The Fool") }), true, undefined, 100);
   });
 
   it("returns 402 when the lost-race spend cannot be covered", async () => {
@@ -180,7 +181,7 @@ describe("POST /api/reading/generate — first free Quick Insight", () => {
     const { done, error } = await readRouteSse(res);
     expect(done).toBeNull();
     expect(error?.status).toBe(402);
-    expect(error?.error).toContain("No Oracle was spent");
+    expect(error?.error).toContain("No credits were spent");
   });
 
   // Phase 6B regression: the response used to reuse the pre-check
@@ -194,18 +195,18 @@ describe("POST /api/reading/generate — first free Quick Insight", () => {
       .mockResolvedValueOnce({
         id: "u1",
         email: "a@b.co",
-        credits: 5,
+        credits: 500,
         created_at: "2026-11-05T00:00:00Z",
       })
       .mockResolvedValueOnce({
         id: "u1",
         email: "a@b.co",
-        credits: 4,
+        credits: 400,
         created_at: "2026-11-05T00:00:00Z",
       });
     const res = await POST(req(body("quick-insight"), "10.0.0.4"));
     expect(res.status).toBe(200);
-    expect((await readRouteSse(res)).done?.credits).toBe(4);
+    expect((await readRouteSse(res)).done?.credits).toBe(400);
   });
 
   it("blocks the second Quick Insight with 402 when the balance cannot cover it", async () => {
@@ -217,7 +218,7 @@ describe("POST /api/reading/generate — first free Quick Insight", () => {
     const { done, error } = await readRouteSse(res);
     expect(done).toBeNull();
     expect(error?.status).toBe(402);
-    expect(error?.error).toContain("No Oracle was spent");
+    expect(error?.error).toContain("No credits were spent");
   });
 
   // Phase 6 (N5): the 402 above used to come AFTER a full model call.
@@ -233,7 +234,7 @@ describe("POST /api/reading/generate — first free Quick Insight", () => {
     });
     const res = await POST(req(body("quick-insight"), "10.0.0.7"));
     expect(res.status).toBe(402);
-    expect((await res.json()).error).toContain("No Oracle was spent");
+    expect((await res.json()).error).toContain("No credits were spent");
     expect(globalThis.fetch).not.toHaveBeenCalled();
     expect(mockedSave).not.toHaveBeenCalled();
   });
@@ -243,7 +244,8 @@ describe("POST /api/reading/generate — first free Quick Insight", () => {
     const res = await POST(req(body("past-present-future"), "10.0.0.4"));
     expect(res.status).toBe(200);
     expect((await readRouteSse(res)).done?.free).toBe(false);
-    expect(mockedSave).toHaveBeenCalledWith("u1", expect.objectContaining({ interpretation: expect.stringContaining("The Fool") }), false, undefined, 1);
+    // Credit cutover: a 3-card spread costs 200 credits.
+    expect(mockedSave).toHaveBeenCalledWith("u1", expect.objectContaining({ interpretation: expect.stringContaining("The Fool") }), false, undefined, 200);
   });
 
   // Batch 2b: the route streams, so it cannot set the guest-free
@@ -379,7 +381,7 @@ describe("POST /api/reading/generate — first free Quick Insight", () => {
     const { done, error } = await readRouteSse(res);
     expect(done).toBeNull();
     expect(error?.status).toBe(402);
-    expect(error?.error).toContain("No Oracle was spent");
+    expect(error?.error).toContain("No credits were spent");
   });
 });
 

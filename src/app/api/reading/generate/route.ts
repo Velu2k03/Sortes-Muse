@@ -9,7 +9,7 @@ import { getSpread } from "@/lib/tarot";
 import { computeSpreadFacts, type FactCard } from "@/lib/spread-facts";
 import { generateChatStream } from "@/lib/ai";
 import { sseEvent, sseResponse } from "@/lib/sse-server";
-import { preCheckOracleBalance } from "@/lib/credit-precheck";
+import { insufficientBalanceMessage, nothingSpent, preCheckOracleBalance } from "@/lib/credit-precheck";
 import { readingCostForSpreadCards } from "@/lib/subscription-tiers";
 import { validateReadingText } from "@/lib/output-validation";
 import { logGuestGeneration } from "@/lib/guestLogging";
@@ -319,7 +319,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         error:
-          "AI generation is not configured on this server right now. No Oracle was spent. Please try again later.",
+          `AI generation is not configured on this server right now. ${nothingSpent()} Please try again later.`,
         fallback: true,
       },
       { status: 503 }
@@ -423,7 +423,7 @@ export async function POST(req: NextRequest) {
       send(
         sseEvent("error", {
           error:
-            "The reading could not be generated just now. No Oracle was spent. Please try again in a moment.",
+            `The reading could not be generated just now. ${nothingSpent()} Please try again in a moment.`,
           status: 503,
         })
       );
@@ -486,7 +486,7 @@ export async function POST(req: NextRequest) {
       if (saved.conflict) {
         send(
           sseEvent("error", {
-            error: "That reading id is already in use. No Oracle was spent.",
+            error: `That reading id is already in use. ${nothingSpent()}`,
             status: 409,
           })
         );
@@ -495,7 +495,7 @@ export async function POST(req: NextRequest) {
       if (!saved.ok) {
         send(
           sseEvent("error", {
-            error: "You need 1 Oracle for this reading. No Oracle was spent.",
+            error: insufficientBalanceMessage(readingCost, "reading"),
             status: 402,
           })
         );

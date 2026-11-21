@@ -14,6 +14,7 @@ import SplitText from "@/components/SplitText";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import AnimatedContent from "@/components/AnimatedContent";
 import type { FollowUpState, ReadingField } from "./useReadingDetail";
+import { READING_CREDIT_COSTS, creditsLabel } from "@/lib/subscription-tiers";
 
 /** Breadcrumbs, spread + date line, title, question lines. */
 export function ReadingHeader({ reading }: { reading: Reading }) {
@@ -92,7 +93,7 @@ export function ThreeCardNudge() {
         href="/intake/past-present-future"
         className="mt-4 inline-block rounded-full bg-gold px-5 py-3 text-sm font-semibold text-ink hover:bg-goldbright"
       >
-        Try Past, Present, Future (1 Oracle)
+        Try Past, Present, Future ({creditsLabel(READING_CREDIT_COSTS.threeCard)})
       </Link>
     </section>
   );
@@ -596,7 +597,10 @@ export function FollowUpThread({
               className="rounded-2xl border border-gold/20 bg-panel/50 p-4"
             >
               <p className="text-sm text-gold">
-                Follow-up {i + 1}{fu.free ? " (free)" : " (1 Oracle)"}
+                {/* Credit cutover: "paid", not a price, because a
+                    follow-up asked before the cutover cost 1 Oracle
+                    and one asked after costs 50 credits. */}
+                Follow-up {i + 1}{fu.free ? " (free)" : " (paid)"}
               </p>
               <p className="mt-1 text-sm italic text-cream/80">
                 &ldquo;{fu.question}&rdquo;
@@ -662,7 +666,7 @@ export function FollowUpThread({
                   ? "Sign in to ask a follow-up…"
                   : (reading.followUps ?? []).length === 0
                   ? "Ask a follow-up · free"
-                  : "Ask a follow-up · 1 Oracle"}
+                  : `Ask a follow-up · ${creditsLabel(READING_CREDIT_COSTS.followUp)}`}
             </button>
           </div>
           {/* AF-049: a disabled Ask says why, inline. */}
@@ -718,7 +722,7 @@ export function NewReadingPrompt() {
         href="/spreads/quick-insight"
         className="btn-gold rounded-xl px-8 py-3 font-bold"
       >
-        Start a new reading &middot; 1 Oracle
+        Start a new reading &middot; {creditsLabel(READING_CREDIT_COSTS.oneCard)}
       </Link>
     </>
   );

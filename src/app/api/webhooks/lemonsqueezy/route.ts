@@ -21,7 +21,6 @@ import {
   type DbUser,
 } from "@/lib/db";
 import { handleSubscriptionWebhook } from "@/lib/subscription-webhook";
-import { CREDIT_COSTS_ENABLED } from "@/lib/subscription-tiers";
 
 export const dynamic = "force-dynamic";
 
@@ -278,12 +277,17 @@ export async function POST(req: NextRequest) {
       user = (await getUserByEmail(email)) ?? (await createUser(email));
     }
     const amount = Number(attrs?.total ?? 0) / 100;
-    // Phase 2 batch 3: the grant unit. Packs grant Oracles while the
-    // credit-cost flag is OFF and credits (Oracles x 300) once it is
-    // ON; top-ups always grant credits. fulfillOrder records the
-    // granted amount on the transaction row, so a later refund reads
-    // the same unit the grant used.
+    // Phase 2 batch 3: the grant unit. A pack's `readings` is always an
+    // Oracle count (5/12/30), so packs always pass "oracles":
+    // grantedCreditsForOrder grants it as-is while the credit-cost flag
+    // is OFF and converts it x300 once it is ON (pack5 = 1,500
+    // credits). Credit cutover (audit §5.1): this used to pass
+    // "credits" for packs when the flag was ON, which granted 5 credits
+    // for a $3.99 pack. Top-ups are already in credits. fulfillOrder
+    // records the granted amount on the transaction row, so a later
+    // refund reads the same unit the grant used.
     const isTopUp = topUpCredits !== null;
+    const grantUnit = isTopUp ? "credits" : "oracles";
     const result = await fulfillOrder({
       userId: user.id,
       email: user.email,
@@ -293,7 +297,7 @@ export async function POST(req: NextRequest) {
       amount,
       readings,
       orderId,
-      grantUnit: isTopUp ? "credits" : CREDIT_COSTS_ENABLED ? "credits" : "oracles",
+      grantUnit,
     });
     if (result.duplicate) return NextResponse.json({ ok: true, duplicate: true });
     console.log(
@@ -303,7 +307,7 @@ export async function POST(req: NextRequest) {
         orderId,
         userId: user.id,
         readings,
-        grantUnit: isTopUp ? "credits" : CREDIT_COSTS_ENABLED ? "credits" : "oracles",
+        grantUnit,
       })
     );
 

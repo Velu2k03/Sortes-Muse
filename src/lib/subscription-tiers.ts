@@ -68,11 +68,38 @@ export function grantableMonthly(currentMonthly: number, tier: SubscriptionTier)
  *
  * CUTOVER (see docs/CREDIT-CUTOVER-RUNBOOK.md): flip this to true
  * ONLY as part of the cutover — deploy flag-ON first, then run the
- * Oracle conversion for all holders, then verify. The flag ships
- * OFF in this batch; flipping it is a deliberate, reviewed change,
- * never a drive-by. Do NOT flip it without the runbook.
+ * Oracle conversion for all holders, then verify. The flag shipped
+ * OFF until the cutover; flipping it was a deliberate, reviewed change
+ * (credit cutover PR, 2026-11-20). Do NOT flip it back without the
+ * runbook's rollback section: converted balances stay converted.
  */
-export const CREDIT_COSTS_ENABLED = false;
+export const CREDIT_COSTS_ENABLED = true;
+
+/**
+ * The conversion runner's flag check (scripts/convert-oracles.mjs),
+ * as a pure function so BOTH flag values are unit-tested on any
+ * checkout (convert-oracles-runner.test.ts). The runner passes the
+ * checkout's real CREDIT_COSTS_ENABLED; there is no test-only seam in
+ * the runner itself. Runbook order is flag-ON first, then convert
+ * (converting while OFF would leak), so --live refuses while the flag
+ * is OFF, unless the local-test-only override
+ * SORTES_CONVERT_ALLOW_FLAG_OFF=1 is set; the override is itself
+ * refused on a production-looking URL. Returns the refusal message
+ * (the runner exits 2), or null to proceed.
+ */
+export function conversionFlagRefusal(args: {
+  live: boolean;
+  flagEnabled: boolean;
+  allowFlagOff: boolean;
+  looksProduction: boolean;
+}): string | null {
+  if (!args.live || args.flagEnabled) return null;
+  if (args.allowFlagOff && !args.looksProduction) return null;
+  return (
+    "convert-oracles: CREDIT_COSTS_ENABLED is false in this checkout. Runbook order is flag-ON first, then convert " +
+    "(converting first would leak). Run from the flag-ON commit. (Local test databases only: SORTES_CONVERT_ALLOW_FLAG_OFF=1.)"
+  );
+}
 
 /** Credit cost of one reading/report/follow-up, once the flag is ON. */
 export const READING_CREDIT_COSTS = {
@@ -88,6 +115,36 @@ export const READING_CREDIT_COSTS = {
   /** One follow-up question. */
   followUp: 50,
 } as const;
+
+/**
+ * A credit amount as UI copy: "1 credit", "300 credits", "1,000
+ * credits". en-US grouping on purpose (the same fixed locale the
+ * pricing page uses), so server and client render the same text.
+ */
+export function creditsLabel(n: number): string {
+  return n === 1 ? "1 credit" : `${n.toLocaleString("en-US")} credits`;
+}
+
+/**
+ * The amount on a purchase-history row. Rows for the retired Oracle
+ * packs (pack_type "pack5 ...", "pack12 ...", "pack30 ...") were
+ * bought and recorded in Oracles before the cutover, so they keep
+ * that unit; calling a 5-Oracle pack "5 credits" would misstate what
+ * the buyer got. Every other row (top-ups, the conversion, test
+ * grants) is recorded in credits.
+ *
+ * PR #175 (Codex P2): fulfillOrder records the GRANTED amount, so a
+ * pack fulfilled after the flag flip stores pack-size x 300 (pack5 =
+ * 1,500) and is labeled in credits. Legacy pre-flip pack rows store
+ * the Oracle count (5/12/30) and keep the Oracle label.
+ */
+export function purchaseAmountLabel(amount: number, packType: string): string {
+  const pack = /^pack(5|12|30)\b/.exec(packType);
+  if (pack && amount !== Number(pack[1]) * ORACLE_TO_CREDITS) {
+    return amount === 1 ? "1 Oracle" : `${amount} Oracles`;
+  }
+  return creditsLabel(amount);
+}
 
 /**
  * Credit cost of a tarot reading by spread size, once the flag is

@@ -34,6 +34,10 @@ import FieldGroup from "@/components/FieldGroup";
 import { FOCUS_AREAS, PRESETS, chartSummaryText, type ChartResult as ChartResultT, type ChartSystem } from "@/lib/chart-submit";
 import type { ZiweiResult } from "@/lib/charts";
 import type { ChartForm, ChartPrefs, ChartSession } from "./useChartsClient";
+import { READING_CREDIT_COSTS, creditsLabel } from "@/lib/subscription-tiers";
+
+/** "300 credits": the paid price of one chart interpretation. */
+const CHART_COST = creditsLabel(READING_CREDIT_COSTS.chart);
 
 /*
  * F10 (2026-11-09): one presentational component per visual section
@@ -61,7 +65,7 @@ export function ChartsIntro() {
     <PageHeader eyebrow="Birth Charts" title="Cast a birth chart" titleClassName="sm:text-6xl" />
     <p className="mt-4 max-w-xl text-cream/75">
       Ziwei, Western, and Vedic charts. Calculation is free. First
-      interpretation per system is free, then 1 Oracle.
+      interpretation per system is free, then {CHART_COST}.
     </p>
     <p className="mt-2 max-w-xl text-sm text-cream/80">
       {/* Phase 7 (7.3): privacy detail, not needed to start a
@@ -760,7 +764,7 @@ export function InterpretationPanel({ prefs, s, result }: { prefs: ChartPrefs; s
     <p className="mt-2 text-sm text-cream/75">
       Calculation was free and unsaved. Interpretation is{" "}
       <strong className="text-cream">
-        {displayFree ? "free for your first chart in this system, then 1 Oracle" : "1 Oracle"}
+        {displayFree ? `free for your first chart in this system, then ${CHART_COST}` : CHART_COST}
       </strong>
       . The AI receives only chart positions, signs, and stars, plus your focus and question, never your birth date, time, or place.
     </p>
@@ -814,7 +818,7 @@ export function InterpretationPanel({ prefs, s, result }: { prefs: ChartPrefs; s
       </p>
     ) : (
       <button type="button" onClick={onInterpret} disabled={interpLoading} className="btn-gold mt-5 rounded-full px-6 py-3 text-sm font-bold disabled:opacity-100 disabled:saturate-50">
-        {interpLoading ? "Interpreting…" : displayFree ? "Get interpretation (free)" : "Get interpretation (1 Oracle)"}
+        {interpLoading ? "Interpreting…" : displayFree ? "Get interpretation (free)" : `Get interpretation (${CHART_COST})`}
       </button>
     )}
     {interpretation && (
@@ -822,7 +826,7 @@ export function InterpretationPanel({ prefs, s, result }: { prefs: ChartPrefs; s
         <p className="text-sm text-gold">
           {interpFallback
             ? "Standard interpretation · prepared from your chart positions, not AI-generated"
-            : `${interpFree ? "Free interpretation" : "1 Oracle interpretation"} · Personalized · AI-generated${interpModel ? ` · Written with ${interpModel}` : ""}`}
+            : `${interpFree ? "Free interpretation" : `${CHART_COST} interpretation`} · Personalized · AI-generated${interpModel ? ` · Written with ${interpModel}` : ""}`}
         </p>
         <ReadingText text={interpretation} className="mt-3 leading-relaxed text-cream/90" />
         <div className="mt-5 flex flex-wrap gap-3">

@@ -14,6 +14,7 @@ import Breadcrumbs from "@/components/Breadcrumbs";
 import SpreadDiagram from "@/components/SpreadDiagram";
 import Link from "next/link";
 import { ClickSpark } from "@/components/ReactBits";
+import { READING_CREDIT_COSTS, creditsLabel, readingCostForSpreadCards } from "@/lib/subscription-tiers";
 
 /**
  * Spread detail page. Phase 2, 2.1: this page no longer runs a
@@ -138,7 +139,7 @@ function GateScreen({
               {signedIn ? "account" : "device"}.
             </p>
           </>
-        ) : credits >= 1 ? (
+        ) : credits >= readingCostForSpreadCards(spread.cards) ? (
           <>
             <ClickSpark className="click-spark--responsive">
               <button
@@ -146,11 +147,11 @@ function GateScreen({
                 onClick={() => router.push(`/intake/${spread.slug}`)}
                 className="btn-gold w-full rounded-2xl px-8 py-4 text-lg font-bold sm:w-auto"
               >
-                ✦ Personalize and begin · 1 Oracle
+                ✦ Personalize and begin · {creditsLabel(readingCostForSpreadCards(spread.cards))}
               </button>
             </ClickSpark>
             <p className="mt-3 text-sm text-mist">
-              You have {credits} {credits === 1 ? "Oracle" : "Oracles"}. Tell
+              You have {credits} {credits === 1 ? "credit" : "credits"}. Tell
               your story, and the reading is written for your question.
             </p>
           </>
@@ -161,10 +162,10 @@ function GateScreen({
               onClick={onTopUp}
               className="btn-gold w-full rounded-2xl px-8 py-4 text-lg font-bold sm:w-auto"
             >
-              ✦ Get Oracles · 1 Oracle
+              ✦ Get credits · {creditsLabel(readingCostForSpreadCards(spread.cards))}
             </button>
             <p className="mt-3 text-sm text-mist">
-              This reading uses 1 Oracle. Top up to continue.
+              This reading uses {creditsLabel(readingCostForSpreadCards(spread.cards))}. Top up to continue.
             </p>
           </>
         )}
@@ -244,7 +245,7 @@ function GateScreen({
           <li>300-600 words, shown on screen</li>
           <li>AI-written from your cards, question, and story</li>
           <li>Ready in up to about 3 minutes</li>
-          <li>First follow-up free, then 1 Oracle each, up to 3</li>
+          <li>First follow-up free, then {creditsLabel(READING_CREDIT_COSTS.followUp)} each, up to 3</li>
         </ul>
       </div>
 

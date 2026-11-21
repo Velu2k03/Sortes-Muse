@@ -65,7 +65,8 @@ describe("Phase 3 Batch 3.2 reveal control and honest wait", () => {
     expect(steps).toContain("onConfirm={beginGeneration}");
     // The cost is visible before the reveal tap.
     expect(steps).toContain("Free · your first Quick Insight");
-    expect(steps).toContain("1 Oracle · only charged when your reading is ready");
+    // Credit cutover: the paid line names this spread's credit cost.
+    expect(steps).toContain("${creditsLabel(readingCostForSpreadCards(f.spread.cards))} · only charged when your reading is ready");
     // CodeRabbit: the price is a live region, so a change from
     // free to paid is announced without moving focus. <output>
     // carries implicit status semantics.

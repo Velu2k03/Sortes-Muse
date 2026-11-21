@@ -67,10 +67,10 @@ describe("break the center, /account: headings and intros left-aligned", () => {
     // helper line in the password form.
     expect(client).toContain('<p className="text-left text-sm">');
     expect(client).not.toContain('<p className="text-center text-sm">');
-    // "Bought Oracles with a different email?" note under the
+    // "Bought credits with a different email?" note under the
     // password submit button.
     expect(client).toContain(
-      '<p className="text-left text-xs text-mist">\n              Bought Oracles with a different email? They merge in when',
+      '<p className="text-left text-xs text-mist">\n              Bought credits with a different email? They merge in when',
     );
     // "No account with this email yet?" note in the email-link form.
     expect(client).toContain(

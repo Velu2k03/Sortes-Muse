@@ -1,6 +1,6 @@
 # Sortes by Resonant Atlas
 
-Sortes is a tarot reading web app for reflection and perspective, not guaranteed prediction. It offers a free daily card, a browser for all 78 Rider-Waite card meanings, tarot spreads, daily horoscopes, and three birth chart systems (Ziwei, Western, Vedic). Calculation is free. Interpretation is 1 credit, first per system free. Later tarot readings cost 1 credit each, after a first free Quick Insight reading.
+Sortes is a tarot reading web app for reflection and perspective, not guaranteed prediction. It offers a free daily card, a browser for all 78 Rider-Waite card meanings, tarot spreads, daily horoscopes, and three birth chart systems (Ziwei, Western, Vedic). Calculation is free. Interpretation is 300 credits, first per system free. Later tarot readings cost 100 credits for one card, 200 for three, and 300 for the Celtic Cross, after a first free Quick Insight reading.
 
 Canonical site: https://sortes.resonantatlas.com/
 
@@ -31,4 +31,4 @@ Canonical site: https://sortes.resonantatlas.com/
 - https://sortes.resonantatlas.com/terms
 
 ## Privacy, in brief
-Guest daily cards, Oracle balance, and reading history live in the browser until an account is created. Raw tarot intake data is deleted after 30 days. For charts, only calculated positions, signs, and palaces are stored, never raw birth date, time, or place, and raw birth data is never sent to an AI prompt.
+Guest daily cards, credit balance, and reading history live in the browser until an account is created. Raw tarot intake data is deleted after 30 days. For charts, only calculated positions, signs, and palaces are stored, never raw birth date, time, or place, and raw birth data is never sent to an AI prompt.

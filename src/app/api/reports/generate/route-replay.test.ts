@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { NextRequest } from "next/server";
 
-vi.mock("@/lib/db", () => ({ getUserById: vi.fn(), saveReportWithSpend: vi.fn(), getReportForUser: vi.fn() }));
+vi.mock("@/lib/db", () => ({ getUserById: vi.fn(), isSpendBlockedPendingConversion: vi.fn(async () => false),saveReportWithSpend: vi.fn(), getReportForUser: vi.fn() }));
 vi.mock("@/lib/auth", () => ({ getSession: vi.fn() }));
 vi.mock("@/lib/output-validation", async (orig) => ({
   ...(await orig<typeof import("@/lib/output-validation")>()),
@@ -28,7 +28,7 @@ describe("POST /api/reports/generate — idempotent reportId", () => {
     vi.clearAllMocks();
     process.env.OPENROUTER_API_KEY = "test-key";
     vi.mocked(getSession).mockResolvedValue({ userId: "u1", email: "a@b.co" });
-    vi.mocked(getUserById).mockResolvedValue({ id: "u1", email: "a@b.co", credits: 2, created_at: "x" });
+    vi.mocked(getUserById).mockResolvedValue({ id: "u1", email: "a@b.co", credits: 600, created_at: "x" });
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ choices: [{ message: { content: "A report body." } }], model: "t/m:free" }),
@@ -51,7 +51,7 @@ describe("POST /api/reports/generate — idempotent reportId", () => {
     expect(res.status).toBe(200);
     const data = await res.json();
     expect(data.report).toEqual(prior);
-    expect(data.credits).toBe(2);
+    expect(data.credits).toBe(600);
     expect(globalThis.fetch).not.toHaveBeenCalled();
     expect(saveReportWithSpend).not.toHaveBeenCalled();
   });
@@ -69,6 +69,6 @@ describe("POST /api/reports/generate — idempotent reportId", () => {
     vi.mocked(saveReportWithSpend).mockResolvedValue({ ok: false, conflict: true });
     const res = await POST(req(ID, "10.8.0.4"));
     expect(res.status).toBe(409);
-    expect((await res.json()).error).toContain("No Oracle was spent");
+    expect((await res.json()).error).toContain("No credits were spent");
   });
 });

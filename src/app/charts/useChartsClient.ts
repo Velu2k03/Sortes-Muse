@@ -448,7 +448,7 @@ export function useChartSession(form: ChartForm, prefs: ChartPrefs, initialSyste
     // say the balance was not changed). A genuine call failure gets
     // the no-charge line plus the toast and retry UI.
     const message = err instanceof Error ? err.message : "Could not interpret this chart.";
-    const isBalance = message.startsWith("You need 1 Oracle");
+    const isBalance = message.startsWith("You need ");
     if (isBalance) {
       setInterpError(message);
     } else {

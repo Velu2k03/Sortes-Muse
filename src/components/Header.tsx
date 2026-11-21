@@ -354,10 +354,10 @@ export default function Header() {
               className="flex min-h-11 items-center gap-1.5 rounded-full border border-gold/40 bg-gold/10 px-2.5 py-2.5 text-sm font-semibold text-goldbright"
               aria-label={
                 credits === null
-                  ? "Oracle balance loading. Top up."
-                  : `Oracle balance: ${credits} Oracles. Top up.`
+                  ? "Credit balance loading. Top up."
+                  : `Credit balance: ${credits} ${credits === 1 ? "credit" : "credits"}. Top up.`
               }
-              title="Your Oracles: top up"
+              title="Your credits: top up"
             >
               <Icon name="coin" size={18} />
               {credits === null ? (
@@ -377,8 +377,8 @@ export default function Header() {
                   aria-label still reads the full balance. The buttons
                   keep p-3 (44px touch targets, asserted by charts-check)
                   — the pill is the flexible part, not the buttons. */}
-              <span className="hidden min-[420px]:inline">Oracles</span>
-              <span className="hidden border-l border-gold/40 pl-1.5 sm:inline">Get Oracles</span>
+              <span className="hidden min-[420px]:inline">Credits</span>
+              <span className="hidden border-l border-gold/40 pl-1.5 sm:inline">Get credits</span>
             </Link>
           )}
           {loadError && (
@@ -468,7 +468,7 @@ export default function Header() {
             onClick={() => setMobileOpen(false)}
             className="btn-gold mt-3 block rounded-xl px-3 py-2.5 text-center text-base font-bold"
           >
-            Get Oracles
+            Get credits
           </Link>
           <Link
             href="/account"

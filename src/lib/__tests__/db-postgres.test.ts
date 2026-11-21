@@ -3,6 +3,15 @@ import postgres from "postgres";
 import { pgTestUrl } from "./pg-test-url";
 import { tu } from "./test-uuid";
 
+// Credit cutover: this suite pins the pre-cutover pack mechanics (a
+// pack grants its Oracle count as-is), so it runs with the credit-cost
+// flag OFF. The flag-ON pack grant (x300) is covered by
+// batch-b-billing.test.ts and db-fulfill-local.test.ts.
+vi.mock("@/lib/subscription-tiers", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/subscription-tiers")>()),
+  CREDIT_COSTS_ENABLED: false,
+}));
+
 /**
  * Phase 6 (P1c, gate G2): the money paths EXECUTED against a real
  * Postgres — the readiness review found zero tests exercising the

@@ -3,6 +3,7 @@ import { NextRequest } from "next/server";
 
 vi.mock("@/lib/db", () => ({
   getUserById: vi.fn(),
+  isSpendBlockedPendingConversion: vi.fn(async () => false),
   getReadingForUser: vi.fn(),
   appendFollowUpWithSpend: vi.fn(),
 }));
@@ -98,7 +99,7 @@ describe("POST /api/reading/follow-up", () => {
   it("signed-in: first follow-up is free and draws a clarifier outside the spread", async () => {
     mockedGetSession.mockResolvedValue({ userId: "u-1", email: "a@example.com" });
     mockedGetReading.mockResolvedValue({ ...GUEST_READING, followUps: [] });
-    mockedGetUserById.mockResolvedValue({ id: "u-1", email: "a@example.com", credits: 5, created_at: "" });
+    mockedGetUserById.mockResolvedValue({ id: "u-1", email: "a@example.com", credits: 500, created_at: "" });
     mockedAppend.mockImplementation(async (_u, _r, fu) => ({ ok: true, followUps: [fu], free: true }));
     const res = await POST(
       req({ question: "What does The Fool mean here?", readingId: "r-1" }, "10.0.3.4")
@@ -135,7 +136,7 @@ describe("POST /api/reading/follow-up", () => {
         { question: "First?", answer: "First answer.", createdAt: "2026-11-05T00:00:00.000Z", free: true },
       ],
     });
-    mockedGetUserById.mockResolvedValue({ id: "u-1", email: "a@example.com", credits: 5, created_at: "" });
+    mockedGetUserById.mockResolvedValue({ id: "u-1", email: "a@example.com", credits: 500, created_at: "" });
     mockedAppend.mockResolvedValue({
       ok: true,
       followUps: [
@@ -154,7 +155,8 @@ describe("POST /api/reading/follow-up", () => {
       "u-1",
       "r-1",
       expect.objectContaining({ question: "And now?" }),
-      1,
+      // Credit cutover: a paid follow-up costs 50 credits.
+      50,
       3,
       false,
       undefined
@@ -167,7 +169,7 @@ describe("POST /api/reading/follow-up", () => {
       ...GUEST_READING,
       followUps: [],
     });
-    mockedGetUserById.mockResolvedValue({ id: "u-1", email: "a@example.com", credits: 2, created_at: "" });
+    mockedGetUserById.mockResolvedValue({ id: "u-1", email: "a@example.com", credits: 200, created_at: "" });
     mockedAppend.mockResolvedValue({
       ok: true,
       free: false,
@@ -217,7 +219,7 @@ describe("POST /api/reading/follow-up", () => {
         { question: "First?", answer: "First answer.", createdAt: "2026-11-05T00:00:00.000Z", free: true },
       ],
     });
-    mockedGetUserById.mockResolvedValue({ id: "u-1", email: "a@example.com", credits: 5, created_at: "" });
+    mockedGetUserById.mockResolvedValue({ id: "u-1", email: "a@example.com", credits: 500, created_at: "" });
     mockedAppend.mockResolvedValue({ ok: false, reason: "limit" });
     const res = await POST(
       req({ question: "And now?", readingId: "r-1" }, "10.0.4.3")
@@ -244,7 +246,7 @@ describe("POST /api/reading/follow-up", () => {
         },
       ],
     });
-    mockedGetUserById.mockResolvedValue({ id: "u-1", email: "a@example.com", credits: 5, created_at: "" });
+    mockedGetUserById.mockResolvedValue({ id: "u-1", email: "a@example.com", credits: 500, created_at: "" });
     const res = await POST(
       req({ question: "What does The Fool mean here?", readingId: "r-1", followUpId: attemptId }, "10.0.5.1")
     );
@@ -270,7 +272,7 @@ describe("POST /api/reading/follow-up", () => {
     const attemptId = "11111111-2222-3333-4444-555555555555";
     mockedGetSession.mockResolvedValue({ userId: "u-1", email: "a@example.com" });
     mockedGetReading.mockResolvedValue({ ...GUEST_READING, followUps: [] });
-    mockedGetUserById.mockResolvedValue({ id: "u-1", email: "a@example.com", credits: 5, created_at: "" });
+    mockedGetUserById.mockResolvedValue({ id: "u-1", email: "a@example.com", credits: 500, created_at: "" });
     mockedAppend.mockResolvedValue({
       ok: true,
       followUps: [{ question: "What does The Fool mean here?", answer: ANSWER, free: true, id: attemptId }],
@@ -297,7 +299,7 @@ describe("POST /api/reading/follow-up", () => {
     const attemptId = "11111111-2222-3333-4444-555555555555";
     mockedGetSession.mockResolvedValue({ userId: "u-1", email: "a@example.com" });
     mockedGetReading.mockResolvedValue({ ...GUEST_READING, followUps: [] });
-    mockedGetUserById.mockResolvedValue({ id: "u-1", email: "a@example.com", credits: 5, created_at: "" });
+    mockedGetUserById.mockResolvedValue({ id: "u-1", email: "a@example.com", credits: 500, created_at: "" });
     mockedAppend.mockResolvedValue({
       ok: true,
       replayed: true,
@@ -334,7 +336,7 @@ describe("POST /api/reading/follow-up", () => {
         },
       ],
     });
-    mockedGetUserById.mockResolvedValue({ id: "u-1", email: "a@example.com", credits: 5, created_at: "" });
+    mockedGetUserById.mockResolvedValue({ id: "u-1", email: "a@example.com", credits: 500, created_at: "" });
     const res = await POST(
       req({ question: "A different question?", readingId: "r-1", followUpId: attemptId }, "10.0.5.5")
     );

@@ -27,7 +27,7 @@ describe("F01/F07/F12: no stale pack wording in user-visible copy", () => {
     const privacy = src("src/app/privacy/page.tsx");
     expect(privacy).toContain("the top-up or subscription type");
     expect(privacy).not.toContain("the pack type");
-    expect(privacy).toContain("Payments for Oracle top-ups and subscriptions");
+    expect(privacy).toContain("Payments for credit top-ups and subscriptions");
     expect(privacy).not.toContain("Payments for Oracle packs");
   });
 

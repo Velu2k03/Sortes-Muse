@@ -138,7 +138,9 @@ function JournalReadingCard({
         </div>
         <div className="min-w-0 flex-1">
           <p className="text-sm text-mist">
-            {r.free ? "Free reading" : "1 Oracle"}
+            {/* Credit cutover: "Paid reading", not a price: older
+                readings cost 1 Oracle, newer ones cost credits. */}
+            {r.free ? "Free reading" : "Paid reading"}
             {r.aiGenerated ? " · Personalized" : ""}
             {(r.followUps?.length ?? 0) > 0 &&
               ` · ${r.followUps?.length} follow-up${

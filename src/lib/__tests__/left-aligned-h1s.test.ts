@@ -62,7 +62,7 @@ describe("left-aligned h1s: /daily, /horoscope, /oracles, /pricing", () => {
   it("/oracles: server-rendered header block is left-aligned", () => {
     const oracles = src("src/app/oracles/page.tsx");
     const header = oracles.match(
-      /<div className="text-left">\s*<h1 className="mt-3 font-display text-5xl text-goldbright sm:text-6xl">\s*Top up Oracles\s*<\/h1>/,
+      /<div className="text-left">\s*<h1 className="mt-3 font-display text-5xl text-goldbright sm:text-6xl">\s*Top up credits\s*<\/h1>/,
     );
     expect(header).not.toBeNull();
     // The h1 stays in the server page (Lightsite fix V13), not

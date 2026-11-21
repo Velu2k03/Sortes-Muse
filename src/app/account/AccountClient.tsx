@@ -338,8 +338,8 @@ function SignInPanel({ s }: { s: ReturnType<typeof useSignIn> }) {
       </h2>
       <p className="mt-2 text-sm leading-relaxed text-cream/75">
         {mode === "signin"
-          ? "Your guest Oracles and journal move into your account and follow you across devices."
-          : "One account keeps your Oracles, journal, and reports synced across devices. Sign in with Google, an email link, or a password."}{" "}
+          ? "Your guest credits and journal move into your account and follow you across devices."
+          : "One account keeps your credits, journal, and reports synced across devices. Sign in with Google, an email link, or a password."}{" "}
         {mode === "signin" ? (
           <InfoHint label="About your sign-in session">
             You stay signed in for 30 days.
@@ -497,7 +497,7 @@ function SignInPanel({ s }: { s: ReturnType<typeof useSignIn> }) {
           </button>
           {mode === "signin" && (
             <p className="text-left text-xs text-mist">
-              Bought Oracles with a different email? They merge in when
+              Bought credits with a different email? They merge in when
               you sign in with that address.
             </p>
           )}

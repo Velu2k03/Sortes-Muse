@@ -3,6 +3,7 @@ import { NextRequest } from "next/server";
 
 vi.mock("@/lib/db", () => ({
   getUserById: vi.fn(),
+  isSpendBlockedPendingConversion: vi.fn(async () => false),
   hasUsedFreeReading: vi.fn(),
   saveReadingWithSpend: vi.fn(),
   getReadingForUser: vi.fn(),
@@ -39,7 +40,7 @@ describe("POST /api/reading/generate — idempotent readingId", () => {
     process.env.OPENROUTER_API_KEY = "test-key";
     vi.mocked(getSession).mockResolvedValue({ userId: "u1", email: "a@b.co" });
     vi.mocked(hasUsedFreeReading).mockResolvedValue(true);
-    vi.mocked(getUserById).mockResolvedValue({ id: "u1", email: "a@b.co", credits: 3, created_at: "x" });
+    vi.mocked(getUserById).mockResolvedValue({ id: "u1", email: "a@b.co", credits: 300, created_at: "x" });
     vi.stubGlobal("fetch", vi.fn());
   });
   afterEach(() => {
@@ -61,7 +62,7 @@ describe("POST /api/reading/generate — idempotent readingId", () => {
     const { done: data } = await readRouteSse(res);
     expect(data?.reading).toEqual(prior);
     expect(data?.interpretation).toBe("saved text");
-    expect(data?.credits).toBe(3);
+    expect(data?.credits).toBe(300);
     expect(getReadingForUser).toHaveBeenCalledWith("u1", ID);
     expect(globalThis.fetch).not.toHaveBeenCalled();
     expect(saveReadingWithSpend).not.toHaveBeenCalled();
@@ -98,6 +99,6 @@ describe("POST /api/reading/generate — idempotent readingId", () => {
     const { done, error } = await readRouteSse(res);
     expect(done).toBeNull();
     expect(error?.status).toBe(409);
-    expect(error?.error).toContain("No Oracle was spent");
+    expect(error?.error).toContain("No credits were spent");
   });
 });

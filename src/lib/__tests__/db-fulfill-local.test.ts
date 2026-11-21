@@ -44,7 +44,9 @@ describe.skipIf(hasPostgres)("fulfillOrder duplicate rule (local JSON branch)", 
     // Same order_id, different pack_type shape: still a duplicate.
     const second = await fulfillOrder({ ...args, packType: "pack5 (renamed)" });
     expect(second.duplicate).toBe(true);
-    expect(second.credits).toBe(5);
+    // Credit cutover: the flag is ON, so a 5-Oracle pack (grantUnit
+    // defaults to "oracles") granted 1,500 credits, granted once.
+    expect(second.credits).toBe(1500);
   });
 
   it("treats a legacy row (no order_id, old pack_type marker) as a duplicate", async () => {

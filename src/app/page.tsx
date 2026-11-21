@@ -317,10 +317,10 @@ export default function Home() {
         </h2>
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {[
-            { href: "/spreads/love-insight", label: "Love", text: "You, them, and the connection.", cost: "1 Oracle" },
-            { href: "/spreads/career-path", label: "Career", text: "Current, obstacle, and next step.", cost: "1 Oracle" },
-            { href: "/spreads/weekly-outlook", label: "The week ahead", text: "Focus, challenge, and opportunity.", cost: "1 Oracle" },
-            { href: "/spreads/quick-insight", label: "A general question", text: "One card for one question. Then 1 Oracle.", cost: "First free" },
+            { href: "/spreads/love-insight", label: "Love", text: "You, them, and the connection.", cost: "200 credits" },
+            { href: "/spreads/career-path", label: "Career", text: "Current, obstacle, and next step.", cost: "200 credits" },
+            { href: "/spreads/weekly-outlook", label: "The week ahead", text: "Focus, challenge, and opportunity.", cost: "200 credits" },
+            { href: "/spreads/quick-insight", label: "A general question", text: "One card for one question. Then 100 credits.", cost: "First free" },
           ].map((s) => (
             <div
               key={s.href}
@@ -538,7 +538,7 @@ export default function Home() {
               $19.99
               <span className="text-base font-normal text-mist"> / month</span>
             </p>
-            <p className="mt-2 text-base text-cream/80">2,500 Oracles a month</p>
+            <p className="mt-2 text-base text-cream/80">2,500 credits a month</p>
             <Link
               href="/pricing"
               className="btn-gold mt-8 inline-block rounded-2xl px-8 py-3.5 font-semibold"
@@ -552,7 +552,7 @@ export default function Home() {
             <li className="flex items-baseline justify-between gap-4 py-6 first:pt-0">
               <div>
                 <h3 className="font-display text-2xl text-cream">Spark</h3>
-                <p className="mt-2 text-sm text-cream/75">1,000 Oracles a month</p>
+                <p className="mt-2 text-sm text-cream/75">1,000 credits a month</p>
               </div>
               <p className="shrink-0 text-2xl font-bold text-cream">
                 $9.99
@@ -562,7 +562,7 @@ export default function Home() {
             <li className="flex items-baseline justify-between gap-4 py-6 last:pb-0">
               <div>
                 <h3 className="font-display text-2xl text-cream">Moon</h3>
-                <p className="mt-2 text-sm text-cream/75">6,000 Oracles a month</p>
+                <p className="mt-2 text-sm text-cream/75">6,000 credits a month</p>
               </div>
               <p className="shrink-0 text-2xl font-bold text-cream">
                 $39.99

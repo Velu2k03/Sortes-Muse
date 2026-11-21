@@ -14,7 +14,7 @@ import {
 } from "@/lib/reports";
 import type { ReportType, SavedReport } from "@/lib/reports";
 import { generateChat } from "@/lib/ai";
-import { preCheckOracleBalance } from "@/lib/credit-precheck";
+import { insufficientBalanceMessage, nothingSpent, preCheckOracleBalance } from "@/lib/credit-precheck";
 import { reportCost } from "@/lib/subscription-tiers";
 import { validateReportText, anchorTerms } from "@/lib/output-validation";
 import { checkRateLimit, clientIp, ipLimitKey, rateLimitExceeded, RATE_LIMITS } from "@/lib/rateLimit";
@@ -153,7 +153,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         error:
-          "AI generation is not configured on this server right now. No Oracle was spent. Please try again later.",
+          `AI generation is not configured on this server right now. ${nothingSpent()} Please try again later.`,
         fallback: true,
       },
       { status: 503 }
@@ -199,7 +199,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         error:
-          "The report could not be generated just now. No Oracle was spent. Please try again in a moment.",
+          `The report could not be generated just now. ${nothingSpent()} Please try again in a moment.`,
         fallback: true,
       },
       { status: 503 }
@@ -237,13 +237,13 @@ export async function POST(req: NextRequest) {
   const saved = await saveReportWithSpend(session.userId, { ...report }, reportCost());
   if (saved.conflict) {
     return NextResponse.json(
-      { error: "That report id is already in use. No Oracle was spent." },
+      { error: `That report id is already in use. ${nothingSpent()}` },
       { status: 409 }
     );
   }
   if (!saved.ok) {
     return NextResponse.json(
-      { error: "You need 1 Oracle for this report. No Oracle was spent." },
+      { error: insufficientBalanceMessage(reportCost(), "report") },
       { status: 402 }
     );
   }

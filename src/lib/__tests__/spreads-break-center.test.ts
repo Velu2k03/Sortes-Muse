@@ -73,7 +73,7 @@ describe("break the center, /spreads: headings and intros left-aligned", () => {
     );
     // Button labels: text-center centers the label inside the
     // button, it is not a centered text block.
-    expect(spreads).toContain("Get Oracles to begin");
+    expect(spreads).toContain("Get credits to begin");
     expect(spreads).toContain(
       'className="btn-ghost mt-4 rounded-xl border border-gold/30 px-4 py-3 text-center font-semibold"',
     );

@@ -5,7 +5,7 @@ import { randomUUID } from "crypto";
 import { getReadingForUser, getUserById, hasUsedFreeInterpretation, saveReadingWithSpend } from "@/lib/db";
 import { isUuid } from "@/lib/ids";
 import { generateChat } from "@/lib/ai";
-import { preCheckOracleBalance } from "@/lib/credit-precheck";
+import { insufficientBalanceMessage, nothingSpent, preCheckOracleBalance } from "@/lib/credit-precheck";
 import { chartCost } from "@/lib/subscription-tiers";
 import { validateChartText, anchorTerms } from "@/lib/output-validation";
 import { checkRateLimit, clientIp, ipLimitKey, rateLimitExceeded, RATE_LIMITS } from "@/lib/rateLimit";
@@ -294,7 +294,7 @@ Write the personalized chart reflection now.`;
     return NextResponse.json(
       {
         error:
-          "AI generation is not configured on this server right now. No Oracle was spent. Please try again later.",
+          `AI generation is not configured on this server right now. ${nothingSpent()} Please try again later.`,
         fallback: true,
       },
       { status: 503 }
@@ -337,7 +337,7 @@ Write the personalized chart reflection now.`;
     return NextResponse.json(
       {
         error:
-          "The interpretation could not be generated just now. No Oracle was spent. Please try again in a moment.",
+          `The interpretation could not be generated just now. ${nothingSpent()} Please try again in a moment.`,
         fallback: true,
       },
       { status: 503 }
@@ -374,13 +374,13 @@ Write the personalized chart reflection now.`;
   const saved = await saveReadingWithSpend(session.userId, reading, serverFree, system, chartCost());
   if (saved.conflict) {
     return NextResponse.json(
-      { error: "That reading id is already in use. No Oracle was spent." },
+      { error: `That reading id is already in use. ${nothingSpent()}` },
       { status: 409 }
     );
   }
   if (!saved.ok) {
     return NextResponse.json(
-      { error: "You need 1 Oracle for this interpretation. No Oracle was spent." },
+      { error: insufficientBalanceMessage(chartCost(), "interpretation") },
       { status: 402 }
     );
   }

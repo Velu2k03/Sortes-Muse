@@ -48,9 +48,9 @@ describe("home page: first-visit comprehension", () => {
     // payment" wording.
     expect(src).toContain("Your first reading is free, no sign-up, no payment.");
     // UX audit Phase 2, F10: the fourth card says "First free" and
-    // "Then 1 Oracle" in the body.
+    // "Then 100 credits" in the body (credit cutover).
     expect(src).toContain("First free");
-    expect(src).toContain("Then 1 Oracle.");
+    expect(src).toContain("Then 100 credits.");
   });
 
   it("states what costs credits", () => {
@@ -58,8 +58,11 @@ describe("home page: first-visit comprehension", () => {
     // "First free", and the price lives in the body ("Then 1
     // Oracle"). The old two-line label is gone.
     expect(src).toContain("First free");
-    expect(src).toContain("Then 1 Oracle.");
-    expect(src).not.toContain("First free · then 1 Oracle");
+    expect(src).toContain("Then 100 credits.");
+    expect(src).not.toContain("First free · then");
+    // Credit cutover: the three topic cards show the 3-card price.
+    expect(src).toContain('cost: "200 credits"');
+    expect(src).not.toContain("1 Oracle");
     // Cash price moved to /oracles by the AF-034 diet (AF-011 SSR):
     // the pack data is in lib/site and the never-expire line in the
     // /oracles client copy.
@@ -75,7 +78,8 @@ describe("home page: first-visit comprehension", () => {
     // UX audit Phase 2, F37: the balance line states the cost
     // equivalence only. The "never expire" promise is said once on
     // the page, on the top-up cards, not repeated here.
-    expect(creditsSrc).toContain("1 Oracle = 1 full reading.");
+    expect(creditsSrc).toContain("A reading costs {creditsLabel(READING_CREDIT_COSTS.oneCard)} for one card,");
+    expect(creditsSrc).not.toContain("1 Oracle = 1 full reading.");
     expect(creditsSrc).not.toContain("never expire");
   });
 

@@ -23,11 +23,11 @@ describe("fa-IR hydration fix: credits numbers pin en-US", () => {
     expect(c).not.toContain("toLocaleString()");
     expect(c).toContain("{star.credits.toLocaleString(CREDITS_LOCALE)}");
     expect(c).toContain(
-      "{tier.credits.toLocaleString(CREDITS_LOCALE)} Oracles a month"
+      "{tier.credits.toLocaleString(CREDITS_LOCALE)} credits a month"
     );
     expect(c).toContain("{topup.credits.toLocaleString(CREDITS_LOCALE)}");
     expect(c).toContain(
-      "Top up ${topup.credits.toLocaleString(CREDITS_LOCALE)} Oracles"
+      "Top up ${topup.credits.toLocaleString(CREDITS_LOCALE)} credits"
     );
   });
 
@@ -38,9 +38,9 @@ describe("fa-IR hydration fix: credits numbers pin en-US", () => {
     expect(c).not.toContain("toLocaleString()");
     // JSON-LD offer name, visible h2, and buy-button label.
     expect(c).toContain(
-      "name: `${t.credits.toLocaleString(CREDITS_LOCALE)} Oracles`"
+      "name: `${t.credits.toLocaleString(CREDITS_LOCALE)} credits`"
     );
-    expect(c).toContain("{t.credits.toLocaleString(CREDITS_LOCALE)} Oracles");
+    expect(c).toContain("{t.credits.toLocaleString(CREDITS_LOCALE)} credits");
     expect(c).toContain(
       "label={`Buy ${t.credits.toLocaleString(CREDITS_LOCALE)} for $${t.price.toFixed(2)}`}"
     );

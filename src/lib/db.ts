@@ -53,6 +53,7 @@ export {
   spendFromBalances,
   getCreditBalances,
   listCreditGrants,
+  isSpendBlockedPendingConversion,
   grantMonthlyCredits,
   convertOraclesToCredits,
 } from "./db/ledgers";

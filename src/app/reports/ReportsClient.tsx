@@ -18,8 +18,11 @@ import { SAMPLE_TRANSIT_REPORT } from "@/lib/sample-report";
 import BirthProfilePicker from "@/components/BirthProfilePicker";
 import { profileToReportFields } from "@/lib/birth-profiles";
 import type { SavedReport, ReportType } from "@/lib/reports";
+import { READING_CREDIT_COSTS, creditsLabel, reportCost } from "@/lib/subscription-tiers";
 
 const REPORT_FAILED = "Report failed";
+/** "300 credits": the price of one report. */
+const REPORT_COST = creditsLabel(READING_CREDIT_COSTS.report);
 
 const inputClass =
   "w-full rounded-xl border border-gold/25 bg-panel/70 px-4 py-3 text-base text-cream placeholder:text-mist focus:border-gold/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold";
@@ -421,7 +424,8 @@ export default function ReportsClient({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, user]);
 
-  const outOfOracles = !loading && !!user && credits !== null && credits < 1;
+  // Credit cutover: out means below one report's price (300), not below 1.
+  const outOfOracles = !loading && !!user && credits !== null && credits < reportCost();
   const signedOut = signInNeeded || (!loading && !user);
 
   async function generate() {
@@ -525,7 +529,7 @@ export default function ReportsClient({
           It now says what the reports are. */}
       <h1 className="mt-2 text-left font-display text-5xl text-goldbright">Your astrology reports</h1>
       <p className="mt-3 text-left text-cream/80">
-        1 Oracle per report. Reports never expire.
+        {REPORT_COST} per report. Reports never expire.
       </p>
       {/* Phase E (item 9): delivery format and length, stated before
           anyone spends an Oracle. */}
@@ -539,7 +543,7 @@ export default function ReportsClient({
 
       {!loading && user && credits !== null && (
         <p className="mt-4 text-left text-sm text-cream">
-          Your balance: <strong className="text-goldbright"><Counter value={credits} fontSize={14} /> {credits === 1 ? "Oracle" : "Oracles"}</strong>
+          Your balance: <strong className="text-goldbright"><Counter value={credits} fontSize={14} /> {credits === 1 ? "credit" : "credits"}</strong>
         </p>
       )}
 
@@ -562,7 +566,7 @@ export default function ReportsClient({
       </div>
       <p className="mt-3 text-left text-sm text-cream/75">{TYPE_BLURBS[type]}</p>
       <details className="mx-auto mt-4 max-w-xl rounded-2xl border border-gold/20 bg-panel/60 p-4 text-left">
-        <summary className="cursor-pointer font-semibold text-goldbright">Read a sample report, before you spend an Oracle</summary>
+        <summary className="cursor-pointer font-semibold text-goldbright">Read a sample report, before you spend any credits</summary>
         <p className="mt-2 text-sm text-cream/80">
           A full sample report, written for an invented seeker.
         </p>
@@ -628,18 +632,18 @@ export default function ReportsClient({
 
       {outOfOracles && (
         <div className="mt-6 rounded-2xl border border-gold/25 bg-panel/70 p-4 text-center text-sm text-cream">
-          You are out of Oracles. Reports cost 1 Oracle each.{" "}
+          You do not have enough credits. Reports cost {REPORT_COST} each.{" "}
           <Link href="/pricing" className="font-semibold text-goldbright underline">
-            Get Oracles
+            Get credits
           </Link>
         </div>
       )}
       {error && (
         <div className="mt-6 rounded-2xl border border-danger/40 bg-panel/70 p-4 text-center text-sm text-danger">
           {error}{" "}
-          {error.includes("1 Oracle") && (
+          {error.startsWith("You need ") && (
             <Link href="/pricing" className="font-semibold underline">
-              Get Oracles
+              Get credits
             </Link>
           )}
         </div>
@@ -676,7 +680,7 @@ export default function ReportsClient({
         textColor="var(--color-cream)"
         tint="var(--color-gold)"
       >
-        {generating ? "Generating…" : "Generate report · 1 Oracle"}
+        {generating ? "Generating…" : `Generate report · ${REPORT_COST}`}
       </SpecularButton>
       )}
       {generating && (
