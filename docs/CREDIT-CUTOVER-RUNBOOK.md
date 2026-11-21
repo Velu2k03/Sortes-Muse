@@ -1,10 +1,12 @@
 # Credit cutover runbook — Oracles to credits
 
-**Status: NOT RUN.** The credit-cost flag (`CREDIT_COSTS_ENABLED` in
-`src/lib/subscription-tiers.ts`) ships OFF. This runbook is the
-procedure for the cutover, when Velu gives the go-ahead. Do NOT
-flip the flag or run the conversion without his explicit approval:
-the conversion needs holders emailed first and pack sales stopped.
+**Status: RUN — 2026-11-21.** The credit-cost flag
+(`CREDIT_COSTS_ENABLED` in `src/lib/subscription-tiers.ts`) is ON
+(flipped live via PR #175, merge 50111e7, 2026-11-21 11:03 Manila)
+and the conversion has run (see the run record under After the
+cutover). The procedure below is kept as the record of what was
+done; do NOT flip the flag or re-run the conversion without Velu's
+explicit approval.
 
 ## What the cutover does
 
@@ -47,7 +49,8 @@ the conversion needs holders emailed first and pack sales stopped.
   run. A pack bought after the flag flipped is already in credits
   (fulfillOrder grants credits when the flag is ON), so the guard
   skips that user instead of multiplying the balance by 300. The
-  runner is NOT built yet; build it before scheduling the cutover.
+  runner was built in PR #174 and ran via GitHub Actions in PR #176
+  (see the run record).
 - **Refused users need a manual path.** A user with pre-flag
   Oracles who ALSO bought a pack/top-up or a subscription after
   the flip is refused outright (safe direction) and keeps
@@ -183,8 +186,19 @@ the conversion needs holders emailed first and pack sales stopped.
   gone from the product; the code paths that still mention Oracles
   (pack checkout, pack webhook) are dead code until they are
   removed in a later cleanup batch.
-- Update this runbook with the actual run date, backup run id,
-  and the conversion totals.
+- Runbook updated with the actual run (see the run record above).
+
+### Run record — 2026-11-21
+
+- Flag flipped live via PR #175 (merge 50111e7, 2026-11-21 11:03 Manila). Holder email sent the same day to both holders.
+- Conversion ran via .github/workflows/sortes-convert-oracles.yml (PR #176, merge de0614b):
+  - Dry-run 44867547089: 2 would convert, 600 Oracles -> 180,000 credits, 0 already converted. Nothing changed.
+  - Fresh backup 44867688229 (sortes-backup.yml): success, 48s, taken immediately before the live run.
+  - Live run 44867763725: 2 converted, 600 Oracles -> 180,000 credits, 0 already converted, 0 refused, 0 errored. velu2k03@gmail.com 118 -> 35,400 credits; velu2k03+sortes-admin@gmail.com 482 -> 144,600 credits.
+  - Idempotency dry-run 44867915703: 0 would convert, 2 already converted. A re-run converts nothing.
+- Independent verification in the Supabase dashboard SQL editor confirmed the users table, the conversion grant rows, and the oracle-conversion transactions match exactly (35,400 + 144,600 = 180,000).
+- The three Oracle packs (First Light, Constellation, Celestial Treasury) were unpublished in Lemon Squeezy; they are now Draft. Subscriptions and top-ups remain Published.
+- The runner is archived: it must never be run again for this cutover. The workflow remains as the record of how the conversion ran.
 
 ## Webhook + reconcile alerts (Notes N2, B4)
 
