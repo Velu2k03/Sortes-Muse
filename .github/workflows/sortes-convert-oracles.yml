@@ -1,0 +1,136 @@
+# Oracle -> credit conversion runner (manual, GitHub Actions).
+# docs/CREDIT-CUTOVER-RUNBOOK.md, Procedure step 4. Added 2026-11-21.
+#
+# Why this exists: direct database connections from the operator VM
+# are switched off (Muse setting) and must not be bypassed with
+# tunnels or proxies. The GitHub runner reaches the Supabase session
+# pooler (proven by sortes-backup.yml), so scripts/convert-oracles.mjs
+# runs here instead. Uses the existing SORTES_BACKUP_DATABASE_URL
+# secret (the production session-pooler URL); no new secret.
+#
+# Dispatch order: mode=dry-run FIRST (lists who would convert,
+# read-only transaction, converts nothing), review its JSON summary,
+# then mode=live. LIVE WRITES TO PRODUCTION: it converts every
+# holder's Oracles to purchased credits (1 = 300). It is idempotent
+# (a second live run converts nothing), but get Velu's go-ahead per
+# live run and take a fresh backup (sortes-backup.yml) first.
+#
+# Backup gate (mirrors sortes-migrate.yml): mode=live requires the
+# backup_run_id input (the sortes-backup.yml run that took the fresh
+# pg_dump). The "Verify fresh backup run" step checks it via the
+# GitHub API: it must be the production backup workflow, completed
+# successfully, and less than 15 minutes old, or the job fails
+# before install and before touching the database. Dry-run is
+# read-only, so it is NOT gated and needs no backup_run_id.
+#
+# SORTES_CONVERT_PRODUCTION=1 is set on BOTH steps: the runner refuses
+# any production-looking URL without it, in either mode, before it
+# connects. Dry-run stays read-only (read only transaction; the write
+# layer is only loaded for --live). --live also refuses while
+# CREDIT_COSTS_ENABLED is false in this checkout.
+#
+# The runner's JSON summary goes to stdout (visible in the step log);
+# the short human summary goes to stderr. No artifact is uploaded.
+# Triggered by hand (workflow_dispatch) only: no schedule, no push.
+name: 'Oracle conversion (manual)'
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'dry-run (read-only, run first) or live (writes to production)'
+        required: true
+        type: choice
+        options:
+          - dry-run
+          - live
+        default: dry-run
+      flag-flipped-at:
+        description: 'Flag-ON deploy time, ISO 8601 with zone'
+        required: true
+        type: string
+        default: '2026-11-21T03:06:00Z'
+      backup_run_id:
+        description: 'The fresh sortes-backup.yml run id (required for live; not needed for dry-run)'
+        required: false
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  convert:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Verify fresh backup run
+        if: inputs.mode == 'live'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BACKUP_RUN_ID_INPUT: ${{ inputs.backup_run_id }}
+        run: |
+          if [ -z "$BACKUP_RUN_ID_INPUT" ]; then
+            echo "::error::A fresh backup run id is required for mode=live (backup_run_id input, from the sortes-backup.yml run)."
+            exit 1
+          fi
+          RUN_JSON=$(gh api "repos/${{ github.repository }}/actions/runs/$BACKUP_RUN_ID_INPUT") || {
+            echo "::error::No workflow run with id $BACKUP_RUN_ID_INPUT exists (or it cannot be read). Take a fresh backup first (sortes-backup.yml, workflow_dispatch) and pass its run id."
+            exit 1
+          }
+          NAME=$(echo "$RUN_JSON" | jq -r '.name')
+          WORKFLOW_PATH=$(echo "$RUN_JSON" | jq -r '.path')
+          STATUS=$(echo "$RUN_JSON" | jq -r '.status')
+          CONCLUSION=$(echo "$RUN_JSON" | jq -r '.conclusion')
+          UPDATED_AT=$(echo "$RUN_JSON" | jq -r '.updated_at')
+          if [ "$NAME" != "Daily production backup (fallback)" ] || [ "$WORKFLOW_PATH" != ".github/workflows/sortes-backup.yml" ]; then
+            echo "::error::Run $BACKUP_RUN_ID_INPUT is workflow '$NAME' ($WORKFLOW_PATH), not the production backup (Daily production backup (fallback), .github/workflows/sortes-backup.yml). Pass the run id of a fresh sortes-backup.yml run."
+            exit 1
+          fi
+          if [ "$STATUS" != "completed" ] || [ "$CONCLUSION" != "success" ]; then
+            echo "::error::Backup run $BACKUP_RUN_ID_INPUT has not completed successfully (status=$STATUS, conclusion=$CONCLUSION). Wait for it to finish, or take a fresh backup."
+            exit 1
+          fi
+          AGE_MINUTES=$(( ( $(date +%s) - $(date -d "$UPDATED_AT" +%s) ) / 60 ))
+          if [ "$AGE_MINUTES" -ge 15 ]; then
+            echo "::error::Backup run $BACKUP_RUN_ID_INPUT finished $AGE_MINUTES minutes ago, older than the 15-minute freshness window. Take a fresh backup and pass its run id."
+            exit 1
+          fi
+          echo "Backup run $BACKUP_RUN_ID_INPUT verified: completed successfully $AGE_MINUTES minute(s) ago."
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate secret
+        env:
+          SORTES_BACKUP_DATABASE_URL: ${{ secrets.SORTES_BACKUP_DATABASE_URL }}
+        run: |
+          if [ -z "${SORTES_BACKUP_DATABASE_URL:-}" ]; then
+            echo "::error::Secret SORTES_BACKUP_DATABASE_URL is not set or empty."
+            exit 1
+          fi
+
+      - name: Conversion dry-run (read-only)
+        if: inputs.mode == 'dry-run'
+        env:
+          POSTGRES_URL: ${{ secrets.SORTES_BACKUP_DATABASE_URL }}
+          SORTES_CONVERT_PRODUCTION: '1'
+          FLAG_FLIPPED_AT: ${{ inputs.flag-flipped-at }}
+        run: node scripts/convert-oracles.mjs --flag-flipped-at "$FLAG_FLIPPED_AT" --dry-run
+
+      - name: Conversion LIVE (writes to production)
+        if: inputs.mode == 'live'
+        env:
+          POSTGRES_URL: ${{ secrets.SORTES_BACKUP_DATABASE_URL }}
+          SORTES_CONVERT_PRODUCTION: '1'
+          FLAG_FLIPPED_AT: ${{ inputs.flag-flipped-at }}
+        run: node scripts/convert-oracles.mjs --flag-flipped-at "$FLAG_FLIPPED_AT" --live
