@@ -113,9 +113,17 @@ the conversion needs holders emailed first and pack sales stopped.
    VM are off (Muse setting, do not tunnel around it), so the runner
    runs on GitHub via `.github/workflows/sortes-convert-oracles.yml`
    (secret `SORTES_BACKUP_DATABASE_URL`). Dry-run first, review its
-   JSON summary in the log, then live (writes to production):
+   JSON summary in the log, then live (writes to production).
+   Live is gated on a fresh backup, same as `sortes-migrate.yml`:
+   take a fresh backup first (`sortes-backup.yml`, workflow_dispatch),
+   wait for it to succeed, then dispatch live within 15 minutes with
+   that run's id as `backup_run_id`. The live job fails before
+   touching the database if the id is missing, is not a successful
+   `sortes-backup.yml` run, or is 15+ minutes old. Dry-run needs no
+   backup and no `backup_run_id`.
    `gh workflow run sortes-convert-oracles.yml -f mode=dry-run -f flag-flipped-at=2026-11-21T03:06:00Z`
-   `gh workflow run sortes-convert-oracles.yml -f mode=live -f flag-flipped-at=2026-11-21T03:06:00Z`
+   `gh workflow run sortes-backup.yml` (note its run id)
+   `gh workflow run sortes-convert-oracles.yml -f mode=live -f flag-flipped-at=2026-11-21T03:06:00Z -f backup_run_id=<backup run id>`
 5. **Verify (see below).** Do not close the window until every
    check passes.
 6. **Close the window.** Announce the cutover is done.
