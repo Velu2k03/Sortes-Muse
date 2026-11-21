@@ -14,6 +14,7 @@ import { resetRateLimits } from "@/lib/rateLimit";
 
 vi.mock("@/lib/db", () => ({
   getUserById: vi.fn(),
+  isSpendBlockedPendingConversion: vi.fn(async () => false),
   spendUserCredits: vi.fn(),
   hasUsedFreeReading: vi.fn(),
   markFreeReadingUsed: vi.fn(),

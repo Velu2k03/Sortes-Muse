@@ -9,6 +9,7 @@ import { NextRequest } from "next/server";
 vi.mock("@/lib/db", () => ({
   getUserByEmail: vi.fn(async () => null),
   getUserById: vi.fn(),
+  isSpendBlockedPendingConversion: vi.fn(async () => false),
   hasUsedFreeReading: vi.fn(async () => false),
   saveReadingWithSpend: vi.fn(),
   getReadingForUser: vi.fn(),

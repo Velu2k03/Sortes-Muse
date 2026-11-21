@@ -2,7 +2,7 @@ import { usePostgres, pg, sql, jsonbParam, ensureSchema, txWithSignal } from "./
 import { readLocal, writeLocal } from "./json-store";
 import { withDbTimeout } from "../db-timeout";
 import { assertUuid, IdTakenError } from "../ids";
-import { applySpendToUser, spendFromLedgers } from "./ledgers";
+import { applySpendToUser, isSpendBlockedPendingConversion, spendFromLedgers } from "./ledgers";
 
 /*
  * F9 (2026-11-09): keep-forever reports.
@@ -65,6 +65,8 @@ export async function saveReportWithSpend(
       // insufficient — nothing spent, no report row written.
       // Phase 2 batch 3: `cost` is the flag-aware price (1 while
       // the flag is OFF; 300 once it is ON).
+      // Credit cutover (PR #175 P1): see saveReadingWithSpend.
+      if (await isSpendBlockedPendingConversion(userId, tx)) return { ok: false };
       const spent = await spendFromLedgers(tx, userId, cost);
       if (!spent) return { ok: false };
       const inserted = await tx`INSERT INTO reports (id, user_id, data, created_at)
@@ -92,6 +94,7 @@ export async function saveReportWithSpend(
   const list = db.reports ?? (db.reports = []);
   if (list.some((r) => r.id === report.id && r.user_id === userId)) return { ok: true, existing: true };
   if (list.some((r) => r.id === report.id)) return { ok: false, conflict: true };
+  if (await isSpendBlockedPendingConversion(userId)) return { ok: false };
   const u = db.users.find((x) => x.id === userId);
   if (!applySpendToUser(u, cost)) return { ok: false };
   list.unshift({ id: report.id, user_id: userId, data: report, created_at: new Date().toISOString() });

@@ -1,9 +1,11 @@
 import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
 import { spawnSync } from "node:child_process";
+import { randomUUID } from "node:crypto";
+import { readFileSync } from "node:fs";
 import path from "node:path";
 import postgres from "postgres";
 import { pgTestUrl } from "./pg-test-url";
-import { CREDIT_COSTS_ENABLED, ORACLE_TO_CREDITS } from "@/lib/subscription-tiers";
+import { CREDIT_COSTS_ENABLED, ORACLE_TO_CREDITS, conversionFlagRefusal } from "@/lib/subscription-tiers";
 
 /**
  * Cutover prep (2026-11-20): end-to-end tests for the conversion
@@ -23,7 +25,7 @@ import { CREDIT_COSTS_ENABLED, ORACLE_TO_CREDITS } from "@/lib/subscription-tier
  *
  * --live runs here set SORTES_CONVERT_ALLOW_FLAG_OFF=1 so the suite
  * also runs on a flag-OFF checkout (the override is refused on
- * production URLs; that refusal is tested below while the flag is OFF).
+ * production URLs; that refusal is unit-tested below with both flag values).
  * Since the credit cutover the flag is ON, so the override is unused.
  */
 const LEDGERS_URL = pgTestUrl("SORTES_TEST_DATABASE_URL_LEDGERS");
@@ -76,6 +78,48 @@ function run(script: string, args: string[], env: Record<string, string | undefi
 
 const runLive = (args: string[] = ["--flag-flipped-at", FLIP], env: Record<string, string> = {}) =>
   run(RUNNER, ["--live", ...args], { SORTES_CONVERT_ALLOW_FLAG_OFF: "1", ...env });
+
+/*
+ * PR #175 (CI zero-skip guard): the runner's flag-OFF refusal, tested as
+ * a unit with BOTH flag values so it runs on every checkout (no database
+ * needed: the runner makes this check before any connection). The
+ * runner calls conversionFlagRefusal with the checkout's real flag; the
+ * wiring test pins that so the unit tests cover the code the runner runs.
+ */
+describe("runner flag check (conversionFlagRefusal, no database)", () => {
+  const base = { live: true, flagEnabled: false, allowFlagOff: false, looksProduction: false };
+
+  it("--live refuses while CREDIT_COSTS_ENABLED is false unless the local-only override is set", () => {
+    expect(conversionFlagRefusal(base)).toMatch(/CREDIT_COSTS_ENABLED is false/);
+    expect(conversionFlagRefusal({ ...base, allowFlagOff: true })).toBeNull();
+  });
+
+  it("the flag-OFF override is refused on a production-looking URL", () => {
+    expect(conversionFlagRefusal({ ...base, looksProduction: true })).toMatch(/CREDIT_COSTS_ENABLED is false/);
+    expect(conversionFlagRefusal({ ...base, allowFlagOff: true, looksProduction: true })).toMatch(
+      /CREDIT_COSTS_ENABLED is false/
+    );
+  });
+
+  it("flag ON (and --dry-run) never refuse on the flag", () => {
+    expect(conversionFlagRefusal({ ...base, flagEnabled: true })).toBeNull();
+    expect(conversionFlagRefusal({ ...base, flagEnabled: true, looksProduction: true })).toBeNull();
+    expect(conversionFlagRefusal({ ...base, live: false })).toBeNull();
+    // This checkout is the flag-ON cutover commit.
+    expect(CREDIT_COSTS_ENABLED).toBe(true);
+  });
+
+  it("the runner exits 2 on the refusal, computed from the checkout's real flag before connecting", () => {
+    const src = readFileSync(RUNNER, "utf8");
+    const call = src.indexOf("tiers.conversionFlagRefusal(");
+    expect(call).toBeGreaterThan(-1);
+    expect(src).toMatch(/flagEnabled: tiers\.CREDIT_COSTS_ENABLED,/);
+    expect(src).toMatch(/allowFlagOff: process\.env\.SORTES_CONVERT_ALLOW_FLAG_OFF === "1",/);
+    expect(src).toMatch(/if \(flagRefusal\) \{\s*console\.error\(flagRefusal\);\s*process\.exit\(2\);/);
+    // Before the first database connection.
+    expect(call).toBeLessThan(src.indexOf("postgres(dbUrl"));
+  });
+});
 
 describe.skipIf(SKIP)("Oracle conversion runner + census on real Postgres (local test DB only)", () => {
   let db: Db;
@@ -233,16 +277,10 @@ describe.skipIf(SKIP)("Oracle conversion runner + census on real Postgres (local
     expect(await balances(ids.a)).toEqual({ monthly: 0, purchased: 7, total: 7 });
   });
 
-  // Credit cutover: the flag is ON in this checkout now, so the runner's
-  // flag-OFF refusal cannot be reached from here. The check stays in the
-  // runner (a rollback to flag OFF re-arms it) and this test runs again
-  // on any flag-OFF checkout.
-  it.skipIf(CREDIT_COSTS_ENABLED)("--live refuses while CREDIT_COSTS_ENABLED is false unless the local-only override is set", async () => {
-    const r = run(RUNNER, ["--live", "--flag-flipped-at", FLIP]);
-    expect(r.status).toBe(2);
-    expect(r.stderr).toMatch(/CREDIT_COSTS_ENABLED is false/);
-    expect(await conversionGrants()).toEqual([]);
-  });
+  // PR #175: the flag-OFF refusal used to be an it.skipIf(CREDIT_COSTS_ENABLED)
+  // here, which skipped on the flag-ON checkout and broke the CI zero-skip
+  // guard. It is now covered by the always-running "runner flag check"
+  // suite below (both flag values, as a unit) plus the wiring check there.
 
   it("both scripts refuse a production-looking URL without their explicit env flag (no connection made)", () => {
     const prod = "postgres://postgres:not-a-real-password@db.example-ref.supabase.co:5432/postgres";
@@ -408,5 +446,61 @@ describe.skipIf(SKIP)("Oracle conversion runner + census on real Postgres (local
     expect(again.status, again.stderr).toBe(0);
     expect(again.json!.usersConverted).toBe(0);
     expect(await balances(ids.a)).toEqual(before);
+  });
+
+  // PR #175 P1 on real Postgres (flag ON): the same unconverted test the
+  // runner uses blocks every paid in-transaction spend. Runs last: B and C
+  // are still unconverted here (the runner refused them above).
+  it("PR #175 P1: unconverted holders are refused in-transaction with nothing spent; converted and no-Oracle users spend", async () => {
+    expect(CREDIT_COSTS_ENABLED).toBe(true);
+    expect(await db.isSpendBlockedPendingConversion(ids.b)).toBe(true); // standalone (pre-check) path
+    expect(await db.isSpendBlockedPendingConversion(ids.c)).toBe(true);
+    const bBefore = await balances(ids.b); // 1,000 monthly + 5 Oracles: 100 would fit, still refused
+    const base = randomUUID();
+    await db.saveReadingForUser(ids.b, { id: base, question: "q?" });
+    expect(await db.saveReadingWithSpend(ids.b, { id: randomUUID(), free: false }, false, undefined, 100)).toEqual({
+      ok: false,
+      free: false,
+    });
+    expect(await db.saveReadingWithSpend(ids.b, { id: randomUUID(), free: false }, false, "vedic", 300)).toEqual({
+      ok: false,
+      free: false,
+    });
+    expect(await db.saveReportWithSpend(ids.b, { id: randomUUID() }, 300)).toEqual({ ok: false });
+    expect(await db.appendFollowUpWithSpend(ids.b, base, { question: "f", answer: "a" }, 50)).toEqual({
+      ok: false,
+      reason: "insufficient",
+    });
+    expect(await balances(ids.b)).toEqual(bBefore);
+    expect(await db.listReadingsForUser(ids.b)).toHaveLength(1);
+    expect(await db.listReportsForUser(ids.b)).toEqual([]);
+    // A free follow-up (cost 0) is not a paid spend.
+    expect((await db.appendFollowUpWithSpend(ids.b, base, { question: "f0", answer: "a" }, 0)).ok).toBe(true);
+    expect(await balances(ids.b)).toEqual(bBefore);
+
+    // Converted holder A spends normally.
+    expect(await db.isSpendBlockedPendingConversion(ids.a)).toBe(false);
+    expect(await db.saveReadingWithSpend(ids.a, { id: randomUUID(), free: false }, false, undefined, 100)).toEqual({
+      ok: true,
+      free: false,
+    });
+    expect(await balances(ids.a)).toEqual({ monthly: 0, purchased: 2000, total: 2000 });
+
+    // No-Oracle users: zero balance, and a post-cutover top-up buyer
+    // (credits recorded, no conversion grant) are never blocked.
+    expect(await db.isSpendBlockedPendingConversion(ids.z)).toBe(false);
+    const e = await db.createUser("convert-e@example.com");
+    await db.fulfillOrder({
+      userId: e.id,
+      email: e.email,
+      packType: "topup-1000 (lemonsqueezy:order-convert-e)",
+      amount: 9.99,
+      readings: 1000,
+      orderId: "order-convert-e",
+      grantUnit: "credits",
+    });
+    expect(await db.isSpendBlockedPendingConversion(e.id)).toBe(false);
+    expect(await db.saveReportWithSpend(e.id, { id: randomUUID() }, 300)).toEqual({ ok: true });
+    expect(await balances(e.id)).toEqual({ monthly: 0, purchased: 700, total: 700 });
   });
 });

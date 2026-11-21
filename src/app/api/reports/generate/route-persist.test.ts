@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { NextRequest } from "next/server";
 
-vi.mock("@/lib/db", () => ({ getUserById: vi.fn(), saveReportWithSpend: vi.fn() }));
+vi.mock("@/lib/db", () => ({ getUserById: vi.fn(), isSpendBlockedPendingConversion: vi.fn(async () => false),saveReportWithSpend: vi.fn() }));
 vi.mock("@/lib/auth", () => ({ getSession: vi.fn() }));
 // Output validation has its own tests; here the model text is accepted so
 // the route reaches the persist step.

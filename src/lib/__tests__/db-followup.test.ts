@@ -27,12 +27,20 @@ describe.skipIf(hasPostgres)("appendFollowUpWithSpend (local JSON branch)", () =
     cleanup = isolated.cleanup;
     ({
       createUser,
-      addUserCredits,
       getUserById,
       saveReadingForUser,
       getReadingForUser,
       appendFollowUpWithSpend,
     } = isolated.db);
+    // PR #175 P1: flag ON + a purchased balance with no 'conversion'
+    // grant = an unconverted Oracle balance, which blocks paid spends
+    // (covered in batch-d-db-local.test.ts). These cases test the
+    // post-cutover append, so each funded user is converted first (at
+    // a zero balance: the grant row only) and then funded in credits.
+    addUserCredits = async (userId, n) => {
+      await isolated.db.convertOraclesToCredits(userId, { flagFlippedAt: "2026-01-01T00:00:00.000Z" });
+      return isolated.db.addUserCredits(userId, n);
+    };
   });
 
   afterAll(async () => {

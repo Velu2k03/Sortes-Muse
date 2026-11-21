@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getUserById } from "@/lib/db";
+import { getUserById, isSpendBlockedPendingConversion } from "@/lib/db";
 import { CREDIT_COSTS_ENABLED, creditsLabel } from "./subscription-tiers";
 
 type User = Awaited<ReturnType<typeof getUserById>>;
@@ -41,6 +41,15 @@ export function insufficientBalanceMessage(
   return `You need ${costUnit(cost)} for this ${noun}. ${nothingSpent()}`;
 }
 
+/**
+ * The 402 text while the user's Oracle balance is still waiting for
+ * the cutover conversion (PR #175 P1: an unconverted balance is in
+ * Oracles and must not be spent at the credit price).
+ */
+export function conversionPendingMessage(): string {
+  return `Your Oracle balance is being converted to credits. Please try again shortly. ${nothingSpent()}`;
+}
+
 export async function preCheckOracleBalance(
   userId: string | null | undefined,
   required: boolean,
@@ -49,6 +58,11 @@ export async function preCheckOracleBalance(
 ): Promise<{ denied: NextResponse } | { denied?: undefined; user: User }> {
   if (!userId || !required) return { user: null };
   const user = await getUserById(userId);
+  if (user && (await isSpendBlockedPendingConversion(userId))) {
+    return {
+      denied: NextResponse.json({ error: conversionPendingMessage() }, { status: 402 }),
+    };
+  }
   if (!user || user.credits < cost) {
     return {
       denied: NextResponse.json(

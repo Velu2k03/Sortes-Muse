@@ -96,6 +96,14 @@ describe("credit costs (flag ON)", () => {
     expect(purchaseAmountLabel(2100, "oracle-conversion")).toBe("2,100 credits");
     expect(purchaseAmountLabel(1, "admin-test-grant")).toBe("1 credit");
   });
+
+  it("PR #175 P2: a post-flip pack grant (pack size x 300) is labeled in credits; legacy pack rows stay Oracles", () => {
+    expect(purchaseAmountLabel(1500, "pack5 (lemonsqueezy:3)")).toBe("1,500 credits");
+    expect(purchaseAmountLabel(3600, "pack12 (lemonsqueezy:4)")).toBe("3,600 credits");
+    expect(purchaseAmountLabel(9000, "pack30 (lemonsqueezy:5)")).toBe("9,000 credits");
+    expect(purchaseAmountLabel(5, "pack5 (lemonsqueezy:1)")).toBe("5 Oracles");
+    expect(purchaseAmountLabel(12, "pack12 (lemonsqueezy:6)")).toBe("12 Oracles");
+  });
 });
 
 // Credit cutover (audit §5.1): the webhook passes grantUnit "oracles"

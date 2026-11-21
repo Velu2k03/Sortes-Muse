@@ -2,7 +2,7 @@ import { usePostgres, pg, sql, jsonbParam, ensureSchema, txWithSignal } from "./
 import { readLocal, writeLocal } from "./json-store";
 import { withDbTimeout } from "../db-timeout";
 import { assertUuid, IdTakenError } from "../ids";
-import { applySpendToUser, spendFromLedgers } from "./ledgers";
+import { applySpendToUser, isSpendBlockedPendingConversion, spendFromLedgers } from "./ledgers";
 
 /*
  * F9 (2026-11-09): synced readings and follow-ups.
@@ -76,6 +76,9 @@ export async function saveReadingWithSpend(
         // insufficient — nothing spent, no reading row written.
         // Phase 2 batch 3: `cost` is the flag-aware price (1 while
         // the flag is OFF; 100/200/300 once it is ON).
+        // Credit cutover (PR #175 P1): an unconverted Oracle balance
+        // is never spent at the credit price; refuse like insufficient.
+        if (await isSpendBlockedPendingConversion(userId, tx)) return { ok: false, free: false };
         const spent = await spendFromLedgers(tx, userId, cost);
         if (!spent) return { ok: false, free: false };
       }
@@ -122,6 +125,7 @@ export async function saveReadingWithSpend(
     }
   }
   if (!free) {
+    if (await isSpendBlockedPendingConversion(userId)) return { ok: false, free: false };
     const u = db.users.find((x) => x.id === userId);
     if (!applySpendToUser(u, cost)) return { ok: false, free: false };
   }
@@ -243,6 +247,8 @@ export async function appendFollowUpWithSpend(
         followUpToStore = { ...followUpToStore, free: false };
       }
       if (effectiveCost > 0) {
+        // Credit cutover (PR #175 P1): see saveReadingWithSpend.
+        if (await isSpendBlockedPendingConversion(userId, tx)) return { ok: false, reason: "insufficient" as const };
         const spent = await spendFromLedgers(tx, userId, effectiveCost);
         if (!spent) return { ok: false, reason: "insufficient" as const };
       }
@@ -289,6 +295,7 @@ export async function appendFollowUpWithSpend(
   }
   const user = db.users.find((x) => x.id === userId);
   if (effectiveCost > 0) {
+    if (await isSpendBlockedPendingConversion(userId)) return { ok: false, reason: "insufficient" };
     if (!applySpendToUser(user, effectiveCost)) return { ok: false, reason: "insufficient" };
   }
   const next = [...existing, followUpToStore];

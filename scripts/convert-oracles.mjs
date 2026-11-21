@@ -163,14 +163,15 @@ registerHooks({
 });
 
 const tiers = await import("../src/lib/subscription-tiers.ts");
-if (live && !tiers.CREDIT_COSTS_ENABLED) {
-  if (process.env.SORTES_CONVERT_ALLOW_FLAG_OFF !== "1" || looksProduction) {
-    console.error(
-      "convert-oracles: CREDIT_COSTS_ENABLED is false in this checkout. Runbook order is flag-ON first, then convert " +
-        "(converting first would leak). Run from the flag-ON commit. (Local test databases only: SORTES_CONVERT_ALLOW_FLAG_OFF=1.)"
-    );
-    process.exit(2);
-  }
+const flagRefusal = tiers.conversionFlagRefusal({
+  live,
+  flagEnabled: tiers.CREDIT_COSTS_ENABLED,
+  allowFlagOff: process.env.SORTES_CONVERT_ALLOW_FLAG_OFF === "1",
+  looksProduction,
+});
+if (flagRefusal) {
+  console.error(flagRefusal);
+  process.exit(2);
 }
 
 // ---- population -----------------------------------------------------------

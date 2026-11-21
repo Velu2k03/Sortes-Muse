@@ -3,6 +3,7 @@ import { NextRequest } from "next/server";
 
 vi.mock("@/lib/db", () => ({
   getUserById: vi.fn(),
+  isSpendBlockedPendingConversion: vi.fn(async () => false),
   getReadingForUser: vi.fn(),
   appendFollowUpWithSpend: vi.fn(),
 }));

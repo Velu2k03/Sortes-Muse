@@ -2,19 +2,63 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("@/lib/db", () => ({
   getUserById: vi.fn(),
+  isSpendBlockedPendingConversion: vi.fn(),
 }));
 
-import { getUserById } from "@/lib/db";
-import { costUnit, insufficientBalanceMessage, nothingSpent, preCheckOracleBalance } from "@/lib/credit-precheck";
+import { getUserById, isSpendBlockedPendingConversion } from "@/lib/db";
+import {
+  conversionPendingMessage,
+  costUnit,
+  insufficientBalanceMessage,
+  nothingSpent,
+  preCheckOracleBalance,
+} from "@/lib/credit-precheck";
 
 const mockedGetUserById = vi.mocked(getUserById);
+const mockedBlocked = vi.mocked(isSpendBlockedPendingConversion);
 
 function user(credits: number) {
   return { id: "u1", credits } as unknown as Awaited<ReturnType<typeof getUserById>>;
 }
 
+describe("preCheckOracleBalance: unconverted Oracle holder (PR #175 P1)", () => {
+  beforeEach(() => {
+    mockedGetUserById.mockReset();
+    mockedBlocked.mockReset();
+  });
+
+  it("an unconverted holder gets a 402 conversion message even with a large balance", async () => {
+    // 118 Oracles would pass `credits < 100`; the block must stop it.
+    mockedGetUserById.mockResolvedValue(user(118));
+    mockedBlocked.mockResolvedValue(true);
+    const r = await preCheckOracleBalance("u1", true, "reading", 100);
+    expect(r.denied?.status).toBe(402);
+    expect(await r.denied?.json()).toEqual({ error: conversionPendingMessage() });
+    expect(conversionPendingMessage()).toMatch(/being converted to credits.*No credits were spent\./);
+    expect(mockedBlocked).toHaveBeenCalledWith("u1");
+  });
+
+  it("a converted or no-Oracle user passes on balance as before", async () => {
+    mockedGetUserById.mockResolvedValue(user(35_300));
+    mockedBlocked.mockResolvedValue(false);
+    const r = await preCheckOracleBalance("u1", true, "reading", 100);
+    expect(r.denied).toBeUndefined();
+  });
+
+  it("a free use (required=false) never checks the block", async () => {
+    mockedBlocked.mockResolvedValue(true);
+    const r = await preCheckOracleBalance("u1", false, "reading", 100);
+    expect(r.denied).toBeUndefined();
+    expect(mockedBlocked).not.toHaveBeenCalled();
+  });
+});
+
 describe("preCheckOracleBalance (F11)", () => {
-  beforeEach(() => mockedGetUserById.mockReset());
+  beforeEach(() => {
+    mockedGetUserById.mockReset();
+    mockedBlocked.mockReset();
+    mockedBlocked.mockResolvedValue(false);
+  });
 
   it("free / not required: no fetch, no denial", async () => {
     const r = await preCheckOracleBalance("u1", false, "reading");

@@ -22,11 +22,68 @@ describe.skipIf(hasPostgres)("Batch D money paths (local JSON branch)", () => {
   let saveReportWithSpend: typeof import("@/lib/db").saveReportWithSpend;
   let saveReportForUser: typeof import("@/lib/db").saveReportForUser;
   let listReportsForUser: typeof import("@/lib/db").listReportsForUser;
+  let db: typeof import("@/lib/db");
 
   beforeAll(async () => {
     const isolated = await importDbWithIsolatedStore();
     cleanup = isolated.cleanup;
-    ({ createUser, getUserById, addUserCredits, hasUsedFreeReading, hasUsedFreeInterpretation, saveReadingWithSpend, saveReadingForUser, listReadingsForUser, saveReportWithSpend, saveReportForUser, listReportsForUser } = isolated.db);
+    db = isolated.db;
+    ({ createUser, getUserById, hasUsedFreeReading, hasUsedFreeInterpretation, saveReadingWithSpend, saveReadingForUser, listReadingsForUser, saveReportWithSpend, saveReportForUser, listReportsForUser } = isolated.db);
+    // PR #175 P1: with the flag ON, a purchased balance with no
+    // 'conversion' grant is an unconverted Oracle balance and every
+    // paid spend is blocked. These cases test spend mechanics after
+    // the cutover, so each funded user is converted first (at a zero
+    // balance: the grant row only, no x300) and then funded in credits.
+    addUserCredits = async (userId, n) => {
+      await isolated.db.convertOraclesToCredits(userId, { flagFlippedAt: FLIP });
+      return isolated.db.addUserCredits(userId, n);
+    };
+  });
+
+  const FLIP = "2026-01-01T00:00:00.000Z";
+
+  it("PR #175 P1: an unconverted Oracle holder is refused on every paid save, nothing spent, no row", async () => {
+    const holder = await createUser("bd-p1-holder@example.com");
+    await db.addUserCredits(holder.id, 118); // pre-flip Oracles, not converted
+    expect(await db.isSpendBlockedPendingConversion(holder.id)).toBe(true);
+    expect(await saveReadingWithSpend(holder.id, reading(tu("p1-r")), false, undefined, 100)).toEqual({ ok: false, free: false });
+    expect(await saveReadingWithSpend(holder.id, reading(tu("p1-c")), false, "vedic", 300)).toEqual({ ok: false, free: false });
+    expect(await saveReportWithSpend(holder.id, { id: tu("p1-rep"), kind: "transit" }, 300)).toEqual({ ok: false });
+    await saveReadingForUser(holder.id, { id: tu("p1-base"), question: "q?" });
+    expect(await db.appendFollowUpWithSpend(holder.id, tu("p1-base"), { question: "f", answer: "a" }, 50)).toEqual({
+      ok: false,
+      reason: "insufficient",
+    });
+    expect((await getUserById(holder.id))?.credits).toBe(118);
+    expect(await listReadingsForUser(holder.id)).toHaveLength(1); // only the free base row
+    expect(await listReportsForUser(holder.id)).toEqual([]);
+    // A free claim is not a paid spend: still allowed.
+    expect(await saveReadingWithSpend(holder.id, reading(tu("p1-free")), true, undefined, 100)).toEqual({ ok: true, free: true });
+    expect((await getUserById(holder.id))?.credits).toBe(118);
+    // A free follow-up (cost 0) is not blocked either.
+    expect((await db.appendFollowUpWithSpend(holder.id, tu("p1-base"), { question: "f0", answer: "a" }, 0)).ok).toBe(true);
+
+    // After the conversion the same user spends normally from 118 x 300.
+    await db.convertOraclesToCredits(holder.id, { flagFlippedAt: FLIP });
+    expect(await db.isSpendBlockedPendingConversion(holder.id)).toBe(false);
+    expect(await saveReadingWithSpend(holder.id, reading(tu("p1-after")), false, undefined, 100)).toEqual({ ok: true, free: false });
+    expect((await getUserById(holder.id))?.credits).toBe(118 * 300 - 100);
+  });
+
+  it("PR #175 P1: users who never held Oracles are not blocked (no balance, or credit-only purchases)", async () => {
+    const none = await createUser("bd-p1-none@example.com");
+    expect(await db.isSpendBlockedPendingConversion(none.id)).toBe(false);
+    // Post-cutover top-up buyer: credits recorded, no conversion grant.
+    const buyer = await createUser("bd-p1-topup@example.com");
+    await db.fulfillOrder({ userId: buyer.id, email: buyer.email, packType: "topup-1000 (lemonsqueezy:p1-1)", amount: 9.99, readings: 1000, orderId: "p1-1", grantUnit: "credits" });
+    expect(await db.isSpendBlockedPendingConversion(buyer.id)).toBe(false);
+    expect(await saveReadingWithSpend(buyer.id, reading(tu("p1-buyer")), false, undefined, 100)).toEqual({ ok: true, free: false });
+    expect((await getUserById(buyer.id))?.credits).toBe(900);
+    // Post-flip pack buyer (pack5 granted as 1,500 credits).
+    const packer = await createUser("bd-p1-pack@example.com");
+    await db.fulfillOrder({ userId: packer.id, email: packer.email, packType: "pack5 (lemonsqueezy:p1-2)", amount: 3.99, readings: 5, orderId: "p1-2", grantUnit: "oracles" });
+    expect((await getUserById(packer.id))?.credits).toBe(1500);
+    expect(await db.isSpendBlockedPendingConversion(packer.id)).toBe(false);
   });
 
   afterAll(async () => {

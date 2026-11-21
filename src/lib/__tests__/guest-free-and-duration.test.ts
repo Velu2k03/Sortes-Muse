@@ -6,7 +6,7 @@ const jar = new Map<string, string>();
 vi.mock("next/headers", () => ({
   cookies: async () => ({ get: (n: string) => (jar.has(n) ? { value: jar.get(n) } : undefined) }),
 }));
-vi.mock("@/lib/db", () => ({ getUserById: vi.fn() }));
+vi.mock("@/lib/db", () => ({ getUserById: vi.fn(), isSpendBlockedPendingConversion: vi.fn(async () => false) }));
 
 import { guestFreeUsed, setGuestFreeUsed, GUEST_FREE_COOKIE } from "@/lib/auth";
 
