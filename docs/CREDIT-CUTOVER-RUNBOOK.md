@@ -109,6 +109,13 @@ the conversion needs holders emailed first and pack sales stopped.
    to purchased credits at 1 = 300, records a `conversion` grant
    row per user, and is idempotent). Record the runner's output:
    users converted, total Oracles, total credits.
+   **Route (2026-11-21):** direct DB connections from the operator
+   VM are off (Muse setting, do not tunnel around it), so the runner
+   runs on GitHub via `.github/workflows/sortes-convert-oracles.yml`
+   (secret `SORTES_BACKUP_DATABASE_URL`). Dry-run first, review its
+   JSON summary in the log, then live (writes to production):
+   `gh workflow run sortes-convert-oracles.yml -f mode=dry-run -f flag-flipped-at=2026-11-21T03:06:00Z`
+   `gh workflow run sortes-convert-oracles.yml -f mode=live -f flag-flipped-at=2026-11-21T03:06:00Z`
 5. **Verify (see below).** Do not close the window until every
    check passes.
 6. **Close the window.** Announce the cutover is done.

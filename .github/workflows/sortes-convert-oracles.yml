@@ -1,0 +1,88 @@
+# Oracle -> credit conversion runner (manual, GitHub Actions).
+# docs/CREDIT-CUTOVER-RUNBOOK.md, Procedure step 4. Added 2026-11-21.
+#
+# Why this exists: direct database connections from the operator VM
+# are switched off (Muse setting) and must not be bypassed with
+# tunnels or proxies. The GitHub runner reaches the Supabase session
+# pooler (proven by sortes-backup.yml), so scripts/convert-oracles.mjs
+# runs here instead. Uses the existing SORTES_BACKUP_DATABASE_URL
+# secret (the production session-pooler URL); no new secret.
+#
+# Dispatch order: mode=dry-run FIRST (lists who would convert,
+# read-only transaction, converts nothing), review its JSON summary,
+# then mode=live. LIVE WRITES TO PRODUCTION: it converts every
+# holder's Oracles to purchased credits (1 = 300). It is idempotent
+# (a second live run converts nothing), but get Velu's go-ahead per
+# live run and take a fresh backup (sortes-backup.yml) first.
+#
+# SORTES_CONVERT_PRODUCTION=1 is set on BOTH steps: the runner refuses
+# any production-looking URL without it, in either mode, before it
+# connects. Dry-run stays read-only (read only transaction; the write
+# layer is only loaded for --live). --live also refuses while
+# CREDIT_COSTS_ENABLED is false in this checkout.
+#
+# The runner's JSON summary goes to stdout (visible in the step log);
+# the short human summary goes to stderr. No artifact is uploaded.
+# Triggered by hand (workflow_dispatch) only: no schedule, no push.
+name: 'Oracle conversion (manual)'
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'dry-run (read-only, run first) or live (writes to production)'
+        required: true
+        type: choice
+        options:
+          - dry-run
+          - live
+        default: dry-run
+      flag-flipped-at:
+        description: 'Flag-ON deploy time, ISO 8601 with zone'
+        required: true
+        type: string
+        default: '2026-11-21T03:06:00Z'
+
+permissions:
+  contents: read
+
+jobs:
+  convert:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate secret
+        env:
+          SORTES_BACKUP_DATABASE_URL: ${{ secrets.SORTES_BACKUP_DATABASE_URL }}
+        run: |
+          if [ -z "${SORTES_BACKUP_DATABASE_URL:-}" ]; then
+            echo "::error::Secret SORTES_BACKUP_DATABASE_URL is not set or empty."
+            exit 1
+          fi
+
+      - name: Conversion dry-run (read-only)
+        if: inputs.mode == 'dry-run'
+        env:
+          POSTGRES_URL: ${{ secrets.SORTES_BACKUP_DATABASE_URL }}
+          SORTES_CONVERT_PRODUCTION: '1'
+          FLAG_FLIPPED_AT: ${{ inputs.flag-flipped-at }}
+        run: node scripts/convert-oracles.mjs --flag-flipped-at "$FLAG_FLIPPED_AT" --dry-run
+
+      - name: Conversion LIVE (writes to production)
+        if: inputs.mode == 'live'
+        env:
+          POSTGRES_URL: ${{ secrets.SORTES_BACKUP_DATABASE_URL }}
+          SORTES_CONVERT_PRODUCTION: '1'
+          FLAG_FLIPPED_AT: ${{ inputs.flag-flipped-at }}
+        run: node scripts/convert-oracles.mjs --flag-flipped-at "$FLAG_FLIPPED_AT" --live
