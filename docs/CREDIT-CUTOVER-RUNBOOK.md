@@ -77,7 +77,14 @@ explicit approval.
 
 1. Velu's go-ahead for the cutover (explicit, in chat).
 2. The Oracle-holder census is done: every holder and balance
-   counted from production (Batch A follow-up, still owed).
+   counted from production. DONE 2026-11-20 at 15:12 Manila,
+   before the conversion: 2 holders, both the owner's own
+   accounts (velu2k03@gmail.com 118 Oracles,
+   velu2k03+sortes-admin@gmail.com 482 Oracles), total 600
+   Oracles = 180,000 credits, monthly credits 0, none already
+   converted, no warnings. The conversion totals were compared
+   against it: the dry-run matched the census exactly, and the
+   live run matched too.
 3. Holders have been emailed: the conversion, the new costs, and
    the date. (Velu's requirement before any conversion.)
 4. Pack sales are stopped (or the runner handles post-flag pack
