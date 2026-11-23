@@ -155,15 +155,18 @@ describe("url-state-sync: /reports type (?type=year-ahead|comparison)", () => {
   const page = () => src("src/app/reports/page.tsx");
   const client = () => src("src/app/reports/ReportsClient.tsx");
   it("server page validates the type and passes it in", () => {
-    expect(page()).toContain('raw === "year-ahead" || raw === "comparison"');
+    // Batch 2 (B2): validation goes through the offered-type list,
+    // so ?type=transit falls back to the default while transit is hidden.
+    expect(page()).toContain("offeredReportType(raw)");
     expect(page()).toContain("initialType={initialType}");
   });
   it("client initialises the type from the prop, not hardcoded transit", () => {
     expect(client()).toContain("initialType?: ReportType");
     expect(client()).toContain("useState<ReportType>(initialType)");
   });
-  it("switching writes ?type= and omits the param for Transit", () => {
+  it("switching writes ?type= and omits the param for the default type", () => {
     expect(client()).toContain("`/reports?type=${next}`");
+    expect(client()).toContain('next === DEFAULT_REPORT_TYPE ? "/reports"');
     expect(client()).toContain("router.replace(");
     expect(client()).toContain("onChange={(v) => syncType(v as ReportType)}");
   });
