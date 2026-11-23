@@ -336,7 +336,7 @@ export default function ReportsClient({
 }: {
   // URL state sync (all-pages fix 4): the server page reads
   // ?type= and passes it in, so a refresh or a shared link opens
-  // on that report type instead of resetting to Transit.
+  // on that report type instead of resetting to Year-ahead.
   initialType?: ReportType;
 }) {
   const { user, credits, loading, refresh } = useAuth();
