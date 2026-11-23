@@ -2,6 +2,7 @@
 // sync failed) gets "Reading not found". Nothing is spent on that 404, so
 // re-sync that one reading to /api/history and retry exactly once.
 import type { Reading } from "@/lib/types";
+import type { SupportPanel as SupportPanelData, SupportTier } from "@/lib/safety";
 
 export async function postFollowUp(
   reading: Reading,
@@ -12,7 +13,16 @@ export async function postFollowUp(
     followUpId?: string;
     fetchFn?: typeof fetch;
   } = {}
-): Promise<{ res: Response; data: { error?: string; followUps?: Reading["followUps"]; credits?: number; replayed?: boolean } }> {
+): Promise<{ res: Response; data: {
+  error?: string;
+  followUps?: Reading["followUps"];
+  credits?: number;
+  replayed?: boolean;
+  /** Batch 1 (S1): Tier A returns the support panel only, no answer. */
+  supportOnly?: boolean;
+  supportTier?: SupportTier;
+  support?: SupportPanelData;
+} }> {
   const fetchFn = opts.fetchFn ?? fetch;
   const ask = async () => {
     const res = await fetchFn("/api/reading/follow-up", {

@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { motion, useReducedMotion } from "motion/react";
 import ReadingWait from "@/components/ReadingWait";
 import ReadingText from "@/components/ReadingText";
+import SupportPanel, { ReadingDisclaimer } from "@/components/SupportPanel";
+import type { SupportPanel as SupportPanelData } from "@/lib/safety";
 import TarotCard from "@/components/TarotCard";
 import SlideCommit from "@/components/SlideCommit";
 import { INTAKE_CATEGORIES, SENSITIVE_KEYS, getCategory } from "@/lib/intake";
@@ -855,15 +857,18 @@ export function useWaitAutoFollow<T extends HTMLElement>(streamedText: string) {
  * flow navigate to the reading page.
  * Auto-follow (2026-11-18): useWaitAutoFollow keeps the newest
  * streamed line in view; see the comment above it. */
-export function ProcessingStage({ activeStep, complete, streamedText, drawnCards }: { activeStep: number; complete: boolean; streamedText: string; drawnCards?: DrawnCard[] | null }) {
+export function ProcessingStage({ activeStep, complete, streamedText, drawnCards, support }: { activeStep: number; complete: boolean; streamedText: string; drawnCards?: DrawnCard[] | null; support?: SupportPanelData | null }) {
   const ref = useStepFocus<HTMLDivElement>();
   const followRef = useWaitAutoFollow<HTMLDivElement>(streamedText);
   return (
     <div ref={ref} tabIndex={-1} aria-label="Creating your reading" className="flex min-h-[55vh] scroll-mt-32 flex-col items-center justify-center text-center outline-none!">
+      {/* Batch 1 (S1) Tier B: the support panel sits ABOVE the reading. */}
+      {support && <SupportPanel panel={support} />}
       <ReadingWait activeStep={activeStep} complete={complete} drawnCards={drawnCards} />
       {streamedText.length > 0 && (
         <div className="mt-8 w-full text-left">
           <p className="text-sm text-gold">Writing your reading</p>
+          <ReadingDisclaimer className="mt-1" />
           {/* AGENTS.md self-check exception (same reasoning as the
               pricing pill span, PR #152; Codex P1 on PR #171): the
               follow wrapper is deliberately a raw <div>, not an
@@ -882,6 +887,21 @@ export function ProcessingStage({ activeStep, complete, streamedText, drawnCards
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+/** Batch 1 (S1) Tier A: the support panel instead of a reading. */
+export function SupportStep({ children }: { children: ReactNode }) {
+  const ref = useStepFocus<HTMLDivElement>();
+  return (
+    <div ref={ref} tabIndex={-1} aria-label="Support" className="scroll-mt-32 outline-none!">
+      {children}
+      <p className="mx-auto mt-6 max-w-3xl text-sm text-mist">
+        <Link href="/" className="font-semibold text-goldbright underline underline-offset-4">
+          Back to home
+        </Link>
+      </p>
     </div>
   );
 }

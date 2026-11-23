@@ -22,7 +22,8 @@ describe("F20 intake heading is not a text input", () => {
     // draws the gold box. The trailing ! (Tailwind v4 important)
     // makes the suppression win.
     const focused = steps.match(/tabIndex=\{-1\}[^>]*outline-none!?/g) ?? [];
-    expect(focused.length).toBe(5);
+    // Batch 1 (S1): SupportStep is the sixth focused step wrapper.
+    expect(focused.length).toBe(6);
     for (const el of focused) {
       expect(el).toContain("outline-none!");
     }

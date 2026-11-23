@@ -5,6 +5,7 @@ import { showFailureToast, dismissFailureToast } from "@/lib/failure-toast";
 import { getReading, saveReading, updateReading as updateLocalReading, pendingAttemptId, clearPendingAttemptId } from "@/lib/storage";
 import type { Reading } from "@/lib/types";
 import { postFollowUp } from "@/lib/follow-up-client";
+import { detectSupportTier, supportPanel, type SupportPanel as SupportPanelData } from "@/lib/safety";
 import { useAuth } from "@/components/AuthProvider";
 
 type SetReading = (r: Reading | null) => void;
@@ -116,6 +117,8 @@ export function useFollowUp(reading: Reading | null | undefined, setReading: Set
   // toast fires from each failure site, once per failure. The Retry
   // action runs the latest askFollowUp (a ref), like the Try again button.
   const [followUpFailed, setFollowUpFailed] = useState(false);
+  // Batch 1 (S1): Tier A follow-up shows the support panel, no answer.
+  const [followUpSupport, setFollowUpSupport] = useState<SupportPanelData | null>(null);
   const askRef = useRef<() => void>(() => {});
   const notifyFailed = () => showFailureToast(FOLLOW_UP_FAILED, () => askRef.current());
 
@@ -154,6 +157,16 @@ export function useFollowUp(reading: Reading | null | undefined, setReading: Set
     if (!reading) return;
     setFollowUpLoading(true);
     setFollowUpError(null);
+    setFollowUpSupport(null);
+
+    // Batch 1 (S1): Tier A is checked on the device too, so a guest
+    // (who never reaches the route) still gets the panel, not a
+    // sign-in prompt. The server runs the same check.
+    if (detectSupportTier(q) === "A") {
+      setFollowUpSupport(supportPanel("A"));
+      setFollowUpLoading(false);
+      return;
+    }
     // Phase D: a new attempt clears the previous failure UI.
     setFollowUpFailed(false);
     dismissFailureToast(FOLLOW_UP_FAILED);
@@ -232,6 +245,13 @@ export function useFollowUp(reading: Reading | null | undefined, setReading: Set
         return;
       }
 
+      // S1 Tier A from the server: nothing generated, nothing spent.
+      if (data.supportOnly) {
+        setFollowUpSupport(data.support ?? supportPanel("A"));
+        clearPendingAttemptId(attemptScope);
+        return;
+      }
+
       // Update local reading with returned followUps.
       // Do NOT rely on the PATCH path: the follow-up route
       // already updated the server copy for signed-in users,
@@ -298,6 +318,7 @@ export function useFollowUp(reading: Reading | null | undefined, setReading: Set
     followUpError,
     setFollowUpError,
     followUpFailed,
+    followUpSupport,
     askFollowUp,
   };
 }

@@ -16,6 +16,15 @@ import { logGuestGeneration } from "@/lib/guestLogging";
 import { drawClarifierCard } from "@/lib/clarifier";
 import { CARDS } from "@/lib/cards";
 import { checkRateLimit, clientIp, ipLimitKey, rateLimitExceeded, RATE_LIMITS } from "@/lib/rateLimit";
+import {
+  appendClosings,
+  detectSupportTier,
+  FINANCES_CLOSE,
+  HEALTH_CLOSE,
+  isCategory,
+  mentionsHealth,
+  supportPanel,
+} from "@/lib/safety";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -25,10 +34,16 @@ export const maxDuration = 300;
 
 const MAX_FOLLOWUPS = 3;
 
-const HEALTH_CLOSE =
-  "This reflection is not medical advice. Please speak with a licensed professional about any health concern.";
-const FINANCES_CLOSE =
-  "This reflection is not financial advice. Please speak with a licensed professional about any financial decision.";
+// Batch 1: HEALTH_CLOSE and FINANCES_CLOSE live in src/lib/safety.ts.
+
+/** S1 Tier A: the support panel only. No model call, no spend, no save. */
+function supportOnlyResponse() {
+  return NextResponse.json({
+    supportOnly: true,
+    supportTier: "A",
+    support: supportPanel("A"),
+  });
+}
 
 type DeckCard = {
   id: string;
@@ -146,6 +161,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "followUpId must be a UUID." }, { status: 400 });
   }
 
+  // Batch 1 (S1): crisis check on the follow-up question BEFORE the
+  // session check (a guest in crisis gets the panel, not a 401), the
+  // model call, and any spend. The original question joins the check
+  // once the reading is loaded (below).
+  if (detectSupportTier(question) === "A") return supportOnlyResponse();
+
   const session = await getSession();
 
   // Signed-in flow: load from database by readingId.
@@ -203,6 +224,7 @@ export async function POST(req: NextRequest) {
         credits: dbUser?.credits ?? 0,
         followUps: existingFollowUps,
         replayed: true,
+        ...(saved.supportTier === "B" ? { supportTier: "B", support: supportPanel("B") } : {}),
       });
     }
   }
@@ -255,14 +277,27 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // S1: the follow-up question with the original question for context.
+  const supportTier = detectSupportTier(
+    question,
+    typeof readingData.question === "string" ? readingData.question : ""
+  );
+  if (supportTier === "A") return supportOnlyResponse();
+  const tierFields = supportTier === "B" ? { supportTier: "B" as const } : {};
+  const responseTier = supportTier === "B" ? { supportTier: "B" as const, support: supportPanel("B") } : {};
+
   // Free flag: first follow-up per reading is free, then 1 credit each.
   const isFree = existingFollowUps.length === 0;
 
   // Determine category for guardrails
   const category =
     typeof readingData.category === "string" ? readingData.category : "";
-  const isHealth = category === "health";
-  const isFinances = category === "finances";
+  // Batch 1: the saved reading stores the category NAME ("Health and
+  // Wellness"), so the old `=== "health"` check never matched a saved
+  // reading. isCategory matches the key or the name. S2: the health
+  // closing also follows the follow-up question's content.
+  const isHealth = isCategory(category, "health") || mentionsHealth(question);
+  const isFinances = isCategory(category, "finances");
 
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
@@ -353,19 +388,17 @@ export async function POST(req: NextRequest) {
   }
 
   // Enforce guardrail closing sentences server-side.
-  let finalText = generated.text;
-  if (isHealth && !finalText.includes(HEALTH_CLOSE)) {
-    finalText = `${finalText}\n\n${HEALTH_CLOSE}`;
-  }
-  if (isFinances && !finalText.includes(FINANCES_CLOSE)) {
-    finalText = `${finalText}\n\n${FINANCES_CLOSE}`;
-  }
+  const { text: finalText } = appendClosings(generated.text, [
+    ...(isHealth ? [HEALTH_CLOSE] : []),
+    ...(isFinances ? [FINANCES_CLOSE] : []),
+  ]);
 
   const newFollowUp: FollowUp = {
     question,
     answer: finalText,
     createdAt: new Date().toISOString(),
     free: isFree,
+    ...tierFields,
     // Phase 5 (5.3): the clarifier card is saved with the follow-up
     // in the journal/reading record, so the thread shows what was
     // drawn. Null (deck exhausted) stores as absent.
@@ -422,6 +455,7 @@ export async function POST(req: NextRequest) {
         credits: dbUser?.credits ?? 0,
         followUps: appended.followUps ?? updatedFollowUps,
         replayed: true,
+        ...responseTier,
       });
     }
     const dbUser = await getUserById(session.userId);
@@ -430,6 +464,7 @@ export async function POST(req: NextRequest) {
       free: appended.free ?? isFree,
       credits: dbUser?.credits ?? 0,
       followUps: appended.followUps ?? updatedFollowUps,
+      ...responseTier,
     });
   }
 
@@ -441,5 +476,6 @@ export async function POST(req: NextRequest) {
     answer: finalText,
     free: isFree,
     followUps: updatedFollowUps,
+    ...responseTier,
   });
 }

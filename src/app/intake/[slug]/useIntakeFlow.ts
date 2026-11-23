@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { readSse } from "@/lib/sse-client";
+import type { SupportPanel as SupportPanelData, SupportTier } from "@/lib/safety";
 import { getSpread, drawCards } from "@/lib/tarot";
 import { getCard } from "@/lib/cards";
 import { suggestQuestionRewrite } from "@/lib/question-rewrite";
@@ -34,7 +35,9 @@ import { showFailureToast, dismissFailureToast } from "@/lib/failure-toast";
 
 const READING_FAILED = "Reading failed";
 
-export type Step = "category" | "form" | "confirm" | "impression" | "processing";
+// Batch 1 (S1): "support" shows the support panel instead of a
+// reading (Tier A: nothing generated, nothing spent).
+export type Step = "category" | "form" | "confirm" | "impression" | "processing" | "support";
 
 /**
  * F30 (2026-11-09): all IntakeFlow state and actions, moved verbatim
@@ -66,6 +69,8 @@ export function useIntakeFlow(slug: string) {
   // ~7x/s instead of per token. Reset on every new attempt.
   const [streamedText, setStreamedText] = useState("");
   const [streamingModel, setStreamingModel] = useState<string | null>(null);
+  // Batch 1 (S1): the support panel the server sent (Tier A or B).
+  const [support, setSupport] = useState<SupportPanelData | null>(null);
   const streamRef = useRef("");
   const lastFlushRef = useRef(0);
   const [busy, setBusy] = useState(false);
@@ -315,6 +320,7 @@ export function useIntakeFlow(slug: string) {
     lastFlushRef.current = 0;
     setStreamedText("");
     setStreamingModel(null);
+    setSupport(null);
     // Phase D: a new attempt clears the previous failure UI, whatever
     // path this attempt ends on.
     setGenerationFailed(false);
@@ -430,13 +436,21 @@ export function useIntakeFlow(slug: string) {
           credits?: number;
           reading?: Reading;
           replayed?: boolean;
+          supportOnly?: boolean;
+          supportTier?: SupportTier;
+          support?: SupportPanelData;
         } | null;
         error: { error?: string; status?: number } | null;
         sawDone: boolean;
       } = { data: null, error: null, sawDone: false };
       try {
         await readSse(res, (event) => {
-          if (event.event === "model") {
+          if (event.event === "support") {
+            // S1: the panel arrives before any reading text (Tier B)
+            // or instead of it (Tier A).
+            const panel = event.data as SupportPanelData | null;
+            if (panel && typeof panel === "object") setSupport(panel);
+          } else if (event.event === "model") {
             streamRef.current = "";
             setStreamedText("");
             const m = (event.data as { model?: string } | null)?.model;
@@ -490,6 +504,15 @@ export function useIntakeFlow(slug: string) {
         if (stream.error.error) failMessage = stream.error.error;
         throw new Error(`Generation failed (${stream.error.status ?? "stream"})`);
       }
+      // S1 Tier A: the server generated nothing and spent nothing. Show
+      // the support panel instead of a reading. The free reading is
+      // NOT consumed and nothing is saved.
+      if (stream.sawDone && stream.data?.supportOnly) {
+        if (stream.data.support) setSupport(stream.data.support);
+        setStep("support");
+        setBusy(false);
+        return;
+      }
       if (!stream.sawDone || !stream.data?.interpretation) {
         // The stream ended without a `done` event: unconfirmed. The
         // server may have saved already; the retry (same attempt id)
@@ -533,6 +556,7 @@ export function useIntakeFlow(slug: string) {
         firstImpression: firstWord || undefined,
         firstName,
         free: isFreeAvailable,
+        ...(stream.data.supportTier === "B" ? { supportTier: "B" as const } : {}),
       });
       await persistReading(reading);
       setCachedInterpretation(reading.id, interpretation);
@@ -581,7 +605,7 @@ export function useIntakeFlow(slug: string) {
     spread, step, setStep, setCategoryKey, answers, setAnswers, story, setStory,
     question, setQuestion, setOriginalQuestion, suggestionDismissed,
     setSuggestionDismissed, drawnCards, impression, setImpression, error,
-    processingLine, processingComplete, streamedText, streamingModel, busy, generationFailed,
+    processingLine, processingComplete, streamedText, streamingModel, support, busy, generationFailed,
     isFreeAvailable, gate, credits, category, questionSuggestion, set, formValid, firstMissingField,
     beginDraw, beginGeneration, retryGeneration, startOver,
   };

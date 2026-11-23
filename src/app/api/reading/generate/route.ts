@@ -14,6 +14,14 @@ import { readingCostForSpreadCards } from "@/lib/subscription-tiers";
 import { validateReadingText } from "@/lib/output-validation";
 import { logGuestGeneration } from "@/lib/guestLogging";
 import { checkRateLimit, clientIp, ipLimitKey, isRateLimited, rateLimitExceeded, recordRateLimit, RATE_LIMITS } from "@/lib/rateLimit";
+import {
+  appendClosings,
+  detectSupportTier,
+  FINANCES_CLOSE,
+  HEALTH_CLOSE,
+  mentionsHealth,
+  supportPanel,
+} from "@/lib/safety";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -26,8 +34,8 @@ export const maxDuration = 300;
 // M0.2 health guardrail parity: the chart route already appends this
 // server-side when missing; the tarot route now does the same, so the
 // closing sentence does not depend on the model obeying the prompt.
-const HEALTH_CLOSE =
-  "This reflection is not medical advice. Please speak with a licensed professional about any health concern.";
+// Batch 1 (S2, S3): HEALTH_CLOSE and FINANCES_CLOSE live in
+// src/lib/safety.ts, shared with the follow-up route.
 
 interface ApiCard {
   cardId: string;
@@ -87,12 +95,15 @@ export function validateReading(
   return validateReadingText(text, { cards, question });
 }
 
-function buildSystemPrompt(firstName: string, taglish: boolean, isHealth: boolean): string {
+function buildSystemPrompt(firstName: string, taglish: boolean, isHealth: boolean, isFinances = false): string {
   const language = taglish
     ? "The seeker wrote in Tagalog/Taglish. Write the entire reading in the same language mix they used (Tagalog/Taglish), warm and natural."
     : "Write the entire reading in English.";
   const healthGuard = isHealth
-    ? `HEALTH GUARDRAIL: This is general wellness reflection ONLY. Never diagnose any condition, never name a disease or disorder, never predict medical outcomes, never suggest medication or dosage. Always close with this exact sentence: "This reflection is not medical advice. Please speak with a licensed professional about any health concern."`
+    ? `HEALTH GUARDRAIL: This is general wellness reflection ONLY. Never diagnose any condition, never name a disease or disorder, never predict medical outcomes, never suggest medication or dosage. Always close with this exact sentence: "${HEALTH_CLOSE}"`
+    : "";
+  const financesGuard = isFinances
+    ? `FINANCES GUARDRAIL: This is general reflection about money and resources ONLY. Never recommend specific investments, securities, insurance products, or tax strategies. Never predict market outcomes. Always close with this exact sentence: "${FINANCES_CLOSE}"`
     : "";
   return `You are Sortes, a warm and thoughtful tarot reader inside a reflective tarot app. You write personal readings that weave the drawn cards into the seeker's own story.
 
@@ -104,7 +115,8 @@ Rules you must always follow:
 - Keep the reading 350-550 words. Structure: a short opening that names their question in their own terms (open with the question itself, not a greeting like 'Hello, friend'), one section per card position, then a closing section that answers their question directly, in this order: What stands out for your question; the tension or opportunity in this draw; what you may be overlooking; one practical step you could take, small and concrete, never medical or financial advice; and exactly one reflection question for them to sit with. Do not add a generic advice paragraph that could fit any question: every closing point must tie back to their question, their story, or a named card.
 - Never moralize, never repeat their story back verbatim, never invent facts about them beyond what they shared.
 - ${language}
-${healthGuard}`;
+${healthGuard}
+${financesGuard}`.trimEnd();
 }
 
 function buildUserPrompt(
@@ -239,6 +251,40 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // Batch 1 (S1): deterministic crisis check on everything the seeker
+  // wrote, BEFORE the session, the free-reading checks (including the
+  // guest-free-used 401), the model call, and any spend. Tier A gets
+  // the support panel only: no model call, no reading row, no credit,
+  // no free-reading use. Tier B continues to a normal reading with the
+  // panel sent first. Answers are included: the "struggle" textarea
+  // is free text too.
+  const answerTexts =
+    intake.answers && typeof intake.answers === "object"
+      ? Object.values(intake.answers).filter((v): v is string => typeof v === "string")
+      : [];
+  const seekerTexts = [
+    intake.question,
+    typeof intake.story === "string" ? intake.story : "",
+    typeof body.originalQuestion === "string" ? body.originalQuestion : "",
+    typeof intake.firstImpression === "string" ? intake.firstImpression : "",
+    ...answerTexts,
+  ];
+  const supportTier = detectSupportTier(...seekerTexts);
+  if (supportTier === "A") {
+    const panel = supportPanel("A");
+    return sseResponse(async (send) => {
+      send(sseEvent("support", panel));
+      send(
+        sseEvent("done", {
+          supportOnly: true,
+          supportTier: "A",
+          support: panel,
+          free: false,
+        })
+      );
+    });
+  }
+
   const firstName = (intake.firstName || "friend").slice(0, 40);
   const apiKey = process.env.OPENROUTER_API_KEY;
 
@@ -292,7 +338,7 @@ export async function POST(req: NextRequest) {
   // the same shape whether the reading was just generated or replayed.
   if (session && body.readingId) {
     const prior = (await getReadingForUser(session.userId, body.readingId)) as
-      | { interpretation: string; model?: string; free?: boolean }
+      | { interpretation: string; model?: string; free?: boolean; supportTier?: string }
       | null;
     if (prior) {
       const user = await getUserById(session.userId);
@@ -307,6 +353,7 @@ export async function POST(req: NextRequest) {
             credits: user?.credits ?? 0,
             reading: prior,
             replayed: true,
+            ...(prior.supportTier === "B" ? { supportTier: "B", support: supportPanel("B") } : {}),
           })
         );
       });
@@ -327,7 +374,12 @@ export async function POST(req: NextRequest) {
   }
 
   const taglish = detectTaglish(`${intake.story ?? ""} ${intake.question}`);
-  const isHealth = intake.category === "health";
+  // S2: the health closing also follows the CONTENT (question, story,
+  // answers), not only the category. S3: finances gets its closing.
+  const isHealth =
+    intake.category === "health" ||
+    mentionsHealth(intake.question, intake.story, body.originalQuestion, ...answerTexts);
+  const isFinances = intake.category === "finances";
 
   // M1.1: computed spread facts ground the interpretation in the draw.
   // Unknown card ids are skipped for facts (validation still uses the
@@ -387,7 +439,11 @@ export async function POST(req: NextRequest) {
   // event carries the authoritative interpretation (not the accumulated
   // deltas). A failure after streaming started is an `error` event,
   // never a second HTTP response.
+  const panelB = supportTier === "B" ? supportPanel("B") : null;
   return sseResponse(async (send) => {
+    // S1 Tier B: the support panel goes out FIRST, so the client can
+    // show it above the reading while the reading streams.
+    if (panelB) send(sseEvent("support", panelB));
     // One shared client (src/lib/ai.ts): the :free chain, per-model
     // timeout, retry across models, and structured failure logging.
     // The grounding validator discards ungrounded text and tries the
@@ -398,7 +454,7 @@ export async function POST(req: NextRequest) {
     const generated = await generateChatStream(
       {
         apiKey: apiKey ?? "",
-        system: buildSystemPrompt(firstName, taglish, isHealth),
+        system: buildSystemPrompt(firstName, taglish, isHealth, isFinances),
         user: buildUserPrompt(cards, intake, spreadLabel, factsSummary),
         temperature: 0.8,
         maxTokens: 1200,
@@ -430,19 +486,23 @@ export async function POST(req: NextRequest) {
       return;
     }
 
-    // Enforce the health closing sentence server-side instead of trusting
-    // the model to include it. N2: when it is appended, send it as a
-    // final `text` delta too, so the live preview shows the same text
-    // the reading page will show (otherwise the disclaimer appears
-    // only after navigation).
-    const healthCloseAppended =
-      isHealth && !generated.text.includes(HEALTH_CLOSE);
-    const finalText = healthCloseAppended
-      ? `${generated.text}\n\n${HEALTH_CLOSE}`
-      : generated.text;
-    if (healthCloseAppended) {
-      send(sseEvent("text", { delta: `\n\n${HEALTH_CLOSE}` }));
+    // Enforce the closing sentences server-side instead of trusting
+    // the model to include them (health: category or content, S2;
+    // finances: category, S3). N2: what is appended is also sent as a
+    // final `text` delta, so the live preview shows the same text the
+    // reading page will show.
+    const closings = [
+      ...(isHealth ? [HEALTH_CLOSE] : []),
+      ...(isFinances ? [FINANCES_CLOSE] : []),
+    ];
+    const { text: finalText, appended } = appendClosings(generated.text, closings);
+    if (appended) {
+      send(sseEvent("text", { delta: appended }));
     }
+    // S1 Tier B: carried on the saved reading and on `done`, so the
+    // reading page shows the panel above the reading and hides sharing.
+    const tierFields = panelB ? { supportTier: "B" as const } : {};
+    const doneTier = panelB ? { supportTier: "B" as const, support: panelB } : {};
 
     // Spend only after a real generation, so a failed generation can never
     // cost a credit. Item 3: the spend (or the atomic first-free claim) and
@@ -481,6 +541,7 @@ export async function POST(req: NextRequest) {
         firstImpression: firstWord || undefined,
         firstName: intake.firstName,
         free: serverFree,
+        ...tierFields,
       };
       const saved = await saveReadingWithSpend(session.userId, reading, serverFree, undefined, readingCost);
       if (saved.conflict) {
@@ -514,6 +575,7 @@ export async function POST(req: NextRequest) {
             credits: user?.credits ?? 0,
             reading: prior ?? { ...reading, free: saved.free },
             replayed: true,
+            ...doneTier,
           })
         );
         return;
@@ -528,6 +590,7 @@ export async function POST(req: NextRequest) {
           free: saved.free,
           credits: user?.credits ?? 0,
           reading: { ...reading, free: saved.free },
+          ...doneTier,
         })
       );
       return;
@@ -548,6 +611,7 @@ export async function POST(req: NextRequest) {
         model: generated.model,
         fallback: false,
         free: true,
+        ...doneTier,
       })
     );
   });

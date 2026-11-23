@@ -9,6 +9,7 @@ import TarotCard from "@/components/TarotCard";
 import CardModal from "@/components/CardModal";
 import HeirloomPrint from "@/components/HeirloomPrint";
 import ReadingText from "@/components/ReadingText";
+import SupportPanel, { ReadingDisclaimer } from "@/components/SupportPanel";
 import { readingToPlainText } from "@/lib/readingMarkdown";
 import SplitText from "@/components/SplitText";
 import Breadcrumbs from "@/components/Breadcrumbs";
@@ -246,6 +247,8 @@ export function Interpretation({ reading }: { reading: Reading }) {
       <p className="mt-1 text-xs text-mist">
         AI-generated
       </p>
+      {/* Batch 1 (S1): the non-advisory line sits with the reading itself. */}
+      <ReadingDisclaimer className="mt-1" />
       <ReadingText
         text={reading.interpretation}
         className="mt-3 whitespace-pre-line leading-relaxed text-cream/90"
@@ -624,6 +627,7 @@ export function FollowUpThread({
                   </span>
                 </p>
               )}
+              {fu.supportTier === "B" && <SupportPanel tier="B" />}
               <ReadingText text={fu.answer} className="mt-2 text-sm leading-relaxed text-cream/90" />
             </div>
           ))}
@@ -678,6 +682,8 @@ export function FollowUpThread({
           {f.followUpError && (
             <p className="text-sm text-danger">{f.followUpError}</p>
           )}
+          {/* Batch 1 (S1) Tier A: no answer was written; the panel only. */}
+          {f.followUpSupport && <SupportPanel panel={f.followUpSupport} />}
           {/* Phase E (item 7): the chosen next step is sent with
               the follow-up question, so the answer can build on
               it; and a guest thread lives only on this device. */}

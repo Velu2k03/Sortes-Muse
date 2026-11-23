@@ -368,8 +368,11 @@ describe("Batch 2b wiring (SSE streaming)", () => {
     // The replay is a stream too (one text event + done), not JSON.
     expect(route).toContain("replayed: true");
     // N2: when the health close is appended, it is sent as a final
-    // `text` delta too, so the live preview matches `done`.
-    expect(route).toContain('send(sseEvent("text", { delta: `\\n\\n${HEALTH_CLOSE}` }))');
+    // `text` delta too, so the live preview matches `done`. Batch 1
+    // (S2, S3): health and finance closings share appendClosings, and
+    // what it appended goes out as that final delta.
+    expect(route).toContain("appendClosings(generated.text, closings)");
+    expect(route).toContain('send(sseEvent("text", { delta: appended }))');
     // N1: the route forwards the `reset` event to the client.
     expect(route).toContain('sseEvent("reset"');
     // No success path returns JSON any more: the only
