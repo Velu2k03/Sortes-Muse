@@ -9,14 +9,22 @@ import { APP_SHORT } from "@/lib/site";
 // Meaning" with no "| Sortes"). The template is repeated here so the
 // card pages get exactly one suffix, like every other route. The
 // default keeps /deck itself as "Card Meanings | Sortes".
+// Batch 2 (B3), 2026-11-23: the description promised per-card topic
+// guidance (relationships, work, and binary answers) that does not
+// exist; src/data/cards.json holds only keywords and upright/reversed
+// meanings. The copy now says what
+// exists (pinned by src/lib/__tests__/broken-paths-batch2.test.ts).
+const DECK_DESCRIPTION =
+  "Browse all 78 Rider-Waite tarot card meanings: upright and reversed meanings and keywords for every card in the deck.";
+
 export const metadata: Metadata = {
   title: {
     template: `%s | ${APP_SHORT}`,
     default: "Card Meanings",
   },
-  description: "Browse all 78 Rider-Waite tarot card meanings: upright and reversed, love, career, and yes-or-no guidance for every card in the deck, plus its story.",
+  description: DECK_DESCRIPTION,
   alternates: { canonical: "/deck" },
-  ...pageSocial({ title: "Card Meanings", description: "Browse all 78 Rider-Waite tarot card meanings: upright and reversed, love, career, and yes-or-no guidance for every card in the deck, plus its story.", path: "/deck" }),
+  ...pageSocial({ title: "Card Meanings", description: DECK_DESCRIPTION, path: "/deck" }),
 };
 
 export default function DeckLayout({ children }: { children: React.ReactNode }) {

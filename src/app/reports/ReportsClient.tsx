@@ -18,6 +18,7 @@ import { SAMPLE_TRANSIT_REPORT } from "@/lib/sample-report";
 import BirthProfilePicker from "@/components/BirthProfilePicker";
 import { profileToReportFields } from "@/lib/birth-profiles";
 import type { SavedReport, ReportType } from "@/lib/reports";
+import { DEFAULT_REPORT_TYPE, OFFERED_REPORT_TYPES, offeredReportType } from "@/lib/report-offer";
 import { READING_CREDIT_COSTS, creditsLabel, reportCost } from "@/lib/subscription-tiers";
 
 const REPORT_FAILED = "Report failed";
@@ -315,6 +316,12 @@ function BirthForm({
   );
 }
 
+const TYPE_LABELS: Record<ReportType, string> = {
+  transit: "Transit report",
+  "year-ahead": "Year-ahead reading",
+  comparison: "Relationship comparison",
+};
+
 const TYPE_BLURBS: Record<ReportType, string> = {
   transit:
     "One chosen date, read against your natal chart: Western transits plus Vedic Gochara for that day.",
@@ -325,7 +332,7 @@ const TYPE_BLURBS: Record<ReportType, string> = {
 };
 
 export default function ReportsClient({
-  initialType = "transit",
+  initialType = DEFAULT_REPORT_TYPE,
 }: {
   // URL state sync (all-pages fix 4): the server page reads
   // ?type= and passes it in, so a refresh or a shared link opens
@@ -366,9 +373,9 @@ export default function ReportsClient({
   // URL state sync (all-pages fix 4): this block sits after the
   // state declarations because syncType clears the result and the
   // error, and the lint forbids using their setters before they
-  // are declared. Transit is the default, so it is omitted and
-  // the URL stays clean (/reports); Year-ahead and Comparison are
-  // written as ?type=year-ahead / ?type=comparison. router.replace,
+  // are declared. The default type (Year-ahead while transit is not
+  // offered, Batch 2 B2) is omitted and the URL stays clean
+  // (/reports); any other type is written as ?type=<type>. router.replace,
   // not push: switching types is not a navigation step, so Back
   // leaves the page instead of stepping through types.
   const router = useRouter();
@@ -378,7 +385,7 @@ export default function ReportsClient({
     setResult(null);
     setError("");
     router.replace(
-      next === "transit" ? "/reports" : `/reports?type=${next}`,
+      next === DEFAULT_REPORT_TYPE ? "/reports" : `/reports?type=${next}`,
       { scroll: false },
     );
   };
@@ -390,8 +397,7 @@ export default function ReportsClient({
   // replace, where the param already matches the state.
   useEffect(() => {
     const raw = searchParams.get("type");
-    const next: ReportType =
-      raw === "year-ahead" || raw === "comparison" ? raw : "transit";
+    const next = offeredReportType(raw);
     // Phase 4C lint: setState deferred a microtask past the effect,
     // the same pattern the codebase already uses for this rule.
     if (next !== type) {
@@ -549,11 +555,9 @@ export default function ReportsClient({
 
       <div className="mt-8 flex justify-center">
         <RubberSegment
-          items={[
-            { value: "transit", label: "Transit report" },
-            { value: "year-ahead", label: "Year-ahead reading" },
-            { value: "comparison", label: "Relationship comparison" },
-          ]}
+          // Batch 2 (B2): only offered types get a segment; transit is
+          // withheld while its live generation fails (see report-offer.ts).
+          items={OFFERED_REPORT_TYPES.map((value) => ({ value, label: TYPE_LABELS[value] }))}
           value={type}
           onChange={(v) => syncType(v as ReportType)}
           aria-label="Report type"
@@ -568,10 +572,9 @@ export default function ReportsClient({
       <details className="mx-auto mt-4 max-w-xl rounded-2xl border border-gold/20 bg-panel/60 p-4 text-left">
         <summary className="cursor-pointer font-semibold text-goldbright">Read a sample report, before you spend any credits</summary>
         <p className="mt-2 text-sm text-cream/80">
-          A full sample report, written for an invented seeker.
+          A full sample report, written for an invented seeker. The sample is a transit report, which is paused for now; year-ahead readings and relationship comparisons are written in the same style.
         </p>
         <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-cream/80">
-          <li>Transit report: interpretation, Western transits on your date, Vedic Gochara.</li>
           <li>Year-ahead reading: interpretation, monthly themes, Dasha outlook, Ziwei annual layer.</li>
           <li>Relationship comparison: interpretation, the two charts, cross-aspects.</li>
         </ul>
