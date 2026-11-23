@@ -54,7 +54,8 @@ describe("break the center, /intake/[slug]: headings and intros left-aligned", (
   it("step wrappers in IntakeFlow are left-aligned, loading line stays centered", () => {
     const flow = src("src/app/intake/[slug]/IntakeFlow.tsx");
     expect(flow).toContain('className="text-left"');
-    expect(flow.match(/className="text-left"/g) ?? []).toHaveLength(3);
+    // Batch 1 (S1): the support step is the fourth left-aligned wrapper.
+    expect(flow.match(/className="text-left"/g) ?? []).toHaveLength(4);
     expect(flow).not.toContain('className="text-center"');
     // The one remaining text-center is the transient loading line.
     expect(flow).toContain(

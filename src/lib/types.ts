@@ -75,6 +75,10 @@ export interface Reading {
   revisitAt?: string;
   // Chart readings only: a positions-only summary, never birth data.
   chartSummary?: string;
+  // Batch 1 (S1): "B" when the seeker's words showed hopelessness.
+  // The reading page shows the support panel above the reading and
+  // hides the story-card share. (Tier A never produces a reading.)
+  supportTier?: "B";
 }
 
 // M2.1: one follow-up exchange within a reading thread.
@@ -88,6 +92,9 @@ export interface FollowUp {
   // spending) a duplicate. Stored on the follow-up by
   // appendFollowUpWithSpend.
   id?: string;
+  // Batch 1 (S1): "B" when the follow-up showed hopelessness; the
+  // thread shows the support panel above this answer.
+  supportTier?: "B";
   // Phase 5 (5.3): the clarifier card drawn server-side for this
   // follow-up, from the cards not already in the reading's spread.
   clarifierCardId?: string;

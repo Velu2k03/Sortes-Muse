@@ -5,7 +5,7 @@ import Image from "next/image";
 import { toPng } from "html-to-image";
 import { getCard } from "@/lib/cards";
 import { computeSpreadFacts } from "@/lib/spread-facts";
-import { firstSentence } from "@/lib/story-card";
+import { bodySentence } from "@/lib/story-card";
 import { readingToPlainText } from "@/lib/readingMarkdown";
 import type { DrawnCard } from "@/lib/types";
 import { BRAND } from "@/lib/brand";
@@ -20,6 +20,7 @@ import { showFailureToast, dismissFailureToast, showSuccessToast } from "@/lib/f
 // native share sheet is not a failure: the download already happened.
 const STORY_IMAGE_SAVED = "Story image saved";
 const STORY_IMAGE_FAILED = "Story image failed";
+const STORY_CARD_AI_LABEL = "AI-written reflection, not a prediction.";
 
 /**
  * Phase 5 (5.5): shareable 9:16 story cards (1080x1920). The drawn
@@ -105,7 +106,9 @@ export default function ShareReading({
       };
     })
   );
-  const takeaway = firstSentence(
+  // Batch 1 (S4): a sentence from the reading BODY, not the opening
+  // sentence (which restates the seeker's question).
+  const takeaway = bodySentence(
     interpretation ? readingToPlainText(interpretation) : interpretation
   );
 
@@ -220,6 +223,10 @@ export default function ShareReading({
           <div style={{ flex: 1 }} />
           <div style={{ fontSize: 22, color: BRAND.mist, textAlign: "center" }}>
             {TAGLINE}
+          </div>
+          {/* Batch 1 (S4): the card says plainly what it is. */}
+          <div style={{ fontSize: 20, color: BRAND.mist, textAlign: "center", marginTop: 10 }}>
+            {STORY_CARD_AI_LABEL}
           </div>
           <div style={{ fontSize: 20, letterSpacing: 3, color: BRAND.gold, marginTop: 12 }}>
             sortes.resonantatlas.com

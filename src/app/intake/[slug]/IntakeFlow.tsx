@@ -2,6 +2,7 @@
 
 import { AnimatePresence, motion } from "motion/react";
 import Breadcrumbs from "@/components/Breadcrumbs";
+import SupportPanel from "@/components/SupportPanel";
 import { useIntakeFlow } from "./useIntakeFlow";
 import {
   CategoryStep,
@@ -10,6 +11,7 @@ import {
   ImpressionStep,
   ProcessingStage,
   SignInGate,
+  SupportStep,
   StepDots,
 } from "./IntakeSteps";
 
@@ -21,7 +23,7 @@ import {
  */
 export default function IntakeFlow({ slug }: { slug: string }) {
   const f = useIntakeFlow(slug);
-  const { spread, step, category, drawnCards, processingLine, processingComplete, streamedText } = f;
+  const { spread, step, category, drawnCards, processingLine, processingComplete, streamedText, support } = f;
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6">
@@ -38,7 +40,7 @@ export default function IntakeFlow({ slug }: { slug: string }) {
         <output className="mt-16 block text-center text-cream/75">Checking your account…</output>
       )}
       {/* The impression step is part of the reading phase in the dots. */}
-      {!f.gate && <StepDots step={step === "impression" ? "processing" : step} />}
+      {!f.gate && <StepDots step={step === "impression" || step === "support" ? "processing" : step} />}
 
       {!f.gate && (
       <AnimatePresence mode="wait">
@@ -90,7 +92,21 @@ export default function IntakeFlow({ slug }: { slug: string }) {
         )}
 
         {step === "processing" && (
-          <ProcessingStage key="processing" activeStep={processingLine} complete={processingComplete} streamedText={streamedText} drawnCards={drawnCards} />
+          <ProcessingStage key="processing" activeStep={processingLine} complete={processingComplete} streamedText={streamedText} drawnCards={drawnCards} support={support} />
+        )}
+
+        {step === "support" && (
+          <motion.div
+            key="support"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            className="text-left"
+          >
+            <SupportStep>
+              <SupportPanel panel={support} tier="A" />
+            </SupportStep>
+          </motion.div>
         )}
       </AnimatePresence>
       )}

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import ShareReading from "@/components/ShareReading";
+import SupportPanel from "@/components/SupportPanel";
 import { useFollowUp, useReading, useReadingField } from "./useReadingDetail";
 import {
   AtAGlance,
@@ -71,6 +72,8 @@ export default function ReadingDetail({ id }: { id: string }) {
           Order: question, cards, interpretation, at-a-glance, card
           meanings, then actions. */}
       <ReadingHeader reading={reading} />
+      {/* Batch 1 (S1) Tier B: the support panel comes before the reading. */}
+      {reading.supportTier === "B" && <SupportPanel tier="B" />}
       <CardRow reading={reading} zoomCard={zoomCard} setZoomCard={setZoomCard} />
       {/* Batch 6c: the interpretation first, the card blocks in one
           collapsed section below it. */}
@@ -107,12 +110,15 @@ export default function ReadingDetail({ id }: { id: string }) {
       <section aria-label="Keep and share" className="mx-auto mt-6 flex max-w-3xl flex-col items-start gap-4 rounded-3xl border border-gold/25 bg-panel/60 p-6 text-left sm:p-8">
         <h2 className="font-display text-2xl text-cream">Keep and share</h2>
         {!user && <GuestKeepNotice />}
-        <ShareReading
-          spreadName={reading.spreadName}
-          drawn={reading.cards}
-          date={reading.createdAt}
-          interpretation={reading.interpretation}
-        />
+        {/* Batch 1 (S4): no story-card share on a Tier B reading. */}
+        {reading.supportTier !== "B" && (
+          <ShareReading
+            spreadName={reading.spreadName}
+            drawn={reading.cards}
+            date={reading.createdAt}
+            interpretation={reading.interpretation}
+          />
+        )}
         <ReadingHeirloom reading={reading} />
       </section>
 
