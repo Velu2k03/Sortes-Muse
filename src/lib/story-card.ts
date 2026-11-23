@@ -62,7 +62,13 @@ export function bodySentence(text: string | undefined | null): string {
         !CLOSING_LINE.test(s) &&
         s.split(/\s+/).length >= MIN_BODY_WORDS
     );
-  if (candidates.length === 0) return firstSentence(text);
+  if (candidates.length === 0) {
+    // Codex review on PR #179 (P2): never fall back to the opening
+    // sentence — it restates the seeker's question, which the card must
+    // not quote. No suitable body sentence means no takeaway line
+    // (ShareReading already renders nothing when it is empty).
+    return "";
+  }
   const fits = candidates.find((s) => s.length <= MAX_TAKEAWAY_CHARS);
   return capTakeaway(fits ?? candidates[0]);
 }
