@@ -28,12 +28,14 @@ import {
  * useReadingDetail.ts; each visual section is in ReadingSections.tsx.
  */
 export default function ReadingDetail({ id }: { id: string }) {
-  const { user, loading } = useAuth();
+  const { user, loading, authFailed, loadError } = useAuth();
   // Save-prompt nit (2026-11-24): guest-only UI waits for auth to
   // resolve. The reading loads from localStorage at once, but /me
   // takes ~2 s live, so `!user` alone flashed "Sign in to save this
-  // reading" at signed-in users on every fresh load.
-  const isGuest = !loading && !user;
+  // reading" at signed-in users on every fresh load. An auth error
+  // (authFailed / loadError) also leaves user null, but the session
+  // is then unknown, not guest, so it must not count as guest either.
+  const isGuest = !loading && !user && !authFailed && !loadError;
   const { reading, setReading } = useReading(id, user);
   const [zoomCard, setZoomCard] = useState<string | null>(null);
   // M1.1: the one next step the seeker chooses after reading. Kept in

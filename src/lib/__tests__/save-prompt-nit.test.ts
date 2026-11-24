@@ -10,7 +10,12 @@ import { readFileSync } from "fs";
 // a session /me had just confirmed.
 
 const auth = vi.hoisted(() => ({
-  value: { user: null as { id: string; email: string } | null, loading: true },
+  value: {
+    user: null as { id: string; email: string } | null,
+    loading: true,
+    authFailed: false,
+    loadError: false,
+  },
 }));
 
 vi.mock("@/components/AuthProvider", () => ({
@@ -76,24 +81,45 @@ async function renderPage() {
 
 describe("reading page guest prompt waits for auth", () => {
   it("shows no guest prompt and no guest follow-up label while auth is loading", async () => {
-    auth.value = { user: null, loading: true };
+    auth.value = { user: null, loading: true, authFailed: false, loadError: false };
     const html = await renderPage();
     expect(html).not.toContain("GUEST_KEEP_NOTICE");
     expect(html).not.toContain("FOLLOWUP_GUEST");
   });
 
   it("shows the guest prompt for a confirmed signed-out user", async () => {
-    auth.value = { user: null, loading: false };
+    auth.value = { user: null, loading: false, authFailed: false, loadError: false };
     const html = await renderPage();
     expect(html).toContain("GUEST_KEEP_NOTICE");
     expect(html).toContain("FOLLOWUP_GUEST");
   });
 
   it("hides the guest prompt for a signed-in user", async () => {
-    auth.value = { user: { id: "u1", email: "a@b.c" }, loading: false };
+    auth.value = {
+      user: { id: "u1", email: "a@b.c" },
+      loading: false,
+      authFailed: false,
+      loadError: false,
+    };
     const html = await renderPage();
     expect(html).not.toContain("GUEST_KEEP_NOTICE");
     expect(html).toContain("FOLLOWUP_MEMBER");
+  });
+
+  // Codex P1 (2026-11-24): an auth error leaves user null and loading
+  // false, but the session is unknown, not guest.
+  it("shows no guest prompt and no guest follow-up label when authFailed", async () => {
+    auth.value = { user: null, loading: false, authFailed: true, loadError: false };
+    const html = await renderPage();
+    expect(html).not.toContain("GUEST_KEEP_NOTICE");
+    expect(html).not.toContain("FOLLOWUP_GUEST");
+  });
+
+  it("shows no guest prompt and no guest follow-up label when loadError", async () => {
+    auth.value = { user: null, loading: false, authFailed: false, loadError: true };
+    const html = await renderPage();
+    expect(html).not.toContain("GUEST_KEEP_NOTICE");
+    expect(html).not.toContain("FOLLOWUP_GUEST");
   });
 });
 
