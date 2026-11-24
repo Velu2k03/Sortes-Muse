@@ -134,8 +134,14 @@ async function safeJson(res: Response): Promise<SafeJsonBody> {
   }
 }
 
-async function migrateGuestData(deadline: number): Promise<number> {
-  const history = getHistory();
+/** Move the guest journal to the account. Returns true when the sync
+    succeeded (MIGRATED_KEY set), false when it failed (key left unset
+    so the next refresh retries). Never throws: a failed sync must
+    never clear a session /api/auth/me just confirmed (save-prompt
+    nit, 2026-11-24). It makes no /api/auth/me call of its own; the
+    caller already has the server credits from its own /me, and the
+    migration moves the journal only, so the balance does not change. */
+export async function migrateGuestData(deadline: number): Promise<boolean> {
   // Phase 1: the guest device wallet is no longer a source of credits.
   // Local credits have no legitimate paid backing: the only way they
   // ever went up was the demo grant (now deleted), and the refund path
@@ -145,6 +151,7 @@ async function migrateGuestData(deadline: number): Promise<number> {
   // wallet is zeroed, so a stale or tampered device balance cannot be
   // spent later as a guest.
   try {
+    const history = getHistory();
     if (history.length > 0) {
       const res = await fetchWithTimeout(
         "/api/history",
@@ -160,21 +167,13 @@ async function migrateGuestData(deadline: number): Promise<number> {
     setLocalCredits(0);
     window.dispatchEvent(new Event("sortes:credits-changed"));
     localStorage.setItem(MIGRATED_KEY, "1");
+    return true;
   } catch {
-    // Sync failed: keep the guest journal intact so the next refresh
-    // can retry, and report the server balance (never the local one).
-    // A timeout here propagates to refresh(), which raises loadError.
-    const me = await fetchWithTimeout(
-      "/api/auth/me",
-      undefined,
-      Math.max(0, deadline - Date.now())
-    ).then(safeJson);
-    return typeof me.user?.credits === "number" ? me.user.credits : 0;
+    // Sync failed (non-OK, network error, or deadline abort): keep the
+    // guest journal intact and MIGRATED_KEY unset so the next refresh
+    // retries. The session itself is unaffected.
+    return false;
   }
-  const me = await safeJson(
-    await fetchWithTimeout("/api/auth/me", undefined, Math.max(0, deadline - Date.now()))
-  );
-  return me.user?.credits ?? 0;
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -200,11 +199,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           typeof data.user.freeReadingAvailable === "boolean" ? data.user.freeReadingAvailable : null
         );
         setAuthFailed(false);
+        // The balance comes from this /me. The guest migration moves
+        // the journal only, and it never throws, so a failed or
+        // timed-out sync cannot reach the catch below and wipe the
+        // session this /me just confirmed.
+        setCredits(data.user.credits ?? null);
         if (!localStorage.getItem(MIGRATED_KEY)) {
-          const merged = await migrateGuestData(deadline);
-          setCredits(merged);
-        } else {
-          setCredits(data.user.credits ?? null);
+          await migrateGuestData(deadline);
         }
         // A confirmed session means this device held one, even when
         // the guest-history migration above failed. The key is what

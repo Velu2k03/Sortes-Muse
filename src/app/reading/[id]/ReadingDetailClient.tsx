@@ -28,7 +28,14 @@ import {
  * useReadingDetail.ts; each visual section is in ReadingSections.tsx.
  */
 export default function ReadingDetail({ id }: { id: string }) {
-  const { user } = useAuth();
+  const { user, loading, authFailed, loadError } = useAuth();
+  // Save-prompt nit (2026-11-24): guest-only UI waits for auth to
+  // resolve. The reading loads from localStorage at once, but /me
+  // takes ~2 s live, so `!user` alone flashed "Sign in to save this
+  // reading" at signed-in users on every fresh load. An auth error
+  // (authFailed / loadError) also leaves user null, but the session
+  // is then unknown, not guest, so it must not count as guest either.
+  const isGuest = !loading && !user && !authFailed && !loadError;
   const { reading, setReading } = useReading(id, user);
   const [zoomCard, setZoomCard] = useState<string | null>(null);
   // M1.1: the one next step the seeker chooses after reading. Kept in
@@ -96,7 +103,7 @@ export default function ReadingDetail({ id }: { id: string }) {
         <h2 className="font-display text-2xl text-cream">Ask more</h2>
         {reading.free && reading.spreadSlug === "quick-insight" && <ThreeCardNudge />}
         {hasFollowUpThread && (
-          <FollowUpThread reading={reading} isGuest={!user} f={followUp} />
+          <FollowUpThread reading={reading} isGuest={isGuest} f={followUp} />
         )}
         {!hasFollowUpThread && <NewReadingPrompt />}
         <p className="text-sm text-mist">
@@ -109,7 +116,7 @@ export default function ReadingDetail({ id }: { id: string }) {
 
       <section aria-label="Keep and share" className="mx-auto mt-6 flex max-w-3xl flex-col items-start gap-4 rounded-3xl border border-gold/25 bg-panel/60 p-6 text-left sm:p-8">
         <h2 className="font-display text-2xl text-cream">Keep and share</h2>
-        {!user && <GuestKeepNotice />}
+        {isGuest && <GuestKeepNotice />}
         {/* Batch 1 (S4): no story-card share on a Tier B reading. */}
         {reading.supportTier !== "B" && (
           <ShareReading
